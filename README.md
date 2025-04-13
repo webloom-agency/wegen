@@ -60,7 +60,10 @@ You can add MCP servers in two ways:
 
 ---
 
+
 ## Contributing
+
+👉 Check out our [Roadmap](./docs/ROADMAP.md) to see what’s coming up!
 
 > Contributions to MCP Client Chatbot are welcome and appreciated! Whether it's bug reports, feature suggestions, or code contributions, your help makes this project better.
 
