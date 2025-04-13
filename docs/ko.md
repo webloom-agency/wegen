@@ -9,7 +9,7 @@
 *Microsoft의 [playwright-mcp](https://github.com/microsoft/playwright-mcp)와 통합된 MCP 클라이언트 챗봇 데모*
 
 **사용 프롬프트 예시:**  
-`"Instead, search for 'mcp' on Google, take a screenshot, close it, and then summarize the contents for me."`
+`"Reddit에 접속해서 r/mcp를 열고, 가장 최근 글을 확인한 다음 어떤 내용인지 말해줘 — 그리고 다 끝났으면 Reddit을 닫아줘."`
 
 ---
 
@@ -61,7 +61,7 @@ MCP 서버는 다음과 같은 방식으로 추가할 수 있습니다:
    프로젝트에는 기본적으로 커스터마이징 가능한 MCP 서버가 `./custom-mcp-server/index.ts`에 포함되어 있습니다.  
    이 파일을 수정하여 직접 서버 로직을 구현하거나 외부 도구와 연동할 수 있습니다.
 
-![configuration](./mcp-configuation.png)
+![configuration](./mcp-config.gif)
 
 
 ## 가즈아 🚀

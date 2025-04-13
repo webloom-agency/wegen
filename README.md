@@ -12,7 +12,7 @@ MCP Client Chatbot is a chat interface that allows you to easily utilize various
 
 **with the prompt:** 
 
-`"Instead, search for 'mcp' on Google, take a screenshot, close it, and then summarize the contents for me."`
+`"Go to Reddit, open r/mcp, take a look at the newest post and tell me what it's about — then close Reddit when you're done."`
 
 ## Installation
 
@@ -54,7 +54,7 @@ You can add MCP servers in two ways:
 3.  Custom server logic: A customizable MCP server is already included in the project at `./custom-mcp-server/index.ts`.  
     You can modify this file to implement your own server logic or connect external tools as needed.
 
-![configuration](./docs/mcp-configuation.png)
+![configuration](./docs/mcp-config.gif)
 
 ### Let's gooo 🚀
 
