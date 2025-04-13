@@ -1,7 +1,7 @@
 "use client";
 
 import type { UIMessage } from "ai";
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import equal from "fast-deep-equal";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "lib/utils";
@@ -120,7 +120,14 @@ export const PreviewMessage = memo(
 
 export const ThinkingMessage = ({ className }: { className?: string }) => {
   const role = "assistant";
+  const [dots, setDots] = useState("");
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDots((prev) => (prev.length >= 3 ? "" : prev + "."));
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
   return (
     <motion.div
       data-testid="message-assistant-loading"
@@ -129,8 +136,10 @@ export const ThinkingMessage = ({ className }: { className?: string }) => {
       animate={{ y: 0, opacity: 1, transition: { delay: 1 } }}
       data-role={role}
     >
-      <div className="flex flex-col gap-2 w-full">
-        <div className="flex flex-col gap-4 text-muted-foreground">Hmm...</div>
+      <div className="flex flex-col gap-2 w-full animate-pulse">
+        <div className="flex flex-col gap-4 text-muted-foreground">
+          Hmm{dots}
+        </div>
       </div>
     </motion.div>
   );
