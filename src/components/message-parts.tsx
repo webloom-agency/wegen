@@ -89,7 +89,7 @@ export const UserMessagePart = ({
         })}
       >
         {isLast ? (
-          <pre className="whitespace-pre-wrap">{part.text}</pre>
+          <pre className="whitespace-pre-wrap text-sm">{part.text}</pre>
         ) : (
           <PastesContentCard initialContent={part.text} readonly />
         )}

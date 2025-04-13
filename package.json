@@ -11,7 +11,7 @@
     "lint:next": "next lint",
     "lint": "biome lint --write --unsafe ./src",
     "format": "biome format --write",
-    "setup": "tsx copy-env.ts && pnpm db:generate && pnpm db:push",
+    "initial": "tsx copy-env.ts && pnpm db:generate && pnpm db:push",
     "db:generate": "drizzle-kit generate",
     "db:reset": "drizzle-kit drop && drizzle-kit push",
     "db:push": "drizzle-kit push",
@@ -89,5 +89,6 @@
     "typescript": "^5.8.3",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.1.1"
-  }
+  },
+  "packageManager": "pnpm@10.2.1"
 }
