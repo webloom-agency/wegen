@@ -11,7 +11,7 @@ import clsx from "clsx";
 import { appStore } from "@/app/store";
 import { generateUUID } from "lib/utils";
 import { PreviewMessage, ThinkingMessage } from "./message";
-import { ChatOverview } from "./chat-overview";
+import { Greeting } from "./greeting";
 import logger from "logger";
 import { useShallow } from "zustand/shallow";
 
@@ -132,7 +132,9 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
           </div>
         </>
       ) : (
-        <ChatOverview />
+        <div className="mt-36">
+          <Greeting />
+        </div>
       )}
       <div className={clsx(messages.length && "absolute bottom-14", "w-full")}>
         <PromptInput
