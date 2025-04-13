@@ -1,8 +1,9 @@
 "use client";
 import { deleteThreadAction, updateThreadAction } from "@/app/api/chat/actions";
+import { appStore } from "@/app/store";
 import { useLatest } from "@/hooks/use-latest";
 import { Loader2, PencilLine, Trash } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { type PropsWithChildren, useState } from "react";
 import { toast } from "sonner";
 import { mutate } from "swr";
@@ -39,7 +40,7 @@ export function ThreadDropdown({ threadId, children, beforeTitle }: Props) {
 
   const push = useLatest(router.push);
 
-  const params = useParams();
+  const currentThreadId = appStore((state) => state.currentThreadId);
 
   const [title, setTitle] = useState(beforeTitle ?? "");
 
@@ -77,7 +78,7 @@ export function ThreadDropdown({ threadId, children, beforeTitle }: Props) {
         }
       })
       .ifOk(() => {
-        if (params.thread === threadId) {
+        if (currentThreadId === threadId) {
           push.current("/");
         }
         mutate("threads");
