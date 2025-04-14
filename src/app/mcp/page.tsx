@@ -9,6 +9,7 @@ import useSWR from "swr";
 import { Skeleton } from "ui/skeleton";
 
 import { handleErrorWithToast } from "ui/shared-toast";
+import { Plus } from "lucide-react";
 
 export default function Page() {
   const { data: mcpList, isLoading } = useSWR(
@@ -23,12 +24,17 @@ export default function Page() {
 
   return (
     <div className="relative flex flex-col gap-4 px-8 py-8 max-w-3xl mx-auto">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex items-center mb-4">
         <h1 className="text-2xl font-bold">MCP Servers</h1>
+        <div className="flex-1" />
+
         <div className="flex gap-2">
-          {/* Add MCP Server button */}
           <Link href="/mcp/create">
-            <Button size="sm" className="font-semibold">
+            <Button
+              className="border-dashed border-foreground/20 font-semibold"
+              variant="outline"
+            >
+              <Plus className="stroke-2" />
               Add MCP Server
             </Button>
           </Link>

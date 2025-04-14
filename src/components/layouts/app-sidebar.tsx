@@ -26,6 +26,7 @@ import { cn } from "lib/utils";
 import { AppSidebarMenus } from "./app-sidebar-menus";
 import { AppSidebarThreads } from "./app-sidebar-threads";
 import { AppSidebarUser } from "./app-sidebar-user";
+import { MCPIcon } from "ui/mcp-icon";
 const browserSidebarStorage = getStorageManager<boolean>("sidebar_state");
 
 export function AppSidebar() {
@@ -60,7 +61,7 @@ export function AppSidebar() {
           <SidebarMenuItem className="flex items-center gap-0.5">
             <SidebarMenuButton asChild>
               <Link href="/">
-                <Triangle size={12} className="fill-foreground" />
+                <MCPIcon className="size-4 fill-foreground" />
                 <h4 className="font-bold">mcp/chat-bot</h4>
               </Link>
             </SidebarMenuButton>

@@ -1,3 +1,3 @@
 export default function Loading() {
-  return <div aria-label="...loading"></div>;
+  return <div aria-label=""></div>;
 }

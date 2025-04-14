@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Button } from "ui/button";
+
 import { MCPIcon } from "ui/mcp-icon";
 
 export const Greeting = () => {
