@@ -1,8 +1,4 @@
 {
-  "playwright-mcp": {
-    "command": "npx",
-    "args": ["@playwright/mcp@latest"]
-  },
   "my-custom-server": {
     "command": "tsx",
     "args": ["custom-mcp-server"]
