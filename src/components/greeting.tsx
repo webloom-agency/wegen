@@ -36,7 +36,7 @@ export const Greeting = () => {
             </a>{" "}
             or by editing the{" "}
             <code className="bg-muted px-1 py-0.5 rounded">
-              mcp.config.json
+              .mcp-config.json
             </code>{" "}
             file.
           </p>

@@ -6,11 +6,10 @@ MCP Client Chatbot is a chat interface that allows you to easily utilize various
 
 > This project was developed using Vercel's open source libraries such as [Next.js](https://nextjs.org/) and [AI SDK](https://sdk.vercel.ai/)[shadcn/ui](https://ui.shadcn.com/), and is designed to run immediately in local environments or personal servers without complex setup. You can easily add and experiment with AI tools through file-based MCP management.
 
-
 ![MCP Client Chatbot Demo](./docs/preview.gif)
-*Demo showcasing the MCP Client Chatbot with [Microsoft's playwright-mcp](https://github.com/microsoft/playwright-mcp) integration*
+_Demo showcasing the MCP Client Chatbot with [Microsoft's playwright-mcp](https://github.com/microsoft/playwright-mcp) integration_
 
-**with the prompt:** 
+**with the prompt:**
 
 `"Go to Reddit, open r/mcp, take a look at the newest post and tell me what it's about — then close Reddit when you're done."`
 
@@ -44,13 +43,12 @@ OPENAI_API_KEY=****
 
 By default, the application uses SQLite for data storage. If you prefer to use PostgreSQL, you can modify the `USE_FILE_SYSTEM_DB` value in your `.env` file and set up your database connection string.
 
-
 ### Setting Up MCP Servers
 
 You can add MCP servers in two ways:
 
 1.  Using the UI: Navigate to http://localhost:3000/mcp in your browser and use the interface to add and configure MCP servers.
-2.  Editing the config file: Directly modify the `mcp.config.json` file in the project root directory.
+2.  Editing the config file: Directly modify the `.mcp-config.json` file in the project root directory.
 3.  Custom server logic: A customizable MCP server is already included in the project at `./custom-mcp-server/index.ts`.  
     You can modify this file to implement your own server logic or connect external tools as needed.
 
@@ -60,11 +58,8 @@ You can add MCP servers in two ways:
 
 ---
 
-
 ## Contributing
 
 👉 Check out our [Roadmap](./docs/ROADMAP.md) to see what’s coming up!
 
 > Contributions to MCP Client Chatbot are welcome and appreciated! Whether it's bug reports, feature suggestions, or code contributions, your help makes this project better.
-
-

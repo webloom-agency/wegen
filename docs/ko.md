@@ -6,7 +6,7 @@
 > 이 프로젝트는 [Next.js](https://nextjs.org/), [AI SDK](https://sdk.vercel.ai/), [shadcn/ui](https://ui.shadcn.com/) 등 Vercel의 오픈소스 라이브러리를 기반으로 개발되었으며, 복잡한 설정 없이 로컬 환경이나 개인 서버에서도 즉시 실행할 수 있도록 설계되었습니다. 파일 기반 MCP 관리 방식을 통해 AI 도구를 쉽게 추가하고 실험할 수 있습니다.
 
 ![MCP Client Chatbot Demo](./preview.gif)  
-*Microsoft의 [playwright-mcp](https://github.com/microsoft/playwright-mcp)와 통합된 MCP 클라이언트 챗봇 데모*
+_Microsoft의 [playwright-mcp](https://github.com/microsoft/playwright-mcp)와 통합된 MCP 클라이언트 챗봇 데모_
 
 **사용 프롬프트 예시:**  
 `"Reddit에 접속해서 r/mcp를 열고, 가장 최근 글을 확인한 다음 어떤 내용인지 말해줘 — 그리고 다 끝났으면 Reddit을 닫아줘."`
@@ -55,14 +55,13 @@ MCP 서버는 다음과 같은 방식으로 추가할 수 있습니다:
    브라우저에서 [http://localhost:3000/mcp](http://localhost:3000/mcp)로 이동하여 UI를 통해 MCP 서버를 추가 및 구성할 수 있습니다.
 
 2. **설정 파일 직접 수정**  
-   프로젝트 루트에 있는 `mcp.config.json` 파일을 직접 수정해 MCP 서버를 구성할 수 있습니다.
+   프로젝트 루트에 있는 `.mcp-config.json` 파일을 직접 수정해 MCP 서버를 구성할 수 있습니다.
 
 3. **커스텀 서버 로직 작성**  
    프로젝트에는 기본적으로 커스터마이징 가능한 MCP 서버가 `./custom-mcp-server/index.ts`에 포함되어 있습니다.  
    이 파일을 수정하여 직접 서버 로직을 구현하거나 외부 도구와 연동할 수 있습니다.
 
 ![configuration](./mcp-config.gif)
-
 
 ## 가즈아 🚀
 

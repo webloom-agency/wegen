@@ -10,6 +10,7 @@ import type { FSWatcher } from "chokidar";
 import { createDebounce } from "lib/utils";
 import equal from "fast-deep-equal";
 import logger from "logger";
+import { MCP_CONFIG_PATH } from "lib/const";
 
 /**
  * Creates a file-based implementation of MCPServerStorage
@@ -17,7 +18,7 @@ import logger from "logger";
 export function createFileBasedMCPConfigsStorage(
   path?: string,
 ): MCPConfigStorage {
-  const configPath = path || join(process.cwd(), "mcp.config.json");
+  const configPath = path || MCP_CONFIG_PATH;
   const configs: Map<string, MCPServerConfig> = new Map();
   let watcher: FSWatcher | null = null;
   const debounce = createDebounce();

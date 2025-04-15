@@ -1,6 +1,0 @@
-{
-  "my-custom-server": {
-    "command": "tsx",
-    "args": ["custom-mcp-server"]
-  }
-}
