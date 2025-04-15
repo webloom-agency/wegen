@@ -1,18 +1,15 @@
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 import { consola } from "consola";
 
 // Get current directory path
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
+const ROOT = process.cwd();
 /**
  * Copy .env.example to .env if .env doesn't exist
  */
 function copyEnvFile() {
-  const envPath = path.join(__dirname, ".env");
-  const envExamplePath = path.join(__dirname, ".env.example");
+  const envPath = path.join(ROOT, ".env");
+  const envExamplePath = path.join(ROOT, ".env.example");
 
   if (!fs.existsSync(envPath)) {
     try {
