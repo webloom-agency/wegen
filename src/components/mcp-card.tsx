@@ -234,7 +234,7 @@ export const MCPCard = memo(function MCPCard({
         <Tooltip>
           <TooltipTrigger asChild>
             <Link
-              href={`/mcp/${encodeURIComponent(name)}/test`}
+              href={`/mcp/test/${encodeURIComponent(name)}`}
               className="cursor-pointer"
             >
               <Button variant="ghost" size="icon">
@@ -269,7 +269,7 @@ export const MCPCard = memo(function MCPCard({
         <Tooltip>
           <TooltipTrigger asChild>
             <Link
-              href={`/mcp/${encodeURIComponent(name)}/modify`}
+              href={`/mcp/modify/${encodeURIComponent(name)}`}
               className="cursor-pointer"
             >
               <Button variant="ghost" size="icon">
