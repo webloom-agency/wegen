@@ -1,7 +1,6 @@
 import Link from "next/link";
 import React, { memo, PropsWithChildren } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { PreBlock } from "./pre-block";
 import { isJson, isString, toAny } from "lib/utils";
 import JsonView from "ui/json-view";
@@ -14,9 +13,7 @@ const WordByWordFadeIn = memo(({ children }: PropsWithChildren) => {
   const childrens = isString(children)
     ? children.split(" ")
     : [children].flat();
-  return childrens
-    .filter((child) => child !== "\n")
-    .map((word, index) => <FadeIn key={index}>{word} </FadeIn>);
+  return childrens.map((word, index) => <FadeIn key={index}>{word} </FadeIn>);
 });
 
 const components: Partial<Components> = {
@@ -137,17 +134,13 @@ const components: Partial<Components> = {
   },
 };
 
-const remarkPlugins = [remarkGfm];
-
 const NonMemoizedMarkdown = ({ children }: { children: string }) => {
   return (
     <article className="w-full h-full relative">
       {isJson(children) ? (
         <JsonView data={children} />
       ) : (
-        <ReactMarkdown remarkPlugins={remarkPlugins} components={components}>
-          {children}
-        </ReactMarkdown>
+        <ReactMarkdown components={components}>{children}</ReactMarkdown>
       )}
     </article>
   );
