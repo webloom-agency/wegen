@@ -1,10 +1,23 @@
 import Link from "next/link";
-import React, { memo } from "react";
+import React, { memo, PropsWithChildren } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { PreBlock } from "./pre-block";
-import { isJson, toAny } from "lib/utils";
+import { isJson, isString, toAny } from "lib/utils";
 import JsonView from "ui/json-view";
+
+const FadeIn = memo(({ children }: PropsWithChildren) => {
+  return <span className="fade-in animate-in duration-1000">{children}</span>;
+});
+
+const WordByWordFadeIn = memo(({ children }: PropsWithChildren) => {
+  const childrens = isString(children)
+    ? children.split(" ")
+    : [children].flat();
+  return childrens
+    .filter((child) => child !== "\n")
+    .map((word, index) => <FadeIn key={index}>{word} </FadeIn>);
+});
 
 const components: Partial<Components> = {
   code: ({ children }) => {
@@ -17,13 +30,17 @@ const components: Partial<Components> = {
   blockquote: ({ children }) => {
     return (
       <blockquote className="relative flex items-center border-accent-foreground/30 border border-dashed p-6 rounded-lg my-6 overflow-hidden">
-        {children}
+        <WordByWordFadeIn>{children}</WordByWordFadeIn>
         <div className="absolute top-0 right-0 h-full w-1/3 bg-gradient-to-r from-transparent to-background  pointer-events-none" />
       </blockquote>
     );
   },
   p: ({ children }) => {
-    return <p className="leading-6 my-4">{children}</p>;
+    return (
+      <p className="leading-6 my-4">
+        <WordByWordFadeIn>{children}</WordByWordFadeIn>
+      </p>
+    );
   },
   pre: ({ children }) => {
     return <PreBlock>{children}</PreBlock>;
@@ -38,7 +55,7 @@ const components: Partial<Components> = {
   li: ({ node, children, ...props }) => {
     return (
       <li className="py-2" {...props}>
-        {children}
+        <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </li>
     );
   },
@@ -52,7 +69,7 @@ const components: Partial<Components> = {
   strong: ({ node, children, ...props }) => {
     return (
       <span className="font-semibold" {...props}>
-        {children}
+        <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </span>
     );
   },
@@ -64,49 +81,51 @@ const components: Partial<Components> = {
         rel="noreferrer"
         {...toAny(props)}
       >
-        <b>{children}</b>
+        <b>
+          <WordByWordFadeIn>{children}</WordByWordFadeIn>
+        </b>
       </Link>
     );
   },
   h1: ({ node, children, ...props }) => {
     return (
       <h1 className="text-3xl font-semibold mt-6 mb-2" {...props}>
-        {children}
+        <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </h1>
     );
   },
   h2: ({ node, children, ...props }) => {
     return (
       <h2 className="text-2xl font-semibold mt-6 mb-2" {...props}>
-        {children}
+        <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </h2>
     );
   },
   h3: ({ node, children, ...props }) => {
     return (
       <h3 className="text-xl font-semibold mt-6 mb-2" {...props}>
-        {children}
+        <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </h3>
     );
   },
   h4: ({ node, children, ...props }) => {
     return (
       <h4 className="text-lg font-semibold mt-6 mb-2" {...props}>
-        {children}
+        <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </h4>
     );
   },
   h5: ({ node, children, ...props }) => {
     return (
       <h5 className="text-base font-semibold mt-6 mb-2" {...props}>
-        {children}
+        <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </h5>
     );
   },
   h6: ({ node, children, ...props }) => {
     return (
       <h6 className="text-sm font-semibold mt-6 mb-2" {...props}>
-        {children}
+        <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </h6>
     );
   },
