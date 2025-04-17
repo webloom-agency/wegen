@@ -243,7 +243,7 @@ export const ToolMessagePart = ({ part }: ToolMessagePartProps) => {
         <Button
           variant="outline"
           className={cn(
-            "flex flex-row gap-2 items-center text-muted-foreground",
+            "flex flex-row gap-2 justify-between items-center text-muted-foreground min-w-44",
             isLoading && "animate-pulse",
           )}
         >
