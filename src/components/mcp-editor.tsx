@@ -37,7 +37,6 @@ const STDIO_ARGS_ENV_PLACEHOLDER = `/** STDIO Example */
   "args": ["index.js"],
   "env": {
     "OPENAI_API_KEY": "sk-...",
-    "OPENAI_MODEL": "gpt-4o"
   }
 }
 
@@ -47,17 +46,7 @@ const STDIO_ARGS_ENV_PLACEHOLDER = `/** STDIO Example */
   "headers": {
     "Authorization": "Bearer sk-..."
   }
-}
-
-`;
-
-// Component to display required field labels
-const RequiredLabel = ({ children }: { children: React.ReactNode }) => (
-  <div className="flex items-center">
-    {children}
-    <span className="text-destructive ml-1">*</span>
-  </div>
-);
+}`;
 
 export default function MCPEditor({
   initialConfig,
@@ -152,9 +141,8 @@ export default function MCPEditor({
     <div className="flex flex-col space-y-6">
       {/* Name field */}
       <div className="space-y-2">
-        <RequiredLabel>
-          <Label htmlFor="name">Name</Label>
-        </RequiredLabel>
+        <Label htmlFor="name">Name</Label>
+
         <Input
           id="name"
           value={name}
@@ -165,9 +153,7 @@ export default function MCPEditor({
       </div>
       <div className="space-y-4">
         <div className="space-y-2">
-          <RequiredLabel>
-            <Label htmlFor="config">Config</Label>
-          </RequiredLabel>
+          <Label htmlFor="config">Config</Label>
         </div>
 
         {/* Split view for config editor */}
