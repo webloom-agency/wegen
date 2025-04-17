@@ -25,8 +25,8 @@ export const allModels = {
     "gpt-4.1": openai("gpt-4.1"),
     "gpt-4.1-mini": openai("gpt-4.1-mini"),
     "4o": openai("gpt-4o"),
-    "o3-mini": wrappedReasoningModel(
-      openai("o3-mini", {
+    "o4-mini": wrappedReasoningModel(
+      openai("o4-mini", {
         reasoningEffort: "high",
       }),
     ),
@@ -49,14 +49,16 @@ export const allModels = {
   },
   ollama: {
     "gemma3:1b": ollama("gemma3:1b"),
-    "gemma3:4b": ollama("gemma3:4b"),
+    "gemma3:4b": ollama("gemma3:4b", {
+      simulateStreaming: true,
+    }),
     "gemma3:12b": ollama("gemma3:12b"),
   },
 } as const;
 
 export const isReasoningModel = (model: LanguageModel) => {
   return [
-    allModels.openai["o3-mini"],
+    allModels.openai["o4-mini"],
     allModels.google["gemini-2.0-thinking"],
     allModels.xai["grok-3"],
     allModels.xai["grok-3-mini"],
