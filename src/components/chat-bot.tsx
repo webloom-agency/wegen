@@ -108,6 +108,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
 
   return (
     <div className="flex flex-col min-w-0 relative h-full">
+      <div className="absolute top-0 left-0 h-12 w-full bg-gradient-to-b from-background to-transparent" />
       {messages.length > 0 ? (
         <>
           <div

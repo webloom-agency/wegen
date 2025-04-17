@@ -15,7 +15,7 @@ interface SelectModelProps {
   onSelect: (model: string) => void;
   providers: {
     provider: string;
-    models: { name: string; isReasoningModel: boolean }[];
+    models: { name: string; isToolCallUnsupported: boolean }[];
   }[];
   model: string;
 }
@@ -49,7 +49,7 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
                       value={model.name}
                     >
                       <span className="px-2">{model.name}</span>
-                      {model.isReasoningModel && (
+                      {model.isToolCallUnsupported && (
                         <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
                           No tools
                         </div>

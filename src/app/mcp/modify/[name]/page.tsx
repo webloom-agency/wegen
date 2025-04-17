@@ -3,6 +3,7 @@ import { selectMcpClientsAction } from "@/app/api/mcp/actions";
 import { Alert } from "ui/alert";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { Separator } from "ui/separator";
 
 export default async function Page({
   params,
@@ -18,7 +19,7 @@ export default async function Page({
 
   return (
     <div className="container max-w-3xl mx-4 md:mx-auto py-8">
-      <div>
+      <div className="flex flex-col gap-2">
         <Link
           href="/mcp"
           className="flex items-center gap-2 text-muted-foreground text-sm hover:text-foreground transition-colors mb-8"
@@ -32,6 +33,7 @@ export default async function Page({
             Configure your MCP server connection settings
           </p>
         </header>
+        <Separator className="h-1 w-full mt-4" />
         <main className="my-8">
           {mcpClient ? (
             <MCPEditor initialConfig={mcpClient.config} name={name} />

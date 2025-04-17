@@ -103,7 +103,7 @@ export function PreBlock({ children }: { children: any }) {
     <div
       className={cn(
         loading && "animate-pulse",
-        "flex flex-col border border-dashed rounded-lg relative mb-4 overflow-hidden",
+        "text-sm flex flex-col border border-dashed rounded-lg relative mb-4 overflow-hidden",
       )}
     >
       {component}

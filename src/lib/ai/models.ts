@@ -56,13 +56,16 @@ export const allModels = {
   },
 } as const;
 
-export const isReasoningModel = (model: LanguageModel) => {
+export const isToolCallUnsupported = (model: LanguageModel) => {
   return [
     allModels.openai["o4-mini"],
     allModels.google["gemini-2.0-thinking"],
     allModels.xai["grok-3"],
     allModels.xai["grok-3-mini"],
     allModels.google["gemini-2.0-thinking"],
+    allModels.ollama["gemma3:1b"],
+    allModels.ollama["gemma3:4b"],
+    allModels.ollama["gemma3:12b"],
   ].includes(model);
 };
 
@@ -77,7 +80,9 @@ export const customModelProvider = {
       models: Object.keys(allModels[provider]).map((name) => {
         return {
           name,
-          isReasoningModel: isReasoningModel(allModels[provider][name]),
+          isToolCallUnsupported: isToolCallUnsupported(
+            allModels[provider][name],
+          ),
         };
       }),
     };

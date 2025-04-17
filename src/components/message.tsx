@@ -34,7 +34,7 @@ const PurePreviewMessage = ({
   return (
     <AnimatePresence>
       <motion.div
-        className="ease-in-out w-full mx-auto max-w-3xl px-4 group/message"
+        className="ease-in-out w-full mx-auto max-w-3xl px-6 group/message"
         initial={{ y: 5, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
       >

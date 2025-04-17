@@ -29,8 +29,10 @@ function ThreadDropdownComponent() {
       threadId={currentThread.id}
       beforeTitle={currentThread.title}
     >
-      <div className="text-sm  text-muted-foreground hover:text-foreground cursor-pointer flex gap-1 items-center px-2 py-1 rounded-md hover:bg-accent">
-        {currentThread.title}
+      <div className="text-sm text-muted-foreground hover:text-foreground cursor-pointer flex gap-1 items-center px-2 py-1 rounded-md hover:bg-accent">
+        <span className="truncate whitespace-nowrap overflow-hidden max-w-60 lg:max-w-80">
+          {currentThread.title}
+        </span>
         <ChevronDown size={14} />
       </div>
     </ThreadDropdown>
@@ -55,7 +57,7 @@ export function AppHeader() {
   }, [theme]);
 
   return (
-    <header className="sticky top-0 z-50 flex items-center px-2 py-1 bg-background/20 backdrop-blur-sm border-b border-dashed">
+    <header className="sticky top-0 z-50 flex items-center px-2 py-1">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>

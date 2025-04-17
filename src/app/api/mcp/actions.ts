@@ -12,6 +12,16 @@ export async function selectMcpClientsAction() {
   });
 }
 
+export async function selectMcpClientAction(name: string) {
+  const client = mcpClientsManager
+    .getClients()
+    .find((client) => client.getInfo().name === name);
+  if (!client) {
+    throw new Error("Client not found");
+  }
+  return client.getInfo();
+}
+
 const validateConfig = (config: unknown) => {
   if (!isMaybeMCPServerConfig(config)) {
     throw new Error("Invalid MCP server configuration");

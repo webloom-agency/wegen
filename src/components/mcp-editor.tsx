@@ -124,7 +124,7 @@ export default function MCPEditor({
       if (isDiff) {
         convertDebounce(
           () => setJsonString(JSON.stringify(result.value, null, 2)),
-          1000,
+          5000,
         );
       }
     } else if (data.trim() !== "") {
@@ -160,12 +160,6 @@ export default function MCPEditor({
         <div className="grid grid-cols-2 gap-4">
           {/* Left side: Textarea for editing */}
           <div className="space-y-2">
-            <Label
-              htmlFor="config-editor"
-              className="text-xs text-muted-foreground"
-            >
-              JSON Editor
-            </Label>
             <Textarea
               id="config-editor"
               value={jsonString}
@@ -177,13 +171,13 @@ export default function MCPEditor({
 
           {/* Right side: JSON view */}
           <div className="space-y-2">
-            <Label
-              htmlFor="config-view"
-              className="text-xs text-muted-foreground"
-            >
-              JSON Preview
-            </Label>
-            <div className="border rounded-md p-4 h-[40vh] overflow-auto relative">
+            <div className="border border-input rounded-md p-4 h-[40vh] overflow-auto relative">
+              <Label
+                htmlFor="config-view"
+                className="text-xs text-muted-foreground mb-2"
+              >
+                preview
+              </Label>
               <JsonView data={config} initialExpandDepth={3} />
               {jsonError && jsonString && (
                 <div className="absolute w-full bottom-0 right-0 px-2 pb-2 animate-in fade-in-0 duration-300">

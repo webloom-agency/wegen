@@ -7,7 +7,7 @@ import {
 } from "ai";
 
 import { generateTitleFromUserMessageAction } from "@/app/api/chat/actions";
-import { customModelProvider, isReasoningModel } from "lib/ai/models";
+import { customModelProvider, isToolCallUnsupported } from "lib/ai/models";
 
 import { getMockUserSession } from "lib/mock";
 import { mcpClientsManager } from "../mcp/mcp-manager";
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
           system: SYSTEM_TIME_PROMPT,
           messages,
           experimental_transform: smoothStream({ chunking: "word" }),
-          tools: isReasoningModel(model) ? undefined : tools,
+          tools: isToolCallUnsupported(model) ? undefined : tools,
           maxSteps: 5,
           onFinish: async ({ response }) => {
             const [, assistantMessage] = appendResponseMessages({

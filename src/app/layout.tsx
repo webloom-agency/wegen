@@ -42,7 +42,7 @@ export default function RootLayout({
             <AppSidebar />
             <main className="relative w-full flex flex-col h-screen">
               <AppHeader />
-              <div className="flex-1 overflow-hidden">{children}</div>
+              <div className="flex-1 overflow-y-auto">{children}</div>
             </main>
             <Toaster richColors />
           </ThemeProvider>

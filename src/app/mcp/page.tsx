@@ -1,6 +1,6 @@
 "use client";
 import { MCPCard } from "@/components/mcp-card";
-
+import { appStore } from "@/app/store";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { MCPOverview } from "@/components/mcp-overview";
@@ -13,6 +13,8 @@ import { Plus } from "lucide-react";
 import { ScrollArea } from "ui/scroll-area";
 
 export default function Page() {
+  const appStoreMutate = appStore((state) => state.mutate);
+
   const { data: mcpList, isLoading } = useSWR(
     "mcp-list",
     selectMcpClientsAction,
@@ -20,6 +22,7 @@ export default function Page() {
       refreshInterval: 10000,
       fallbackData: [],
       onError: handleErrorWithToast,
+      onSuccess: (data) => appStoreMutate({ mcpList: data }),
     },
   );
 

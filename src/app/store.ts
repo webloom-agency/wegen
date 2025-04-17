@@ -4,8 +4,10 @@ import { getMockUserSession } from "lib/mock";
 import type { ChatThread } from "app-types/chat";
 import type { User } from "app-types/user";
 import { DEFAULT_MODEL } from "lib/ai/models";
+import { MCPServerInfo } from "app-types/mcp";
 export interface AppState {
   threadList: ChatThread[];
+  mcpList: MCPServerInfo[];
   currentThreadId: ChatThread["id"] | null;
   user: User;
   model: string;
@@ -22,9 +24,11 @@ export const appStore = create<AppState & AppDispatch & AppGetters>()(
   persist(
     (set, get) => ({
       threadList: [],
+      mcpList: [],
       currentThreadId: null,
       user: getMockUserSession(),
       modelList: [],
+
       model: DEFAULT_MODEL,
       getCurrentThread: () =>
         get().threadList.find(

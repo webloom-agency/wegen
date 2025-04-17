@@ -42,12 +42,9 @@ export function AppSidebar() {
     {
       onError: handleErrorWithToast,
       fallbackData: [],
+      onSuccess: (data) => storeMutate({ threadList: data }),
     },
   );
-
-  useEffect(() => {
-    storeMutate({ threadList: threadList ?? [] });
-  }, [threadList]);
 
   useEffect(() => {
     browserSidebarStorage.set(open);
