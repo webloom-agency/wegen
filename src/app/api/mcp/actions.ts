@@ -91,3 +91,27 @@ export async function updateMcpClientAction(
 ) {
   await mcpClientsManager.refreshClient(name, config);
 }
+
+export async function callMcpToolAction(
+  mcpName: string,
+  toolName: string,
+  input?: unknown,
+) {
+  const client = mcpClientsManager
+    .getClients()
+    .find((client) => client.getInfo().name === mcpName);
+  if (!client) {
+    throw new Error("Client not found");
+  }
+  return client.callTool(toolName, input).then((res) => {
+    if (res?.isError) {
+      console.log(res.content);
+      throw new Error(
+        res.content?.[0]?.text ??
+          JSON.stringify(res.content, null, 2) ??
+          "Unknown error",
+      );
+    }
+    return res;
+  });
+}

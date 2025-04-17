@@ -14,9 +14,9 @@ import { isMaybeSseConfig, isMaybeStdioConfig } from "./is-mcp-config";
 import logger from "logger";
 import type { ConsolaInstance } from "consola";
 import { colorize } from "consola/utils";
-import { Locker, toAny } from "lib/utils";
+import { isNull, Locker, toAny } from "lib/utils";
 
-import { safe } from "ts-safe";
+import { safe, watchError } from "ts-safe";
 
 /**
  * Client class for Model Context Protocol (MCP) server connections
@@ -129,15 +129,7 @@ export class MCPClient {
           description: _tool.description,
           execute: (params, options: ToolExecutionOptions) => {
             options?.abortSignal?.throwIfAborted();
-            return safe(() => this.log.debug("tool call", _tool.name))
-              .map(() =>
-                client.callTool({
-                  name: _tool.name,
-                  arguments: params as Record<string, unknown>,
-                }),
-              )
-              .ifFail((e) => this.log.error("Tool call failed", _tool.name, e))
-              .unwrap();
+            return this.callTool(_tool.name, params);
           },
         });
         return prev;
@@ -160,6 +152,23 @@ export class MCPClient {
       this.client = undefined;
       await client?.close().catch((e) => this.log.error(e));
     }
+  }
+  async callTool(toolName: string, input?: unknown) {
+    return safe(() => this.log.debug("tool call", toolName))
+      .map(() =>
+        this.client?.callTool({
+          name: toolName,
+          arguments: input as Record<string, unknown>,
+        }),
+      )
+      .ifOk((v) => {
+        if (isNull(v)) {
+          throw new Error("Tool call failed with null");
+        }
+        return v;
+      })
+      .watch(watchError((e) => this.log.error("Tool call failed", toolName, e)))
+      .unwrap();
   }
 }
 
