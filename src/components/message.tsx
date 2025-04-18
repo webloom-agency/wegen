@@ -1,7 +1,7 @@
 "use client";
 
 import type { UIMessage } from "ai";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useMemo } from "react";
 import equal from "fast-deep-equal";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "lib/utils";
@@ -91,17 +91,15 @@ const PurePreviewMessage = ({
 
               if (part.type === "text" && !isUserMessage) {
                 return (
-                  <>
-                    <AssistMessagePart
-                      threadId={threadId}
-                      key={key}
-                      part={part}
-                      isLast={isLastPart}
-                      message={message}
-                      setMessages={setMessages}
-                      reload={reload}
-                    />
-                  </>
+                  <AssistMessagePart
+                    threadId={threadId}
+                    key={key}
+                    part={part}
+                    isLast={isLastPart}
+                    message={message}
+                    setMessages={setMessages}
+                    reload={reload}
+                  />
                 );
               }
 
