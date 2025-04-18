@@ -3,21 +3,7 @@ import { openai } from "@ai-sdk/openai";
 import { google } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
 import { xai } from "@ai-sdk/xai";
-import {
-  extractReasoningMiddleware,
-  LanguageModel,
-  wrapLanguageModel,
-} from "ai";
-
-const wrappedReasoningModel = (model: LanguageModel) => {
-  return wrapLanguageModel({
-    model,
-    middleware: extractReasoningMiddleware({
-      tagName: "reasoning",
-      separator: "\n",
-    }),
-  });
-};
+import { LanguageModel } from "ai";
 
 export const allModels = {
   openai: {
@@ -25,17 +11,13 @@ export const allModels = {
     "gpt-4.1": openai("gpt-4.1"),
     "gpt-4.1-mini": openai("gpt-4.1-mini"),
     "4o": openai("gpt-4o"),
-    "o4-mini": wrappedReasoningModel(
-      openai("o4-mini", {
-        reasoningEffort: "high",
-      }),
-    ),
+    "o4-mini": openai("o4-mini", {
+      reasoningEffort: "medium",
+    }),
   },
   google: {
     "gemini-2.0": google("gemini-2.0-flash-exp"),
-    "gemini-2.0-thinking": wrappedReasoningModel(
-      google("gemini-2.0-flash-thinking-exp-01-21"),
-    ),
+    "gemini-2.0-thinking": google("gemini-2.0-flash-exp"),
     "gemini-2.5-pro": google("gemini-2.5-pro-exp-03-25"),
   },
   anthropic: {
@@ -44,8 +26,8 @@ export const allModels = {
   },
   xai: {
     "grok-2": xai("grok-2-1212"),
-    "grok-3-mini": wrappedReasoningModel(xai("grok-3-mini-beta")),
-    "grok-3": wrappedReasoningModel(xai("grok-3-beta")),
+    "grok-3-mini": xai("grok-3-mini-beta"),
+    "grok-3": xai("grok-3-beta"),
   },
   ollama: {
     "gemma3:1b": ollama("gemma3:1b"),

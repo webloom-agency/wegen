@@ -179,3 +179,19 @@ export function generateUUID(): string {
 export function toAny<T>(value: T): any {
   return value;
 }
+
+export function errorToString(error: unknown) {
+  if (error == null) {
+    return "unknown error";
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return JSON.stringify(error);
+}
