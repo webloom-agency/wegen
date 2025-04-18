@@ -30,7 +30,6 @@ export default function PromptInput({
   threadId,
   input = "",
   setInput,
-  onSubmit,
   append,
   onStop,
   isLoading,
@@ -68,6 +67,7 @@ export default function PromptInput({
     setInput?.("");
     setPastedContents([]);
     editorRef.current.style.height = "";
+
     append!({
       role: "user",
       content: "",
