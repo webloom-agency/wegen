@@ -27,6 +27,7 @@ const PurePreviewMessage = ({
   message,
   threadId,
   setMessages,
+  isLoading,
   reload,
   className,
 }: Props) => {
@@ -63,9 +64,16 @@ const PurePreviewMessage = ({
 
             {message.parts?.map((part, index) => {
               const key = `message-${message.id}-part-${index}`;
+              const isLastPart = index === message.parts.length - 1;
 
               if (part.type === "reasoning") {
-                return <ReasoningPart key={key} reasoning={part.reasoning} />;
+                return (
+                  <ReasoningPart
+                    key={key}
+                    reasoning={part.reasoning}
+                    isThinking={isLastPart && isLoading}
+                  />
+                );
               }
 
               if (part.type === "text" && isUserMessage) {
@@ -73,7 +81,7 @@ const PurePreviewMessage = ({
                   <UserMessagePart
                     key={key}
                     part={part}
-                    isLast={index === message.parts.length - 1}
+                    isLast={isLastPart}
                     message={message}
                     setMessages={setMessages}
                     reload={reload}
@@ -83,15 +91,17 @@ const PurePreviewMessage = ({
 
               if (part.type === "text" && !isUserMessage) {
                 return (
-                  <AssistMessagePart
-                    threadId={threadId}
-                    key={key}
-                    part={part}
-                    isLast={index === message.parts.length - 1}
-                    message={message}
-                    setMessages={setMessages}
-                    reload={reload}
-                  />
+                  <>
+                    <AssistMessagePart
+                      threadId={threadId}
+                      key={key}
+                      part={part}
+                      isLast={isLastPart}
+                      message={message}
+                      setMessages={setMessages}
+                      reload={reload}
+                    />
+                  </>
                 );
               }
 
@@ -120,14 +130,6 @@ export const PreviewMessage = memo(
 
 export const ThinkingMessage = ({ className }: { className?: string }) => {
   const role = "assistant";
-  const [dots, setDots] = useState("");
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDots((prev) => (prev.length >= 3 ? "" : prev + "."));
-    }, 500);
-    return () => clearInterval(interval);
-  }, []);
   return (
     <motion.div
       data-testid="message-assistant-loading"

@@ -29,6 +29,7 @@ import { deleteMessagesByChatIdAfterTimestampAction } from "@/app/api/chat/actio
 
 import { toast } from "sonner";
 import { safe } from "ts-safe";
+import { ThinkingMessage } from "./message";
 
 type MessagePart = UIMessage["parts"][number];
 
@@ -296,8 +297,10 @@ export const ToolMessagePart = ({ part }: ToolMessagePartProps) => {
 
 export function ReasoningPart({
   reasoning,
+  isThinking,
 }: {
   reasoning: string;
+  isThinking?: boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -317,38 +320,57 @@ export function ReasoningPart({
   };
 
   return (
-    <div className="flex flex-col">
-      <div className="flex flex-row gap-2 items-center">
+    <div
+      className="flex flex-col cursor-pointer"
+      onClick={() => {
+        setIsExpanded(!isExpanded);
+      }}
+    >
+      <div className="flex flex-row gap-2 items-center text-ring hover:text-primary transition-colors">
         <div className="font-medium">Reasoned for a few seconds</div>
         <button
           data-testid="message-reasoning-toggle"
           type="button"
           className="cursor-pointer"
-          onClick={() => {
-            setIsExpanded(!isExpanded);
-          }}
         >
-          <ChevronDownIcon />
+          <ChevronDownIcon size={16} />
         </button>
       </div>
 
-      <AnimatePresence initial={false}>
-        {isExpanded && (
-          <motion.div
-            data-testid="message-reasoning"
-            key="content"
-            initial="collapsed"
-            animate="expanded"
-            exit="collapsed"
-            variants={variants}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
-            style={{ overflow: "hidden" }}
-            className="pl-4 text-muted-foreground border-l flex flex-col gap-4"
-          >
-            <Markdown>{reasoning}</Markdown>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div className="pl-4">
+        <AnimatePresence initial={false}>
+          {isExpanded && (
+            <motion.div
+              data-testid="message-reasoning"
+              key="content"
+              initial="collapsed"
+              animate="expanded"
+              exit="collapsed"
+              variants={variants}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              style={{ overflow: "hidden" }}
+              className="pl-6 text-muted-foreground border-l flex flex-col gap-4"
+            >
+              <Markdown>{reasoning}</Markdown>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      {isThinking && (
+        <motion.div
+          className="h-2 w-2 rounded-full bg-primary mt-4"
+          animate={{
+            scale: [1, 1.5, 1],
+            opacity: [0.6, 1, 0.6],
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 0,
+          }}
+        />
+      )}
     </div>
   );
 }
