@@ -10,10 +10,12 @@ const FadeIn = memo(({ children }: PropsWithChildren) => {
 });
 
 const WordByWordFadeIn = memo(({ children }: PropsWithChildren) => {
-  const childrens = isString(children)
-    ? children.split(" ")
-    : [children].flat();
-  return childrens.map((word, index) => <FadeIn key={index}>{word} </FadeIn>);
+  const childrens = [children]
+    .flat()
+    .flatMap((child) => (isString(child) ? child.split(" ") : child));
+  return childrens.map((word, index) =>
+    isString(word) ? <FadeIn key={index}>{word} </FadeIn> : word,
+  );
 });
 
 const components: Partial<Components> = {
@@ -52,7 +54,7 @@ const components: Partial<Components> = {
   li: ({ node, children, ...props }) => {
     return (
       <li className="py-2" {...props}>
-        <WordByWordFadeIn>{children}</WordByWordFadeIn>
+        {children}
       </li>
     );
   },

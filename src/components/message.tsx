@@ -132,13 +132,29 @@ export const ThinkingMessage = ({ className }: { className?: string }) => {
     <motion.div
       data-testid="message-assistant-loading"
       className={cn("w-full mx-auto max-w-3xl px-4 group/message", className)}
-      initial={{ y: 5, opacity: 0 }}
-      animate={{ y: 0, opacity: 1, transition: { delay: 1 } }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1, transition: { delay: 1 } }}
       data-role={role}
     >
-      <div className="flex flex-col gap-2 w-full animate-pulse">
+      <div className="flex flex-col gap-2 w-full">
         <div className="flex flex-col gap-4 text-muted-foreground">
-          Hmm{dots}
+          <div className="flex items-center gap-2">
+            <div className="flex space-x-2">
+              <motion.div
+                className="h-2 w-2 rounded-full bg-primary"
+                animate={{
+                  scale: [1, 1.5, 1],
+                  opacity: [0.6, 1, 0.6],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 0,
+                }}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </motion.div>
