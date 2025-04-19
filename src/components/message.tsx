@@ -3,7 +3,7 @@
 import type { UIMessage } from "ai";
 import { memo, useMemo } from "react";
 import equal from "fast-deep-equal";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "lib/utils";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { Alert, AlertDescription, AlertTitle } from "ui/alert";
