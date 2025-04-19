@@ -3,6 +3,7 @@ import {
   createDataStreamResponse,
   smoothStream,
   streamText,
+  Tool,
   type UIMessage,
 } from "ai";
 
@@ -20,6 +21,17 @@ import { ChatMessageAnnotation } from "app-types/chat";
 const { insertMessage, insertThread, selectThread } = chatService;
 
 export const maxDuration = 120;
+
+const filterToolsByMentions = (
+  mentions: string[],
+  tools: Record<string, Tool>,
+) => {
+  return Object.fromEntries(
+    Object.keys(tools)
+      .filter((tool) => mentions.includes(tool))
+      .map((tool) => [tool, tools[tool]]),
+  );
+};
 
 export async function POST(request: Request) {
   try {
@@ -63,6 +75,15 @@ export async function POST(request: Request) {
       });
     }
 
+    const annotations: ChatMessageAnnotation[] =
+      (message.annotations as ChatMessageAnnotation[]) ?? [];
+
+    const requiredTools = annotations
+      .flatMap((annotation) => annotation.requiredTools)
+      .filter(Boolean) as string[];
+
+    console.log(requiredTools);
+
     const tools = mcpClientsManager.tools();
 
     const model = customModelProvider.getModel(modelName);
@@ -76,7 +97,11 @@ export async function POST(request: Request) {
           system: SYSTEM_TIME_PROMPT,
           messages,
           experimental_transform: smoothStream({ chunking: "word" }),
-          tools: isToolCallUnsupported(model) ? undefined : tools,
+          tools: isToolCallUnsupported(model)
+            ? undefined
+            : requiredTools.length
+              ? filterToolsByMentions(requiredTools, tools)
+              : tools,
           maxSteps: 5,
           toolChoice,
           onFinish: async ({ response, usage }) => {
