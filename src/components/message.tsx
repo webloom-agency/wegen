@@ -76,7 +76,7 @@ const PurePreviewMessage = ({
                 );
               }
 
-              if (isUserMessage) {
+              if (isUserMessage && part.type === "text") {
                 return (
                   <UserMessagePart
                     key={key}
@@ -106,7 +106,19 @@ const PurePreviewMessage = ({
               if (part.type === "tool-invocation") {
                 return <ToolMessagePart key={key} part={part} />;
               }
-              return null;
+              if (part.type === "step-start") {
+                return null;
+              }
+              return (
+                <div
+                  className={cn(
+                    isUserMessage ? "text-right" : "text-left",
+                    "text-muted-foreground",
+                  )}
+                >
+                  Not implemented Message Part `{part.type}`
+                </div>
+              );
             })}
           </div>
         </div>

@@ -32,11 +32,12 @@ import { safe } from "ts-safe";
 
 type MessagePart = UIMessage["parts"][number];
 
+type TextMessagePart = Extract<MessagePart, { type: "text" }>;
 type AssistMessagePart = Extract<MessagePart, { type: "text" }>;
 type ToolMessagePart = Extract<MessagePart, { type: "tool-invocation" }>;
 
 interface UserMessagePartProps {
-  part: MessagePart;
+  part: TextMessagePart;
   isLast: boolean;
   message: UIMessage;
   setMessages: UseChatHelpers["setMessages"];
@@ -87,17 +88,15 @@ export const UserMessagePart = ({
           "bg-primary text-primary-foreground px-3 py-2 rounded-xl": isLast,
         })}
       >
-        {part.type === "file" ? (
-          <PastesContentCard initialContent={part.data} readonly />
-        ) : part.type === "text" ? (
+        {isLast ? (
           <p className="whitespace-pre-wrap text-sm">{part.text}</p>
         ) : (
-          "Not implemented"
+          <PastesContentCard initialContent={part.text} readonly />
         )}
       </div>
 
       <div className="flex w-full justify-end">
-        {isLast && part.type === "text" && (
+        {isLast && (
           <>
             <Tooltip>
               <TooltipTrigger asChild>

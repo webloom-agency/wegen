@@ -59,9 +59,8 @@ export default function PromptInput({
     }
     const userMessage = input.trim();
     const pastedContentsParsed = pastedContents.map((content) => ({
-      type: "file" as const,
-      mimeType: "text/plain",
-      data: content,
+      type: "text" as const,
+      text: content,
     }));
     setInput?.("");
     setPastedContents([]);
