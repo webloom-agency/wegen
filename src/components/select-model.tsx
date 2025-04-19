@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "ui/popover";
 
 interface SelectModelProps {
   onSelect: (model: string) => void;
+  align?: "start" | "end";
   providers: {
     provider: string;
     models: { name: string; isToolCallUnsupported: boolean }[];
@@ -26,9 +27,12 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{props.children}</PopoverTrigger>
-      <PopoverContent className="p-0 w-[280px] bg-background" align="start">
+      <PopoverContent
+        className="p-0 w-[280px] bg-background"
+        align={props.align || "start"}
+      >
         <Command
-          className="rounded-lg relative shadow-md  bg-background"
+          className="rounded-lg relative shadow-md  bg-background h-80"
           value={props.model}
           onClick={(e) => e.stopPropagation()}
         >

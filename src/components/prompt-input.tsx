@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "lib/utils";
-import { CornerRightUp, Paperclip, Pause } from "lucide-react";
+import { Check, CornerRightUp, Paperclip, Pause, Wrench } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { Button } from "ui/button";
 import { notImplementedToast } from "ui/shared-toast";
@@ -11,6 +11,8 @@ import { SelectModel } from "./select-model";
 import { appStore } from "@/app/store";
 import { useShallow } from "zustand/shallow";
 import { customModelProvider } from "lib/ai/models";
+
+import { McpListCombo } from "./mcp-list-combo";
 
 interface PromptInputProps {
   placeholder?: string;
@@ -32,8 +34,8 @@ export default function PromptInput({
   onStop,
   isLoading,
 }: PromptInputProps) {
-  const [appStoreMutate, model] = appStore(
-    useShallow((state) => [state.mutate, state.model]),
+  const [appStoreMutate, model, activeTool] = appStore(
+    useShallow((state) => [state.mutate, state.model, state.activeTool]),
   );
   const editorRef = useRef<HTMLTextAreaElement>(null);
 
@@ -162,7 +164,18 @@ export default function PromptInput({
                   </Button>
                 </SelectModel>
                 <div className="flex-1" />
-
+                <McpListCombo>
+                  <Button
+                    variant={activeTool ? "secondary" : "ghost"}
+                    className={cn(
+                      !activeTool && "text-muted-foreground",
+                      "font-semibold mr-1",
+                    )}
+                  >
+                    {activeTool && <Check size={3.5} />}
+                    MCP Tools
+                  </Button>
+                </McpListCombo>
                 <Button
                   onClick={() => {
                     if (isLoading) {

@@ -29,11 +29,13 @@ export async function POST(request: Request) {
       messages,
       model: modelName,
       action,
+      activeTool,
     } = json as {
       id?: string;
       messages: Array<UIMessage>;
       model: string;
       action?: "update-assistant" | "";
+      activeTool?: boolean;
     };
 
     let thread = id ? await selectThread(id) : null;
@@ -73,6 +75,7 @@ export async function POST(request: Request) {
           experimental_transform: smoothStream({ chunking: "word" }),
           tools: isToolCallUnsupported(model) ? undefined : tools,
           maxSteps: 5,
+          toolChoice: activeTool ? "auto" : "none",
           onFinish: async ({ response }) => {
             const [, assistantMessage] = appendResponseMessages({
               messages: [message],

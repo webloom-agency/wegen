@@ -27,108 +27,29 @@ import {
   refreshMcpClientAction,
   removeMcpClientAction,
 } from "@/app/api/mcp/actions";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogPortal,
-  DialogTitle,
-  DialogTrigger,
-} from "ui/dialog";
 import type { MCPServerInfo, MCPToolInfo } from "app-types/mcp";
 import { Switch } from "ui/switch";
 import { Label } from "ui/label";
-
-// Helper function to check if schema is empty
-const isEmptySchema = (schema: any): boolean => {
-  if (!schema) return true;
-  // Check properties first if available, otherwise check the schema itself
-  const dataToCheck = schema.properties || schema;
-  return Object.keys(dataToCheck).length === 0;
-};
-
-// Status indicator component
-const StatusIndicator = memo(
-  ({ text, icon }: { text?: string; icon?: React.ReactNode }) => (
-    <div className="flex items-center gap-1">
-      <span className="text-xs text-muted-foreground flex items-center gap-1">
-        {icon} {text}
-      </span>
-    </div>
-  ),
-);
-
-StatusIndicator.displayName = "StatusIndicator";
-
-// Tool item component
-const ToolItem = memo(
-  ({ tool, serverName }: { tool: MCPToolInfo; serverName: string }) => (
-    <Dialog>
-      <DialogTrigger asChild>
-        <div className="flex cursor-pointer bg-secondary/50 rounded-md p-2 hover:bg-secondary/80 transition-colors">
-          <div className="flex-1 w-full">
-            <p className="font-medium text-sm mb-1">{tool.name}</p>
-            <p className="text-xs text-muted-foreground line-clamp-1">
-              {tool.description}
-            </p>
-          </div>
-          <div className="flex items-center px-1 justify-center self-stretch">
-            <ChevronRight size={16} />
-          </div>
-        </div>
-      </DialogTrigger>
-      <DialogPortal>
-        <DialogContent className="sm:max-w-[800px] fixed p-10 overflow-hidden">
-          <DialogHeader>
-            <DialogTitle>{tool.name}</DialogTitle>
-          </DialogHeader>
-          <div className="mb-2">
-            <p
-              aria-describedby="tool-description"
-              className="text-xs text-muted-foreground mt-1 max-h-[150px] overflow-y-auto"
-            >
-              {tool.description}
-            </p>
-          </div>
-
-          <Separator className="my-2" />
-
-          <div className="flex items-center gap-2 mb-2">
-            <h5 className="text-xs font-medium">Input Schema</h5>
-          </div>
-          {tool.inputSchema ? (
-            <div className="overflow-y-auto max-h-[40vh]">
-              {!isEmptySchema(tool.inputSchema) ? (
-                <JsonView
-                  data={tool.inputSchema?.properties || tool.inputSchema}
-                />
-              ) : (
-                <p className="text-xs text-muted-foreground italic">
-                  No data available
-                </p>
-              )}
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground italic">
-              No schema available
-            </p>
-          )}
-
-          <div className="absolute left-0 right-0 bottom-0 h-12 bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
-        </DialogContent>
-      </DialogPortal>
-    </Dialog>
-  ),
-);
-
-ToolItem.displayName = "ToolItem";
+import { ToolDetailPopup } from "./tool-detail-popup";
 
 // Tools list component
 const ToolsList = memo(
   ({ tools, serverName }: { tools: MCPToolInfo[]; serverName: string }) => (
     <div className="space-y-2 pr-2">
       {tools.map((tool) => (
-        <ToolItem key={tool.name} tool={tool} serverName={serverName} />
+        <ToolDetailPopup key={tool.name} tool={tool}>
+          <div className="flex cursor-pointer bg-secondary/50 rounded-md p-2 hover:bg-secondary/80 transition-colors">
+            <div className="flex-1 w-full">
+              <p className="font-medium text-sm mb-1">{tool.name}</p>
+              <p className="text-xs text-muted-foreground line-clamp-1">
+                {tool.description}
+              </p>
+            </div>
+            <div className="flex items-center px-1 justify-center self-stretch">
+              <ChevronRight size={16} />
+            </div>
+          </div>
+        </ToolDetailPopup>
       ))}
     </div>
   ),

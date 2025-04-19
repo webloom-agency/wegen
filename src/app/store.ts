@@ -10,6 +10,7 @@ export interface AppState {
   mcpList: MCPServerInfo[];
   currentThreadId: ChatThread["id"] | null;
   user: User;
+  activeTool: boolean;
   model: string;
 }
 
@@ -27,6 +28,7 @@ export const appStore = create<AppState & AppDispatch & AppGetters>()(
       mcpList: [],
       currentThreadId: null,
       user: getMockUserSession(),
+      activeTool: true,
       modelList: [],
 
       model: DEFAULT_MODEL,
@@ -40,6 +42,7 @@ export const appStore = create<AppState & AppDispatch & AppGetters>()(
       name: "mc-app-store",
       partialize: (state) => ({
         model: state.model || DEFAULT_MODEL,
+        activeTool: state.activeTool,
       }),
     },
   ),
