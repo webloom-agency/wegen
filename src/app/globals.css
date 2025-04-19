@@ -128,4 +128,13 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  .mention {
+    color: #0070f3;
+    font-weight: 500;
+    background-color: rgba(0, 112, 243, 0.1);
+    border-radius: 3px;
+    padding: 0.1rem 0.3rem;
+    margin: 0 0.1rem;
+  }
 }

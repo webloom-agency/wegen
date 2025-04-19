@@ -2,6 +2,7 @@ import type { MCPServerConfig } from "app-types/mcp";
 import { createMCPClient, type MCPClient } from "./create-mcp-client";
 import equal from "fast-deep-equal";
 import logger from "logger";
+import { createMCPToolId } from "./mcp-tool-id";
 /**
  * Interface for storage of MCP server configurations.
  * Implementations should handle persistent storage of server configs.
@@ -50,7 +51,12 @@ export class MCPClientsManager {
     return Object.fromEntries(
       Array.from(this.clients.values())
         .filter((client) => client.getInfo().status == "connected")
-        .flatMap((client) => Object.entries(client.tools)),
+        .flatMap((client) =>
+          Object.entries(client.tools).map(([name, tool]) => [
+            createMCPToolId(client.getInfo().name, name),
+            tool,
+          ]),
+        ),
     );
   }
 

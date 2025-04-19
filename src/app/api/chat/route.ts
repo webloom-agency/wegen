@@ -15,6 +15,7 @@ import { mcpClientsManager } from "../mcp/mcp-manager";
 import { chatService } from "lib/db/chat-service";
 import logger from "logger";
 import { SYSTEM_TIME_PROMPT } from "lib/ai/prompts";
+import { ChatMessageAnnotation } from "app-types/chat";
 
 const { insertMessage, insertThread, selectThread } = chatService;
 
@@ -23,7 +24,6 @@ export const maxDuration = 120;
 export async function POST(request: Request) {
   try {
     const json = await request.json();
-
     const {
       id,
       messages,
@@ -63,24 +63,41 @@ export async function POST(request: Request) {
       });
     }
 
+    const annotations: ChatMessageAnnotation[] =
+      (message.annotations as ChatMessageAnnotation[]) ?? [];
+
+    const requiredTools = annotations
+      .flatMap((annotation) => annotation.requiredTools)
+      .filter(Boolean) as string[];
+
     const tools = mcpClientsManager.tools();
+
     const model = customModelProvider.getModel(modelName);
+
+    const toolChoice = !activeTool
+      ? "none"
+      : requiredTools.length > 0
+        ? "required"
+        : "auto";
 
     return createDataStreamResponse({
       execute: (dataStream) => {
         const result = streamText({
           model,
           system: SYSTEM_TIME_PROMPT,
+          experimental_activeTools:
+            requiredTools.length > 0 && activeTool ? requiredTools : undefined,
           messages,
           experimental_transform: smoothStream({ chunking: "word" }),
           tools: isToolCallUnsupported(model) ? undefined : tools,
           maxSteps: 5,
-          toolChoice: activeTool ? "auto" : "none",
-          onFinish: async ({ response }) => {
+          toolChoice,
+          onFinish: async ({ response, usage }) => {
             const [, assistantMessage] = appendResponseMessages({
               messages: [message],
               responseMessages: response.messages,
             });
+
             if (action !== "update-assistant") {
               await insertMessage({
                 threadId: thread.id,

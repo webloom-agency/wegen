@@ -1,8 +1,8 @@
 "use client";
 
 import { cn } from "lib/utils";
-import { Check, CornerRightUp, Paperclip, Pause, Wrench } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { Check, CornerRightUp, Paperclip, Pause } from "lucide-react";
+import { ReactNode, useMemo, useState } from "react";
 import { Button } from "ui/button";
 import { notImplementedToast } from "ui/shared-toast";
 import { PastesContentCard } from "./pasts-content";
@@ -13,31 +13,48 @@ import { useShallow } from "zustand/shallow";
 import { customModelProvider } from "lib/ai/models";
 
 import { McpListCombo } from "./mcp-list-combo";
+import { createMCPToolId } from "lib/ai/mcp/mcp-tool-id";
+import { ChatMessageAnnotation } from "app-types/chat";
+import dynamic from "next/dynamic";
 
 interface PromptInputProps {
   placeholder?: string;
-  setInput?: (value: string) => void;
-  input?: string;
-  onSubmit?: UseChatHelpers["handleSubmit"];
-  onStop?: () => void;
-  append?: UseChatHelpers["append"];
+  setInput: (value: string) => void;
+  input: string;
+  onStop: () => void;
+  append: UseChatHelpers["append"];
   threadId: string;
   isLoading?: boolean;
 }
 
+const MentionInput = dynamic(() => import("./mention-input"), {
+  ssr: false,
+  loading() {
+    return <div className="h-[4rem] w-full animate-pulse"></div>;
+  },
+});
+
 export default function PromptInput({
   placeholder = "Type a message...",
   threadId,
-  input = "",
-  setInput,
   append,
+  input,
+  setInput,
   onStop,
   isLoading,
 }: PromptInputProps) {
-  const [appStoreMutate, model, activeTool] = appStore(
-    useShallow((state) => [state.mutate, state.model, state.activeTool]),
+  const [appStoreMutate, model, activeTool, mcpList] = appStore(
+    useShallow((state) => [
+      state.mutate,
+      state.model,
+      state.activeTool,
+      state.mcpList,
+    ]),
   );
-  const editorRef = useRef<HTMLTextAreaElement>(null);
+
+  const [toolMentionItems, setToolMentionItems] = useState<
+    { id: string; label: ReactNode }[]
+  >([]);
 
   const modelList = useMemo(() => {
     return customModelProvider.modelsInfo;
@@ -45,32 +62,60 @@ export default function PromptInput({
 
   const [pastedContents, setPastedContents] = useState<string[]>([]);
 
+  const toolList = useMemo(() => {
+    return mcpList
+      .filter((mcp) => mcp.status === "connected")
+      .flatMap((mcp) =>
+        mcp.toolInfo.map((tool) => {
+          const id = createMCPToolId(mcp.name, tool.name);
+          return {
+            id,
+            label: id,
+          };
+        }),
+      );
+  }, [mcpList]);
+
   const handlePaste = (e: React.ClipboardEvent) => {
     const text = e.clipboardData.getData("text/plain");
     if (text.length > 500) {
       setPastedContents([...pastedContents, text]);
       e.preventDefault();
+    } else {
+      setInput(input + text);
     }
   };
 
   const submit = () => {
-    if (!editorRef.current) return;
-    const chatPath = `/chat/${threadId}`;
-    if (window.location.pathname !== chatPath) {
-      window.history.replaceState({}, "", chatPath);
-    }
-    const userMessage = input.trim();
+    const userMessage = input?.trim() || "";
+
     const pastedContentsParsed = pastedContents.map((content) => ({
       type: "text" as const,
       text: content,
     }));
-    setInput?.("");
-    setPastedContents([]);
-    editorRef.current.style.height = "";
 
+    if (userMessage.length === 0 && pastedContentsParsed.length === 0) {
+      return;
+    }
+
+    const chatPath = `/chat/${threadId}`;
+    if (window.location.pathname !== chatPath) {
+      window.history.replaceState({}, "", chatPath);
+    }
+
+    const annotations: ChatMessageAnnotation[] = [];
+    if (toolMentionItems.length > 0) {
+      annotations.push({
+        requiredTools: toolMentionItems.map((item) => item.id),
+      });
+    }
+    setPastedContents([]);
+    setToolMentionItems([]);
+    setInput("");
     append!({
       role: "user",
       content: "",
+      annotations,
       parts: [
         ...pastedContentsParsed,
         {
@@ -81,43 +126,21 @@ export default function PromptInput({
     });
   };
 
-  const handleInput = () => {
-    if (editorRef.current) {
-      setInput?.(editorRef.current.value ?? "");
-      editorRef.current.style.height = "0";
-      editorRef.current.style.height = editorRef.current.scrollHeight + "px";
-    }
-  };
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (
-      input.length > 0 &&
-      e.key === "Enter" &&
-      !e.shiftKey &&
-      !e.nativeEvent.isComposing
-    ) {
-      e.preventDefault();
-      submit();
-    }
-  };
-
   return (
     <div className="max-w-3xl mx-auto fade-in animate-in">
-      <div
-        className="z-10 mx-auto w-full max-w-3xl relative"
-        onClick={() => editorRef.current?.focus()}
-      >
+      <div className="z-10 mx-auto w-full max-w-3xl relative">
         <fieldset className="flex w-full min-w-0 max-w-full flex-col px-2">
           <div className="rounded-4xl backdrop-blur-sm transition-all duration-200 shadow-lg dark:bg-muted/20 bg-muted/40 border-dashed relative flex w-full flex-col cursor-text z-10 border border-muted items-stretch focus-within:border-muted-foreground hover:border-muted-foreground p-3">
             <div className="flex flex-col gap-3.5 px-1">
-              <div className="relative">
-                <textarea
-                  ref={editorRef}
-                  value={input}
+              <div className="relative min-h-[4rem]">
+                <MentionInput
+                  input={input}
+                  onChange={setInput}
+                  onChangeMention={setToolMentionItems}
+                  onEnter={submit}
                   placeholder={placeholder}
-                  className="w-full max-h-96 min-h-[4rem] break-words overflow-y-auto resize-none focus:outline-none px-2 py-1"
-                  onKeyDown={handleKeyDown}
-                  onInput={handleInput}
                   onPaste={handlePaste}
+                  items={toolList}
                 />
               </div>
               <div className="flex w-full items-center gap-2">
@@ -169,17 +192,17 @@ export default function PromptInput({
                     variant={activeTool ? "secondary" : "ghost"}
                     className={cn(
                       !activeTool && "text-muted-foreground",
-                      "font-semibold mr-1",
+                      "font-semibold mr-1 rounded-full",
                     )}
                   >
                     {activeTool && <Check size={3.5} />}
-                    MCP Tools
+                    tools
                   </Button>
                 </McpListCombo>
                 <Button
                   onClick={() => {
                     if (isLoading) {
-                      onStop?.();
+                      onStop();
                     } else {
                       submit();
                     }

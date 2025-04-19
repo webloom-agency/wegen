@@ -17,6 +17,10 @@ export type ChatMessage = {
   createdAt: Date;
 };
 
+export type ChatMessageAnnotation = {
+  requiredTools?: string[];
+};
+
 export type ChatService = {
   insertThread(
     thread: PartialBy<ChatThread, "id" | "createdAt">,

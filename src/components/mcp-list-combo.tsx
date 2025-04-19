@@ -30,7 +30,8 @@ type McpListComboProps = {
   align?: "start" | "end";
 };
 
-const MCP_SERVER_REGISTRY_URL = "https://glama.ai/mcp/servers";
+const MCP_SERVER_REGISTRY_URL =
+  "https://glama.ai/mcp/servers?attributes=author%3Aofficial&sort=npm-downloads%3Adesc";
 
 export const McpListCombo = ({
   children,
@@ -243,7 +244,7 @@ export const McpListCombo = ({
                               {server.toolInfo && server.toolInfo.length > 0 ? (
                                 server.toolInfo.map((tool) => (
                                   <ToolDetailPopup key={tool.name} tool={tool}>
-                                    <div className="flex cursor-pointer bg-secondary/50 rounded-md p-2 hover:bg-secondary/80 transition-colors">
+                                    <div className="flex cursor-pointer bg-secondary/50 rounded-md p-2 hover:bg-background/80 transition-colors">
                                       <div className="flex-1 w-full">
                                         <p className="font-medium text-xs mb-1">
                                           {tool.name}

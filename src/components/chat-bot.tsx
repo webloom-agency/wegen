@@ -30,7 +30,6 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
 
   const {
     messages,
-    handleSubmit,
     input,
     setInput,
     append,
@@ -143,7 +142,6 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
           input={input}
           append={append}
           setInput={setInput}
-          onSubmit={handleSubmit}
           isLoading={isLoading}
           onStop={stop}
         />
