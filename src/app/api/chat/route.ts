@@ -63,30 +63,17 @@ export async function POST(request: Request) {
       });
     }
 
-    const annotations: ChatMessageAnnotation[] =
-      (message.annotations as ChatMessageAnnotation[]) ?? [];
-
-    const requiredTools = annotations
-      .flatMap((annotation) => annotation.requiredTools)
-      .filter(Boolean) as string[];
-
     const tools = mcpClientsManager.tools();
 
     const model = customModelProvider.getModel(modelName);
 
-    const toolChoice = !activeTool
-      ? "none"
-      : requiredTools.length > 0
-        ? "required"
-        : "auto";
+    const toolChoice = !activeTool ? "none" : "auto";
 
     return createDataStreamResponse({
       execute: (dataStream) => {
         const result = streamText({
           model,
           system: SYSTEM_TIME_PROMPT,
-          experimental_activeTools:
-            requiredTools.length > 0 && activeTool ? requiredTools : undefined,
           messages,
           experimental_transform: smoothStream({ chunking: "word" }),
           tools: isToolCallUnsupported(model) ? undefined : tools,
