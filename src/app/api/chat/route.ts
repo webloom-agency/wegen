@@ -28,12 +28,12 @@ export async function POST(request: Request) {
       id,
       messages,
       model: modelName,
-      mode,
+      action,
     } = json as {
       id?: string;
       messages: Array<UIMessage>;
       model: string;
-      mode?: "update-assistant" | "";
+      action?: "update-assistant" | "";
     };
 
     let thread = id ? await selectThread(id) : null;
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
               messages: [message],
               responseMessages: response.messages,
             });
-            if (mode !== "update-assistant") {
+            if (action !== "update-assistant") {
               await insertMessage({
                 threadId: thread.id,
                 model: null,

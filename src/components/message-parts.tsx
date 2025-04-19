@@ -29,16 +29,14 @@ import { deleteMessagesByChatIdAfterTimestampAction } from "@/app/api/chat/actio
 
 import { toast } from "sonner";
 import { safe } from "ts-safe";
-import { ThinkingMessage } from "./message";
 
 type MessagePart = UIMessage["parts"][number];
 
-type UserMessagePart = Extract<MessagePart, { type: "text" }>;
 type AssistMessagePart = Extract<MessagePart, { type: "text" }>;
 type ToolMessagePart = Extract<MessagePart, { type: "tool-invocation" }>;
 
 interface UserMessagePartProps {
-  part: UserMessagePart;
+  part: MessagePart;
   isLast: boolean;
   message: UIMessage;
   setMessages: UseChatHelpers["setMessages"];
@@ -89,15 +87,17 @@ export const UserMessagePart = ({
           "bg-primary text-primary-foreground px-3 py-2 rounded-xl": isLast,
         })}
       >
-        {isLast ? (
+        {part.type === "file" ? (
+          <PastesContentCard initialContent={part.data} readonly />
+        ) : part.type === "text" ? (
           <p className="whitespace-pre-wrap text-sm">{part.text}</p>
         ) : (
-          <PastesContentCard initialContent={part.text} readonly />
+          "Not implemented"
         )}
       </div>
 
       <div className="flex w-full justify-end">
-        {isLast && (
+        {isLast && part.type === "text" && (
           <>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -165,7 +165,7 @@ export const AssistMessagePart = ({
         reload({
           body: {
             model,
-            mode: "update-assistant",
+            action: "update-assistant",
             id: threadId,
           },
         }),

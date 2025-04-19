@@ -1,7 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
-
 import { cn } from "lib/utils";
 import { CornerRightUp, Paperclip, Pause } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
@@ -61,8 +59,9 @@ export default function PromptInput({
     }
     const userMessage = input.trim();
     const pastedContentsParsed = pastedContents.map((content) => ({
-      type: "text" as const,
-      text: content,
+      type: "file" as const,
+      mimeType: "text/plain",
+      data: content,
     }));
     setInput?.("");
     setPastedContents([]);
@@ -101,14 +100,7 @@ export default function PromptInput({
   };
 
   return (
-    <motion.div
-      key="overview"
-      className="max-w-3xl mx-auto"
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.98 }}
-      transition={{ delay: 0.1 }}
-    >
+    <div className="max-w-3xl mx-auto fade-in animate-in">
       <div
         className="z-10 mx-auto w-full max-w-3xl relative"
         onClick={() => editorRef.current?.focus()}
@@ -168,7 +160,6 @@ export default function PromptInput({
                 >
                   <Button size={"sm"} variant={"ghost"}>
                     {model}
-                    {/* <ChevronsUpDown /> */}
                   </Button>
                 </SelectModel>
                 <div className="flex-1" />
@@ -204,6 +195,6 @@ export default function PromptInput({
           </div>
         </fieldset>
       </div>
-    </motion.div>
+    </div>
   );
 }

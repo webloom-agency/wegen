@@ -76,7 +76,7 @@ const PurePreviewMessage = ({
                 );
               }
 
-              if (part.type === "text" && isUserMessage) {
+              if (isUserMessage) {
                 return (
                   <UserMessagePart
                     key={key}
