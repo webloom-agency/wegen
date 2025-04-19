@@ -1,67 +1,142 @@
-# MCP Client Chatbot
+# MCP Client Chatbot: Local-First AI Assistant App
 
 **English** | [한국어](./docs/ko.md)
 
-MCP Client Chatbot is a chat interface that allows you to easily utilize various AI providers ([OpenAI](https://openai.com/), [Anthropic](https://www.anthropic.com/), [Google](https://ai.google.dev/), [Ollama](https://ollama.com/), etc.) while connecting powerful AI tools through [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction).
+[![Local First](https://img.shields.io/badge/Local-First-blueviolet)](#)
+[![MCP Supported](https://img.shields.io/badge/MCP-Supported-00c853)](https://modelcontextprotocol.io/introduction)
 
-> This project was developed using Vercel's open source libraries such as [Next.js](https://nextjs.org/) and [AI SDK](https://sdk.vercel.ai/)[shadcn/ui](https://ui.shadcn.com/), and is designed to run immediately in local environments or personal servers without complex setup. You can easily add and experiment with AI tools through file-based MCP management.
+**MCP Client Chatbot** is a versatile chat interface that supports various AI model providers like [OpenAI](https://openai.com/), [Anthropic](https://www.anthropic.com/), [Google](https://ai.google.dev/), and [Ollama](https://ollama.com/). **It is designed for instant execution in 100% local environments without complex configuration**, enabling users to fully control computing resources on their personal computer or server.
 
-![MCP Client Chatbot Demo](./docs/images/preview.gif)
-_Demo showcasing the MCP Client Chatbot with [Microsoft's playwright-mcp](https://github.com/microsoft/playwright-mcp) integration_
+> Built with [Vercel AI SDK](https://sdk.vercel.ai) and [Next.js](https://nextjs.org/), this app adopts modern patterns for building AI chat interfaces. Leverage the power of [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) to seamlessly integrate external tools into your chat experience.
 
-**with the prompt:**
+> **Our goal:** Build an AI chatbot app that is optimized for personal use and easy for anyone to run.
 
-`"Go to Reddit, open r/mcp, take a look at the newest post and tell me what it's about — then close Reddit when you're done."`
+## Table of Contents
 
-## Installation
+- [MCP Client Chatbot: Local-First AI Assistant App](#mcp-client-chatbot-local-first-ai-assistant-app)
+  - [Table of Contents](#table-of-contents)
+  - [Demo](#demo)
+  - [✨ Key Features](#-key-features)
+  - [🚀 Getting Started](#-getting-started)
+    - [Environment Variables](#environment-variables)
+    - [MCP Server Setup](#mcp-server-setup)
+  - [💡 Use Cases](#-use-cases)
+  - [🗺️ Roadmap: Upcoming Features](#️-roadmap-upcoming-features)
+  - [🙌 Contributing](#-contributing)
 
-This project uses [pnpm](https://pnpm.io/) as the recommended package manager.
+-----
 
-### Quick Start
+## Demo
 
-```bash
-# Install dependencies
-pnpm i
+![mention](./docs/images/preview-2.gif)
 
-# Initialize the project (creates .env file from .env.example and sets up the database)
-pnpm initial
-
-# Start the development server
-pnpm dev
-```
-
-After running these commands, you can access the application at http://localhost:3000.
-
-### Environment Setup
-
-After running `pnpm initial`, make sure to edit your `.env` file to add the necessary API keys for the providers you want to use:
-
-```
-GOOGLE_GENERATIVE_AI_API_KEY=****
-OPENAI_API_KEY=****
-```
-
-By default, the application uses SQLite for data storage. If you prefer to use PostgreSQL, you can modify the `USE_FILE_SYSTEM_DB` value in your `.env` file and set up your database connection string.
-
-### Setting Up MCP Servers
-
-You can add MCP servers in two ways:
-
-1.  Using the UI: Navigate to http://localhost:3000/mcp in your browser and use the interface to add and configure MCP servers.
-2.  Editing the config file: Directly modify the `.mcp-config.json` file in the project root directory.
-3.  Custom server logic: A customizable MCP server is already included in the project at `./custom-mcp-server/index.ts`.  
-    You can modify this file to implement your own server logic or connect external tools as needed.
-
-![configuration](./docs/images/mcp-config.gif)
-
-## Use Cases
-
-- [Supabase Integration](./docs/use-cases/supabase.md) - Learn how to use Supabase with MCP for database operations, authentication, and real-time features
+**Quick Tool Access:** Use the `@` symbol in the message input to quickly select and call available MCP tools.
 
 ---
 
-## Contributing
+![playwright-demo](./docs/images/preview.gif)
 
-👉 Check out our [Roadmap](./docs/ROADMAP.md) to see what's coming up!
+**Tool Integration Example:** Demonstrates browser control using Microsoft's [playwright-mcp](https://github.com/microsoft/playwright-mcp).
 
-> Contributions to MCP Client Chatbot are welcome and appreciated! Whether it's bug reports, feature suggestions, or code contributions, your help makes this project better.
+*Prompt Example:* "Go to Reddit, open r/mcp, check the latest post and tell me what it's about — then close Reddit."
+
+---
+
+![tool-test](./docs/images/tool-test.gif)
+
+**Standalone Tool Testing:** Test MCP tools independently of the chat flow for easier development and debugging.
+
+---
+
+![prompt-input](./docs/images/provider.gif)
+
+**Model & Tool Selection UI:** Easily switch LLM providers and view tool status directly within the prompt input panel.
+
+-----
+
+## ✨ Key Features
+
+* **💻 100% Local Execution:** Run directly on your PC or server without complex deployment, fully utilizing and controlling your computing resources.
+* **🤖 Multiple AI Model Support:** Flexibly switch between providers like OpenAI, Anthropic, Google AI, and Ollama.
+* **🛠️ Powerful MCP Integration:** Seamlessly connect external tools (browser automation, database operations, etc.) into chat via Model Context Protocol.
+* **🚀 Standalone Tool Tester:** Test and debug MCP tools separately from the main chat interface.
+* **💬 Intuitive Mentions:** Trigger available tools with `@` in the input field.
+* **⚙️ Easy Server Setup:** Configure MCP connections via UI or `.mcp-config.json` file.
+* **📄 Markdown UI:** Communicate in a clean, readable markdown-based interface.
+* **💾 Zero-Setup Local DB:** Uses SQLite by default for local storage (PostgreSQL also supported).
+* **🧩 Custom MCP Server Support:** Modify the built-in MCP server logic or create your own.
+
+## 🚀 Getting Started
+
+This project uses [pnpm](https://pnpm.io/) as the recommended package manager.
+
+```bash
+# 1. Install dependencies
+pnpm i
+
+# 2. Initialize project (creates .env, sets up DB)
+pnpm initial
+
+# 3. Start dev server
+pnpm dev
+```
+
+Visit [http://localhost:3000](http://localhost:3000) after starting the server.
+
+-----
+
+### Environment Variables
+
+The `pnpm initial` command generates a `.env` file. Add your API keys there:
+
+```dotenv
+GOOGLE_GENERATIVE_AI_API_KEY=****
+OPENAI_API_KEY=****
+# ANTHROPIC_API_KEY=****
+```
+
+SQLite is the default DB (`db.sqlite`). To use PostgreSQL, set `USE_FILE_SYSTEM_DB=false` and define `DATABASE_URL` in `.env`.
+
+-----
+
+### MCP Server Setup
+
+You can connect MCP tools via:
+
+1. **UI Setup:** Go to http://localhost:3000/mcp and configure through the interface.
+2. **Direct File Edit:** Modify `.mcp-config.json` in project root.
+3. **Custom Logic:** Edit `./custom-mcp-server/index.ts` to implement your own logic.
+
+![mcp-config](./docs/images/mcp-config.gif)
+
+-----
+
+## 💡 Use Cases
+
+* [Supabase Integration](./docs/use-cases/supabase.md): Use MCP to manage Supabase DB, auth, and real-time features.
+
+-----
+
+## 🗺️ Roadmap: Upcoming Features
+
+We're making MCP Client Chatbot even more powerful with these planned features:
+
+* **🎨 Canvas Mode:** Real-time editing interface for LLM + user collaboration (e.g. code, blogs).
+* **🧩 LLM UI Generation:** Let LLMs render charts, tables, forms dynamically.
+* **📜 Rule Engine:** Persistent system prompt/rules across the session.
+* **🖼️ Image & File Uploads:** Multimodal interaction via uploads and image generation.
+* **🐙 GitHub Mounting:** Mount local GitHub repos to ask questions and work on code.
+* **📚 RAG Agent:** Retrieval-Augmented Generation using your own documents.
+* **🧠 Planning Agent:** Smarter agent that plans and executes complex tasks.
+* **🧑‍💻 Agent Builder:** Tool to create custom AI agents for specific goals.
+
+👉 See full roadmap in [ROADMAP.md](./docs/ROADMAP.md)
+
+-----
+
+## 🙌 Contributing
+
+We welcome all contributions! Bug reports, feature ideas, code improvements — everything helps us build the best local AI assistant.
+
+Let’s build it together 🚀
+
