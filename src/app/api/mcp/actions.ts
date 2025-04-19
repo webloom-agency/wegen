@@ -105,7 +105,6 @@ export async function callMcpToolAction(
   }
   return client.callTool(toolName, input).then((res) => {
     if (res?.isError) {
-      console.log(res.content);
       throw new Error(
         res.content?.[0]?.text ??
           JSON.stringify(res.content, null, 2) ??

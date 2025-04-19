@@ -22,7 +22,7 @@ const components: Partial<Components> = {
   code: ({ children }) => {
     return (
       <code className="text-sm rounded-md mx-1 text-blue-400">
-        `{children}`
+        <WordByWordFadeIn>`{children}`</WordByWordFadeIn>
       </code>
     );
   },
@@ -54,7 +54,7 @@ const components: Partial<Components> = {
   li: ({ node, children, ...props }) => {
     return (
       <li className="py-2" {...props}>
-        {children}
+        <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </li>
     );
   },

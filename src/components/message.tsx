@@ -33,97 +33,78 @@ const PurePreviewMessage = ({
 }: Props) => {
   const isUserMessage = useMemo(() => message.role === "user", [message.role]);
   return (
-    <AnimatePresence>
-      <motion.div
-        className="ease-in-out w-full mx-auto max-w-3xl px-6 group/message"
-        initial={{ y: 5, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
+    <div className="w-full mx-auto max-w-3xl px-6 group/message fade-in animate-in">
+      <div
+        className={cn(
+          className,
+          "flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl",
+        )}
       >
-        <div
-          className={cn(
-            className,
-            "flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl",
+        <div className="flex flex-col gap-4 w-full">
+          {message.experimental_attachments && (
+            <div
+              data-testid={"message-attachments"}
+              className="flex flex-row justify-end gap-2"
+            >
+              {message.experimental_attachments.map((attachment) => (
+                <Alert key={attachment.url}>
+                  <AlertTitle>Attachment</AlertTitle>
+                  <AlertDescription>
+                    attachment not yet implemented 😁
+                  </AlertDescription>
+                </Alert>
+              ))}
+            </div>
           )}
-        >
-          <div className="flex flex-col gap-4 w-full">
-            {message.experimental_attachments && (
-              <div
-                data-testid={"message-attachments"}
-                className="flex flex-row justify-end gap-2"
-              >
-                {message.experimental_attachments.map((attachment) => (
-                  <Alert key={attachment.url}>
-                    <AlertTitle>Attachment</AlertTitle>
-                    <AlertDescription>
-                      attachment not yet implemented 😁
-                    </AlertDescription>
-                  </Alert>
-                ))}
-              </div>
-            )}
 
-            {message.parts?.map((part, index) => {
-              const key = `message-${message.id}-part-${index}`;
-              const isLastPart = index === message.parts.length - 1;
+          {message.parts?.map((part, index) => {
+            const key = `message-${message.id}-part-${part.type}-${index}`;
+            const isLastPart = index === message.parts.length - 1;
 
-              if (part.type === "reasoning") {
-                return (
-                  <ReasoningPart
-                    key={key}
-                    reasoning={part.reasoning}
-                    isThinking={isLastPart && isLoading}
-                  />
-                );
-              }
-
-              if (isUserMessage && part.type === "text") {
-                return (
-                  <UserMessagePart
-                    key={key}
-                    part={part}
-                    isLast={isLastPart}
-                    message={message}
-                    setMessages={setMessages}
-                    reload={reload}
-                  />
-                );
-              }
-
-              if (part.type === "text" && !isUserMessage) {
-                return (
-                  <AssistMessagePart
-                    threadId={threadId}
-                    key={key}
-                    part={part}
-                    isLast={isLastPart}
-                    message={message}
-                    setMessages={setMessages}
-                    reload={reload}
-                  />
-                );
-              }
-
-              if (part.type === "tool-invocation") {
-                return <ToolMessagePart key={key} part={part} />;
-              }
-              if (part.type === "step-start") {
-                return null;
-              }
+            if (part.type === "reasoning") {
               return (
-                <div
-                  className={cn(
-                    isUserMessage ? "text-right" : "text-left",
-                    "text-muted-foreground",
-                  )}
-                >
-                  Not implemented Message Part `{part.type}`
-                </div>
+                <ReasoningPart
+                  key={key}
+                  reasoning={part.reasoning}
+                  isThinking={isLastPart && isLoading}
+                />
               );
-            })}
-          </div>
+            }
+
+            if (isUserMessage && part.type === "text") {
+              return (
+                <UserMessagePart
+                  key={key}
+                  part={part}
+                  isLast={isLastPart}
+                  message={message}
+                  setMessages={setMessages}
+                  reload={reload}
+                />
+              );
+            }
+
+            if (part.type === "text" && !isUserMessage) {
+              return (
+                <AssistMessagePart
+                  threadId={threadId}
+                  key={key}
+                  part={part}
+                  isLast={isLastPart}
+                  message={message}
+                  setMessages={setMessages}
+                  reload={reload}
+                />
+              );
+            }
+
+            if (part.type === "tool-invocation") {
+              return <ToolMessagePart key={key} part={part} />;
+            }
+          })}
         </div>
-      </motion.div>
-    </AnimatePresence>
+      </div>
+    </div>
   );
 };
 
