@@ -7,7 +7,13 @@ import {
 } from "@/app/api/mcp/actions";
 import { appStore } from "@/app/store";
 import { MCPServerInfo } from "app-types/mcp";
-import { ChevronRight, RotateCw, Loader2, ArrowUpRight } from "lucide-react";
+import {
+  ChevronRight,
+  RotateCw,
+  Loader2,
+  ArrowUpRight,
+  ChevronDown,
+} from "lucide-react";
 import { PropsWithChildren, useCallback, useEffect, useState } from "react";
 import useSWR from "swr";
 import { Card, CardContent } from "ui/card";
@@ -50,6 +56,7 @@ export const McpListCombo = ({
     "mcp-list",
     selectMcpClientsAction,
     {
+      refreshInterval: 1000 * 60 * 1,
       fallbackData: [],
       onError: handleErrorWithToast,
       onSuccess: (data) => appStoreMutate({ mcpList: data }),
@@ -112,12 +119,12 @@ export const McpListCombo = ({
         side="top"
       >
         <Card
-          className="relative bg-background w-full"
+          className="relative bg-background w-full py-0"
           onClick={(e) => e.stopPropagation()}
         >
           <CardContent className="p-0 flex">
             {/* Left Sidebar - Registry Only */}
-            <div className="w-[240px] sticky top-0 flex flex-col px-4 ">
+            <div className="w-[240px] sticky top-0 flex flex-col px-6 py-4">
               <div className="rounded-md p-4 hover:bg-secondary/40">
                 <Link
                   href={MCP_SERVER_REGISTRY_URL}
@@ -136,8 +143,12 @@ export const McpListCombo = ({
               </div>
             </div>
 
-            <div className="flex-1 h-[50vh] overflow-y-auto w-full">
-              <div className="p-6 sticky top-0 bg-background z-10 w-full">
+            <div>
+              <Separator orientation="vertical" />
+            </div>
+
+            <div className="flex-1 h-[50vh] overflow-y-auto w-full ">
+              <div className="p-6 sticky top-0 bg-background z-10 w-full pt-10">
                 <div className="flex items-center justify-between">
                   <h4 className="text-lg font-bold flex items-center gap-2">
                     <div className="bg-accent-foreground p-1.5 rounded-lg">
@@ -164,7 +175,7 @@ export const McpListCombo = ({
                 </div>
               </div>
 
-              <div className="p-6 pt-2 w-full">
+              <div className="p-6 w-full">
                 {mcpList && mcpList.length > 0 ? (
                   <div className={cn("space-y-2 w-full")}>
                     {mcpList.map((server) => (
@@ -198,15 +209,27 @@ export const McpListCombo = ({
                           </div>
                           <div className="flex-1" />
                           <div className="flex items-center gap-2">
-                            <Switch
-                              id={`mcp-server-${server.name}`}
-                              checked={server.status === "connected"}
-                              onCheckedChange={() => {
-                                handleToggleConnection(server);
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <div className="h-4">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Switch
+                                  className={
+                                    server.status == "connected"
+                                      ? "bg-accent-foreground"
+                                      : "bg-card"
+                                  }
+                                  id={`mcp-server-${server.name}`}
+                                  checked={server.status === "connected"}
+                                  onCheckedChange={() => {
+                                    handleToggleConnection(server);
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Toggle Connection</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <div className="h-4 pl-2">
                               <Separator orientation="vertical" />
                             </div>
                             <Tooltip>
@@ -227,14 +250,14 @@ export const McpListCombo = ({
                               </TooltipContent>
                             </Tooltip>
 
-                            <div className="h-4">
+                            {/* <div className="h-4">
                               <Separator orientation="vertical" />
                             </div>
                             <Button variant="ghost" size="icon">
-                              <ChevronRight
+                              <ChevronDown
                                 className={`size-3.5 transition-transform ${expandedServers.includes(server.name) ? "rotate-90" : ""}`}
                               />
-                            </Button>
+                            </Button> */}
                           </div>
                         </div>
 
