@@ -1,6 +1,12 @@
 "use server";
 
-import { generateText, LanguageModel, type Message } from "ai";
+import {
+  generateObject,
+  generateText,
+  jsonSchema,
+  LanguageModel,
+  type Message,
+} from "ai";
 
 import { CREATE_THREAD_TITLE_PROMPT } from "lib/ai/prompts";
 
@@ -9,6 +15,9 @@ import type { ChatThread } from "app-types/chat";
 import { getMockUserSession } from "lib/mock";
 
 import { chatService } from "lib/db/chat-service";
+import { customModelProvider } from "lib/ai/models";
+import { toAny } from "lib/utils";
+import { MCPToolInfo } from "app-types/mcp";
 
 const {
   deleteThread,
@@ -67,4 +76,39 @@ export async function updateThreadAction(
 export async function deleteAllThreadsAction() {
   const userId: string = getMockUserSession().id;
   await deleteAllThreads(userId);
+}
+
+export async function generateExampleToolSchemaAction(options: {
+  modelName: string;
+  toolInfo: MCPToolInfo;
+  prompt?: string;
+}) {
+  const model = customModelProvider.getModel(options.modelName);
+
+  const schema = jsonSchema(
+    toAny({
+      ...options.toolInfo.inputSchema,
+      properties: options.toolInfo.inputSchema?.properties ?? {},
+      additionalProperties: false,
+    }),
+  );
+  const { object } = await generateObject({
+    model,
+    schema,
+    prompt: `
+You are given a tool with the following details:
+- Tool Name: ${options.toolInfo.name}
+- Tool Description: ${options.toolInfo.description}
+
+${
+  options.prompt ||
+  `
+Step 1: Create a realistic example question or scenario that a user might ask to use this tool.
+Step 2: Based on that question, generate a valid JSON input object that matches the input schema of the tool.
+`.trim()
+}
+`.trim(),
+  });
+
+  return object;
 }
