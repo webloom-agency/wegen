@@ -4,7 +4,7 @@ import { google } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
 import { xai } from "@ai-sdk/xai";
 import { LanguageModel, wrapLanguageModel } from "ai";
-import { gemmaToolMiddleware } from "@ai-sdk-tool/parser"
+import { gemmaToolMiddleware } from "./tool-call-middleware";
 
 export const allModels = {
   openai: {
