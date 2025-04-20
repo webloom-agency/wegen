@@ -87,7 +87,6 @@ export async function POST(request: Request) {
     const model = customModelProvider.getModel(modelName);
 
     const toolChoice = !activeTool ? "none" : "auto";
-    console.log(Object.keys(filterToolsByMentions(requiredTools, tools)));
 
     return createDataStreamResponse({
       execute: (dataStream) => {
