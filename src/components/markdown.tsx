@@ -8,6 +8,7 @@ import JsonView from "ui/json-view";
 const FadeIn = memo(({ children }: PropsWithChildren) => {
   return <span className="fade-in animate-in duration-1000">{children}</span>;
 });
+FadeIn.displayName = "FadeIn";
 
 const WordByWordFadeIn = memo(({ children }: PropsWithChildren) => {
   const childrens = [children]
@@ -17,7 +18,7 @@ const WordByWordFadeIn = memo(({ children }: PropsWithChildren) => {
     isString(word) ? <FadeIn key={index}>{word} </FadeIn> : word,
   );
 });
-
+WordByWordFadeIn.displayName = "WordByWordFadeIn";
 const components: Partial<Components> = {
   code: ({ children }) => {
     return (

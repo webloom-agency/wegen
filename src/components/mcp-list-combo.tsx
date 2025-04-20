@@ -7,13 +7,7 @@ import {
 } from "@/app/api/mcp/actions";
 import { appStore } from "@/app/store";
 import { MCPServerInfo } from "app-types/mcp";
-import {
-  ChevronRight,
-  RotateCw,
-  Loader2,
-  ArrowUpRight,
-  ChevronDown,
-} from "lucide-react";
+import { ChevronRight, RotateCw, Loader2, ArrowUpRight } from "lucide-react";
 import { PropsWithChildren, useCallback, useEffect, useState } from "react";
 import useSWR from "swr";
 import { Card, CardContent } from "ui/card";

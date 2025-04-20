@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { join } from "path";
 
 export const IS_DEV = process.env.NODE_ENV !== "production";
 export const IS_BROWSER = typeof window !== "undefined";

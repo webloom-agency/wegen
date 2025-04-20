@@ -1,5 +1,5 @@
 import type { MCPServerConfig } from "app-types/mcp";
-import { dirname, join } from "node:path";
+import { dirname } from "path";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import type {
   MCPClientsManager,

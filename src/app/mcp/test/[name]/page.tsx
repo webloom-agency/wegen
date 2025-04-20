@@ -557,7 +557,7 @@ export default function Page() {
                   ) : (
                     <div className="bg-secondary/30 p-4 rounded-md">
                       <p className="text-sm text-center text-muted-foreground">
-                        This tool doesn't have an input schema defined
+                        This tool doesn{"'"}t have an input schema defined
                       </p>
                     </div>
                   )}

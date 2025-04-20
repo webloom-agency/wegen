@@ -18,7 +18,6 @@ import { appStore } from "@/app/store";
 import { useEffect } from "react";
 import { getStorageManager } from "lib/browser-stroage";
 import { useShallow } from "zustand/shallow";
-import { Triangle } from "lucide-react";
 
 import { handleErrorWithToast } from "ui/shared-toast";
 import { selectThreadListByUserIdAction } from "@/app/api/chat/actions";
