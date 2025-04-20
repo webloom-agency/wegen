@@ -7,7 +7,7 @@ import {
 } from "@/app/api/mcp/actions";
 import { appStore } from "@/app/store";
 import { MCPServerInfo } from "app-types/mcp";
-import { ChevronRight, RotateCw, Loader2, ArrowUpRight } from "lucide-react";
+import { ChevronRight, RotateCw, Loader2 } from "lucide-react";
 import { PropsWithChildren, useCallback, useEffect, useState } from "react";
 import useSWR from "swr";
 import { Card, CardContent } from "ui/card";
@@ -20,7 +20,6 @@ import { useShallow } from "zustand/shallow";
 import { Button } from "ui/button";
 import { safe } from "ts-safe";
 import { ToolDetailPopup } from "./tool-detail-popup";
-import Link from "next/link";
 import { Separator } from "ui/separator";
 
 import { cn } from "lib/utils";
@@ -29,9 +28,6 @@ import { MCPIcon } from "ui/mcp-icon";
 type McpListComboProps = {
   align?: "start" | "end";
 };
-
-const MCP_SERVER_REGISTRY_URL =
-  "https://glama.ai/mcp/servers?attributes=author%3Aofficial&sort=npm-downloads%3Adesc";
 
 export const McpListCombo = ({
   children,
@@ -108,39 +104,15 @@ export const McpListCombo = ({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent
-        className="p-0 border-none bg-transparent w-full md:w-[700px] overflow-hidden"
+        className="p-0 border-none bg-transparent w-full md:w-[400px] overflow-hidden"
         align={align}
         side="top"
       >
         <Card
-          className="relative bg-background w-full py-0"
+          className="relative bg-background w-full py-0 overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           <CardContent className="p-0 flex">
-            {/* Left Sidebar - Registry Only */}
-            <div className="w-[240px] sticky top-0 flex flex-col px-6 py-4">
-              <div className="rounded-md p-4 hover:bg-secondary/40">
-                <Link
-                  href={MCP_SERVER_REGISTRY_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:text-primary/80 flex flex-col gap-2"
-                >
-                  <span className="flex items-center gap-1 text-xl font-semibold">
-                    Discover more MCP servers in the registry
-                  </span>
-                  <div className="flex items-center gap-1 mt-2 text-muted-foreground">
-                    <span className="mr-auto">glama.ai</span>
-                    <ArrowUpRight />
-                  </div>
-                </Link>
-              </div>
-            </div>
-
-            <div>
-              <Separator orientation="vertical" />
-            </div>
-
             <div className="flex-1 h-[50vh] overflow-y-auto w-full ">
               <div className="p-6 sticky top-0 bg-background z-10 w-full pt-10">
                 <div className="flex items-center justify-between">
@@ -243,21 +215,12 @@ export const McpListCombo = ({
                                 <p>Refresh</p>
                               </TooltipContent>
                             </Tooltip>
-
-                            {/* <div className="h-4">
-                              <Separator orientation="vertical" />
-                            </div>
-                            <Button variant="ghost" size="icon">
-                              <ChevronDown
-                                className={`size-3.5 transition-transform ${expandedServers.includes(server.name) ? "rotate-90" : ""}`}
-                              />
-                            </Button> */}
                           </div>
                         </div>
 
                         {expandedServers.includes(server.name) && (
                           <div className="p-2 pt-0 border-t mt-1 w-full">
-                            <div className="space-y-1">
+                            <div className="space-y-1 py-2">
                               {server.toolInfo && server.toolInfo.length > 0 ? (
                                 server.toolInfo.map((tool) => (
                                   <ToolDetailPopup key={tool.name} tool={tool}>
