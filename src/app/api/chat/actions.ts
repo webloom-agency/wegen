@@ -17,6 +17,7 @@ const {
   selectThread,
   selectThreadsByUserId,
   updateThread,
+  deleteAllThreads,
 } = chatService;
 
 export async function generateTitleFromUserMessageAction({
@@ -61,4 +62,9 @@ export async function updateThreadAction(
   thread: Omit<ChatThread, "createdAt" | "updatedAt" | "userId">,
 ) {
   await updateThread(thread.id, { ...thread, userId: getMockUserSession().id });
+}
+
+export async function deleteAllThreadsAction() {
+  const userId: string = getMockUserSession().id;
+  await deleteAllThreads(userId);
 }

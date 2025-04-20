@@ -173,4 +173,10 @@ export const sqliteChatService: ChatService = {
         ),
       );
   },
+
+  deleteAllThreads: async (userId: string): Promise<void> => {
+    await db
+      .delete(ChatThreadSchema)
+      .where(eq(ChatThreadSchema.userId, userId));
+  },
 };

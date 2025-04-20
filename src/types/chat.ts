@@ -44,4 +44,5 @@ export type ChatService = {
   ): Promise<ChatMessage>;
 
   deleteMessagesByChatIdAfterTimestamp(messageId: string): Promise<void>;
+  deleteAllThreads(userId: string): Promise<void>;
 };

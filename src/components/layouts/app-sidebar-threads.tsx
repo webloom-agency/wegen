@@ -1,6 +1,6 @@
 "use client";
 
-import { SidebarMenuSub } from "ui/sidebar";
+import { SidebarGroupLabel, SidebarMenuSub } from "ui/sidebar";
 import Link from "next/link";
 import {
   SidebarMenuAction,
@@ -11,26 +11,76 @@ import {
 import { SidebarGroupContent, SidebarMenu, SidebarMenuItem } from "ui/sidebar";
 import { SidebarGroup } from "ui/sidebar";
 import { ThreadDropdown } from "../thread-dropdown";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Trash } from "lucide-react";
 import { ChatThread } from "app-types/chat";
 import { useMounted } from "@/hooks/use-mounted";
 import { appStore } from "@/app/store";
+import { Button } from "ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "ui/dropdown-menu";
+import { deleteAllThreadsAction } from "@/app/api/chat/actions";
+import { toast } from "sonner";
+import { useShallow } from "zustand/shallow";
+import { useRouter } from "next/navigation";
+import { mutate } from "swr";
 
 export function AppSidebarThreads({
   isLoading,
   threadList,
 }: { isLoading: boolean; threadList: ChatThread[] }) {
   const mounted = useMounted();
-  const currentThreadId = appStore((state) => state.currentThreadId);
+  const router = useRouter();
+  const [storeMutate, currentThreadId] = appStore(
+    useShallow((state) => [state.mutate, state.currentThreadId]),
+  );
+
+  const handleDeleteAllThreads = async () => {
+    await toast.promise(deleteAllThreadsAction(), {
+      loading: "Deleting all threads...",
+      success: () => {
+        storeMutate({ threadList: [] });
+        mutate("threads");
+        router.push("/");
+        return "All threads deleted";
+      },
+      error: "Failed to delete all threads",
+    });
+  };
 
   return (
     <SidebarGroup>
-      <SidebarGroupContent className="group-data-[collapsible=icon]:hidden">
+      <SidebarGroupContent className="group-data-[collapsible=icon]:hidden group">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton>
+            <SidebarGroupLabel className="">
               <h4 className="text-xs text-muted-foreground">Recent Chats</h4>
-            </SidebarMenuButton>
+              <div className="flex-1" />
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <MoreHorizontal />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={handleDeleteAllThreads}
+                  >
+                    <Trash />
+                    Delete All Chats
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarGroupLabel>
 
             {isLoading ? (
               Array.from({ length: 12 }).map(
