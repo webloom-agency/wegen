@@ -28,7 +28,7 @@ const filterToolsByMentions = (
 ) => {
   return Object.fromEntries(
     Object.keys(tools)
-      .filter((tool) => mentions.includes(tool))
+      .filter((tool) => mentions.some((mention) => tool.startsWith(mention)))
       .map((tool) => [tool, tools[tool]]),
   );
 };
@@ -82,13 +82,12 @@ export async function POST(request: Request) {
       .flatMap((annotation) => annotation.requiredTools)
       .filter(Boolean) as string[];
 
-    console.log(requiredTools);
-
     const tools = mcpClientsManager.tools();
 
     const model = customModelProvider.getModel(modelName);
 
     const toolChoice = !activeTool ? "none" : "auto";
+    console.log(Object.keys(filterToolsByMentions(requiredTools, tools)));
 
     return createDataStreamResponse({
       execute: (dataStream) => {
@@ -104,7 +103,7 @@ export async function POST(request: Request) {
               : tools,
           maxSteps: 5,
           toolChoice,
-          onFinish: async ({ response, usage }) => {
+          onFinish: async ({ response }) => {
             const [, assistantMessage] = appendResponseMessages({
               messages: [message],
               responseMessages: response.messages,
