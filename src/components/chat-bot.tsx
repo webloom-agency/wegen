@@ -24,6 +24,7 @@ type Props = {
 export default function ChatBot({ threadId, initialMessages }: Props) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
+
   const [appStoreMutate, model, activeTool] = appStore(
     useShallow((state) => [state.mutate, state.model, state.activeTool]),
   );
@@ -132,7 +133,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
           </div>
         </>
       ) : (
-        <div className="mt-36">
+        <div className="mt-24">
           <Greeting />
         </div>
       )}

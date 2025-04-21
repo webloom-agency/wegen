@@ -2,13 +2,13 @@ import { existsSync, writeFileSync } from "fs";
 import { MCP_CONFIG_PATH } from "lib/const";
 
 const DEFAULT_CONFIG = {
-  custom: {
-    command: "tsx",
-    args: ["custom-mcp-server"],
-  },
   playwright: {
     command: "npx",
     args: ["@playwright/mcp@latest"],
+  },
+  custom: {
+    command: "tsx",
+    args: ["custom-mcp-server"],
   },
 };
 
