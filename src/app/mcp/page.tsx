@@ -34,6 +34,14 @@ export default function Page() {
           <div className="flex-1" />
 
           <div className="flex gap-2">
+            <Link
+              href="https://glama.ai/mcp/servers?sort=github-stargazers%3Adesc"
+              target="_blank"
+            >
+              <Button className="font-semibold" variant={"ghost"}>
+                Server Market
+              </Button>
+            </Link>
             <Link href="/mcp/create">
               <Button
                 className="border-dashed border-foreground/20 font-semibold"
