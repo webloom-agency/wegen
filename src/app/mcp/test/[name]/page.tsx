@@ -631,7 +631,8 @@ export default function Page() {
                                 size="sm"
                                 className="h-6 px-2 text-xs"
                               >
-                                Generate Example
+                                Create Input with AI
+                                <WandSparkles className="ml-1 size-3" />
                               </Button>
                             </GenerateExampleInputJsonDialog>
                           </div>

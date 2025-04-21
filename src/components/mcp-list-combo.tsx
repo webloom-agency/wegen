@@ -215,6 +215,25 @@ export const McpListCombo = ({
                                 <p>Refresh</p>
                               </TooltipContent>
                             </Tooltip>
+                            <div className="h-4 pl-2">
+                              <Separator orientation="vertical" />
+                            </div>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <ChevronRight
+                                    className={cn(
+                                      "size-3.5 transition-transform duration-200",
+                                      expandedServers.includes(server.name) &&
+                                        "rotate-90",
+                                    )}
+                                  />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Detail</p>
+                              </TooltipContent>
+                            </Tooltip>
                           </div>
                         </div>
 

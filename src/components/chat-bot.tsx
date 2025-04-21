@@ -125,7 +125,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
                 className={needSpaceClass(index) ? spaceClass : ""}
               />
             ))}
-            {status === "submitted" && messages.at(-1)?.role === "user" && (
+            {(status === "submitted" || status === "streaming") && (
               <ThinkingMessage className={spaceClass} />
             )}
             <div className="min-w-0 min-h-52" />

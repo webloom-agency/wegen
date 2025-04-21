@@ -28,17 +28,21 @@
 
 ## Demo
 
-![mention](./docs/images/preview-2.gif)
-
-**Quick Tool Access:** Use the `@` symbol in the message input to quickly select and call available MCP tools.
-
----
-
 ![playwright-demo](./docs/images/preview.gif)
 
 **Tool Integration Example:** Demonstrates browser control using Microsoft's [playwright-mcp](https://github.com/microsoft/playwright-mcp).
 
 *Prompt Example:* "Go to Reddit, open r/mcp, check the latest post and tell me what it's about — then close Reddit."
+
+>This project comes pre-configured with microsoft/playwright-mcp as a default MCP server.
+>Try running the prompt above to see it in action!
+
+---
+
+![mention](./docs/images/preview-2.gif)
+
+**Quick Tool Access:** Use the `@` symbol in the message input to quickly select and call available MCP tools.
+
 
 ---
 

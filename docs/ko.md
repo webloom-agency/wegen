@@ -27,17 +27,23 @@
 
 ## 데모
 
-![mention](./images/preview-2.gif)
 
-**간편한 도구 호출:** 메시지 입력창에서 '@' 기호를 사용하여 사용 가능한 MCP 도구를 쉽게 선택하고 호출할 수 있습니다.
-
----
 
 ![playwright-demo](./images/preview.gif)
 
 **MCP 도구 연동 예시:** Microsoft의 [playwright-mcp](https://github.com/microsoft/playwright-mcp)와 통합하여 웹 브라우저를 제어하는 모습입니다. 
 
 *예시 프롬프트:* "Reddit에 접속해서 r/mcp를 열고, 가장 최근 글을 확인한 다음 어떤 내용인지 말해줘 — 그리고 다 끝났으면 Reddit을 닫아줘."
+
+>이 프로젝트에는 기본 MCP 서버로 microsoft/playwright-mcp가 미리 설정되어 있습니다.
+>위의 프롬프트를 직접 입력해보며 작동하는 모습을 확인해보세요!
+
+---
+
+![mention](./images/preview-2.gif)
+
+**간편한 도구 호출:** 메시지 입력창에서 '@' 기호를 사용하여 사용 가능한 MCP 도구를 쉽게 선택하고 호출할 수 있습니다.
+
 
 ---
 
