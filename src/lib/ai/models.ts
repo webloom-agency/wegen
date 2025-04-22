@@ -3,7 +3,8 @@ import { openai } from "@ai-sdk/openai";
 import { google } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
 import { xai } from "@ai-sdk/xai";
-import { LanguageModel } from "ai";
+import { LanguageModel, wrapLanguageModel } from "ai";
+import { gemmaToolMiddleware } from "@ai-sdk-tool/parser"
 
 export const allModels = {
   openai: {
@@ -31,10 +32,16 @@ export const allModels = {
   },
   ollama: {
     "gemma3:1b": ollama("gemma3:1b"),
-    "gemma3:4b": ollama("gemma3:4b", {
-      simulateStreaming: true,
+    "gemma3:4b": wrapLanguageModel({
+      model: ollama("gemma3:4b", {
+        simulateStreaming: true,
+      }),
+      middleware: gemmaToolMiddleware,
     }),
-    "gemma3:12b": ollama("gemma3:12b"),
+    "gemma3:12b": wrapLanguageModel({
+      model: ollama("gemma3:12b"),
+      middleware: gemmaToolMiddleware,
+    }),
   },
 } as const;
 
@@ -46,8 +53,6 @@ export const isToolCallUnsupported = (model: LanguageModel) => {
     allModels.xai["grok-3-mini"],
     allModels.google["gemini-2.0-thinking"],
     allModels.ollama["gemma3:1b"],
-    allModels.ollama["gemma3:4b"],
-    allModels.ollama["gemma3:12b"],
   ].includes(model);
 };
 
