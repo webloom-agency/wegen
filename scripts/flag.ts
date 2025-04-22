@@ -30,8 +30,9 @@ if (command === "generate") {
   flagGenerate();
 } else {
   if (!flagCheck()) {
-    logger.warn(
-      `${colorize("cyan", "🔄 UPDATE REQUIRED")} - ${colorize("yellow", `Version ${VERSION}`)}:\n\nPlease run the following commands for proper operation:\n\n${colorize("green", "pnpm initial")}`,
+    logger.error(
+      `${colorize("cyan", "🔄 UPDATE REQUIRED")} - ${colorize("yellow", `Version ${VERSION}`)}:\n\n👇🏻 Please run the following commands for proper operation:\n\n${colorize("green", "pnpm initial")}`,
     );
+    process.exit(1);
   }
 }
