@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@ai-sdk-tool/parser':
+        specifier: ^1.0.0
+        version: 1.0.2(react@19.1.0)(zod@3.24.3)
       '@ai-sdk/anthropic':
         specifier: ^1.2.10
         version: 1.2.10(zod@3.24.3)
@@ -152,9 +155,6 @@ importers:
       react-resizable-panels:
         specifier: ^2.1.7
         version: 2.1.7(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      relaxed-json:
-        specifier: ^1.0.3
-        version: 1.0.3
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
@@ -233,6 +233,9 @@ importers:
         version: 3.1.1(@types/debug@4.1.12)(@types/node@20.17.30)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)
 
 packages:
+
+  '@ai-sdk-tool/parser@1.0.2':
+    resolution: {integrity: sha512-rqKyQYzKSBwg5Uihgm0JOoHNp9scUpf2paIRSe9dMyo37BWxXSwmEDsV6I4HFAx5mn75ZwiiMCQL/h2Euy1syA==}
 
   '@ai-sdk/anthropic@1.2.10':
     resolution: {integrity: sha512-PyE7EC2fPjs9DnzRAHDrPQmcnI2m2Eojr8pfhckOejOlDEh2w7NnSJr1W3qe5hUWzKr+6d7NG1ZKR9fhmpDdEQ==}
@@ -4750,6 +4753,14 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
 snapshots:
+
+  '@ai-sdk-tool/parser@1.0.2(react@19.1.0)(zod@3.24.3)':
+    dependencies:
+      ai: 4.3.9(react@19.1.0)(zod@3.24.3)
+      relaxed-json: 1.0.3
+    transitivePeerDependencies:
+      - react
+      - zod
 
   '@ai-sdk/anthropic@1.2.10(zod@3.24.3)':
     dependencies:
