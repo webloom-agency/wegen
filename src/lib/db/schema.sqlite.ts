@@ -17,3 +17,12 @@ export const ChatMessageSchema = sqliteTable("chat_message", {
   model: text("model"),
   createdAt: integer("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const ProjectSchema = sqliteTable("project", {
+  id: text("id").primaryKey().notNull(),
+  name: text("name").notNull(),
+  userId: text("user_id").notNull(),
+  instructions: text("instructions"),
+  createdAt: integer("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
