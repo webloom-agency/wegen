@@ -5,6 +5,16 @@ export type ChatThread = {
   title: string;
   userId: string;
   createdAt: Date;
+  projectId: string | null;
+};
+
+export type Project = {
+  id: string;
+  name: string;
+  userId: string;
+  instructions: { type: "text"; text: string }[];
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export type ChatMessage = {
@@ -44,5 +54,23 @@ export type ChatService = {
   ): Promise<ChatMessage>;
 
   deleteMessagesByChatIdAfterTimestamp(messageId: string): Promise<void>;
+
   deleteAllThreads(userId: string): Promise<void>;
+
+  insertProject(
+    project: Omit<Project, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Project>;
+
+  selectProject(id: string): Promise<Project | null>;
+
+  selectProjectsByUserId(userId: string): Promise<Project[]>;
+
+  selectProjectThreads(projectId: string): Promise<ChatThread[]>;
+
+  updateProject(
+    id: string,
+    project: Omit<Project, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Project>;
+
+  deleteProject(id: string): Promise<void>;
 };

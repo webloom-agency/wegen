@@ -1,5 +1,14 @@
-import type { ChatMessage, ChatService, ChatThread } from "app-types/chat";
-import { ChatMessageSchema, ChatThreadSchema } from "./schema.pg";
+import type {
+  ChatMessage,
+  ChatService,
+  ChatThread,
+  Project,
+} from "app-types/chat";
+import {
+  ChatMessageSchema,
+  ChatThreadSchema,
+  ProjectSchema,
+} from "./schema.pg";
 import { pgDb as db } from "./db.pg";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 
@@ -43,6 +52,7 @@ export const pgChatService: ChatService = {
         title: ChatThreadSchema.title,
         createdAt: ChatThreadSchema.createdAt,
         userId: ChatThreadSchema.userId,
+        projectId: ChatThreadSchema.projectId,
         lastMessageAt: sql<string>`MAX(${ChatMessageSchema.createdAt})`.as(
           "last_message_at",
         ),
@@ -66,6 +76,7 @@ export const pgChatService: ChatService = {
         title: row.title,
         userId: row.userId,
         createdAt: row.createdAt,
+        projectId: row.projectId,
       };
     });
   },
@@ -87,6 +98,9 @@ export const pgChatService: ChatService = {
   },
 
   deleteThread: async (id: string): Promise<void> => {
+    await db
+      .delete(ChatMessageSchema)
+      .where(eq(ChatMessageSchema.threadId, id));
     await db.delete(ChatThreadSchema).where(eq(ChatThreadSchema.id, id));
   },
 
@@ -129,5 +143,64 @@ export const pgChatService: ChatService = {
     await db
       .delete(ChatThreadSchema)
       .where(eq(ChatThreadSchema.userId, userId));
+  },
+
+  insertProject: async (
+    project: Omit<Project, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Project> => {
+    const result = await db
+      .insert(ProjectSchema)
+      .values({
+        ...project,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return result[0] as Project;
+  },
+
+  selectProject: async (id: string): Promise<Project | null> => {
+    const result = await db
+      .select()
+      .from(ProjectSchema)
+      .where(eq(ProjectSchema.id, id));
+    return result[0] ? (result[0] as Project) : null;
+  },
+
+  selectProjectsByUserId: async (userId: string): Promise<Project[]> => {
+    const result = await db
+      .select()
+      .from(ProjectSchema)
+      .where(eq(ProjectSchema.userId, userId));
+    return result as Project[];
+  },
+
+  selectProjectThreads: async (projectId: string): Promise<ChatThread[]> => {
+    const result = await db
+      .select()
+      .from(ChatThreadSchema)
+      .where(eq(ChatThreadSchema.projectId, projectId));
+    return result as ChatThread[];
+  },
+
+  updateProject: async (
+    id: string,
+    project: Omit<Project, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Project> => {
+    const result = await db
+      .update(ProjectSchema)
+      .set(project)
+      .where(eq(ProjectSchema.id, id))
+      .returning();
+    return result[0] as Project;
+  },
+
+  deleteProject: async (id: string): Promise<void> => {
+    const threads = await pgChatService.selectProjectThreads(id);
+    const threadIds = threads.map((thread) => thread.id);
+    await Promise.all(
+      threadIds.map((threadId) => pgChatService.deleteThread(threadId)),
+    );
+    await db.delete(ProjectSchema).where(eq(ProjectSchema.id, id));
   },
 };

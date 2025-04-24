@@ -1,5 +1,14 @@
-import type { ChatMessage, ChatService, ChatThread } from "app-types/chat";
-import { ChatMessageSchema, ChatThreadSchema } from "./schema.sqlite";
+import type {
+  ChatMessage,
+  ChatService,
+  ChatThread,
+  Project,
+} from "app-types/chat";
+import {
+  ChatMessageSchema,
+  ChatThreadSchema,
+  ProjectSchema,
+} from "./schema.sqlite";
 import { sqliteDb as db } from "./db.sqlite";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { generateUUID } from "lib/utils";
@@ -18,12 +27,32 @@ const convertToChatThread = (row: {
   createdAt: number;
   title: string;
   userId: string;
+  projectId: string | null;
 }): ChatThread => {
   return {
     id: row.id,
     createdAt: convertToDate(row.createdAt),
     title: row.title,
     userId: row.userId,
+    projectId: row.projectId,
+  };
+};
+
+const convertToProject = (row: {
+  id: string;
+  createdAt: number;
+  updatedAt: number;
+  name: string;
+  userId: string;
+  instructions: string | null;
+}): Project => {
+  return {
+    id: row.id,
+    createdAt: convertToDate(row.createdAt),
+    updatedAt: convertToDate(row.updatedAt),
+    name: row.name,
+    userId: row.userId,
+    instructions: row.instructions ? JSON.parse(row.instructions) : [],
   };
 };
 
@@ -88,7 +117,7 @@ export const sqliteChatService: ChatService = {
         title: ChatThreadSchema.title,
         createdAt: ChatThreadSchema.createdAt,
         userId: ChatThreadSchema.userId,
-
+        projectId: ChatThreadSchema.projectId,
         lastMessageAt: sql<string>`MAX(${ChatMessageSchema.createdAt})`.as(
           "last_message_at",
         ),
@@ -111,6 +140,7 @@ export const sqliteChatService: ChatService = {
         id: row.threadId,
         title: row.title,
         userId: row.userId,
+        projectId: row.projectId,
         createdAt: convertToDate(row.createdAt),
       };
     });
@@ -132,6 +162,9 @@ export const sqliteChatService: ChatService = {
   },
 
   deleteThread: async (id: string): Promise<void> => {
+    await db
+      .delete(ChatMessageSchema)
+      .where(eq(ChatMessageSchema.threadId, id));
     await db.delete(ChatThreadSchema).where(eq(ChatThreadSchema.id, id));
   },
 
@@ -178,5 +211,70 @@ export const sqliteChatService: ChatService = {
     await db
       .delete(ChatThreadSchema)
       .where(eq(ChatThreadSchema.userId, userId));
+  },
+
+  insertProject: async (
+    project: PartialBy<Project, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Project> => {
+    const result = await db
+      .insert(ProjectSchema)
+      .values({
+        ...project,
+        id: project.id || generateUUID(),
+        createdAt: convertToTimestamp(project.createdAt || new Date()),
+        updatedAt: convertToTimestamp(project.updatedAt || new Date()),
+        instructions: JSON.stringify(project.instructions),
+      })
+      .returning();
+    return convertToProject(result[0]);
+  },
+
+  selectProject: async (id: string): Promise<Project | null> => {
+    const result = await db
+      .select()
+      .from(ProjectSchema)
+      .where(eq(ProjectSchema.id, id));
+    return result[0] ? convertToProject(result[0]) : null;
+  },
+
+  selectProjectsByUserId: async (userId: string): Promise<Project[]> => {
+    const result = await db
+      .select()
+      .from(ProjectSchema)
+      .where(eq(ProjectSchema.userId, userId));
+    return result.map(convertToProject);
+  },
+
+  updateProject: async (
+    id: string,
+    project: Omit<Project, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Project> => {
+    const result = await db
+      .update(ProjectSchema)
+      .set({
+        ...project,
+        updatedAt: convertToTimestamp(new Date()),
+        instructions: JSON.stringify(project.instructions),
+      })
+      .where(eq(ProjectSchema.id, id))
+      .returning();
+    return convertToProject(result[0]);
+  },
+
+  selectProjectThreads: async (projectId: string): Promise<ChatThread[]> => {
+    const result = await db
+      .select()
+      .from(ChatThreadSchema)
+      .where(eq(ChatThreadSchema.projectId, projectId));
+    return result.map(convertToChatThread);
+  },
+
+  deleteProject: async (id: string): Promise<void> => {
+    const threads = await sqliteChatService.selectProjectThreads(id);
+    const threadIds = threads.map((thread) => thread.id);
+    await Promise.all(
+      threadIds.map((threadId) => sqliteChatService.deleteThread(threadId)),
+    );
+    await db.delete(ProjectSchema).where(eq(ProjectSchema.id, id));
   },
 };
