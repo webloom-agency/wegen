@@ -6,6 +6,7 @@ export const ChatThreadSchema = sqliteTable("chat_thread", {
   title: text("title").notNull(),
   userId: text("user_id").notNull(),
   createdAt: integer("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  projectId: text("project_id"),
 });
 
 export const ChatMessageSchema = sqliteTable("chat_message", {
