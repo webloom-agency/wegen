@@ -6,6 +6,7 @@ export const ChatThreadSchema = pgTable("chat_thread", {
   title: text("title").notNull(),
   userId: text("user_id").notNull(),
   createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  projectId: uuid("project_id"),
 });
 
 export const ChatMessageSchema = pgTable("chat_message", {
