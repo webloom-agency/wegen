@@ -44,7 +44,7 @@ export type ChatService = {
 
   updateThread(
     id: string,
-    thread: PartialBy<ChatThread, "id" | "createdAt">,
+    thread: Partial<Omit<ChatThread, "id" | "createdAt">>,
   ): Promise<ChatThread>;
 
   deleteThread(id: string): Promise<void>;
@@ -61,15 +61,20 @@ export type ChatService = {
     project: Omit<Project, "id" | "createdAt" | "updatedAt">,
   ): Promise<Project>;
 
-  selectProject(id: string): Promise<Project | null>;
+  selectProjectById(id: string): Promise<
+    | (Project & {
+        threads: ChatThread[];
+      })
+    | null
+  >;
 
-  selectProjectsByUserId(userId: string): Promise<Project[]>;
-
-  selectProjectThreads(projectId: string): Promise<ChatThread[]>;
+  selectProjectsByUserId(
+    userId: string,
+  ): Promise<Omit<Project, "instructions">[]>;
 
   updateProject(
     id: string,
-    project: Omit<Project, "id" | "createdAt" | "updatedAt">,
+    project: Partial<Pick<Project, "name" | "instructions">>,
   ): Promise<Project>;
 
   deleteProject(id: string): Promise<void>;

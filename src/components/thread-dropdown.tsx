@@ -53,7 +53,7 @@ export function ThreadDropdown({ threadId, children, beforeTitle }: Props) {
           throw new Error("Title is required");
         }
       })
-      .ifOk(() => updateThreadAction({ id: threadId, title }))
+      .ifOk(() => updateThreadAction(threadId, { title }))
       .ifOk(() => mutate("threads"))
       .watch(({ isOk, error }) => {
         if (isOk) {

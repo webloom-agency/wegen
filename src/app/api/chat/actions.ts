@@ -10,7 +10,7 @@ import {
 
 import { CREATE_THREAD_TITLE_PROMPT } from "lib/ai/prompts";
 
-import type { ChatThread } from "app-types/chat";
+import type { ChatThread, Project } from "app-types/chat";
 
 import { getMockUserSession } from "lib/mock";
 
@@ -29,6 +29,9 @@ const {
   deleteAllThreads,
   selectProjectsByUserId,
   insertProject,
+  selectProjectById,
+  updateProject,
+  deleteProject,
 } = chatService;
 
 export async function generateTitleFromUserMessageAction({
@@ -70,9 +73,10 @@ export async function selectThreadListByUserIdAction() {
 }
 
 export async function updateThreadAction(
-  thread: Omit<ChatThread, "createdAt" | "updatedAt" | "userId">,
+  id: string,
+  thread: Partial<Omit<ChatThread, "createdAt" | "updatedAt" | "userId">>,
 ) {
-  await updateThread(thread.id, { ...thread, userId: getMockUserSession().id });
+  await updateThread(id, { ...thread, userId: getMockUserSession().id });
 }
 
 export async function deleteAllThreadsAction() {
@@ -125,4 +129,21 @@ export async function insertProjectAction({ name }: { name: string }) {
   const userId: string = getMockUserSession().id;
   const project = await insertProject({ name, userId, instructions: [] });
   return project;
+}
+
+export async function selectProjectByIdAction(id: string) {
+  const project = await selectProjectById(id);
+  return project;
+}
+
+export async function updateProjectAction(
+  id: string,
+  project: Partial<Pick<Project, "name" | "instructions">>,
+) {
+  const updatedProject = await updateProject(id, project);
+  return updatedProject;
+}
+
+export async function deleteProjectAction(id: string) {
+  await deleteProject(id);
 }

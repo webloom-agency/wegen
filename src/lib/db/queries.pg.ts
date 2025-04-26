@@ -83,7 +83,7 @@ export const pgChatService: ChatService = {
 
   updateThread: async (
     id: string,
-    thread: PartialBy<ChatThread, "id" | "createdAt">,
+    thread: Partial<Omit<ChatThread, "id" | "createdAt">>,
   ): Promise<ChatThread> => {
     const entity = {
       ...thread,
@@ -159,33 +159,52 @@ export const pgChatService: ChatService = {
     return result[0] as Project;
   },
 
-  selectProject: async (id: string): Promise<Project | null> => {
+  selectProjectById: async (
+    id: string,
+  ): Promise<
+    | (Project & {
+        threads: ChatThread[];
+      })
+    | null
+  > => {
     const result = await db
-      .select()
+      .select({
+        project: ProjectSchema,
+        thread: ChatThreadSchema,
+      })
       .from(ProjectSchema)
-      .where(eq(ProjectSchema.id, id));
-    return result[0] ? (result[0] as Project) : null;
+      .where(eq(ProjectSchema.id, id))
+      .leftJoin(
+        ChatThreadSchema,
+        eq(ProjectSchema.id, ChatThreadSchema.projectId),
+      );
+    const project = result[0] ? result[0].project : null;
+    const threads = result.map((row) => row.thread!).filter(Boolean);
+    if (!project) {
+      return null;
+    }
+    return { ...(project as Project), threads };
   },
 
-  selectProjectsByUserId: async (userId: string): Promise<Project[]> => {
+  selectProjectsByUserId: async (
+    userId: string,
+  ): Promise<Omit<Project, "instructions">[]> => {
     const result = await db
-      .select()
+      .select({
+        id: ProjectSchema.id,
+        name: ProjectSchema.name,
+        createdAt: ProjectSchema.createdAt,
+        updatedAt: ProjectSchema.updatedAt,
+        userId: ProjectSchema.userId,
+      })
       .from(ProjectSchema)
       .where(eq(ProjectSchema.userId, userId));
-    return result as Project[];
-  },
-
-  selectProjectThreads: async (projectId: string): Promise<ChatThread[]> => {
-    const result = await db
-      .select()
-      .from(ChatThreadSchema)
-      .where(eq(ChatThreadSchema.projectId, projectId));
-    return result as ChatThread[];
+    return result;
   },
 
   updateProject: async (
     id: string,
-    project: Omit<Project, "id" | "createdAt" | "updatedAt">,
+    project: Partial<Pick<Project, "name" | "instructions">>,
   ): Promise<Project> => {
     const result = await db
       .update(ProjectSchema)
@@ -196,10 +215,12 @@ export const pgChatService: ChatService = {
   },
 
   deleteProject: async (id: string): Promise<void> => {
-    const threads = await pgChatService.selectProjectThreads(id);
-    const threadIds = threads.map((thread) => thread.id);
+    const threadIds = await db
+      .select({ id: ChatThreadSchema.id })
+      .from(ChatThreadSchema)
+      .where(eq(ChatThreadSchema.projectId, id));
     await Promise.all(
-      threadIds.map((threadId) => pgChatService.deleteThread(threadId)),
+      threadIds.map((threadId) => pgChatService.deleteThread(threadId.id)),
     );
     await db.delete(ProjectSchema).where(eq(ProjectSchema.id, id));
   },
