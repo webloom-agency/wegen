@@ -134,7 +134,7 @@ export default function PromptInput({
     <div className="max-w-3xl mx-auto fade-in animate-in">
       <div className="z-10 mx-auto w-full max-w-3xl relative">
         <fieldset className="flex w-full min-w-0 max-w-full flex-col px-2">
-          <div className="rounded-4xl backdrop-blur-sm transition-all duration-200 shadow-lg dark:bg-muted/20 bg-muted/40 border-dashed relative flex w-full flex-col cursor-text z-10 border border-muted items-stretch focus-within:border-muted-foreground hover:border-muted-foreground p-3">
+          <div className="rounded-4xl backdrop-blur-sm transition-all duration-200 shadow-lg dark:bg-muted/20 bg-muted/40 relative flex w-full flex-col cursor-text z-10 border items-stretch focus-within:border-muted-foreground hover:border-muted-foreground p-3">
             <div className="flex flex-col gap-3.5 px-1">
               <div className="relative min-h-[4rem]">
                 <MentionInput
