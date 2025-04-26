@@ -27,6 +27,8 @@ const {
   selectThreadsByUserId,
   updateThread,
   deleteAllThreads,
+  selectProjectsByUserId,
+  insertProject,
 } = chatService;
 
 export async function generateTitleFromUserMessageAction({
@@ -111,4 +113,16 @@ Step 2: Based on that question, generate a valid JSON input object that matches 
   });
 
   return object;
+}
+
+export async function selectProjectListByUserIdAction() {
+  const userId: string = getMockUserSession().id;
+  const projects = await selectProjectsByUserId(userId);
+  return projects;
+}
+
+export async function insertProjectAction({ name }: { name: string }) {
+  const userId: string = getMockUserSession().id;
+  const project = await insertProject({ name, userId, instructions: [] });
+  return project;
 }

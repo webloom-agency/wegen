@@ -1,6 +1,6 @@
 "use client";
 
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, UseEditorOptions } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Mention } from "@tiptap/extension-mention";
 import React, {
@@ -54,7 +54,7 @@ export default function MentionInput({
   const latestRef = useLatest({ suggestion, filteredItems });
 
   // Memoize editor configuration
-  const editorConfig = useMemo(
+  const editorConfig = useMemo<UseEditorOptions>(
     () => ({
       immediatelyRender: false,
       extensions: [
@@ -153,12 +153,13 @@ export default function MentionInput({
         onChange?.(editor.getText());
       },
       editorProps: {
-        handlePaste: () => {
-          return true;
+        handlePaste: (_, e) => {
+          const text = e.clipboardData?.getData("text/plain") ?? "";
+          return text.length > 500;
         },
         attributes: {
           class:
-            "w-full max-h-96 min-h-[4rem] break-words overflow-y-auto resize-none focus:outline-none px-2 py-1 prose prose-sm dark:prose-invert",
+            "w-full max-h-80 min-h-[2rem] break-words overflow-y-auto resize-none focus:outline-none px-2 py-1 prose prose-sm dark:prose-invert",
         },
       },
     }),
@@ -196,7 +197,7 @@ export default function MentionInput({
   // Sync input prop with editor content
   useEffect(() => {
     if (input?.trim() !== editor?.getText().trim()) {
-      editor?.commands.setContent(input || " ");
+      editor?.commands.setContent(input || "");
     }
   }, [input, editor]);
 

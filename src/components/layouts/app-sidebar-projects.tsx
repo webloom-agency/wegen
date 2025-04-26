@@ -1,127 +1,122 @@
 "use client";
 
-import { SidebarGroupLabel, SidebarMenuSub } from "ui/sidebar";
+import { SidebarGroupLabel } from "ui/sidebar";
 import Link from "next/link";
-import {
-  SidebarMenuAction,
-  SidebarMenuButton,
-  SidebarMenuSkeleton,
-  SidebarMenuSubItem,
-} from "ui/sidebar";
+import { SidebarMenuButton, SidebarMenuSkeleton } from "ui/sidebar";
 import { SidebarGroupContent, SidebarMenu, SidebarMenuItem } from "ui/sidebar";
 import { SidebarGroup } from "ui/sidebar";
-import { ThreadDropdown } from "../thread-dropdown";
-import { MoreHorizontal, Trash } from "lucide-react";
-import { ChatThread } from "app-types/chat";
+import { FolderOpen, Plus } from "lucide-react";
+
 import { useMounted } from "@/hooks/use-mounted";
 import { appStore } from "@/app/store";
 import { Button } from "ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "ui/dropdown-menu";
-import { deleteAllThreadsAction } from "@/app/api/chat/actions";
-import { toast } from "sonner";
-import { useShallow } from "zustand/shallow";
-import { useRouter } from "next/navigation";
-import { mutate } from "swr";
 
-export function AppSidebarProjects({
-  isLoading,
-  threadList,
-}: { isLoading: boolean; threadList: ChatThread[] }) {
+import { useShallow } from "zustand/shallow";
+
+import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
+import useSWR from "swr";
+import { selectProjectListByUserIdAction } from "@/app/api/chat/actions";
+import { handleErrorWithToast } from "ui/shared-toast";
+import { CreateProjectPopup } from "../create-project-popup";
+import { useState } from "react";
+
+export function AppSidebarProjects() {
   const mounted = useMounted();
-  const router = useRouter();
-  const [storeMutate, currentThreadId] = appStore(
-    useShallow((state) => [state.mutate, state.currentThreadId]),
+  const [isCreateProjectPopupOpen, setIsCreateProjectPopupOpen] =
+    useState(false);
+  const [storeMutate, currentProjectId] = appStore(
+    useShallow((state) => [state.mutate, state.currentProjectId]),
   );
 
-  const handleDeleteAllThreads = async () => {
-    await toast.promise(deleteAllThreadsAction(), {
-      loading: "Deleting all threads...",
-      success: () => {
-        storeMutate({ threadList: [] });
-        mutate("threads");
-        router.push("/");
-        return "All threads deleted";
-      },
-      error: "Failed to delete all threads",
-    });
-  };
+  const { data: projectList, isLoading } = useSWR(
+    "projects",
+    selectProjectListByUserIdAction,
+    {
+      onError: handleErrorWithToast,
+      fallbackData: [],
+      onSuccess: (data) => storeMutate({ projectList: data }),
+    },
+  );
 
   return (
     <SidebarGroup>
-      <SidebarGroupContent className="group-data-[collapsible=icon]:hidden group">
+      <SidebarGroupContent className="group-data-[collapsible=icon]:hidden group/projects">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarGroupLabel className="">
-              <h4 className="text-xs text-muted-foreground">Recent Chats</h4>
+              <h4 className="text-xs text-muted-foreground flex items-center gap-1">
+                Projects
+              </h4>
               <div className="flex-1" />
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="opacity-0 group-hover/projects:opacity-100"
+                    onClick={() => setIsCreateProjectPopupOpen(true)}
                   >
-                    <MoreHorizontal />
+                    <Plus />
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onClick={handleDeleteAllThreads}
-                  >
-                    <Trash />
-                    Delete All Chats
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>New Project</p>
+                </TooltipContent>
+              </Tooltip>
             </SidebarGroupLabel>
 
             {isLoading ? (
-              Array.from({ length: 12 }).map(
+              Array.from({ length: 2 }).map(
                 (_, index) => mounted && <SidebarMenuSkeleton key={index} />,
               )
-            ) : threadList?.length === 0 ? (
-              <div className="px-2 py-4 text-center">
-                <p className="text-sm text-muted-foreground">
-                  No conversations yet
-                </p>
+            ) : projectList.length == 0 ? (
+              <div className="px-2 mt-1">
+                <div
+                  onClick={() => setIsCreateProjectPopupOpen(true)}
+                  className="py-4 px-4 hover:bg-accent rounded-2xl cursor-pointer flex justify-between items-center"
+                >
+                  <div className="gap-1">
+                    <p className="font-semibold mb-1">Create a project </p>
+                    <p className="text-muted-foreground">
+                      To organize your ideas
+                    </p>
+                  </div>
+                  <FolderOpen className="size-4" />
+                </div>
               </div>
             ) : (
-              threadList?.map((thread) => (
-                <SidebarMenuSub key={thread.id} className={"group/thread mr-0"}>
-                  <SidebarMenuSubItem>
+              projectList?.map((project) => (
+                <SidebarMenu key={project.id} className={"group/thread mr-0"}>
+                  <SidebarMenuItem className="px-2">
                     <SidebarMenuButton
                       asChild
-                      isActive={currentThreadId === thread.id}
+                      isActive={currentProjectId === project.id}
                     >
-                      <Link
-                        href={`/chat/${thread.id}`}
-                        className="flex items-center"
-                      >
-                        <p className="truncate ">{thread.title}</p>
-                      </Link>
+                      <div className="flex gap-1">
+                        <div className="p-1 rounded-md hover:bg-foreground/40">
+                          <FolderOpen className="size-4" />
+                        </div>
+
+                        <Link
+                          href={`/project/${project.id}`}
+                          className="flex items-center min-w-0"
+                        >
+                          <p className="truncate">{project.name}</p>
+                        </Link>
+                      </div>
                     </SidebarMenuButton>
-                    <SidebarMenuAction className="opacity-0 group-hover/thread:opacity-100">
-                      <ThreadDropdown
-                        threadId={thread.id}
-                        beforeTitle={thread.title}
-                      >
-                        <MoreHorizontal />
-                      </ThreadDropdown>
-                    </SidebarMenuAction>
-                  </SidebarMenuSubItem>
-                </SidebarMenuSub>
+                  </SidebarMenuItem>
+                </SidebarMenu>
               ))
             )}
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarGroupContent>
+      <CreateProjectPopup
+        isOpen={isCreateProjectPopupOpen}
+        onOpenChange={setIsCreateProjectPopupOpen}
+      />
     </SidebarGroup>
   );
 }

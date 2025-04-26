@@ -10,9 +10,11 @@ import { SidebarMenu } from "ui/sidebar";
 import { Avatar } from "ui/avatar";
 import { ChevronUp } from "lucide-react";
 import { notImplementedToast } from "ui/shared-toast";
-import { User } from "app-types/user";
+import { appStore } from "@/app/store";
+import { useShallow } from "zustand/shallow";
 
-export function AppSidebarUser({ user }: { user: User }) {
+export function AppSidebarUser() {
+  const [user] = appStore(useShallow((state) => [state.user]));
   return (
     <SidebarMenu>
       <SidebarMenuItem>
