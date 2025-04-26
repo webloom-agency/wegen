@@ -33,7 +33,7 @@ export type ChatMessageAnnotation = {
 
 export type ChatService = {
   insertThread(
-    thread: PartialBy<ChatThread, "id" | "createdAt">,
+    thread: PartialBy<ChatThread, "id" | "createdAt" | "projectId">,
   ): Promise<ChatThread>;
 
   selectThread(id: string): Promise<ChatThread | null>;

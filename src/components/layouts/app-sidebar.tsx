@@ -69,6 +69,7 @@ export function AppSidebar() {
         <div className={cn(!open && "hidden", "w-full px-4 mt-4")}>
           <div className="w-full h-1 border-t border-dashed" />
         </div>
+        {/* <AppSidebarProjects /> */}
         <AppSidebarThreads isLoading={isLoading} threadList={threadList} />
       </SidebarContent>
       <SidebarFooter className="border-t border-dashed">
