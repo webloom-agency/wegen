@@ -51,7 +51,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarRail />
+      {/* <SidebarRail /> */}
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-0.5">
@@ -66,12 +66,10 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="mt-6">
         <AppSidebarMenus isOpen={open} />
-        <div className={cn(!open && "hidden", "w-full px-4 mt-4")}>
-          <div className="w-full h-1 border-t border-dashed" />
-        </div>
+        <div className={cn(!open && "hidden", "w-full px-4 mt-4")}></div>
         <AppSidebarThreads isLoading={isLoading} threadList={threadList} />
       </SidebarContent>
-      <SidebarFooter className="border-t border-dashed">
+      <SidebarFooter>
         <AppSidebarUser user={user} />
       </SidebarFooter>
     </Sidebar>

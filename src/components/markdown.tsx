@@ -29,10 +29,11 @@ const components: Partial<Components> = {
   },
   blockquote: ({ children }) => {
     return (
-      <blockquote className="relative flex items-center border-accent-foreground/30 border border-dashed p-6 rounded-lg my-6 overflow-hidden">
-        <WordByWordFadeIn>{children}</WordByWordFadeIn>
-        <div className="absolute top-0 right-0 h-full w-1/3 bg-gradient-to-r from-transparent to-background  pointer-events-none" />
-      </blockquote>
+      <div className="px-4">
+        <blockquote className="relative flex items-center bg-accent/30 p-6 rounded-2xl my-6 overflow-hidden border">
+          <WordByWordFadeIn>{children}</WordByWordFadeIn>
+        </blockquote>
+      </div>
     );
   },
   p: ({ children }) => {
@@ -43,7 +44,11 @@ const components: Partial<Components> = {
     );
   },
   pre: ({ children }) => {
-    return <PreBlock>{children}</PreBlock>;
+    return (
+      <div className="px-4 py-2">
+        <PreBlock>{children}</PreBlock>
+      </div>
+    );
   },
   ol: ({ node, children, ...props }) => {
     return (
