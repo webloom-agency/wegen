@@ -85,8 +85,6 @@ export default function PromptInput({
     if (text.length > 500) {
       setPastedContents([...pastedContents, text]);
       e.preventDefault();
-    } else {
-      setInput(input + text);
     }
   };
 
