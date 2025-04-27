@@ -131,10 +131,10 @@
 
   .mention {
     color: #0070f3;
-    font-weight: 500;
+    font-weight: 700;
     background-color: rgba(0, 112, 243, 0.1);
-    border-radius: 3px;
-    padding: 0.1rem 0.3rem;
+    border-radius: 12px;
+    padding: 0.2rem 0.6rem;
     margin: 0 0.1rem;
   }
 }

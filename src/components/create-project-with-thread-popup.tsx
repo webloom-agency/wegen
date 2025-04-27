@@ -20,7 +20,14 @@ import { Input } from "ui/input";
 import { Label } from "ui/label";
 import { handleErrorWithToast } from "ui/shared-toast";
 
-export function CreateProjectPopup({ children }: PropsWithChildren) {
+interface CreateProjectWithThreadPopupProps {
+  threadId: string;
+}
+
+export function CreateProjectWithThreadPopup({
+  threadId,
+  children,
+}: PropsWithChildren<CreateProjectWithThreadPopupProps>) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState("");
@@ -75,7 +82,7 @@ export function CreateProjectPopup({ children }: PropsWithChildren) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="eg. Korea Trip Plan"
-            className="w-full bg-card"
+            className="w-full"
           />
         </div>
         <DialogFooter>

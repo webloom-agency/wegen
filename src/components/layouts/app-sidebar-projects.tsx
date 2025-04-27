@@ -18,13 +18,11 @@ import useSWR from "swr";
 import { selectProjectListByUserIdAction } from "@/app/api/chat/actions";
 import { handleErrorWithToast } from "ui/shared-toast";
 import { CreateProjectPopup } from "../create-project-popup";
-import { useState } from "react";
 import { ProjectDropdown } from "../project-dropdown";
 
 export function AppSidebarProjects() {
   const mounted = useMounted();
-  const [isCreateProjectPopupOpen, setIsCreateProjectPopupOpen] =
-    useState(false);
+
   const [storeMutate, currentProjectId] = appStore(
     useShallow((state) => [state.mutate, state.currentProjectId]),
   );
@@ -52,14 +50,15 @@ export function AppSidebarProjects() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="opacity-0 group-hover/projects:opacity-100"
-                    onClick={() => setIsCreateProjectPopupOpen(true)}
-                  >
-                    <Plus />
-                  </Button>
+                  <CreateProjectPopup>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="opacity-0 group-hover/projects:opacity-100"
+                    >
+                      <Plus />
+                    </Button>
+                  </CreateProjectPopup>
                 </TooltipTrigger>
                 <TooltipContent side="right">
                   <p>New Project</p>
@@ -73,18 +72,17 @@ export function AppSidebarProjects() {
               )
             ) : projectList.length == 0 ? (
               <div className="px-2 mt-1">
-                <div
-                  onClick={() => setIsCreateProjectPopupOpen(true)}
-                  className="py-4 px-4 hover:bg-accent rounded-2xl cursor-pointer flex justify-between items-center"
-                >
-                  <div className="gap-1">
-                    <p className="font-semibold mb-1">Create a project </p>
-                    <p className="text-muted-foreground">
-                      To organize your ideas
-                    </p>
+                <CreateProjectPopup>
+                  <div className="py-4 px-4 hover:bg-accent rounded-2xl cursor-pointer flex justify-between items-center">
+                    <div className="gap-1">
+                      <p className="font-semibold mb-1">Create a project </p>
+                      <p className="text-muted-foreground">
+                        To organize your ideas
+                      </p>
+                    </div>
+                    <FolderOpen className="size-4" />
                   </div>
-                  <FolderOpen className="size-4" />
-                </div>
+                </CreateProjectPopup>
               </div>
             ) : (
               <div className="flex flex-col gap-1">
@@ -125,10 +123,6 @@ export function AppSidebarProjects() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarGroupContent>
-      <CreateProjectPopup
-        isOpen={isCreateProjectPopupOpen}
-        onOpenChange={setIsCreateProjectPopupOpen}
-      />
     </SidebarGroup>
   );
 }

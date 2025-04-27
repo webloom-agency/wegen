@@ -11,6 +11,16 @@ system time: ${new Date().toLocaleString()}
 - You are a helpful assistant.
 `;
 
+export const SUMMARIZE_PROMPT = `\n
+You are an expert AI assistant specialized in summarizing and extracting project requirements. 
+Read the following chat history and generate a concise, professional system instruction for a new AI assistant continuing this project. 
+This system message should clearly describe the project’s context, goals, and any decisions or requirements discussed, in a way that guides future conversation. 
+Focus on actionable directives and critical details only, omitting any irrelevant dialogue or filler. 
+Ensure the tone is formal and precise. Base your summary strictly on the chat content provided, without adding new information.
+
+(Paste the chat transcript below.)
+`.trim();
+
 export const generateExampleToolSchemaPrompt = (options: {
   toolInfo: MCPToolInfo;
   prompt?: string;
