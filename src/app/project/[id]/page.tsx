@@ -13,8 +13,6 @@ import {
   Loader,
   MoreHorizontal,
   FileUp,
-  List,
-  MessageSquare,
   Pencil,
   MessagesSquare,
 } from "lucide-react";
