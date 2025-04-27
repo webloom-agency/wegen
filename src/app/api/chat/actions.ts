@@ -120,12 +120,18 @@ export async function selectProjectListByUserIdAction() {
   return projects;
 }
 
-export async function insertProjectAction({ name }: { name: string }) {
+export async function insertProjectAction({
+  name,
+  instructions,
+}: {
+  name: string;
+  instructions?: Project["instructions"];
+}) {
   const userId: string = getMockUserSession().id;
   const project = await insertProject({
     name,
     userId,
-    instructions: {
+    instructions: instructions ?? {
       systemPrompt: "",
     },
   });
