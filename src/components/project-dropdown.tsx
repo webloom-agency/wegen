@@ -1,7 +1,7 @@
 "use client";
 import { deleteProjectAction } from "@/app/api/chat/actions";
 import { appStore } from "@/app/store";
-import { Loader2, Trash } from "lucide-react";
+import { Loader, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type PropsWithChildren, useState } from "react";
 import { toast } from "sonner";
@@ -59,8 +59,8 @@ export function ProjectDropdown({ projectId, children }: Props) {
           disabled={isDeleting}
         >
           <Trash />
-          Delete
-          {isDeleting && <Loader2 className="ml-auto h-4 w-4 animate-spin" />}
+          Delete Project
+          {isDeleting && <Loader className="ml-auto h-4 w-4 animate-spin" />}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

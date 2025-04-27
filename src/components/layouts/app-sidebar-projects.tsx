@@ -5,7 +5,7 @@ import Link from "next/link";
 import { SidebarMenuButton, SidebarMenuSkeleton } from "ui/sidebar";
 import { SidebarGroupContent, SidebarMenu, SidebarMenuItem } from "ui/sidebar";
 import { SidebarGroup } from "ui/sidebar";
-import { FolderOpen, Plus } from "lucide-react";
+import { FolderOpen, MoreHorizontal, Plus } from "lucide-react";
 
 import { useMounted } from "@/hooks/use-mounted";
 import { appStore } from "@/app/store";
@@ -19,6 +19,7 @@ import { selectProjectListByUserIdAction } from "@/app/api/chat/actions";
 import { handleErrorWithToast } from "ui/shared-toast";
 import { CreateProjectPopup } from "../create-project-popup";
 import { useState } from "react";
+import { ProjectDropdown } from "../project-dropdown";
 
 export function AppSidebarProjects() {
   const mounted = useMounted();
@@ -88,7 +89,7 @@ export function AppSidebarProjects() {
             ) : (
               projectList?.map((project) => (
                 <SidebarMenu key={project.id} className={"group/thread mr-0"}>
-                  <SidebarMenuItem className="px-2">
+                  <SidebarMenuItem className="px-2 cursor-pointer">
                     <SidebarMenuButton
                       asChild
                       isActive={currentProjectId === project.id}
@@ -100,9 +101,18 @@ export function AppSidebarProjects() {
 
                         <Link
                           href={`/project/${project.id}`}
-                          className="flex items-center min-w-0"
+                          className="flex items-center min-w-0 w-full"
                         >
                           <p className="truncate">{project.name}</p>
+                          <ProjectDropdown projectId={project.id}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="ml-auto opacity-0 group-hover/projects:opacity-100"
+                            >
+                              <MoreHorizontal className="size-4" />
+                            </Button>
+                          </ProjectDropdown>
                         </Link>
                       </div>
                     </SidebarMenuButton>

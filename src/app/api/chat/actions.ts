@@ -8,7 +8,10 @@ import {
   type Message,
 } from "ai";
 
-import { CREATE_THREAD_TITLE_PROMPT } from "lib/ai/prompts";
+import {
+  CREATE_THREAD_TITLE_PROMPT,
+  generateExampleToolSchemaPrompt,
+} from "lib/ai/prompts";
 
 import type { ChatThread, Project } from "app-types/chat";
 
@@ -26,7 +29,7 @@ const {
   selectThread,
   selectThreadsByUserId,
   updateThread,
-  deleteAllThreads,
+  deleteNonProjectThreads,
   selectProjectsByUserId,
   insertProject,
   selectProjectById,
@@ -79,9 +82,9 @@ export async function updateThreadAction(
   await updateThread(id, { ...thread, userId: getMockUserSession().id });
 }
 
-export async function deleteAllThreadsAction() {
+export async function deleteNonProjectThreadsAction() {
   const userId: string = getMockUserSession().id;
-  await deleteAllThreads(userId);
+  await deleteNonProjectThreads(userId);
 }
 
 export async function generateExampleToolSchemaAction(options: {
@@ -101,19 +104,10 @@ export async function generateExampleToolSchemaAction(options: {
   const { object } = await generateObject({
     model,
     schema,
-    prompt: `
-You are given a tool with the following details:
-- Tool Name: ${options.toolInfo.name}
-- Tool Description: ${options.toolInfo.description}
-
-${
-  options.prompt ||
-  `
-Step 1: Create a realistic example question or scenario that a user might ask to use this tool.
-Step 2: Based on that question, generate a valid JSON input object that matches the input schema of the tool.
-`.trim()
-}
-`.trim(),
+    prompt: generateExampleToolSchemaPrompt({
+      toolInfo: options.toolInfo,
+      prompt: options.prompt,
+    }),
   });
 
   return object;

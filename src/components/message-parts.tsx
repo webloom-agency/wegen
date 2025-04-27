@@ -5,7 +5,7 @@ import {
   Check,
   Copy,
   ChevronDown,
-  Loader2,
+  Loader,
   Pencil,
   ChevronDownIcon,
   RefreshCw,
@@ -249,7 +249,7 @@ export const ToolMessagePart = ({ part }: ToolMessagePartProps) => {
         >
           <p className={cn("font-bold")}>{toolName}</p>
           {isLoading ? (
-            <Loader2 className="size-3 animate-spin" />
+            <Loader className="size-3 animate-spin" />
           ) : (
             <ChevronDown
               className={cn(

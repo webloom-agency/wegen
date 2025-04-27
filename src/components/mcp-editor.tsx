@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
 import { createDebounce, isNull, safeJSONParse } from "lib/utils";
 import { handleErrorWithToast } from "ui/shared-toast";
 import { mutate } from "swr";
-import { Loader2 } from "lucide-react";
+import { Loader } from "lucide-react";
 import {
   isMaybeMCPServerConfig,
   isMaybeSseConfig,
@@ -199,7 +199,7 @@ export default function MCPEditor({
       {/* Save button */}
       <Button onClick={handleSave} className="w-full" disabled={saveDisabled}>
         {isLoading ? (
-          <Loader2 className="size-4 animate-spin" />
+          <Loader className="size-4 animate-spin" />
         ) : (
           <span className="font-bold">Save Configuration</span>
         )}

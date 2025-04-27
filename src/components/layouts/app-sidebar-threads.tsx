@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "ui/dropdown-menu";
 import {
-  deleteAllThreadsAction,
+  deleteNonProjectThreadsAction,
   selectThreadListByUserIdAction,
 } from "@/app/api/chat/actions";
 import { toast } from "sonner";
@@ -30,6 +30,7 @@ import { useShallow } from "zustand/shallow";
 import { useRouter } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import { handleErrorWithToast } from "ui/shared-toast";
+import { useMemo } from "react";
 
 export function AppSidebarThreads() {
   const mounted = useMounted();
@@ -48,7 +49,7 @@ export function AppSidebarThreads() {
     },
   );
   const handleDeleteAllThreads = async () => {
-    await toast.promise(deleteAllThreadsAction(), {
+    await toast.promise(deleteNonProjectThreadsAction(), {
       loading: "Deleting all threads...",
       success: () => {
         storeMutate({ threadList: [] });
@@ -59,6 +60,10 @@ export function AppSidebarThreads() {
       error: "Failed to delete all threads",
     });
   };
+
+  const filteredThreadList = useMemo(() => {
+    return threadList?.filter((thread) => thread.projectId === null);
+  }, [threadList]);
 
   return (
     <SidebarGroup>
@@ -95,7 +100,7 @@ export function AppSidebarThreads() {
               Array.from({ length: 12 }).map(
                 (_, index) => mounted && <SidebarMenuSkeleton key={index} />,
               )
-            ) : threadList?.length === 0 ? (
+            ) : filteredThreadList?.length === 0 ? (
               <div className="px-2 py-4 text-center">
                 <p className="text-sm text-muted-foreground">
                   No conversations yet

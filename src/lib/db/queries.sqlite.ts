@@ -10,7 +10,7 @@ import {
   ProjectSchema,
 } from "./schema.sqlite";
 import { sqliteDb as db } from "./db.sqlite";
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
 import { generateUUID } from "lib/utils";
 import { UIMessage } from "ai";
 
@@ -78,14 +78,16 @@ const convertToChatMessage = (row: {
 
 export const sqliteChatService: ChatService = {
   insertThread: async (
-    thread: PartialBy<ChatThread, "id" | "createdAt">,
+    thread: Omit<ChatThread, "createdAt">,
   ): Promise<ChatThread> => {
     const result = await db
       .insert(ChatThreadSchema)
       .values({
-        ...thread,
-        id: thread.id || generateUUID(),
-        createdAt: (thread.createdAt || new Date()).getTime(),
+        title: thread.title,
+        userId: thread.userId,
+        projectId: thread.projectId,
+        id: thread.id,
+        createdAt: convertToTimestamp(new Date()),
       })
       .returning();
     return convertToChatThread(result[0]);
@@ -153,7 +155,8 @@ export const sqliteChatService: ChatService = {
     const result = await db
       .update(ChatThreadSchema)
       .set({
-        ...thread,
+        projectId: thread.projectId,
+        title: thread.title,
       })
       .where(eq(ChatThreadSchema.id, id))
       .returning();
@@ -168,14 +171,16 @@ export const sqliteChatService: ChatService = {
   },
 
   insertMessage: async (
-    message: PartialBy<ChatMessage, "id" | "createdAt">,
+    message: Omit<ChatMessage, "createdAt">,
   ): Promise<ChatMessage> => {
     const result = await db
       .insert(ChatMessageSchema)
       .values({
-        ...message,
-        createdAt: convertToTimestamp(message.createdAt || new Date()),
-        id: message.id || generateUUID(),
+        model: message.model || null,
+        role: message.role,
+        threadId: message.threadId,
+        createdAt: convertToTimestamp(new Date()),
+        id: message.id,
         parts: JSON.stringify(message.parts),
         attachments: message.attachments
           ? JSON.stringify(message.attachments)
@@ -206,23 +211,33 @@ export const sqliteChatService: ChatService = {
       );
   },
 
-  deleteAllThreads: async (userId: string): Promise<void> => {
-    await db
-      .delete(ChatThreadSchema)
-      .where(eq(ChatThreadSchema.userId, userId));
+  deleteNonProjectThreads: async (userId: string): Promise<void> => {
+    const threadIds = await db
+      .select({ id: ChatThreadSchema.id })
+      .from(ChatThreadSchema)
+      .where(
+        and(
+          eq(ChatThreadSchema.userId, userId),
+          isNull(ChatThreadSchema.projectId),
+        ),
+      );
+    await Promise.all(
+      threadIds.map((threadId) => sqliteChatService.deleteThread(threadId.id)),
+    );
   },
 
   insertProject: async (
-    project: PartialBy<Project, "id" | "createdAt" | "updatedAt">,
+    project: Omit<Project, "id" | "createdAt" | "updatedAt">,
   ): Promise<Project> => {
     const result = await db
       .insert(ProjectSchema)
       .values({
-        ...project,
-        id: project.id || generateUUID(),
-        createdAt: convertToTimestamp(project.createdAt || new Date()),
-        updatedAt: convertToTimestamp(project.updatedAt || new Date()),
-        instructions: JSON.stringify(project.instructions),
+        name: project.name,
+        userId: project.userId,
+        id: generateUUID(),
+        createdAt: convertToTimestamp(new Date()),
+        updatedAt: convertToTimestamp(new Date()),
+        instructions: JSON.stringify(project.instructions ?? []),
       })
       .returning();
     return convertToProject(result[0]);

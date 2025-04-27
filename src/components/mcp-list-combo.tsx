@@ -7,7 +7,7 @@ import {
 } from "@/app/api/mcp/actions";
 import { appStore } from "@/app/store";
 import { MCPServerInfo } from "app-types/mcp";
-import { ChevronRight, RotateCw, Loader2 } from "lucide-react";
+import { ChevronRight, RotateCw, Loader } from "lucide-react";
 import { PropsWithChildren, useCallback, useEffect, useState } from "react";
 import useSWR from "swr";
 import { Card, CardContent } from "ui/card";
@@ -165,7 +165,7 @@ export const McpListCombo = ({
                           <div className="mx-2">
                             {processingItems.includes(server.name) ? (
                               <div className="flex items-center gap-2">
-                                <Loader2 className="size-3.5 animate-spin" />
+                                <Loader className="size-3.5 animate-spin" />
                               </div>
                             ) : server.error ? (
                               <div className="flex items-center gap-1 text-destructive bg-card rounded-md px-2 py-1">

@@ -9,7 +9,7 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
-  Loader2,
+  Loader,
   Search,
   WandSparkles,
 } from "lucide-react";
@@ -352,7 +352,7 @@ const GenerateExampleInputJsonDialog = ({
 
           <Button variant="default" onClick={generateExampleSchema}>
             {option.loading ? (
-              <Loader2 className="size-4 animate-spin" />
+              <Loader className="size-4 animate-spin" />
             ) : (
               "Generate"
             )}
@@ -664,7 +664,7 @@ export default function Page() {
                           className="w-full"
                         >
                           {isCallLoading && (
-                            <Loader2 className="size-4 animate-spin mr-2" />
+                            <Loader className="size-4 animate-spin mr-2" />
                           )}
                           Call Tool
                         </Button>

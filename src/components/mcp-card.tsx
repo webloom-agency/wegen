@@ -2,7 +2,7 @@
 import {
   ChevronRight,
   FlaskConical,
-  Loader2,
+  Loader,
   Pencil,
   RotateCw,
   Settings,
@@ -132,7 +132,7 @@ export const MCPCard = memo(function MCPCard({
         <div className="animate-pulse z-10 absolute inset-0 bg-background/50 flex items-center justify-center w-full h-full" />
       )}
       <CardHeader className="flex items-center gap-1 mb-2">
-        {isLoading && <Loader2 className="size-4 z-20 animate-spin mr-1" />}
+        {isLoading && <Loader className="size-4 z-20 animate-spin mr-1" />}
 
         <h4 className="font-bold text-lg ">{name}</h4>
         <div className="flex-1" />

@@ -32,9 +32,7 @@ export type ChatMessageAnnotation = {
 };
 
 export type ChatService = {
-  insertThread(
-    thread: PartialBy<ChatThread, "id" | "createdAt" | "projectId">,
-  ): Promise<ChatThread>;
+  insertThread(thread: Omit<ChatThread, "createdAt">): Promise<ChatThread>;
 
   selectThread(id: string): Promise<ChatThread | null>;
 
@@ -49,13 +47,11 @@ export type ChatService = {
 
   deleteThread(id: string): Promise<void>;
 
-  insertMessage(
-    message: PartialBy<ChatMessage, "id" | "createdAt">,
-  ): Promise<ChatMessage>;
+  insertMessage(message: Omit<ChatMessage, "createdAt">): Promise<ChatMessage>;
 
   deleteMessagesByChatIdAfterTimestamp(messageId: string): Promise<void>;
 
-  deleteAllThreads(userId: string): Promise<void>;
+  deleteNonProjectThreads(userId: string): Promise<void>;
 
   insertProject(
     project: Omit<Project, "id" | "createdAt" | "updatedAt">,

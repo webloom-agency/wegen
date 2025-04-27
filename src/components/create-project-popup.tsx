@@ -1,5 +1,5 @@
 import { insertProjectAction } from "@/app/api/chat/actions";
-import { Lightbulb, Loader2 } from "lucide-react";
+import { Lightbulb, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -93,7 +93,7 @@ export function CreateProjectPopup({
             onClick={handleCreate}
             variant={"secondary"}
           >
-            {isLoading && <Loader2 className="size-4 animate-spin" />}
+            {isLoading && <Loader className="size-4 animate-spin" />}
             Create
           </Button>
         </DialogFooter>

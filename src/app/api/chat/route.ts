@@ -17,6 +17,7 @@ import { chatService } from "lib/db/chat-service";
 import logger from "logger";
 import { SYSTEM_TIME_PROMPT } from "lib/ai/prompts";
 import { ChatMessageAnnotation } from "app-types/chat";
+import { generateUUID } from "lib/utils";
 
 const { insertMessage, insertThread, selectThread } = chatService;
 
@@ -41,11 +42,13 @@ export async function POST(request: Request) {
       messages,
       model: modelName,
       action,
+      projectId,
       activeTool,
     } = json as {
       id?: string;
       messages: Array<UIMessage>;
       model: string;
+      projectId?: string;
       action?: "update-assistant" | "";
       activeTool?: boolean;
     };
@@ -70,8 +73,9 @@ export async function POST(request: Request) {
 
       thread = await insertThread({
         title,
-        id,
+        id: id ?? generateUUID(),
         userId,
+        projectId: projectId ?? null,
       });
     }
 

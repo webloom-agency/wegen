@@ -1,15 +1,17 @@
 "use client";
 import { selectProjectByIdAction } from "@/app/api/chat/actions";
 import { appStore } from "@/app/store";
+import { ThinkingMessage } from "@/components/message";
+import { AssistMessagePart } from "@/components/message-parts";
 import { ProjectDropdown } from "@/components/project-dropdown";
 import PromptInput from "@/components/prompt-input";
 import { useChat } from "@ai-sdk/react";
 import { generateUUID } from "lib/utils";
-import logger from "logger";
-import { MoreHorizontal } from "lucide-react";
+
+import { Loader, MoreHorizontal } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
-import { toast } from "sonner";
+
 import useSWR, { mutate } from "swr";
 import { Button } from "ui/button";
 import { Skeleton } from "ui/skeleton";
@@ -36,12 +38,21 @@ export default function ProjectPage() {
   const { input, setInput, append, stop, status } = useChat({
     id: threadId,
     api: "/api/chat",
-    body: { id: threadId, model, activeTool },
+    body: { id: threadId, model, activeTool, projectId: id as string },
     initialMessages: [],
     sendExtraMessageFields: true,
     generateId: generateUUID,
     experimental_throttle: 100,
+    onFinish: () => {
+      mutate("threads").then(() => {
+        router.push(`/chat/${threadId}`);
+      });
+    },
   });
+
+  const isCreatingThread = useMemo(() => {
+    return status == "submitted" || status == "streaming";
+  }, [status]);
 
   useEffect(() => {
     appStoreMutate({
@@ -54,14 +65,6 @@ export default function ProjectPage() {
       });
     };
   }, [id]);
-
-  useEffect(() => {
-    if (status === "submitted") {
-      mutate("threads").then(() => {
-        router.push(`/chat/${threadId}`);
-      });
-    }
-  }, [status]);
 
   return (
     <div className="flex flex-col min-w-0 relative h-full ">
@@ -83,6 +86,14 @@ export default function ProjectPage() {
             </div>
           )}
         </div>
+        {isCreatingThread && (
+          <div className="pb-6 flex flex-col justify-center fade-in animate-in">
+            <div className="w-fit rounded-2xl px-6 py-4 flex items-center gap-2">
+              <h1 className="font-semibold truncate">Creating Chat...</h1>
+              <Loader className="animate-spin" size={16} />
+            </div>
+          </div>
+        )}
 
         <PromptInput
           threadId={threadId}
@@ -92,6 +103,12 @@ export default function ProjectPage() {
           isLoading={isLoading}
           onStop={stop}
         />
+        <div className="flex">
+          <div className="flex items-center gap-2">
+            <div>File 추가</div>
+            <div>지침 추가</div>
+          </div>
+        </div>
       </div>
     </div>
   );

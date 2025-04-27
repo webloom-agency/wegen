@@ -8,7 +8,7 @@ import { MCPServerInfo } from "app-types/mcp";
 export interface AppState {
   threadList: ChatThread[];
   mcpList: MCPServerInfo[];
-  projectList: Project[];
+  projectList: Omit<Project, "instructions">[];
   currentThreadId: ChatThread["id"] | null;
   currentProjectId: Project["id"] | null;
   user: User;

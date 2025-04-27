@@ -2,7 +2,7 @@
 import { deleteThreadAction, updateThreadAction } from "@/app/api/chat/actions";
 import { appStore } from "@/app/store";
 import { useLatest } from "@/hooks/use-latest";
-import { Loader2, PencilLine, Trash } from "lucide-react";
+import { Loader, PencilLine, Trash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type PropsWithChildren, useState } from "react";
 import { toast } from "sonner";
@@ -102,7 +102,7 @@ export function ThreadDropdown({ threadId, children, beforeTitle }: Props) {
           >
             <Trash />
             Delete
-            {isDeleting && <Loader2 className="ml-auto h-4 w-4 animate-spin" />}
+            {isDeleting && <Loader className="ml-auto h-4 w-4 animate-spin" />}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

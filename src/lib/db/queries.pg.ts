@@ -10,17 +10,20 @@ import {
   ProjectSchema,
 } from "./schema.pg";
 import { pgDb as db } from "./db.pg";
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
 
 export const pgChatService: ChatService = {
   insertThread: async (
-    thread: PartialBy<ChatThread, "id" | "createdAt">,
+    thread: Omit<ChatThread, "createdAt">,
   ): Promise<ChatThread> => {
     const result = await db
       .insert(ChatThreadSchema)
       .values({
-        ...thread,
-        createdAt: thread.createdAt || new Date(),
+        title: thread.title,
+        userId: thread.userId,
+        projectId: thread.projectId,
+        id: thread.id,
+        createdAt: new Date(),
       })
       .returning();
     return result[0];
@@ -105,11 +108,11 @@ export const pgChatService: ChatService = {
   },
 
   insertMessage: async (
-    message: PartialBy<ChatMessage, "id" | "createdAt">,
+    message: Omit<ChatMessage, "createdAt">,
   ): Promise<ChatMessage> => {
     const entity = {
       ...message,
-      createdAt: message.createdAt || new Date(),
+      createdAt: new Date(),
       id: message.id,
     };
     const result = await db
@@ -139,10 +142,19 @@ export const pgChatService: ChatService = {
         ),
       );
   },
-  deleteAllThreads: async (userId: string): Promise<void> => {
-    await db
-      .delete(ChatThreadSchema)
-      .where(eq(ChatThreadSchema.userId, userId));
+  deleteNonProjectThreads: async (userId: string): Promise<void> => {
+    const threadIds = await db
+      .select({ id: ChatThreadSchema.id })
+      .from(ChatThreadSchema)
+      .where(
+        and(
+          eq(ChatThreadSchema.userId, userId),
+          isNull(ChatThreadSchema.projectId),
+        ),
+      );
+    await Promise.all(
+      threadIds.map((threadId) => pgChatService.deleteThread(threadId.id)),
+    );
   },
 
   insertProject: async (
