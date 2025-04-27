@@ -22,11 +22,13 @@ import { handleErrorWithToast } from "ui/shared-toast";
 
 interface CreateProjectWithThreadPopupProps {
   threadId: string;
+  onCreated?: () => void;
 }
 
 export function CreateProjectWithThreadPopup({
   threadId,
   children,
+  onCreated,
 }: PropsWithChildren<CreateProjectWithThreadPopupProps>) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
