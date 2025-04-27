@@ -33,9 +33,15 @@ import { Input } from "ui/input";
 type Props = PropsWithChildren<{
   threadId: string;
   beforeTitle?: string;
+  onDeleted?: () => void;
 }>;
 
-export function ThreadDropdown({ threadId, children, beforeTitle }: Props) {
+export function ThreadDropdown({
+  threadId,
+  children,
+  beforeTitle,
+  onDeleted,
+}: Props) {
   const router = useRouter();
 
   const push = useLatest(router.push);
@@ -77,6 +83,7 @@ export function ThreadDropdown({ threadId, children, beforeTitle }: Props) {
           toast.error(error.message || "Failed to delete thread");
         }
       })
+      .ifOk(() => onDeleted?.())
       .ifOk(() => {
         if (currentThreadId === threadId) {
           push.current("/");

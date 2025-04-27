@@ -8,7 +8,14 @@ import {
   TooltipTrigger,
 } from "ui/tooltip";
 import { Toggle } from "ui/toggle";
-import { ChevronDown, MoonStar, PanelLeft, Sun } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  FolderIcon,
+  MoonStar,
+  PanelLeft,
+  Sun,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "ui/button";
 import { Separator } from "ui/separator";
@@ -22,26 +29,59 @@ import Link from "next/link";
 import { GithubIcon } from "ui/github-icon";
 import { useShallow } from "zustand/shallow";
 function ThreadDropdownComponent() {
-  const [threadList, currentThreadId] = appStore(
-    useShallow((state) => [state.threadList, state.currentThreadId]),
+  const [threadList, currentThreadId, projectList] = appStore(
+    useShallow((state) => [
+      state.threadList,
+      state.currentThreadId,
+      state.projectList,
+    ]),
   );
   const currentThread = useMemo(() => {
     return threadList.find((thread) => thread.id === currentThreadId);
   }, [threadList, currentThreadId]);
 
+  const currentProject = useMemo(() => {
+    return projectList.find(
+      (project) => project.id === currentThread?.projectId,
+    );
+  }, [currentThread, projectList]);
+
   if (!currentThread) return null;
+
   return (
-    <ThreadDropdown
-      threadId={currentThread.id}
-      beforeTitle={currentThread.title}
-    >
-      <div className="text-sm text-muted-foreground hover:text-foreground cursor-pointer flex gap-1 items-center px-2 py-1 rounded-md hover:bg-accent">
-        <span className="truncate whitespace-nowrap overflow-hidden max-w-60 lg:max-w-80">
-          {currentThread.title}
-        </span>
-        <ChevronDown size={14} />
+    <div className="flex items-center gap-1">
+      <div className="w-1 h-4">
+        <Separator orientation="vertical" />
       </div>
-    </ThreadDropdown>
+      {currentProject && (
+        <>
+          <Link href={`/project/${currentProject.id}`}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="flex items-center gap-1"
+            >
+              <p className="max-w-12 truncate text-muted-foreground">
+                {currentProject.name}
+              </p>
+            </Button>
+          </Link>
+          <ChevronRight size={14} className="text-muted-foreground" />
+        </>
+      )}
+
+      <ThreadDropdown
+        threadId={currentThread.id}
+        beforeTitle={currentThread.title}
+      >
+        <div className="text-sm hover:text-foreground cursor-pointer flex gap-1 items-center px-2 py-1 rounded-md hover:bg-accent">
+          <span className="truncate whitespace-nowrap overflow-hidden max-w-60 lg:max-w-80">
+            {currentThread.title}
+          </span>
+          <ChevronDown size={14} />
+        </div>
+      </ThreadDropdown>
+    </div>
   );
 }
 
@@ -76,14 +116,7 @@ export function AppHeader() {
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      {componentByPage && (
-        <>
-          <div className="w-1 h-4">
-            <Separator orientation="vertical" />
-          </div>
-          {componentByPage}
-        </>
-      )}
+      {componentByPage}
       <Link
         href="https://github.com/cgoinglove/mcp-client-chatbot"
         target="_blank"

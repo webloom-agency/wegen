@@ -173,7 +173,10 @@ export default function ProjectPage() {
             </h3>
             <div className="flex flex-col gap-2 px-2">
               {project.threads.map((thread) => (
-                <div className="flex gap-1 group/project-thread">
+                <div
+                  className="flex gap-1 group/project-thread"
+                  key={thread.id}
+                >
                   <Link
                     key={thread.id}
                     href={`/chat/${thread.id}`}
@@ -190,6 +193,7 @@ export default function ProjectPage() {
                   <ThreadDropdown
                     threadId={thread.id}
                     beforeTitle={thread.title}
+                    onDeleted={fetchProject}
                   >
                     <Button
                       variant="ghost"
