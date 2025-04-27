@@ -21,6 +21,7 @@ import { chatService } from "lib/db/chat-service";
 import { customModelProvider } from "lib/ai/models";
 import { toAny } from "lib/utils";
 import { MCPToolInfo } from "app-types/mcp";
+import { serverCache } from "lib/cache";
 
 const {
   deleteThread,
@@ -121,7 +122,13 @@ export async function selectProjectListByUserIdAction() {
 
 export async function insertProjectAction({ name }: { name: string }) {
   const userId: string = getMockUserSession().id;
-  const project = await insertProject({ name, userId, instructions: [] });
+  const project = await insertProject({
+    name,
+    userId,
+    instructions: {
+      systemPrompt: "",
+    },
+  });
   return project;
 }
 
@@ -135,9 +142,26 @@ export async function updateProjectAction(
   project: Partial<Pick<Project, "name" | "instructions">>,
 ) {
   const updatedProject = await updateProject(id, project);
+  await serverCache.delete(`project-instructions-${id}`);
   return updatedProject;
 }
 
 export async function deleteProjectAction(id: string) {
   await deleteProject(id);
+}
+
+export async function rememberProjectInstructionsAction(
+  projectId: string,
+): Promise<Project["instructions"] | null> {
+  const key = `project-instructions-${projectId}`;
+  const projectInstructions = await serverCache.get(key);
+  if (projectInstructions) {
+    return projectInstructions as Project["instructions"];
+  }
+  const project = await selectProjectById(projectId);
+  if (!project) {
+    return null;
+  }
+  await serverCache.set(key, project.instructions);
+  return project.instructions;
 }

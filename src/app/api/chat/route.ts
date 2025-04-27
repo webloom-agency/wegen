@@ -7,7 +7,10 @@ import {
   type UIMessage,
 } from "ai";
 
-import { generateTitleFromUserMessageAction } from "@/app/api/chat/actions";
+import {
+  generateTitleFromUserMessageAction,
+  rememberProjectInstructionsAction,
+} from "@/app/api/chat/actions";
 import { customModelProvider, isToolCallUnsupported } from "lib/ai/models";
 
 import { getMockUserSession } from "lib/mock";
@@ -79,6 +82,10 @@ export async function POST(request: Request) {
       });
     }
 
+    const projectInstructions = projectId
+      ? await rememberProjectInstructionsAction(projectId)
+      : null;
+
     const annotations: ChatMessageAnnotation[] =
       (message.annotations as ChatMessageAnnotation[]) ?? [];
 
@@ -92,11 +99,15 @@ export async function POST(request: Request) {
 
     const toolChoice = !activeTool ? "none" : "auto";
 
+    const systemPrompt = [SYSTEM_TIME_PROMPT, projectInstructions?.systemPrompt]
+      .filter(Boolean)
+      .join("\n\n---\n\n");
+
     return createDataStreamResponse({
       execute: (dataStream) => {
         const result = streamText({
           model,
-          system: SYSTEM_TIME_PROMPT,
+          system: systemPrompt,
           messages,
           experimental_transform: smoothStream({ chunking: "word" }),
           tools: isToolCallUnsupported(model)
