@@ -23,7 +23,7 @@ export const ProjectSchema = pgTable("project", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   name: text("name").notNull(),
   userId: text("user_id").notNull(),
-  instructions: json("instructions").array(),
+  instructions: json("instructions"),
   createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });

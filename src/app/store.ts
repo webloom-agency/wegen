@@ -20,12 +20,9 @@ export interface AppDispatch {
   mutate: (state: Mutate<AppState>) => void;
 }
 
-export interface AppGetters {
-  getCurrentThread(): ChatThread | null;
-}
-export const appStore = create<AppState & AppDispatch & AppGetters>()(
+export const appStore = create<AppState & AppDispatch>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       threadList: [],
       projectList: [],
       mcpList: [],
@@ -36,10 +33,7 @@ export const appStore = create<AppState & AppDispatch & AppGetters>()(
       modelList: [],
 
       model: DEFAULT_MODEL,
-      getCurrentThread: () =>
-        get().threadList.find(
-          (thread) => thread.id === get().currentThreadId,
-        ) || null,
+
       mutate: set,
     }),
     {

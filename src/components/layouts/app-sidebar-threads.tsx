@@ -30,7 +30,6 @@ import { useShallow } from "zustand/shallow";
 import { useRouter } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import { handleErrorWithToast } from "ui/shared-toast";
-import { useMemo } from "react";
 
 export function AppSidebarThreads() {
   const mounted = useMounted();
@@ -60,10 +59,6 @@ export function AppSidebarThreads() {
       error: "Failed to delete all threads",
     });
   };
-
-  const filteredThreadList = useMemo(() => {
-    return threadList?.filter((thread) => thread.projectId === null);
-  }, [threadList]);
 
   return (
     <SidebarGroup>
@@ -100,7 +95,7 @@ export function AppSidebarThreads() {
               Array.from({ length: 12 }).map(
                 (_, index) => mounted && <SidebarMenuSkeleton key={index} />,
               )
-            ) : filteredThreadList?.length === 0 ? (
+            ) : threadList?.length === 0 ? (
               <div className="px-2 py-4 text-center">
                 <p className="text-sm text-muted-foreground">
                   No conversations yet

@@ -87,38 +87,40 @@ export function AppSidebarProjects() {
                 </div>
               </div>
             ) : (
-              projectList?.map((project) => (
-                <SidebarMenu key={project.id} className={"group/thread mr-0"}>
-                  <SidebarMenuItem className="px-2 cursor-pointer">
-                    <SidebarMenuButton
-                      asChild
-                      isActive={currentProjectId === project.id}
-                    >
-                      <div className="flex gap-1">
-                        <div className="p-1 rounded-md hover:bg-foreground/40">
-                          <FolderOpen className="size-4" />
-                        </div>
+              <div className="flex flex-col gap-1">
+                {projectList?.map((project) => (
+                  <SidebarMenu key={project.id} className={"group/thread mr-0"}>
+                    <SidebarMenuItem className="px-2 cursor-pointer">
+                      <SidebarMenuButton
+                        asChild
+                        isActive={currentProjectId === project.id}
+                      >
+                        <div className="flex gap-1">
+                          <div className="p-1 rounded-md hover:bg-foreground/40">
+                            <FolderOpen className="size-4" />
+                          </div>
 
-                        <Link
-                          href={`/project/${project.id}`}
-                          className="flex items-center min-w-0 w-full"
-                        >
-                          <p className="truncate">{project.name}</p>
-                          <ProjectDropdown projectId={project.id}>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="ml-auto opacity-0 group-hover/projects:opacity-100"
-                            >
-                              <MoreHorizontal className="size-4" />
-                            </Button>
-                          </ProjectDropdown>
-                        </Link>
-                      </div>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              ))
+                          <Link
+                            href={`/project/${project.id}`}
+                            className="flex items-center min-w-0 w-full"
+                          >
+                            <p className="truncate">{project.name}</p>
+                            <ProjectDropdown projectId={project.id}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="ml-auto opacity-0 group-hover/projects:opacity-100"
+                              >
+                                <MoreHorizontal className="size-4" />
+                              </Button>
+                            </ProjectDropdown>
+                          </Link>
+                        </div>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                ))}
+              </div>
             )}
           </SidebarMenuItem>
         </SidebarMenu>

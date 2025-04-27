@@ -20,9 +20,15 @@ import { appStore } from "@/app/store";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { GithubIcon } from "ui/github-icon";
-
+import { useShallow } from "zustand/shallow";
 function ThreadDropdownComponent() {
-  const currentThread = appStore((state) => state.getCurrentThread());
+  const [threadList, currentThreadId] = appStore(
+    useShallow((state) => [state.threadList, state.currentThreadId]),
+  );
+  const currentThread = useMemo(() => {
+    return threadList.find((thread) => thread.id === currentThreadId);
+  }, [threadList, currentThreadId]);
+
   if (!currentThread) return null;
   return (
     <ThreadDropdown

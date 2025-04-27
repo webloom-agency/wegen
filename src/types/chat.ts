@@ -12,7 +12,9 @@ export type Project = {
   id: string;
   name: string;
   userId: string;
-  instructions: { type: "text"; text: string }[];
+  instructions: {
+    systemPrompt: string;
+  };
   createdAt: Date;
   updatedAt: Date;
 };

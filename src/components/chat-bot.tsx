@@ -17,6 +17,7 @@ import { useShallow } from "zustand/shallow";
 
 type Props = {
   threadId: string;
+
   initialMessages: Array<UIMessage>;
   selectedChatModel?: string;
 };
