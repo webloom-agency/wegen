@@ -3,7 +3,7 @@
 import type { UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
-import { mutate } from "swr";
+import useSWR, { mutate } from "swr";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import PromptInput from "./prompt-input";
@@ -17,12 +17,16 @@ import { useShallow } from "zustand/shallow";
 
 type Props = {
   threadId: string;
-
+  projectId?: string;
   initialMessages: Array<UIMessage>;
   selectedChatModel?: string;
 };
 
-export default function ChatBot({ threadId, initialMessages }: Props) {
+export default function ChatBot({
+  threadId,
+  projectId,
+  initialMessages,
+}: Props) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -42,7 +46,7 @@ export default function ChatBot({ threadId, initialMessages }: Props) {
   } = useChat({
     id: threadId,
     api: "/api/chat",
-    body: { id: threadId, model, activeTool },
+    body: { id: threadId, model, activeTool, projectId },
     initialMessages: initialMessages,
     sendExtraMessageFields: true,
     generateId: generateUUID,

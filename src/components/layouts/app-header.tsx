@@ -11,7 +11,6 @@ import { Toggle } from "ui/toggle";
 import {
   ChevronDown,
   ChevronRight,
-  FolderIcon,
   MoonStar,
   PanelLeft,
   Sun,
@@ -56,12 +55,8 @@ function ThreadDropdownComponent() {
       {currentProject && (
         <>
           <Link href={`/project/${currentProject.id}`}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="flex items-center gap-1"
-            >
-              <p className="max-w-12 truncate text-muted-foreground">
+            <Button variant="ghost" className="flex items-center gap-1">
+              <p className="text-muted-foreground max-w-32 truncate">
                 {currentProject.name}
               </p>
             </Button>
