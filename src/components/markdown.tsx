@@ -15,15 +15,15 @@ const WordByWordFadeIn = memo(({ children }: PropsWithChildren) => {
     .flat()
     .flatMap((child) => (isString(child) ? child.split(" ") : child));
   return childrens.map((word, index) =>
-    isString(word) ? <FadeIn key={index}>{word} </FadeIn> : word,
+    isString(word) ? <FadeIn key={index}>{word}</FadeIn> : word,
   );
 });
 WordByWordFadeIn.displayName = "WordByWordFadeIn";
 const components: Partial<Components> = {
   code: ({ children }) => {
     return (
-      <code className="text-sm rounded-md mx-1 text-blue-400">
-        <WordByWordFadeIn>`{children}`</WordByWordFadeIn>
+      <code className="text-sm rounded-md bg-accent py-1 px-2 mx-0.5">
+        <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </code>
     );
   },

@@ -28,9 +28,15 @@ import { appStore } from "@/app/store";
 import { useObjectState } from "@/hooks/use-object-reducer";
 import { safe } from "ts-safe";
 
+import { useCompletion } from "@ai-sdk/react";
+import { handleErrorWithToast } from "ui/shared-toast";
+import { toast } from "sonner";
+import { mutate } from "swr";
+import { insertProjectAction } from "@/app/api/chat/actions";
+
 interface CreateProjectWithThreadPopupProps {
   threadId: string;
-  onCreated?: () => void;
+  onClose?: () => void;
 }
 
 function ProjectNameStep({
@@ -48,6 +54,11 @@ function ProjectNameStep({
         <Input
           autoFocus
           id="name"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              nextStep();
+            }
+          }}
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="eg. Korea Trip Plan"
@@ -75,9 +86,11 @@ function InstructionsStep({
   setSystemPrompt,
   prevStep,
   onSave,
+  threadId,
 }: {
   systemPrompt: string;
   setSystemPrompt: (systemPrompt: string) => void;
+  threadId: string;
   prevStep: () => void;
   onSave: () => void;
 }) {
@@ -86,66 +99,76 @@ function InstructionsStep({
   const [model, setModel] = useState(currentModelName);
   const modelList = useMemo(() => customModelProvider.modelsInfo, []);
 
+  const { complete, completion } = useCompletion({
+    api: "/api/chat/summarize",
+  });
+
+  useEffect(() => {
+    setSystemPrompt(completion);
+  }, [completion]);
+
   const generateInstructions = () => {
-    safe(() => setIsLoading(true)).watch(() => setIsLoading(false));
-    // if (!projectOption.name.trim()) {
-    //   toast.error("Please enter a project name first");
-    //   return;
-    // }
+    safe(() => setIsLoading(true))
+      .map(() =>
+        complete("", {
+          body: {
+            threadId,
+            model,
+          },
+        }),
+      )
+      .watch(() => setIsLoading(false))
+      .ifFail(handleErrorWithToast);
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex justify-between items-center bg-muted/30 p-3 rounded-md">
-        <Label htmlFor="model" className="text-sm">
-          Select Model
-        </Label>
-        <SelectModel model={model} onSelect={setModel} providers={modelList}>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="gap-1 min-w-40 justify-between"
-          >
+    <div
+      className="flex flex-col h-full overflow-hidden"
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      <div className="flex justify-between items-center gap-2">
+        <Button
+          onClick={generateInstructions}
+          className="rounded-full flex-1 flex items-center gap-2 border border-accent"
+        >
+          {isLoading ? (
+            <Loader className="size-3.5 animate-spin" />
+          ) : (
+            <WandSparkles className="size-3.5" />
+          )}
+          Generate With AI
+        </Button>
+        <SelectModel
+          model={model}
+          onSelect={setModel}
+          providers={modelList}
+          align="end"
+        >
+          <Button variant="ghost" className="gap-1 justify-between min-w-24">
             <span>{model}</span>
             <ChevronsUpDown className="size-3.5" />
           </Button>
         </SelectModel>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <Label htmlFor="instructions" className="text-sm">
-            Instructions
-          </Label>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="gap-1 text-xs"
-            onClick={generateInstructions}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <Loader className="size-3.5 animate-spin" />
-            ) : (
-              <WandSparkles className="size-3.5" />
-            )}
-            Generate Instructions
-          </Button>
-        </div>
-        <Textarea
-          id="instructions"
-          value={systemPrompt}
-          disabled={isLoading}
-          onChange={(e) => setSystemPrompt(e.target.value)}
-          placeholder="e.g. You are a Korean travel guide ChatBot. Respond only in Korean, include precise times for every itinerary item, and present transportation, budget, and dining recommendations succinctly in a table format."
-          className="resize-none min-h-[180px] w-full"
-        />
+      <div className="flex justify-between items-center mb-2 mt-6">
+        <Label htmlFor="instructions" className="text-sm">
+          Instructions
+        </Label>
       </div>
+      <Textarea
+        id="instructions"
+        value={systemPrompt}
+        disabled={isLoading}
+        onChange={(e) => setSystemPrompt(e.target.value)}
+        placeholder="e.g. You are a Korean travel guide ChatBot. Respond only in Korean, include precise times for every itinerary item, and present transportation, budget, and dining recommendations succinctly in a table format."
+        className="resize-none flex-1 overflow-y-auto w-full"
+      />
 
-      <div className="flex justify-between mt-auto">
+      <div className="flex justify-between mt-4">
         <Button
           type="button"
-          variant="secondary"
+          variant="ghost"
           onClick={prevStep}
           className="gap-1"
         >
@@ -157,9 +180,14 @@ function InstructionsStep({
           <DialogClose asChild>
             <Button variant="ghost">Cancel</Button>
           </DialogClose>
-          <Button disabled={isLoading} onClick={onSave} className="gap-1">
+          <Button
+            variant="secondary"
+            disabled={isLoading || !systemPrompt.trim()}
+            onClick={onSave}
+            className="gap-1"
+          >
             {isLoading && <Loader className="size-4 animate-spin" />}
-            Save
+            Create
           </Button>
         </div>
       </div>
@@ -170,15 +198,15 @@ function InstructionsStep({
 export function CreateProjectWithThreadPopup({
   threadId,
   children,
-  onCreated,
+  onClose,
 }: PropsWithChildren<CreateProjectWithThreadPopupProps>) {
   const [isOpen, setIsOpen] = useState(false);
 
   const [projectOption, setProjectOption] = useObjectState({
     name: "",
     instructions: "",
-    loading: false,
     currentStep: 1,
+    isLoading: false,
   });
 
   const router = useRouter();
@@ -199,97 +227,34 @@ export function CreateProjectWithThreadPopup({
   };
 
   const handleCreate = async () => {
-    // safe(() => setIsLoading(true))
-    //   .map(() =>
-    //     insertProjectAction({
-    //       name,
-    //       instructions: {
-    //         systemPrompt: instructions,
-    //         model,
-    //       } as any,
-    //     }),
-    //   )
-    //   .watch(() => setIsLoading(false))
-    //   .ifOk(() => setIsOpen(false))
-    //   .ifOk(() => toast.success("Project created"))
-    //   .ifOk(() => mutate("projects"))
-    //   .ifOk((project) => router.push(`/project/${project.id}`))
-    //   .ifFail(handleErrorWithToast);
-  };
-
-  const handleGenerateInstructions = async () => {
-    // if (!projectOption.name.trim()) {
-    //   toast.error("Please enter a project name first");
-    //   return;
-    // }
-    // setProjectOption({
-    //   isGeneratingInstructions: true,
-    // });
-    // try {
-    //   // 가상의 도구 정보 객체
-    //   const dummyToolInfo = {
-    //     name: "project_instruction_generator",
-    //     description: "Generates project instructions based on project name",
-    //     inputSchema: {
-    //       type: "object",
-    //       properties: {
-    //         projectName: {
-    //           type: "string",
-    //           description: "Name of the project",
-    //         },
-    //       },
-    //       required: ["projectName"],
-    //     },
-    //   };
-    //   // generateExampleToolSchemaAction 함수 호출
-    //   const result = await generateExampleToolSchemaAction({
-    //     modelName: currentModelName || model,
-    //     toolInfo: dummyToolInfo as any,
-    //     prompt: `Generate a detailed system prompt for a project assistant that will help with a project named "${name}". The response should be in a format that can be directly used as instructions for an AI assistant.`,
-    //   });
-    //   // 결과에서 인스트럭션 추출 (타입 체크 개선)
-    //   if (result) {
-    //     if (typeof result === "object") {
-    //       // 객체인 경우 가능한 필드 확인
-    //       const resultObj = result as Record<string, any>;
-    //       if (resultObj.systemPrompt) {
-    //         setInstructions(resultObj.systemPrompt);
-    //       } else if (resultObj.instructions) {
-    //         setInstructions(resultObj.instructions);
-    //       } else {
-    //         // 적절한 필드가 없으면 JSON 문자열로 변환
-    //         setInstructions(JSON.stringify(result, null, 2));
-    //       }
-    //     } else if (typeof result === "string") {
-    //       // 문자열 그대로 사용
-    //       setInstructions(result);
-    //     } else {
-    //       // 기타 타입은 JSON 문자열로 변환
-    //       setInstructions(JSON.stringify(result, null, 2));
-    //     }
-    //   }
-    //   toast.success("Instructions generated");
-    // } catch (error) {
-    //   console.error(error);
-    //   handleErrorWithToast(error as Error);
-    // } finally {
-    //   setProjectOption({
-    //     isGeneratingInstructions: false,
-    //   });
-    // }
+    safe(() => setProjectOption({ isLoading: true }))
+      .map(() =>
+        insertProjectAction({
+          name: projectOption.name,
+          instructions: {
+            systemPrompt: projectOption.instructions,
+          },
+        }),
+      )
+      .ifOk(() => setIsOpen(false))
+      .ifOk(() => toast.success("Project created"))
+      .ifOk(() => mutate("projects"))
+      .ifOk(() => onClose?.())
+      .ifOk((project) => router.push(`/project/${project.id}`))
+      .watch(() => setProjectOption({ isLoading: false }))
+      .ifFail(handleErrorWithToast);
   };
   const steps = useMemo(
     () => [
       {
         id: 1,
         title: "Project Name",
-        description: "Choose a name for your new project",
+        description: "Enter a name for your new project",
       },
       {
         id: 2,
-        title: "Model & Instructions",
-        description:
-          "Select model and define instructions for your project assistant",
+        title: "Instructions",
+        description: "Provide custom instructions for your project assistant",
       },
     ],
     [],
@@ -304,14 +269,21 @@ export function CreateProjectWithThreadPopup({
       setProjectOption({
         name: "",
         instructions: "",
-        loading: false,
         currentStep: 1,
       });
     }
   }, [isOpen]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        if (!open) {
+          onClose?.();
+        }
+      }}
+    >
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[800px] p-0 bg-card overflow-hidden">
         <DialogTitle className="p-0 m-0 hidden">Create Project</DialogTitle>
@@ -377,8 +349,8 @@ export function CreateProjectWithThreadPopup({
                     <p className="font-semibold text-accent-foreground mb-1">
                       What is a project?
                     </p>
-                    A project is a place where you can keep your files and
-                    custom instructions all in one spot.
+                    A project allows you to organize your files and custom
+                    instructions in one convenient place.
                   </div>
                 </div>
               </div>
@@ -404,6 +376,7 @@ export function CreateProjectWithThreadPopup({
             )}
             {currentStepContent?.id === 2 && (
               <InstructionsStep
+                threadId={threadId}
                 systemPrompt={projectOption.instructions}
                 setSystemPrompt={(instructions) =>
                   setProjectOption({ instructions })

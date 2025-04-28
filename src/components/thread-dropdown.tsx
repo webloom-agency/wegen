@@ -107,7 +107,7 @@ export function ThreadDropdown({
               <CommandItem className="cursor-pointer">
                 <CreateProjectWithThreadPopup
                   threadId={threadId}
-                  onCreated={() => setOpen(false)}
+                  onClose={() => setOpen(false)}
                 >
                   <div className="flex items-center gap-2 w-full">
                     <WandSparkles className="text-foreground" />

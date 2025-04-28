@@ -138,6 +138,29 @@ export async function insertProjectAction({
   return project;
 }
 
+export async function insertProjectWithThreadAction({
+  name,
+  instructions,
+  threadId,
+}: {
+  name: string;
+  instructions?: Project["instructions"];
+  threadId: string;
+}) {
+  const userId: string = getMockUserSession().id;
+  const project = await insertProject({
+    name,
+    userId,
+    instructions: instructions ?? {
+      systemPrompt: "",
+    },
+  });
+  await updateThread(threadId, {
+    projectId: project.id,
+  });
+  return project;
+}
+
 export async function selectProjectByIdAction(id: string) {
   const project = await selectProjectById(id);
   return project;
