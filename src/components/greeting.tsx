@@ -1,3 +1,5 @@
+"use client";
+
 import { appStore } from "@/app/store";
 import { motion } from "framer-motion";
 
