@@ -9,13 +9,18 @@
 
 > Built with [Vercel AI SDK](https://sdk.vercel.ai) and [Next.js](https://nextjs.org/), this app adopts modern patterns for building AI chat interfaces. Leverage the power of [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) to seamlessly integrate external tools into your chat experience.
 
-> **Our goal:** Build an AI chatbot app that is optimized for personal use and easy for anyone to run.
+**🌟 Open Source Project**
+MCP Client Chatbot is a 100% community-driven open source project.
 
 ## Table of Contents
 
-- [MCP Client Chatbot: Local-First AI Assistant App](#mcp-client-chatbot-local-first-ai-assistant-app)
+- [MCP Client Chatbot](#mcp-client-chatbot)
   - [Table of Contents](#table-of-contents)
   - [Demo](#demo)
+    - [🧩 Browser Automation with Playwright MCP](#-browser-automation-with-playwright-mcp)
+    - [⚡️ Quick Tool Mentions (`@`)](#️-quick-tool-mentions-)
+    - [🔌 Adding MCP Servers Easily](#-adding-mcp-servers-easily)
+    - [🛠️ Standalone Tool Testing](#️-standalone-tool-testing)
   - [✨ Key Features](#-key-features)
   - [🚀 Getting Started](#-getting-started)
     - [Environment Variables](#environment-variables)
@@ -34,7 +39,7 @@ Here are some quick examples of how you can use MCP Client Chatbot:
 
 ### 🧩 Browser Automation with Playwright MCP
 
-![playwright-demo](https://github.com/user-attachments/assets/af215e7f-6d34-41bc-a9b1-f608c01c5239)
+![playwright-demo](./docs/images/preview-1.gif)
 
 **Example:** Control a web browser using Microsoft's [playwright-mcp](https://github.com/microsoft/playwright-mcp) tool.
 
@@ -43,7 +48,7 @@ Sample prompt:
 ```prompt
 Please go to GitHub and visit the cgoinglove profile.
 Open the mcp-client-chatbot project.
-Then, click on the README.md file and scroll down through it.
+Then, click on the README.md file.
 After that, close the browser.
 Finally, tell me how to install the package.
 ```
