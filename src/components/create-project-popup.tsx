@@ -39,7 +39,7 @@ export function CreateProjectPopup({ children }: PropsWithChildren) {
   };
 
   const handleEnterKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !e.nativeEvent.isComposing) {
       handleCreate();
     }
   };
