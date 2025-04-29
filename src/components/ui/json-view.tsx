@@ -4,15 +4,6 @@ import { useState, memo } from "react";
 
 import clsx from "clsx";
 
-export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | JsonValue[]
-  | { [key: string]: JsonValue };
-
 interface JsonViewProps {
   data: unknown;
   name?: string;

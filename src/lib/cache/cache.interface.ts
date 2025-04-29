@@ -1,7 +1,7 @@
-export interface Cache<K, V> {
-  get(key: K): Promise<V | undefined>;
-  set(key: K, value: V, ttlMs?: number): Promise<void>;
-  has(key: K): Promise<boolean>;
-  delete(key: K): Promise<void>;
+export interface Cache {
+  get<T>(key: string): Promise<T | undefined>;
+  set(key: string, value: unknown, ttlMs?: number): Promise<void>;
+  has(key: string): Promise<boolean>;
+  delete(key: string): Promise<void>;
   clear(): Promise<void>;
 }

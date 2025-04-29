@@ -6,8 +6,8 @@ interface MemoryCacheOptions {
   cleanupIntervalMs?: number;
 }
 
-export class MemoryCache<K, V> implements Cache<K, V> {
-  private store = new Map<K, Entry<V>>();
+export class MemoryCache implements Cache {
+  private store = new Map<string, Entry<JsonValue>>();
   private defaultTtlMs: number;
   constructor(opts: MemoryCacheOptions = {}) {
     this.defaultTtlMs = opts.defaultTtlMs ?? Infinity;
@@ -17,25 +17,25 @@ export class MemoryCache<K, V> implements Cache<K, V> {
     }
   }
 
-  async get(key: K) {
+  async get<T>(key: string): Promise<T | undefined> {
     const e = this.store.get(key);
     if (!e) return undefined;
     if (Date.now() > e.expiresAt) {
       this.store.delete(key);
       return undefined;
     }
-    return e.value;
+    return e.value as T;
   }
 
-  async set(key: K, value: V, ttlMs = this.defaultTtlMs) {
+  async set(key: string, value: any, ttlMs = this.defaultTtlMs) {
     const expiresAt = isFinite(ttlMs) ? Date.now() + ttlMs : Infinity;
     this.store.set(key, { value, expiresAt });
   }
 
-  async has(key: K) {
+  async has(key: string) {
     return (await this.get(key)) !== undefined;
   }
-  async delete(key: K) {
+  async delete(key: string) {
     this.store.delete(key);
   }
   async clear() {
