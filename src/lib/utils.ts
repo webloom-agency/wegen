@@ -62,7 +62,7 @@ export const isJson = (value: any): value is Record<string, any> => {
       return true;
     }
     return false;
-  } catch (e) {
+  } catch (_e) {
     return false;
   }
 };

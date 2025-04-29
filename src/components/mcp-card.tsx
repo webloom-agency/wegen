@@ -33,27 +33,25 @@ import { Label } from "ui/label";
 import { ToolDetailPopup } from "./tool-detail-popup";
 
 // Tools list component
-const ToolsList = memo(
-  ({ tools, serverName }: { tools: MCPToolInfo[]; serverName: string }) => (
-    <div className="space-y-2 pr-2">
-      {tools.map((tool) => (
-        <ToolDetailPopup key={tool.name} tool={tool}>
-          <div className="flex cursor-pointer bg-secondary/50 rounded-md p-2 hover:bg-secondary/80 transition-colors">
-            <div className="flex-1 w-full">
-              <p className="font-medium text-sm mb-1">{tool.name}</p>
-              <p className="text-xs text-muted-foreground line-clamp-1">
-                {tool.description}
-              </p>
-            </div>
-            <div className="flex items-center px-1 justify-center self-stretch">
-              <ChevronRight size={16} />
-            </div>
+const ToolsList = memo(({ tools }: { tools: MCPToolInfo[] }) => (
+  <div className="space-y-2 pr-2">
+    {tools.map((tool) => (
+      <ToolDetailPopup key={tool.name} tool={tool}>
+        <div className="flex cursor-pointer bg-secondary/50 rounded-md p-2 hover:bg-secondary/80 transition-colors">
+          <div className="flex-1 w-full">
+            <p className="font-medium text-sm mb-1">{tool.name}</p>
+            <p className="text-xs text-muted-foreground line-clamp-1">
+              {tool.description}
+            </p>
           </div>
-        </ToolDetailPopup>
-      ))}
-    </div>
-  ),
-);
+          <div className="flex items-center px-1 justify-center self-stretch">
+            <ChevronRight size={16} />
+          </div>
+        </div>
+      </ToolDetailPopup>
+    ))}
+  </div>
+));
 
 ToolsList.displayName = "ToolsList";
 
@@ -227,7 +225,7 @@ export const MCPCard = memo(function MCPCard({
             </div>
 
             {toolInfo.length > 0 ? (
-              <ToolsList tools={toolInfo} serverName={name} />
+              <ToolsList tools={toolInfo} />
             ) : (
               <div className="bg-secondary/30 rounded-md p-3 text-center">
                 <p className="text-sm text-muted-foreground">

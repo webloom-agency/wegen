@@ -65,7 +65,7 @@ export default function MentionInput({
           },
           suggestion: {
             char: "@",
-            items: ({ query }: { query: string }) => {
+            items: () => {
               return items;
             },
             render: () => {

@@ -26,7 +26,7 @@
       "recommended": false,
       "complexity": { "noUselessTypeConstraint": "error" },
       "correctness": {
-        "noUnusedVariables": "off",
+        "noUnusedVariables": "error",
         "useArrayLiterals": "off",
         "useExhaustiveDependencies": "off"
       },

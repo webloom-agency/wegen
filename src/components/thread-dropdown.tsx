@@ -74,7 +74,7 @@ export function ThreadDropdown({
       });
   };
 
-  const handleDelete = async (e: React.MouseEvent) => {
+  const handleDelete = async (_e: React.MouseEvent) => {
     safe()
       .watch(() => setIsDeleting(true))
       .ifOk(() => deleteThreadAction(threadId))
