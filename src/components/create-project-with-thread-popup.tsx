@@ -26,7 +26,7 @@ import { SelectModel } from "./select-model";
 import { customModelProvider } from "lib/ai/models";
 import { cn } from "lib/utils";
 import { appStore } from "@/app/store";
-import { useObjectState } from "@/hooks/use-object-reducer";
+import { useObjectState } from "@/hooks/use-object-state";
 import { safe } from "ts-safe";
 
 import { useCompletion } from "@ai-sdk/react";

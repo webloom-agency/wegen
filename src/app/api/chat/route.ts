@@ -3,7 +3,7 @@ import {
   createDataStreamResponse,
   smoothStream,
   streamText,
-  tool as createTool,
+  // tool as createTool,
   Tool,
   type UIMessage,
 } from "ai";
