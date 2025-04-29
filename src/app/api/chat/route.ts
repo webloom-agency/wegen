@@ -3,6 +3,7 @@ import {
   createDataStreamResponse,
   smoothStream,
   streamText,
+  tool as createTool,
   Tool,
   type UIMessage,
 } from "ai";
@@ -20,7 +21,7 @@ import { chatService } from "lib/db/chat-service";
 import logger from "logger";
 import { SYSTEM_TIME_PROMPT } from "lib/ai/prompts";
 import { ChatMessageAnnotation } from "app-types/chat";
-import { generateUUID } from "lib/utils";
+import { generateUUID, objectFlow } from "lib/utils";
 import { z } from "zod";
 
 const { insertMessage, insertThread, selectThread } = chatService;
@@ -167,12 +168,21 @@ function filterToolsByMentions(
   if (mentions.length === 0) {
     return tools;
   }
-  return Object.fromEntries(
-    Object.keys(tools)
-      .filter((tool) => mentions.some((mention) => tool.startsWith(mention)))
-      .map((tool) => [tool, tools[tool]]),
+  return objectFlow(tools).filter((_tool, key) =>
+    mentions.some((mention) => key.startsWith(mention)),
   );
 }
+
+// function disableToolExecution(
+//   tool: Record<string, Tool>,
+// ): Record<string, Tool> {
+//   return objectFlow(tool).map((value) => {
+//     return createTool({
+//       parameters: value.parameters,
+//       description: value.description,
+//     });
+//   });
+// }
 
 function appendAnnotations(
   annotations: any[] = [],
