@@ -159,3 +159,5 @@ SQLite가 기본 DB(`db.sqlite`)입니다. PostgreSQL을 사용하려면 `.env`�
 모든 기여를 환영합니다! 버그 보고, 기능 아이디어, 코드 개선 - 모든 것이 최상의 로컬 AI 어시스턴트를 구축하는 데 도움이 됩니다.
 
 함께 만들어 나갑시다 🚀
+
+<img src="https://contrib.rocks/image?repo=cgoinglove/mcp-client-chatbot" />
