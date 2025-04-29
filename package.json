@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm initial:check && next dev --turbopack",
-    "build": "next build",
+    "build": "rimraf .next && pnpm next build",
     "start": "next start",
     "test": "vitest",
     "lint:next": "next lint",
