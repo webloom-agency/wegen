@@ -11,7 +11,7 @@ import {
   generateTitleFromUserMessageAction,
   rememberProjectInstructionsAction,
 } from "@/app/api/chat/actions";
-import { customModelProvider, isToolCallUnsupported } from "lib/ai/models";
+import { customModelProvider, isToolCallUnsupportedModel } from "lib/ai/models";
 
 import { getMockUserSession } from "lib/mock";
 import { mcpClientsManager } from "../mcp/mcp-manager";
@@ -21,10 +21,20 @@ import logger from "logger";
 import { SYSTEM_TIME_PROMPT } from "lib/ai/prompts";
 import { ChatMessageAnnotation } from "app-types/chat";
 import { generateUUID } from "lib/utils";
+import { z } from "zod";
 
 const { insertMessage, insertThread, selectThread } = chatService;
 
 export const maxDuration = 120;
+
+const requestBodySchema = z.object({
+  id: z.string().optional(),
+  messages: z.array(z.any()),
+  model: z.string(),
+  projectId: z.string().optional(),
+  action: z.enum(["update-assistant", ""]).optional(),
+  activeTool: z.boolean().optional(),
+});
 
 export async function POST(request: Request) {
   try {
@@ -36,14 +46,7 @@ export async function POST(request: Request) {
       action,
       projectId,
       activeTool,
-    } = json as {
-      id?: string;
-      messages: Array<UIMessage>;
-      model: string;
-      projectId?: string;
-      action?: "update-assistant" | "";
-      activeTool?: boolean;
-    };
+    } = requestBodySchema.parse(json);
 
     let thread = id ? await selectThread(id) : null;
 
@@ -78,7 +81,7 @@ export async function POST(request: Request) {
     const annotations: ChatMessageAnnotation[] =
       (message.annotations as ChatMessageAnnotation[]) ?? [];
 
-    const requiredTools = annotations
+    const requiredToolsAnnotations = annotations
       .flatMap((annotation) => annotation.requiredTools)
       .filter(Boolean) as string[];
 
@@ -86,18 +89,16 @@ export async function POST(request: Request) {
 
     const model = customModelProvider.getModel(modelName);
 
-    const toolChoice = !activeTool ? "none" : "auto";
+    const systemPrompt = mergeSystemPrompt(
+      SYSTEM_TIME_PROMPT,
+      projectInstructions?.systemPrompt,
+    );
 
-    const systemPrompt = [SYSTEM_TIME_PROMPT, projectInstructions?.systemPrompt]
-      .filter(Boolean)
-      .join("\n\n---\n\n");
+    const isToolCallAllowed = !isToolCallUnsupportedModel(model) && activeTool;
 
-    const tools =
-      isToolCallUnsupported(model) || !activeTool
-        ? undefined
-        : requiredTools.length
-          ? filterToolsByMentions(requiredTools, mcpTools)
-          : mcpTools;
+    const tools = isToolCallAllowed
+      ? filterToolsByMentions(requiredToolsAnnotations, mcpTools)
+      : undefined;
 
     return createDataStreamResponse({
       execute: (dataStream) => {
@@ -108,7 +109,7 @@ export async function POST(request: Request) {
           maxSteps: 10,
           experimental_transform: smoothStream({ chunking: "word" }),
           tools,
-          toolChoice,
+          toolChoice: !activeTool ? "none" : "auto",
           onFinish: async ({ response, usage }) => {
             const [, assistantMessage] = appendResponseMessages({
               messages: [message],
@@ -163,6 +164,9 @@ function filterToolsByMentions(
   mentions: string[],
   tools: Record<string, Tool>,
 ) {
+  if (mentions.length === 0) {
+    return tools;
+  }
   return Object.fromEntries(
     Object.keys(tools)
       .filter((tool) => mentions.some((mention) => tool.startsWith(mention)))
@@ -178,4 +182,11 @@ function appendAnnotations(
     ? annotationsToAppend
     : [annotationsToAppend];
   return [...annotations, ...newAnnotations];
+}
+
+function mergeSystemPrompt(...prompts: (string | undefined)[]) {
+  return prompts
+    .map((prompt) => prompt?.trim())
+    .filter(Boolean)
+    .join("\n\n---\n\n");
 }
