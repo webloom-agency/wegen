@@ -12,6 +12,7 @@
     "lint:next": "next lint",
     "lint": "biome lint --write --unsafe ./src",
     "format": "biome format --write",
+    "check-types": "tsc --noEmit",
     "initial:check": "tsx scripts/flag.ts check",
     "initial:env": "tsx scripts/copy-env.ts",
     "initial:mcp-config": "tsx scripts/generate-mcp-config.ts",

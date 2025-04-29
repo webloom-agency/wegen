@@ -16,7 +16,7 @@ import { Markdown } from "./markdown";
 import { PastesContentCard } from "./pasts-content";
 import { cn } from "lib/utils";
 import JsonView from "ui/json-view";
-import { useState } from "react";
+import { useMemo, useState, memo } from "react";
 import { MessageEditor } from "./message-editor";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useCopy } from "@/hooks/use-copy";
@@ -29,6 +29,7 @@ import { deleteMessagesByChatIdAfterTimestampAction } from "@/app/api/chat/actio
 
 import { toast } from "sonner";
 import { safe } from "ts-safe";
+import { ChatMessageAnnotation } from "app-types/chat";
 
 type MessagePart = UIMessage["parts"][number];
 
@@ -57,6 +58,29 @@ interface ToolMessagePartProps {
   part: ToolMessagePart;
 }
 
+interface HighlightedTextProps {
+  text: string;
+  mentions: string[];
+}
+
+const HighlightedText = memo(({ text, mentions }: HighlightedTextProps) => {
+  if (!mentions.length) return text;
+
+  const parts = text.split(/(\s+)/);
+  return parts.map((part, index) => {
+    if (mentions.includes(part.trim())) {
+      return (
+        <span key={index} className="mention">
+          {part}
+        </span>
+      );
+    }
+    return part;
+  });
+});
+
+HighlightedText.displayName = "HighlightedText";
+
 export const UserMessagePart = ({
   part,
   isLast,
@@ -66,6 +90,20 @@ export const UserMessagePart = ({
 }: UserMessagePartProps) => {
   const { copied, copy } = useCopy();
   const [mode, setMode] = useState<"view" | "edit">("view");
+
+  const toolMentions = useMemo(() => {
+    if (!message.annotations?.length) return [];
+    return Array.from(
+      new Set(
+        message.annotations
+          .flatMap((annotation) => {
+            return (annotation as ChatMessageAnnotation).requiredTools ?? [];
+          })
+          .filter(Boolean)
+          .map((v) => `@${v}`),
+      ),
+    );
+  }, [message.annotations]);
 
   if (mode === "edit") {
     return (
@@ -89,7 +127,9 @@ export const UserMessagePart = ({
         })}
       >
         {isLast ? (
-          <p className="whitespace-pre-wrap text-sm">{part.text}</p>
+          <p className="whitespace-pre-wrap text-sm">
+            <HighlightedText text={part.text} mentions={toolMentions} />
+          </p>
         ) : (
           <PastesContentCard initialContent={part.text} readonly />
         )}

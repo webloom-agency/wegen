@@ -15,6 +15,7 @@ export const ChatMessageSchema = pgTable("chat_message", {
   role: text("role").notNull(),
   parts: json("parts").notNull().array(),
   attachments: json("attachments").array(),
+  annotations: json("annotations").array(),
   model: text("model"),
   createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });

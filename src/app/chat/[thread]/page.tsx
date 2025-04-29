@@ -10,6 +10,7 @@ function convertToUIMessage(message: ChatMessage): UIMessage {
     parts: message.parts as UIMessage["parts"],
     role: message.role as UIMessage["role"],
     content: "",
+    annotations: message.annotations as UIMessage["annotations"],
     createdAt: new Date(message.createdAt),
   };
   return um;

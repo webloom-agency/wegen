@@ -63,6 +63,7 @@ const convertToChatMessage = (row: {
   role: string;
   parts: string;
   attachments: string | null;
+  annotations: string | null;
   model: string | null;
 }): ChatMessage => {
   return {
@@ -73,6 +74,7 @@ const convertToChatMessage = (row: {
     parts: JSON.parse(row.parts) as UIMessage["parts"],
     attachments: row.attachments ? JSON.parse(row.attachments) : [],
     model: row.model,
+    annotations: row.annotations ? JSON.parse(row.annotations) : [],
   };
 };
 
@@ -182,6 +184,7 @@ export const sqliteChatService: ChatService = {
         createdAt: convertToTimestamp(new Date()),
         id: message.id,
         parts: JSON.stringify(message.parts),
+        annotations: JSON.stringify(message.annotations),
         attachments: message.attachments
           ? JSON.stringify(message.attachments)
           : null,

@@ -26,17 +26,6 @@ const { insertMessage, insertThread, selectThread } = chatService;
 
 export const maxDuration = 120;
 
-const filterToolsByMentions = (
-  mentions: string[],
-  tools: Record<string, Tool>,
-) => {
-  return Object.fromEntries(
-    Object.keys(tools)
-      .filter((tool) => mentions.some((mention) => tool.startsWith(mention)))
-      .map((tool) => [tool, tools[tool]]),
-  );
-};
-
 export async function POST(request: Request) {
   try {
     const json = await request.json();
@@ -93,7 +82,7 @@ export async function POST(request: Request) {
       .flatMap((annotation) => annotation.requiredTools)
       .filter(Boolean) as string[];
 
-    const tools = mcpClientsManager.tools();
+    const mcpTools = mcpClientsManager.tools();
 
     const model = customModelProvider.getModel(modelName);
 
@@ -103,26 +92,28 @@ export async function POST(request: Request) {
       .filter(Boolean)
       .join("\n\n---\n\n");
 
+    const tools =
+      isToolCallUnsupported(model) || !activeTool
+        ? undefined
+        : requiredTools.length
+          ? filterToolsByMentions(requiredTools, mcpTools)
+          : mcpTools;
+
     return createDataStreamResponse({
       execute: (dataStream) => {
         const result = streamText({
           model,
           system: systemPrompt,
           messages,
-          experimental_transform: smoothStream({ chunking: "word" }),
-          tools: isToolCallUnsupported(model)
-            ? undefined
-            : requiredTools.length
-              ? filterToolsByMentions(requiredTools, tools)
-              : tools,
           maxSteps: 10,
+          experimental_transform: smoothStream({ chunking: "word" }),
+          tools,
           toolChoice,
-          onFinish: async ({ response }) => {
+          onFinish: async ({ response, usage }) => {
             const [, assistantMessage] = appendResponseMessages({
               messages: [message],
               responseMessages: response.messages,
             });
-
             if (action !== "update-assistant") {
               await insertMessage({
                 threadId: thread.id,
@@ -131,6 +122,9 @@ export async function POST(request: Request) {
                 parts: message.parts,
                 attachments: [],
                 id: message.id,
+                annotations: appendAnnotations(message.annotations, {
+                  usageTokens: usage.promptTokens,
+                }),
               });
             }
 
@@ -141,6 +135,9 @@ export async function POST(request: Request) {
               id: assistantMessage.id,
               parts: assistantMessage.parts as UIMessage["parts"],
               attachments: [],
+              annotations: appendAnnotations(assistantMessage.annotations, {
+                usageTokens: usage.completionTokens,
+              }),
             });
           },
         });
@@ -160,4 +157,25 @@ export async function POST(request: Request) {
       status: 500,
     });
   }
+}
+
+function filterToolsByMentions(
+  mentions: string[],
+  tools: Record<string, Tool>,
+) {
+  return Object.fromEntries(
+    Object.keys(tools)
+      .filter((tool) => mentions.some((mention) => tool.startsWith(mention)))
+      .map((tool) => [tool, tools[tool]]),
+  );
+}
+
+function appendAnnotations(
+  annotations: any[] = [],
+  annotationsToAppend: ChatMessageAnnotation[] | ChatMessageAnnotation,
+): ChatMessageAnnotation[] {
+  const newAnnotations = Array.isArray(annotationsToAppend)
+    ? annotationsToAppend
+    : [annotationsToAppend];
+  return [...annotations, ...newAnnotations];
 }

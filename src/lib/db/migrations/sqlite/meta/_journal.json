@@ -15,6 +15,13 @@
       "when": 1745504272121,
       "tag": "0001_lean_human_cannonball",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1745898880775,
+      "tag": "0002_faulty_nightcrawler",
+      "breakpoints": true
     }
   ]
 }

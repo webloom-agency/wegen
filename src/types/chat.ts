@@ -24,13 +24,16 @@ export type ChatMessage = {
   threadId: string;
   role: UIMessage["role"];
   parts: UIMessage["parts"];
-  attachments: unknown[];
+  annotations?: ChatMessageAnnotation[];
+  attachments?: unknown[];
   model: string | null;
   createdAt: Date;
 };
 
 export type ChatMessageAnnotation = {
   requiredTools?: string[];
+  usageTokens?: number;
+  [key: string]: any;
 };
 
 export type ChatService = {

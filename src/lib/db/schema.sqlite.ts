@@ -15,6 +15,7 @@ export const ChatMessageSchema = sqliteTable("chat_message", {
   role: text("role").notNull(),
   parts: text("parts").notNull(),
   attachments: text("attachments"),
+  annotations: text("annotations"),
   model: text("model"),
   createdAt: integer("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
