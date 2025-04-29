@@ -8,7 +8,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": ["node_modules", ".next", "public", "docker", "dist/**"]
+    "ignore": ["node_modules", ".next", "public", "docker", "dist/**", "*.d.ts"]
   },
   "formatter": {
     "enabled": true,

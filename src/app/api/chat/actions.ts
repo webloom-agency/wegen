@@ -22,6 +22,7 @@ import { customModelProvider } from "lib/ai/models";
 import { toAny } from "lib/utils";
 import { MCPToolInfo } from "app-types/mcp";
 import { serverCache } from "lib/cache";
+import { CacheKeys } from "lib/cache/cache-keys";
 
 const {
   deleteThread,
@@ -171,7 +172,7 @@ export async function updateProjectAction(
   project: Partial<Pick<Project, "name" | "instructions">>,
 ) {
   const updatedProject = await updateProject(id, project);
-  await serverCache.delete(`project-instructions-${id}`);
+  await serverCache.delete(CacheKeys.project(id));
   return updatedProject;
 }
 
@@ -182,15 +183,15 @@ export async function deleteProjectAction(id: string) {
 export async function rememberProjectInstructionsAction(
   projectId: string,
 ): Promise<Project["instructions"] | null> {
-  const key = `project-instructions-${projectId}`;
-  const projectInstructions = await serverCache.get(key);
-  if (projectInstructions) {
-    return projectInstructions as Project["instructions"];
+  const key = CacheKeys.project(projectId);
+  const cachedProject = await serverCache.get<Project>(key);
+  if (cachedProject) {
+    return cachedProject.instructions;
   }
   const project = await selectProjectById(projectId);
   if (!project) {
     return null;
   }
-  await serverCache.set(key, project.instructions);
+  await serverCache.set(key, project);
   return project.instructions;
 }
