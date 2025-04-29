@@ -62,7 +62,7 @@ import { customModelProvider } from "lib/ai/models";
 import { MCPToolInfo } from "app-types/mcp";
 import { Label } from "ui/label";
 import { safe } from "ts-safe";
-import { useObjectState } from "@/hooks/use-object-reducer";
+import { useObjectState } from "@/hooks/use-object-state";
 
 // Type definitions
 type SchemaProperty = {

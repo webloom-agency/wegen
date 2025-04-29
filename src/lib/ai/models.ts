@@ -45,7 +45,7 @@ export const allModels = {
   },
 } as const;
 
-export const isToolCallUnsupported = (model: LanguageModel) => {
+export const isToolCallUnsupportedModel = (model: LanguageModel) => {
   return [
     allModels.openai["o4-mini"],
     allModels.google["gemini-2.0-thinking"],
@@ -67,7 +67,7 @@ export const customModelProvider = {
       models: Object.keys(allModels[provider]).map((name) => {
         return {
           name,
-          isToolCallUnsupported: isToolCallUnsupported(
+          isToolCallUnsupported: isToolCallUnsupportedModel(
             allModels[provider][name],
           ),
         };
