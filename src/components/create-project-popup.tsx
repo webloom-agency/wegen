@@ -2,7 +2,7 @@
 import { insertProjectAction } from "@/app/api/chat/actions";
 import { Lightbulb, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { PropsWithChildren, useEffect, useState } from "react";
+import React, { KeyboardEvent, PropsWithChildren, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { mutate } from "swr";
 import { safe } from "ts-safe";
@@ -36,6 +36,12 @@ export function CreateProjectPopup({ children }: PropsWithChildren) {
       .ifOk(() => mutate("projects"))
       .ifOk((project) => router.push(`/project/${project.id}`))
       .ifFail(handleErrorWithToast);
+  };
+
+  const handleEnterKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleCreate();
+    }
   };
 
   useEffect(() => {
@@ -75,6 +81,7 @@ export function CreateProjectPopup({ children }: PropsWithChildren) {
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onKeyDown={handleEnterKey}
             placeholder="eg. Korea Trip Plan"
             className="w-full bg-card"
           />
