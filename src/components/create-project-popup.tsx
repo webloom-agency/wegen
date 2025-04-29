@@ -38,6 +38,12 @@ export function CreateProjectPopup({ children }: PropsWithChildren) {
       .ifFail(handleErrorWithToast);
   };
 
+  const handleEnterKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleCreate();
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) {
       setName("");
@@ -75,6 +81,7 @@ export function CreateProjectPopup({ children }: PropsWithChildren) {
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onKeyDown={handleEnterKey}
             placeholder="eg. Korea Trip Plan"
             className="w-full bg-card"
           />
