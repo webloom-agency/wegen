@@ -126,8 +126,7 @@ export const UserMessagePart = ({
       <div
         data-testid="message-content"
         className={cn("flex flex-col gap-4 border", {
-          "bg-accent text-accent-foreground px-4 py-3 rounded-4xl rounded-br-lg":
-            isLast,
+          "bg-accent text-accent-foreground px-4 py-3 rounded-2xl": isLast,
         })}
       >
         {isLast ? (
