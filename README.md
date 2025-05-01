@@ -41,6 +41,7 @@ Here are some quick examples of how you can use MCP Client Chatbot:
 
 ![playwright-demo](./docs/images/preview-1.gif)
 
+
 **Example:** Control a web browser using Microsoft's [playwright-mcp](https://github.com/microsoft/playwright-mcp) tool.
 
 Sample prompt:
@@ -57,7 +58,7 @@ Finally, tell me how to install the package.
 
 ### ⚡️ Quick Tool Mentions (`@`)
 
-![mention](https://github.com/user-attachments/assets/45d26beb-2143-4b29-b229-8ed2d765fe2b)
+![mention](https://github.com/user-attachments/assets/1a80dd48-1d95-4938-b0d8-431c02ec2a53)
 
 Quickly call any registered MCP tool during chat by typing `@toolname`. No need to memorize — just type `@` and pick from the list!
 
