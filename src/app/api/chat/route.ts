@@ -117,7 +117,6 @@ export async function POST(request: Request) {
     return createDataStreamResponse({
       execute: async (dataStream) => {
         const manualToolPart = extractMenualToolInvocationPart(message);
-        console.log({ manualToolPart });
 
         if (toolChoice == "manual" && manualToolPart) {
           const toolResult = await manualToolExecute(manualToolPart);

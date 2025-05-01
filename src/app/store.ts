@@ -40,7 +40,7 @@ export const appStore = create<AppState & AppDispatch>()(
       name: "mc-app-store",
       partialize: (state) => ({
         model: state.model || DEFAULT_MODEL,
-        toolChoice: state.toolChoice,
+        toolChoice: state.toolChoice || "auto",
       }),
     },
   ),

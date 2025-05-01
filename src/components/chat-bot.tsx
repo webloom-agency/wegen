@@ -147,7 +147,6 @@ export default function ChatBot({
         behavior: "smooth",
       });
     }
-    appStoreMutate({ toolChoice: "manual" });
   }, [status]);
 
   return (
