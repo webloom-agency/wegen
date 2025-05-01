@@ -31,7 +31,7 @@ export function AppSidebar() {
   }, [open]);
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="offcanvas">
       <SidebarRail />
       <SidebarHeader>
         <SidebarMenu>

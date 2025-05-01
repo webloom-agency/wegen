@@ -64,8 +64,7 @@ export const ToolChoiceDropDown = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
-        <DropdownMenuLabel className="text-muted-foreground flex items-center gap-2 font-semibold">
-          <Wrench size={16} />
+        <DropdownMenuLabel className="text-muted-foreground flex items-center gap-2">
           Tool Choice
           <DropdownMenuShortcut>
             <span className="text-xs text-muted-foreground bg-muted rounded-md px-2 py-0.5">
@@ -87,11 +86,11 @@ export const ToolChoiceDropDown = () => {
               <p className="text-xs text-muted-foreground">
                 Decides when to use tools without asking you
               </p>
-              <div className="w-full h-1">
-                <Separator />
-              </div>
             </div>
           </DropdownMenuItem>
+          <div className="px-2 py-1">
+            <DropdownMenuSeparator />
+          </div>
           <DropdownMenuItem
             onClick={() => appStoreMutate({ toolChoice: "manual" })}
           >
@@ -104,11 +103,11 @@ export const ToolChoiceDropDown = () => {
               <p className="text-xs text-muted-foreground">
                 Asks your permission before using any tools
               </p>
-              <div className="w-full h-1">
-                <Separator />
-              </div>
             </div>
           </DropdownMenuItem>
+          <div className="px-2 py-1">
+            <DropdownMenuSeparator />
+          </div>
           <DropdownMenuItem
             onClick={() => appStoreMutate({ toolChoice: "none" })}
           >
