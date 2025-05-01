@@ -140,14 +140,14 @@ export default function ChatBot({
       });
   }, [isInitialThreadEntry]);
 
-  useEffect(() => {
-    if (status === "submitted") {
-      containerRef.current?.scrollTo({
-        top: containerRef.current?.scrollHeight,
-        behavior: "smooth",
-      });
-    }
-  }, [status]);
+  // useEffect(() => {
+  //   if (status === "submitted") {
+  //     containerRef.current?.scrollTo({
+  //       top: containerRef.current?.scrollHeight,
+  //       behavior: "smooth",
+  //     });
+  //   }
+  // }, [status]);
 
   return (
     <div
@@ -171,6 +171,7 @@ export default function ChatBot({
                   threadId={threadId}
                   key={message.id}
                   message={message}
+                  status={status}
                   onPoxyToolCall={
                     isLastMessage &&
                     isPendingToolCall &&

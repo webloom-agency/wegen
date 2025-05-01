@@ -17,7 +17,7 @@ import { Markdown } from "./markdown";
 import { PastesContentCard } from "./pasts-content";
 import { cn } from "lib/utils";
 import JsonView from "ui/json-view";
-import { useMemo, useState, memo } from "react";
+import { useMemo, useState, memo, useEffect, useRef } from "react";
 import { MessageEditor } from "./message-editor";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useCopy } from "@/hooks/use-copy";
@@ -44,6 +44,7 @@ interface UserMessagePartProps {
   message: UIMessage;
   setMessages: UseChatHelpers["setMessages"];
   reload: UseChatHelpers["reload"];
+  status: UseChatHelpers["status"];
 }
 
 interface AssistMessagePartProps {
@@ -87,13 +88,14 @@ HighlightedText.displayName = "HighlightedText";
 export const UserMessagePart = ({
   part,
   isLast,
+  status,
   message,
   setMessages,
   reload,
 }: UserMessagePartProps) => {
   const { copied, copy } = useCopy();
   const [mode, setMode] = useState<"view" | "edit">("view");
-
+  const ref = useRef<HTMLDivElement>(null);
   const toolMentions = useMemo(() => {
     if (!message.annotations?.length) return [];
     return Array.from(
@@ -107,6 +109,12 @@ export const UserMessagePart = ({
       ),
     );
   }, [message.annotations]);
+
+  useEffect(() => {
+    if (status === "submitted" && isLast) {
+      ref.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [status]);
 
   if (mode === "edit") {
     return (
@@ -124,6 +132,9 @@ export const UserMessagePart = ({
   return (
     <div className="flex flex-col gap-2 items-end my-2">
       <div
+        onClick={() => {
+          ref.current?.scrollIntoView({ behavior: "smooth" });
+        }}
         data-testid="message-content"
         className={cn("flex flex-col gap-4 border", {
           "bg-accent text-accent-foreground px-4 py-3 rounded-2xl": isLast,
@@ -174,6 +185,7 @@ export const UserMessagePart = ({
           </>
         )}
       </div>
+      <div ref={ref} className="min-w-0" />
     </div>
   );
 };

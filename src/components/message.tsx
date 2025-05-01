@@ -23,6 +23,7 @@ interface Props {
   reload: UseChatHelpers["reload"];
   className?: string;
   onPoxyToolCall?: (answer: boolean) => void;
+  status: UseChatHelpers["status"];
 }
 
 const PurePreviewMessage = ({
@@ -32,6 +33,7 @@ const PurePreviewMessage = ({
   isLoading,
   isLastMessage,
   reload,
+  status,
   className,
   onPoxyToolCall,
 }: Props) => {
@@ -79,6 +81,7 @@ const PurePreviewMessage = ({
               return (
                 <UserMessagePart
                   key={key}
+                  status={status}
                   part={part}
                   isLast={isLastPart}
                   message={message}
