@@ -6,14 +6,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PromptInput from "./prompt-input";
 import clsx from "clsx";
 import { appStore } from "@/app/store";
-import { cn, errorToString, generateUUID } from "lib/utils";
+import { cn, generateUUID } from "lib/utils";
 import { PreviewMessage, ThinkingMessage } from "./message";
 import { Greeting } from "./greeting";
 import logger from "logger";
 import { useShallow } from "zustand/shallow";
 import { UIMessage } from "ai";
-import { extractMCPToolId } from "lib/ai/mcp/mcp-tool-id";
-import { callMcpToolAction } from "@/app/api/mcp/actions";
+
 import { safe } from "ts-safe";
 import { mutate } from "swr";
 
