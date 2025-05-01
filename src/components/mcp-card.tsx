@@ -125,7 +125,7 @@ export const MCPCard = memo(function MCPCard({
   }, [name, status]);
 
   return (
-    <Card className="bg-background relative hover:border-foreground/20 transition-colors">
+    <Card className="relative hover:border-foreground/20 transition-colors">
       {isLoading && (
         <div className="animate-pulse z-10 absolute inset-0 bg-background/50 flex items-center justify-center w-full h-full" />
       )}
@@ -207,7 +207,7 @@ export const MCPCard = memo(function MCPCard({
       <div className="relative">
         <CardContent className="flex flex-row gap-4 text-sm max-h-[300px] overflow-auto">
           <div className="w-1/2 min-w-0 flex flex-col">
-            <div className="flex items-center gap-2 mb-2 sticky top-0 pt-2 pb-1 bg-background z-10">
+            <div className="flex items-center gap-2 mb-2 sticky top-0 pt-2 pb-1 z-10">
               <Settings size={14} className="text-muted-foreground" />
               <h5 className="text-muted-foreground text-sm font-medium">
                 Configuration
@@ -217,7 +217,7 @@ export const MCPCard = memo(function MCPCard({
           </div>
 
           <div className="w-1/2 min-w-0 border-l pl-4 flex flex-col">
-            <div className="flex items-center gap-2 mb-4 sticky top-0 pt-2 pb-1 bg-background z-10">
+            <div className="flex items-center gap-2 mb-4 sticky top-0 pt-2 pb-1 z-10">
               <Wrench size={14} className="text-muted-foreground" />
               <h5 className="text-muted-foreground text-sm font-medium">
                 Available Tools
@@ -235,9 +235,6 @@ export const MCPCard = memo(function MCPCard({
             )}
           </div>
         </CardContent>
-
-        {/* 바닥 그라데이션 */}
-        <div className="absolute left-0 right-0 bottom-0 h-12 bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
       </div>
     </Card>
   );
