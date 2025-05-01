@@ -60,7 +60,15 @@ Finally, tell me how to install the package.
 
 ![mention](https://github.com/user-attachments/assets/1a80dd48-1d95-4938-b0d8-431c02ec2a53)
 
-Quickly call any registered MCP tool during chat by typing `@toolname`. No need to memorize — just type `@` and pick from the list!
+Quickly call any registered MCP tool during chat by typing `@toolname`.  
+No need to memorize — just type `@` and pick from the list!
+
+You can also control how tools are used with the new **Tool Choice Mode**:
+- **Auto:** Tools are automatically called by the model when needed.
+- **Manual:** The model will ask for your permission before calling any tool.
+- **None:** Disables all tool usage.
+
+Toggle modes anytime with the shortcut `⌘P`.
 
 ---
 
@@ -88,7 +96,7 @@ MCP tools independently from chat sessions for easier development and debugging.
 * **🤖 Multiple AI Model Support:** Flexibly switch between providers like OpenAI, Anthropic, Google AI, and Ollama.
 * **🛠️ Powerful MCP Integration:** Seamlessly connect external tools (browser automation, database operations, etc.) into chat via Model Context Protocol.
 * **🚀 Standalone Tool Tester:** Test and debug MCP tools separately from the main chat interface.
-* **💬 Intuitive Mentions:** Trigger available tools with `@` in the input field.
+* **💬 Intuitive Mentions + Tool Control:** Trigger tools with `@`, and control when they're used via `Auto` / `Manual` / `None` modes.
 * **⚙️ Easy Server Setup:** Configure MCP connections via UI or `.mcp-config.json` file.
 * **📄 Markdown UI:** Communicate in a clean, readable markdown-based interface.
 * **💾 Zero-Setup Local DB:** Uses SQLite by default for local storage (PostgreSQL also supported).
