@@ -116,19 +116,19 @@ export async function POST(request: Request) {
 
     return createDataStreamResponse({
       execute: async (dataStream) => {
-        const menualToolPart = extractMenualToolInvocationPart(message);
-        console.log({ menualToolPart });
+        const manualToolPart = extractMenualToolInvocationPart(message);
+        console.log({ manualToolPart });
 
-        if (toolChoice == "manual" && menualToolPart) {
-          const toolResult = await menualToolExecute(menualToolPart);
-          Object.assign(menualToolPart, {
+        if (toolChoice == "manual" && manualToolPart) {
+          const toolResult = await manualToolExecute(manualToolPart);
+          Object.assign(manualToolPart, {
             state: "result",
             result: toolResult,
           });
 
           dataStream.write(
             formatDataStreamPart("tool_result", {
-              toolCallId: menualToolPart.toolInvocation.toolCallId,
+              toolCallId: manualToolPart.toolInvocation.toolCallId,
               result: toolResult,
             }),
           );
@@ -234,7 +234,7 @@ function mergeSystemPrompt(...prompts: (string | undefined)[]) {
     .join("\n\n---\n\n");
 }
 
-function menualToolExecute(part: ToolInvocationUIPart) {
+function manualToolExecute(part: ToolInvocationUIPart) {
   const {
     result: clientAnswer,
     args,
