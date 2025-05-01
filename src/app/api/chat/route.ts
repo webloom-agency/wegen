@@ -24,7 +24,7 @@ import { chatService } from "lib/db/chat-service";
 import logger from "logger";
 import { SYSTEM_TIME_PROMPT } from "lib/ai/prompts";
 import { ChatMessageAnnotation, ToolInvocationUIPart } from "app-types/chat";
-import { errorToString, generateUUID, objectFlow } from "lib/utils";
+import { errorToString, generateUUID, objectFlow, toAny } from "lib/utils";
 import { z } from "zod";
 import { errorIf, safe } from "ts-safe";
 import { callMcpToolAction } from "../mcp/actions";
@@ -117,6 +117,7 @@ export async function POST(request: Request) {
     return createDataStreamResponse({
       execute: async (dataStream) => {
         const menualToolPart = extractMenualToolInvocationPart(message);
+        console.log({ menualToolPart });
 
         if (toolChoice == "manual" && menualToolPart) {
           const toolResult = await menualToolExecute(menualToolPart);
@@ -160,6 +161,7 @@ export async function POST(request: Request) {
             }
             const assistantMessage = appendMessages.at(-1);
             if (assistantMessage) {
+              dataStream.writeMessageAnnotation(usage.completionTokens);
               await upsertMessage({
                 model: modelName,
                 threadId: thread.id,
@@ -264,7 +266,6 @@ function extractMenualToolInvocationPart(
   const lastPart = message.parts?.at(-1);
   if (!lastPart) return null;
   if (lastPart.type != "tool-invocation") return null;
-  if (lastPart.toolInvocation.state != "result") return null;
-  if (typeof lastPart.toolInvocation != "boolean") return null;
+  if (typeof toAny(lastPart.toolInvocation)?.result != "boolean") return null;
   return lastPart!;
 }
