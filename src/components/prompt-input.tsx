@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "lib/utils";
-import { Check, CornerRightUp, Paperclip, Pause } from "lucide-react";
+import { CornerRightUp, Paperclip, Pause } from "lucide-react";
 import { ReactNode, useMemo, useState } from "react";
 import { Button } from "ui/button";
 import { notImplementedToast } from "ui/shared-toast";
@@ -12,7 +12,7 @@ import { appStore } from "@/app/store";
 import { useShallow } from "zustand/shallow";
 import { customModelProvider } from "lib/ai/models";
 
-import { McpListCombo } from "./mcp-list-combo";
+import { McpToolChoiceSettings } from "./mcp-tool-choice-settings";
 import { createMCPToolId } from "lib/ai/mcp/mcp-tool-id";
 import { ChatMessageAnnotation } from "app-types/chat";
 import dynamic from "next/dynamic";
@@ -23,6 +23,7 @@ interface PromptInputProps {
   input: string;
   onStop: () => void;
   append: UseChatHelpers["append"];
+
   threadId: string;
   isLoading?: boolean;
 }
@@ -36,18 +37,17 @@ const MentionInput = dynamic(() => import("./mention-input"), {
 
 export default function PromptInput({
   placeholder = "What do you want to know?",
-  threadId,
   append,
   input,
   setInput,
   onStop,
   isLoading,
 }: PromptInputProps) {
-  const [appStoreMutate, model, activeTool, mcpList] = appStore(
+  const [appStoreMutate, model, toolChoice, mcpList] = appStore(
     useShallow((state) => [
       state.mutate,
       state.model,
-      state.activeTool,
+      state.toolChoice,
       state.mcpList,
     ]),
   );
@@ -98,11 +98,6 @@ export default function PromptInput({
 
     if (userMessage.length === 0 && pastedContentsParsed.length === 0) {
       return;
-    }
-
-    const chatPath = `/chat/${threadId}`;
-    if (window.location.pathname !== chatPath) {
-      window.history.replaceState({}, "", chatPath);
     }
 
     const annotations: ChatMessageAnnotation[] = [];
@@ -189,18 +184,17 @@ export default function PromptInput({
                   </Button>
                 </SelectModel>
                 <div className="flex-1" />
-                <McpListCombo>
+                <McpToolChoiceSettings>
                   <Button
-                    variant={activeTool ? "secondary" : "ghost"}
+                    variant={toolChoice == "none" ? "ghost" : "secondary"}
                     className={cn(
-                      !activeTool && "text-muted-foreground",
+                      toolChoice == "none" && "text-muted-foreground",
                       "font-semibold mr-1 rounded-full",
                     )}
                   >
-                    {activeTool && <Check size={3.5} />}
-                    tools
+                    {toolChoice}
                   </Button>
-                </McpListCombo>
+                </McpToolChoiceSettings>
                 <Button
                   onClick={() => {
                     if (isLoading) {

@@ -9,6 +9,7 @@ import {
   Pencil,
   ChevronDownIcon,
   RefreshCw,
+  X,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { Button } from "ui/button";
@@ -56,6 +57,8 @@ interface AssistMessagePartProps {
 
 interface ToolMessagePartProps {
   part: ToolMessagePart;
+  isLast: boolean;
+  onPoxyToolCall?: (answer: boolean) => void;
 }
 
 interface HighlightedTextProps {
@@ -268,27 +271,30 @@ export const AssistMessagePart = ({
   );
 };
 
-export const ToolMessagePart = ({ part }: ToolMessagePartProps) => {
+export const ToolMessagePart = ({
+  part,
+  isLast,
+  onPoxyToolCall,
+}: ToolMessagePartProps) => {
   const { toolInvocation } = part;
   const { toolName, toolCallId, state } = toolInvocation;
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const isLoading = state !== "result";
+  const isExecuting = state !== "result" && (isLast || onPoxyToolCall);
+
   return (
     <div key={toolCallId} className="flex flex-col gap-2 group">
-      <div
-        className="flex flex-row gap-2 items-center cursor-pointer"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
+      <div className="flex flex-row gap-2 items-center cursor-pointer">
         <Button
+          onClick={() => setIsExpanded(!isExpanded)}
           variant="outline"
           className={cn(
             "flex flex-row gap-2 justify-between items-center text-muted-foreground min-w-44",
-            isLoading && "animate-pulse",
+            isExecuting && "animate-pulse",
           )}
         >
           <p className={cn("font-bold")}>{toolName}</p>
-          {isLoading ? (
+          {isExecuting ? (
             <Loader className="size-3 animate-spin" />
           ) : (
             <ChevronDown
@@ -300,6 +306,24 @@ export const ToolMessagePart = ({ part }: ToolMessagePartProps) => {
             />
           )}
         </Button>
+        {onPoxyToolCall && (
+          <>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => onPoxyToolCall(true)}
+            >
+              <Check />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => onPoxyToolCall(false)}
+            >
+              <X />
+            </Button>
+          </>
+        )}
       </div>
       {isExpanded && (
         <Card className="relative mt-2 p-4 max-h-[50vh] overflow-y-auto bg-background">

@@ -122,6 +122,25 @@ export const pgChatService: ChatService = {
     return result[0] as ChatMessage;
   },
 
+  upsertMessage: async (
+    message: Omit<ChatMessage, "createdAt">,
+  ): Promise<ChatMessage> => {
+    const result = await db
+      .insert(ChatMessageSchema)
+      .values(message)
+      .onConflictDoUpdate({
+        target: [ChatMessageSchema.id],
+        set: {
+          parts: message.parts,
+          annotations: message.annotations,
+          attachments: message.attachments,
+          model: message.model,
+        },
+      })
+      .returning();
+    return result[0] as ChatMessage;
+  },
+
   deleteMessagesByChatIdAfterTimestamp: async (
     messageId: string,
   ): Promise<void> => {

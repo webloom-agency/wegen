@@ -12,7 +12,7 @@ export interface AppState {
   currentThreadId: ChatThread["id"] | null;
   currentProjectId: Project["id"] | null;
   user: User;
-  activeTool: boolean;
+  toolChoice: "auto" | "none" | "manual";
   model: string;
 }
 
@@ -29,7 +29,7 @@ export const appStore = create<AppState & AppDispatch>()(
       currentThreadId: null,
       currentProjectId: null,
       user: getMockUserSession(),
-      activeTool: true,
+      toolChoice: "auto",
       modelList: [],
 
       model: DEFAULT_MODEL,
@@ -40,7 +40,7 @@ export const appStore = create<AppState & AppDispatch>()(
       name: "mc-app-store",
       partialize: (state) => ({
         model: state.model || DEFAULT_MODEL,
-        activeTool: state.activeTool,
+        toolChoice: state.toolChoice,
       }),
     },
   ),

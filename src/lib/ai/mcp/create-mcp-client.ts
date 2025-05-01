@@ -80,6 +80,7 @@ export class MCPClient {
       if (isMaybeStdioConfig(this.serverConfig)) {
         const config = MCPStdioConfigZodSchema.parse(this.serverConfig);
         transport = new StdioClientTransport({
+          stderr: process.stderr,
           command: config.command,
           args: config.args,
           // Merge process.env with config.env, ensuring PATH is preserved and filtering out undefined values

@@ -1,19 +1,21 @@
 "use client";
 
-import type { UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
-import { mutate } from "swr";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PromptInput from "./prompt-input";
 import clsx from "clsx";
 import { appStore } from "@/app/store";
-import { cn, generateUUID } from "lib/utils";
+import { cn, errorToString, generateUUID } from "lib/utils";
 import { PreviewMessage, ThinkingMessage } from "./message";
 import { Greeting } from "./greeting";
 import logger from "logger";
 import { useShallow } from "zustand/shallow";
+import { UIMessage } from "ai";
+import { extractMCPToolId } from "lib/ai/mcp/mcp-tool-id";
+import { callMcpToolAction } from "@/app/api/mcp/actions";
+import { safe } from "ts-safe";
+import { mutate } from "swr";
 
 type Props = {
   threadId: string;
@@ -27,11 +29,10 @@ export default function ChatBot({
   projectId,
   initialMessages,
 }: Props) {
-  const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [appStoreMutate, model, activeTool] = appStore(
-    useShallow((state) => [state.mutate, state.model, state.activeTool]),
+  const [appStoreMutate, model, toolChoice] = appStore(
+    useShallow((state) => [state.mutate, state.model, state.toolChoice]),
   );
 
   const {
@@ -42,19 +43,21 @@ export default function ChatBot({
     status,
     reload,
     setMessages,
+    addToolResult,
     stop,
   } = useChat({
     id: threadId,
     api: "/api/chat",
-    body: { id: threadId, model, activeTool, projectId },
+    body: { id: threadId, model, toolChoice, projectId },
     initialMessages: initialMessages,
     sendExtraMessageFields: true,
     generateId: generateUUID,
     experimental_throttle: 100,
-    onFinish: () => {
-      mutate("threads");
-      if (!threadId) {
-        router.push(`/chat/${threadId}`);
+    onFinish() {
+      const chatPath = `/chat/${threadId}`;
+      if (window.location.pathname !== chatPath) {
+        window.history.replaceState({}, "", chatPath);
+        mutate("threads");
       }
     },
     onError: (error) => {
@@ -89,6 +92,40 @@ export default function ChatBot({
     [messages],
   );
 
+  const [isExecutingProxyToolCall, setIsExecutingProxyToolCall] =
+    useState(false);
+
+  const isPendingToolCall = useMemo(() => {
+    if (status != "ready" || toolChoice != "manual") return;
+    const lastMessage = messages.at(-1);
+    if (lastMessage?.role != "assistant") return;
+    const lastPart = lastMessage.parts.at(-1);
+    if (lastPart?.type != "tool-invocation") return;
+    if (lastPart.toolInvocation.state != "call") return;
+    return true;
+  }, [status, toolChoice, messages]);
+
+  const proxyToolCall = useCallback(
+    (answer: boolean) => {
+      if (!isPendingToolCall) throw new Error("Tool call is not supported");
+      setIsExecutingProxyToolCall(true);
+      return safe(async () => {
+        const lastMessage = messages.at(-1)!;
+        const lastPart = lastMessage.parts.at(-1)! as Extract<
+          UIMessage["parts"][number],
+          { type: "tool-invocation" }
+        >;
+        return addToolResult({
+          toolCallId: lastPart.toolInvocation.toolCallId,
+          result: answer,
+        });
+      })
+        .watch(() => setIsExecutingProxyToolCall(false))
+        .unwrap();
+    },
+    [isPendingToolCall, addToolResult],
+  );
+
   useEffect(() => {
     appStoreMutate({ currentThreadId: threadId });
     return () => {
@@ -111,6 +148,7 @@ export default function ChatBot({
         behavior: "smooth",
       });
     }
+    appStoreMutate({ toolChoice: "manual" });
   }, [status]);
 
   return (
@@ -128,17 +166,28 @@ export default function ChatBot({
             className={"flex flex-col gap-2 overflow-y-auto py-6"}
             ref={containerRef}
           >
-            {messages.map((message, index) => (
-              <PreviewMessage
-                threadId={threadId}
-                key={message.id}
-                message={message}
-                isLoading={isLoading && messages.length - 1 === index}
-                setMessages={setMessages}
-                reload={reload}
-                className={needSpaceClass(index) ? spaceClass : ""}
-              />
-            ))}
+            {messages.map((message, index) => {
+              const isLastMessage = messages.length - 1 === index;
+              return (
+                <PreviewMessage
+                  threadId={threadId}
+                  key={message.id}
+                  message={message}
+                  onPoxyToolCall={
+                    isLastMessage &&
+                    isPendingToolCall &&
+                    !isExecutingProxyToolCall
+                      ? proxyToolCall
+                      : undefined
+                  }
+                  isLoading={isLoading || isExecutingProxyToolCall}
+                  isLastMessage={isLastMessage}
+                  setMessages={setMessages}
+                  reload={reload}
+                  className={needSpaceClass(index) ? spaceClass : ""}
+                />
+              );
+            })}
             {status === "submitted" && messages.at(-1)?.role === "user" && (
               <ThinkingMessage className={spaceClass} />
             )}

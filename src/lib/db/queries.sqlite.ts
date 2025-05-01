@@ -193,6 +193,34 @@ export const sqliteChatService: ChatService = {
     return convertToChatMessage(result[0]);
   },
 
+  upsertMessage: async (
+    message: Omit<ChatMessage, "createdAt">,
+  ): Promise<ChatMessage> => {
+    const result = await db
+      .insert(ChatMessageSchema)
+      .values({
+        id: message.id,
+        createdAt: convertToTimestamp(new Date()),
+        model: message.model || null,
+        role: message.role,
+        threadId: message.threadId,
+        parts: JSON.stringify(message.parts),
+        annotations: JSON.stringify(message.annotations),
+      })
+      .onConflictDoUpdate({
+        target: [ChatMessageSchema.id],
+        set: {
+          parts: JSON.stringify(message.parts),
+          annotations: JSON.stringify(message.annotations),
+          attachments: message.attachments
+            ? JSON.stringify(message.attachments)
+            : null,
+        },
+      })
+      .returning();
+    return convertToChatMessage(result[0]);
+  },
+
   deleteMessagesByChatIdAfterTimestamp: async (
     messageId: string,
   ): Promise<void> => {

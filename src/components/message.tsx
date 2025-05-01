@@ -18,9 +18,11 @@ interface Props {
   message: UIMessage;
   threadId: string;
   isLoading: boolean;
+  isLastMessage: boolean;
   setMessages: UseChatHelpers["setMessages"];
   reload: UseChatHelpers["reload"];
   className?: string;
+  onPoxyToolCall?: (answer: boolean) => void;
 }
 
 const PurePreviewMessage = ({
@@ -28,8 +30,10 @@ const PurePreviewMessage = ({
   threadId,
   setMessages,
   isLoading,
+  isLastMessage,
   reload,
   className,
+  onPoxyToolCall,
 }: Props) => {
   const isUserMessage = useMemo(() => message.role === "user", [message.role]);
   return (
@@ -66,7 +70,7 @@ const PurePreviewMessage = ({
                 <ReasoningPart
                   key={key}
                   reasoning={part.reasoning}
-                  isThinking={isLastPart && isLoading}
+                  isThinking={isLastPart && isLoading && isLastMessage}
                 />
               );
             }
@@ -99,7 +103,15 @@ const PurePreviewMessage = ({
             }
 
             if (part.type === "tool-invocation") {
-              return <ToolMessagePart key={key} part={part} />;
+              const isLast = isLastMessage && isLastPart;
+              return (
+                <ToolMessagePart
+                  isLast={isLast}
+                  onPoxyToolCall={isLast ? onPoxyToolCall : undefined}
+                  key={key}
+                  part={part}
+                />
+              );
             }
           })}
         </div>
@@ -113,7 +125,9 @@ export const PreviewMessage = memo(
   (prevProps, nextProps) => {
     if (prevProps.message.id !== nextProps.message.id) return false;
     if (prevProps.isLoading !== nextProps.isLoading) return false;
+    if (prevProps.isLastMessage !== nextProps.isLastMessage) return false;
     if (prevProps.className !== nextProps.className) return false;
+    if (prevProps.onPoxyToolCall !== nextProps.onPoxyToolCall) return false;
     if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
     return true;
   },

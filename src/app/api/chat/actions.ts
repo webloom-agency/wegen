@@ -159,6 +159,7 @@ export async function insertProjectWithThreadAction({
   await updateThread(threadId, {
     projectId: project.id,
   });
+  await serverCache.delete(CacheKeys.thread(threadId));
   return project;
 }
 
@@ -177,6 +178,7 @@ export async function updateProjectAction(
 }
 
 export async function deleteProjectAction(id: string) {
+  await serverCache.delete(CacheKeys.project(id));
   await deleteProject(id);
 }
 
@@ -194,4 +196,18 @@ export async function rememberProjectInstructionsAction(
   }
   await serverCache.set(key, project);
   return project.instructions;
+}
+
+export async function rememberThreadAction(threadId: string) {
+  const key = CacheKeys.thread(threadId);
+  const cachedThread = await serverCache.get<ChatThread>(key);
+  if (cachedThread) {
+    return cachedThread;
+  }
+  const thread = await selectThread(threadId);
+  if (!thread) {
+    return null;
+  }
+  await serverCache.set(key, thread);
+  return thread;
 }

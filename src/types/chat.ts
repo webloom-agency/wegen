@@ -1,4 +1,4 @@
-import type { UIMessage } from "ai";
+import type { UIMessage, Message } from "ai";
 
 export type ChatThread = {
   id: string;
@@ -36,6 +36,11 @@ export type ChatMessageAnnotation = {
   [key: string]: any;
 };
 
+export type ToolInvocationUIPart = Extract<
+  Exclude<Message["parts"], undefined>[number],
+  { type: "tool-invocation" }
+>;
+
 export type ChatService = {
   insertThread(thread: Omit<ChatThread, "createdAt">): Promise<ChatThread>;
 
@@ -53,6 +58,7 @@ export type ChatService = {
   deleteThread(id: string): Promise<void>;
 
   insertMessage(message: Omit<ChatMessage, "createdAt">): Promise<ChatMessage>;
+  upsertMessage(message: Omit<ChatMessage, "createdAt">): Promise<ChatMessage>;
 
   deleteMessagesByChatIdAfterTimestamp(messageId: string): Promise<void>;
 
