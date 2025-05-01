@@ -2,7 +2,12 @@
 import { insertProjectAction } from "@/app/api/chat/actions";
 import { Lightbulb, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
-import React, { KeyboardEvent, PropsWithChildren, useEffect, useState } from "react";
+import React, {
+  KeyboardEvent,
+  PropsWithChildren,
+  useEffect,
+  useState,
+} from "react";
 import { toast } from "sonner";
 import { mutate } from "swr";
 import { safe } from "ts-safe";

@@ -23,7 +23,6 @@ import { ToolDetailPopup } from "./tool-detail-popup";
 import { Separator } from "ui/separator";
 
 import { cn } from "lib/utils";
-import { MCPIcon } from "ui/mcp-icon";
 
 type McpServerDropDownProps = {
   align?: "start" | "end";

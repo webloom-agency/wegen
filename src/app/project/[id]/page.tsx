@@ -75,14 +75,14 @@ export default function ProjectPage() {
 
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
-  const [appStoreMutate, model, activeTool] = appStore(
-    useShallow((state) => [state.mutate, state.model, state.activeTool]),
+  const [appStoreMutate, model, toolChoice] = appStore(
+    useShallow((state) => [state.mutate, state.model, state.toolChoice]),
   );
 
   const { input, setInput, append, stop, status } = useChat({
     id: threadId,
     api: "/api/chat",
-    body: { id: threadId, model, activeTool, projectId: id as string },
+    body: { id: threadId, model, toolChoice, projectId: id as string },
     initialMessages: [],
     sendExtraMessageFields: true,
     generateId: generateUUID,

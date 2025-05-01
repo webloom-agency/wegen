@@ -1,6 +1,5 @@
 "use client";
 
-import { cn } from "lib/utils";
 import { ChevronDown, CornerRightUp, Paperclip, Pause } from "lucide-react";
 import { ReactNode, useMemo, useState } from "react";
 import { Button } from "ui/button";
