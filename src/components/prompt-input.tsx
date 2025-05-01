@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "lib/utils";
-import { CornerRightUp, Paperclip, Pause } from "lucide-react";
+import { ChevronDown, CornerRightUp, Paperclip, Pause } from "lucide-react";
 import { ReactNode, useMemo, useState } from "react";
 import { Button } from "ui/button";
 import { notImplementedToast } from "ui/shared-toast";
@@ -11,11 +11,12 @@ import { SelectModel } from "./select-model";
 import { appStore } from "@/app/store";
 import { useShallow } from "zustand/shallow";
 import { customModelProvider } from "lib/ai/models";
-
-import { McpToolChoiceSettings } from "./mcp-tool-choice-settings";
 import { createMCPToolId } from "lib/ai/mcp/mcp-tool-id";
 import { ChatMessageAnnotation } from "app-types/chat";
 import dynamic from "next/dynamic";
+import { ToolChoiceDropDown } from "./tool-choice-dropdown";
+import { McpServerDropDown } from "./mcp-server-dropdown";
+import { MCPIcon } from "ui/mcp-icon";
 
 interface PromptInputProps {
   placeholder?: string;
@@ -43,13 +44,8 @@ export default function PromptInput({
   onStop,
   isLoading,
 }: PromptInputProps) {
-  const [appStoreMutate, model, toolChoice, mcpList] = appStore(
-    useShallow((state) => [
-      state.mutate,
-      state.model,
-      state.toolChoice,
-      state.mcpList,
-    ]),
+  const [appStoreMutate, model, mcpList] = appStore(
+    useShallow((state) => [state.mutate, state.model, state.mcpList]),
   );
 
   const [toolMentionItems, setToolMentionItems] = useState<
@@ -162,16 +158,25 @@ export default function PromptInput({
                   />
                 ))}
               </div>
-              <div className="flex w-full items-center z-30">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="cursor-pointer"
+              <div className="flex w-full items-center z-30 gap-1.5">
+                <div
+                  className="cursor-pointer text-muted-foreground border rounded-full p-2 bg-transparent hover:bg-muted transition-all duration-200"
                   onClick={notImplementedToast}
                 >
-                  <Paperclip />
-                </Button>
+                  <Paperclip className="size-4" />
+                </div>
 
+                <ToolChoiceDropDown />
+                <McpServerDropDown>
+                  <Button
+                    variant={"outline"}
+                    className="rounded-full bg-secondary font-semibold"
+                  >
+                    <MCPIcon className="size-3.5 fill-muted-foreground" />
+                    MCP Server
+                  </Button>
+                </McpServerDropDown>
+                <div className="flex-1" />
                 <SelectModel
                   onSelect={(model) => {
                     appStoreMutate({ model });
@@ -179,23 +184,13 @@ export default function PromptInput({
                   providers={modelList}
                   model={model}
                 >
-                  <Button size={"sm"} variant={"ghost"}>
+                  <Button variant={"ghost"} className="rounded-full">
                     {model}
+                    <ChevronDown className="size-3" />
                   </Button>
                 </SelectModel>
-                <div className="flex-1" />
-                <McpToolChoiceSettings>
-                  <Button
-                    variant={toolChoice == "none" ? "ghost" : "secondary"}
-                    className={cn(
-                      toolChoice == "none" && "text-muted-foreground",
-                      "font-semibold mr-1 rounded-full",
-                    )}
-                  >
-                    {toolChoice}
-                  </Button>
-                </McpToolChoiceSettings>
-                <Button
+
+                <div
                   onClick={() => {
                     if (isLoading) {
                       onStop();
@@ -203,14 +198,7 @@ export default function PromptInput({
                       submit();
                     }
                   }}
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    input.length > 0
-                      ? "text-foreground"
-                      : "text-muted-foreground",
-                    "cursor-pointer rounded-xl",
-                  )}
+                  className="cursor-pointer text-muted-foreground rounded-full p-2 bg-secondary hover:bg-accent-foreground hover:text-accent transition-all duration-200"
                 >
                   {isLoading ? (
                     <Pause
@@ -220,7 +208,7 @@ export default function PromptInput({
                   ) : (
                     <CornerRightUp size={16} />
                   )}
-                </Button>
+                </div>
               </div>
             </div>
           </div>

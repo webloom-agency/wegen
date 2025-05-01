@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "ui/popover";
 import { Switch } from "ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { handleErrorWithToast } from "ui/shared-toast";
-import { useShallow } from "zustand/shallow";
+
 import { Button } from "ui/button";
 import { safe } from "ts-safe";
 import { ToolDetailPopup } from "./tool-detail-popup";
@@ -24,20 +24,16 @@ import { Separator } from "ui/separator";
 
 import { cn } from "lib/utils";
 import { MCPIcon } from "ui/mcp-icon";
-import { RadioGroup, RadioGroupItem } from "ui/radio-group";
-import { Label } from "ui/label";
 
-type McpToolChoiceSettingsProps = {
+type McpServerDropDownProps = {
   align?: "start" | "end";
 };
 
-export const McpToolChoiceSettings = ({
+export const McpServerDropDown = ({
   children,
-  align = "end",
-}: PropsWithChildren<McpToolChoiceSettingsProps>) => {
-  const [appStoreMutate, toolChoice] = appStore(
-    useShallow((state) => [state.mutate, state.toolChoice]),
-  );
+  align = "start",
+}: PropsWithChildren<McpServerDropDownProps>) => {
+  const appStoreMutate = appStore((state) => state.mutate);
 
   const [open, setOpen] = useState(false);
   const [expandedServers, setExpandedServers] = useState<string[]>([]);
@@ -48,7 +44,7 @@ export const McpToolChoiceSettings = ({
     "mcp-list",
     selectMcpClientsAction,
     {
-      refreshInterval: 1000 * 60 * 1,
+      refreshInterval: 1000 * 30 * 1,
       fallbackData: [],
       onError: handleErrorWithToast,
       onSuccess: (data) => appStoreMutate({ mcpList: data }),
@@ -98,101 +94,29 @@ export const McpToolChoiceSettings = ({
     );
   };
 
-  const handleToolChoiceChange = (value: string) => {
-    appStoreMutate({ toolChoice: value as "none" | "auto" | "manual" });
-  };
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent
-        className="p-0 border-none bg-transparent w-full md:w-[400px] overflow-hidden"
+        className="p-0 border-none  w-full md:w-[400px] overflow-hidden"
         align={align}
         side="top"
       >
         <Card
-          className="relative bg-background w-full py-0 overflow-hidden"
+          className="relative w-full py-0 overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           <CardContent className="p-0 flex">
             <div className="flex-1 h-[50vh] overflow-y-auto w-full ">
-              <div className="p-6 sticky top-0 bg-background z-10 w-full pt-10">
+              <div className="p-6 sticky top-0 z-10 w-full bg-card">
                 <div className="flex items-center justify-between">
                   <h4 className="text-lg font-bold flex items-center gap-2">
-                    <div className="bg-accent-foreground p-1.5 rounded-lg">
-                      <MCPIcon className="size-4 fill-accent" />
-                    </div>
-                    MCP Tools
+                    MCP Servers
                   </h4>
-                </div>
-                <div className="mt-4">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Tool Choice Mode
-                  </p>
-                  <RadioGroup
-                    value={toolChoice}
-                    onValueChange={handleToolChoiceChange}
-                    className="flex flex-row justify-between bg-muted rounded-lg p-1"
-                  >
-                    <div className="flex items-center space-x-2 rounded-md px-3 py-1.5 cursor-pointer hover:bg-secondary/50 transition-colors">
-                      <RadioGroupItem
-                        value="none"
-                        id="none"
-                        className="sr-only"
-                      />
-                      <Label
-                        htmlFor="none"
-                        className={cn(
-                          "text-sm font-medium cursor-pointer",
-                          toolChoice === "none"
-                            ? "text-foreground"
-                            : "text-muted-foreground",
-                        )}
-                      >
-                        None
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2 rounded-md px-3 py-1.5 cursor-pointer hover:bg-secondary/50 transition-colors">
-                      <RadioGroupItem
-                        value="auto"
-                        id="auto"
-                        className="sr-only"
-                      />
-                      <Label
-                        htmlFor="auto"
-                        className={cn(
-                          "text-sm font-medium cursor-pointer",
-                          toolChoice === "auto"
-                            ? "text-foreground"
-                            : "text-muted-foreground",
-                        )}
-                      >
-                        Auto
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2 rounded-md px-3 py-1.5 cursor-pointer hover:bg-secondary/50 transition-colors">
-                      <RadioGroupItem
-                        value="manual"
-                        id="manual"
-                        className="sr-only"
-                      />
-                      <Label
-                        htmlFor="manual"
-                        className={cn(
-                          "text-sm font-medium cursor-pointer",
-                          toolChoice === "manual"
-                            ? "text-foreground"
-                            : "text-muted-foreground",
-                        )}
-                      >
-                        Manual
-                      </Label>
-                    </div>
-                  </RadioGroup>
                 </div>
               </div>
 
-              <div className="p-6 w-full">
+              <div className="p-6 pt-0 w-full">
                 {mcpList && mcpList.length > 0 ? (
                   <div className={cn("space-y-2 w-full")}>
                     {mcpList.map((server) => (
@@ -202,10 +126,8 @@ export const McpToolChoiceSettings = ({
                           processingItems.includes(server.name)
                             ? "opacity-50 pointer-events-none"
                             : "",
-                          expandedServers.includes(server.name)
-                            ? "bg-secondary"
-                            : "bg-background",
-                          "rounded-md border shadow-sm text-xs hover:bg-secondary",
+
+                          "bg-secondary rounded-md border shadow-sm text-xs hover:bg-secondary",
                         )}
                       >
                         <div
@@ -333,7 +255,3 @@ export const McpToolChoiceSettings = ({
     </Popover>
   );
 };
-
-// For backward compatibility
-export const McpListCombo = McpToolChoiceSettings;
-export const McpToolsPanel = McpToolChoiceSettings;
