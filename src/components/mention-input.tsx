@@ -16,14 +16,21 @@ import { createPortal } from "react-dom";
 import { useLatest } from "@/hooks/use-latest";
 import { cn } from "@/lib/utils";
 import { fuzzySearch } from "@/lib/fuzzy-search";
+import { WrenchIcon } from "lucide-react";
+import { MCPIcon } from "ui/mcp-icon";
+import { extractMCPToolId } from "lib/ai/mcp/mcp-tool-id";
+
+type MentionItemType = "tool" | "server";
 
 interface MentionInputProps {
   input?: string;
   onChange?: (value: string) => void;
-  onChangeMention?: (mentionItems: { id: string; label: ReactNode }[]) => void;
+  onChangeMention?: (
+    mentionItems: { id: string; label: ReactNode; type?: MentionItemType }[],
+  ) => void;
   onEnter?: () => void;
   placeholder?: string;
-  items?: { id: string; label: string }[];
+  items?: { id: string; label: string; type }[];
   onPaste?: (e: React.ClipboardEvent) => void;
 }
 
@@ -235,7 +242,7 @@ export default function MentionInput({
       >
         <div
           ref={mentionRef}
-          className="translate-y-[-100%] flex flex-col bg-background border rounded-md shadow-md w-[280px] px-2 py-2 gap-1 max-h-[400px] overflow-y-auto z-50"
+          className="translate-y-[-100%] flex flex-col bg-background border rounded-md shadow-md min-w-[280px] px-2 py-2 gap-1 max-h-[400px] overflow-y-auto z-50"
         >
           <MentionSelect
             items={filteredItems}
@@ -332,7 +339,7 @@ const HighlightText = memo(function HighlightText({
       {textParts.map((part, i) => (
         <span
           key={i}
-          className={part.highlight ? "text-blue-500 font-bold" : ""}
+          className={part.highlight ? "text-blue-400 font-bold" : ""}
         >
           {part.text}
         </span>
@@ -347,25 +354,74 @@ const MentionItem = memo(function MentionItem({
   query,
   addMention,
   isSelected,
+  type,
 }: {
   item: { id: string; label: string };
   addMention: (item: { id: string; label: string }) => void;
   isSelected: boolean;
   query: string;
+  type?: MentionItemType;
 }) {
+  const label = useMemo(() => {
+    if (type == "tool") {
+      return extractMCPToolId(item.id).toolName;
+    }
+    return item.label;
+  }, [item, type]);
+
+  const serverName = useMemo(() => {
+    if (type == "tool") {
+      return extractMCPToolId(item.id).serverName;
+    }
+  }, [item, type]);
+
+  const itemRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isSelected && itemRef.current) {
+      // Check if the element is not in view
+      const element = itemRef.current;
+      const parent = element.parentElement?.parentElement;
+
+      if (parent) {
+        const parentRect = parent.getBoundingClientRect();
+        const elementRect = element.getBoundingClientRect();
+
+        const isVisibleInParent =
+          elementRect.top >= parentRect.top &&
+          elementRect.bottom <= parentRect.bottom;
+
+        if (!isVisibleInParent) {
+          element.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+      }
+    }
+  }, [isSelected]);
+
   const handleClick = useCallback(() => {
     addMention(item);
   }, [addMention, item]);
 
   return (
     <div
+      ref={itemRef}
       className={cn(
-        "px-3 py-2 cursor-pointer hover:bg-card text-xs rounded",
-        isSelected && "bg-card",
+        "px-3 py-2 cursor-pointer hover:bg-card text-xs rounded flex items-center gap-2",
+        isSelected && "bg-input",
       )}
       onClick={handleClick}
     >
-      <HighlightText text={item.label} query={query} />
+      {type == "tool" ? (
+        <WrenchIcon className="size-3 text-muted-foreground" />
+      ) : type == "server" ? (
+        <div className="p-0.5 rounded bg-accent-foreground">
+          <MCPIcon className="size-3" />
+        </div>
+      ) : null}
+      <HighlightText text={label} query={query} />
+      <span className="ml-auto text-xs text-muted-foreground">
+        {serverName}
+      </span>
     </div>
   );
 });
@@ -377,14 +433,13 @@ const MentionSelect = memo(function MentionSelect({
   addMention,
   selectedIndex,
 }: {
-  items: { id: string; label: string }[];
+  items: { id: string; label: string; type?: MentionItemType }[];
   query: string;
   addMention: (item: { id: string; label: string }) => void;
   selectedIndex: number;
 }) {
   const emptyMessage = useMemo(() => {
     if (items.length > 0) return null;
-
     return (
       <div className="px-3 py-2 text-xs text-muted-foreground">
         No results found
@@ -399,6 +454,7 @@ const MentionSelect = memo(function MentionSelect({
         <MentionItem
           key={item.id}
           item={item}
+          type={item.type}
           query={query}
           addMention={addMention}
           isSelected={index === selectedIndex}

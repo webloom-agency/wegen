@@ -48,7 +48,7 @@ export default function PromptInput({
   );
 
   const [toolMentionItems, setToolMentionItems] = useState<
-    { id: string; label: ReactNode }[]
+    { id: string; label: ReactNode; [key: string]: any }[]
   >([]);
 
   const modelList = useMemo(() => {
@@ -64,12 +64,14 @@ export default function PromptInput({
         {
           id: mcp.name,
           label: mcp.name,
+          type: "server",
         },
         ...mcp.toolInfo.map((tool) => {
           const id = createMCPToolId(mcp.name, tool.name);
           return {
             id,
             label: id,
+            type: "tool",
           };
         }),
       ]);
