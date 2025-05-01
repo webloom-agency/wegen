@@ -476,6 +476,10 @@ export default function Page() {
     setShowFullDescription(false);
   }, [selectedToolIndex]);
 
+  useEffect(() => {
+    setSelectedToolIndex(0);
+  }, [searchQuery]);
+
   return (
     <div className="relative flex flex-col max-w-5xl px-4 mx-4 md:mx-auto w-full h-full py-4">
       <div className="absolute bottom-0 left-0 w-full h-[10%] z-10 bg-gradient-to-b from-transparent to-background pointer-events-none" />
