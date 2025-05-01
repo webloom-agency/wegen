@@ -289,7 +289,7 @@ export const ToolMessagePart = ({
           onClick={() => setIsExpanded(!isExpanded)}
           variant="outline"
           className={cn(
-            "flex flex-row gap-2 justify-between items-center text-muted-foreground min-w-44",
+            "flex flex-row gap-2 justify-between items-center text-muted-foreground min-w-44 bg-card",
             isExecuting && "animate-pulse",
           )}
         >
@@ -326,10 +326,10 @@ export const ToolMessagePart = ({
         )}
       </div>
       {isExpanded && (
-        <Card className="relative mt-2 p-4 max-h-[50vh] overflow-y-auto bg-background">
+        <Card className="relative mt-2 p-4 max-h-[50vh] overflow-y-auto bg-card">
           <CardContent className="flex flex-row gap-4 text-sm ">
             <div className="w-1/2 min-w-0 flex flex-col">
-              <div className="flex items-center gap-2 mb-2 pt-2 pb-1 bg-background z-10">
+              <div className="flex items-center gap-2 mb-2 pt-2 pb-1  z-10">
                 <h5 className="text-muted-foreground text-sm font-medium">
                   Inputs
                 </h5>
@@ -338,7 +338,7 @@ export const ToolMessagePart = ({
             </div>
 
             <div className="w-1/2 min-w-0 pl-4 flex flex-col">
-              <div className="flex items-center gap-2 mb-4 pt-2 pb-1 bg-background z-10">
+              <div className="flex items-center gap-2 mb-4 pt-2 pb-1  z-10">
                 <h5 className="text-muted-foreground text-sm font-medium">
                   Outputs
                 </h5>
