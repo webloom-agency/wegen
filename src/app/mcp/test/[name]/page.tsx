@@ -381,15 +381,6 @@ export default function Page() {
     selectMcpClientAction(name as string),
   );
 
-  const selectedTool = useMemo(() => {
-    return client?.toolInfo?.[selectedToolIndex];
-  }, [client, selectedToolIndex]);
-
-  const simplifiedSchema = useMemo(() => {
-    if (!selectedTool?.inputSchema) return null;
-    return createSimplifiedSchema(selectedTool.inputSchema);
-  }, [selectedTool]);
-
   const filteredTools = useMemo(() => {
     const trimmedQuery = searchQuery.trim().toLowerCase();
     return (
@@ -400,6 +391,15 @@ export default function Page() {
       ) || []
     );
   }, [client?.toolInfo, searchQuery]);
+
+  const selectedTool = useMemo(() => {
+    return filteredTools?.[selectedToolIndex];
+  }, [filteredTools, selectedToolIndex]);
+
+  const simplifiedSchema = useMemo(() => {
+    if (!selectedTool?.inputSchema) return null;
+    return createSimplifiedSchema(selectedTool.inputSchema);
+  }, [selectedTool]);
 
   const toggleDescription = () => setShowFullDescription(!showFullDescription);
   const toggleInputSchema = () => setShowInputSchema(!showInputSchema);
