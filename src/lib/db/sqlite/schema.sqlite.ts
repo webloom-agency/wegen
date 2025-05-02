@@ -28,3 +28,22 @@ export const ProjectSchema = sqliteTable("project", {
   createdAt: integer("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: integer("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const UserSchema = sqliteTable("user", {
+  id: text("id").primaryKey().notNull().default(sql`(random())`),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  image: text("image"),
+  createdAt: integer("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+// export const McpServerSchema = sqliteTable("mcp_server", {
+//   id: text("id").primaryKey().notNull().default(sql`(random())`),
+//   enabled: integer("enabled").notNull().default(1),
+//   name: text("name").notNull(),
+//   config: text("config").notNull(),
+//   createdAt: integer("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+//   updatedAt: integer("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+// });

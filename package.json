@@ -7,12 +7,11 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm initial:check && next dev --turbopack",
-    "build": "rimraf .next && pnpm next build",
+    "build": "next build",
     "start": "next start",
     "test": "vitest",
-    "lint:next": "next lint",
-    "lint:biome": "biome lint --write --unsafe ./src",
-    "lint": "pnpm lint:biome && pnpm lint:next",
+    "lint": "next lint && biome lint --write --unsafe",
+    "lint:fix": "next lint --fix && biome lint --write --unsafe",
     "format": "biome format --write",
     "check-types": "tsc --noEmit",
     "initial:check": "tsx scripts/flag.ts check",
@@ -25,7 +24,7 @@
     "db:reset": "drizzle-kit drop && drizzle-kit push",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:migrate": "tsx src/lib/db/migrate.sqlite.ts",
+    "db:migrate": "tsx scripts/db-migrate.ts",
     "db:pull": "drizzle-kit pull",
     "db:check": "drizzle-kit check"
   },
@@ -58,6 +57,7 @@
     "@tiptap/starter-kit": "^2.11.7",
     "@tiptap/suggestion": "^2.11.7",
     "ai": "^4.3.10",
+    "bcrypt-ts": "^7.0.0",
     "chokidar": "^4.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -72,6 +72,7 @@
     "lucide-react": "^0.486.0",
     "nanoid": "^5.1.5",
     "next": "15.2.4",
+    "next-auth": "5.0.0-beta.27",
     "next-themes": "^0.4.6",
     "ollama-ai-provider": "^1.2.0",
     "pg": "^8.15.6",
@@ -106,5 +107,8 @@
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.1.2"
   },
-  "packageManager": "pnpm@10.2.1"
+  "packageManager": "pnpm@10.2.1",
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }
