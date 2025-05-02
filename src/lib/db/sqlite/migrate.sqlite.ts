@@ -6,6 +6,9 @@ import { join } from "path";
 
 config();
 
+/**
+ * @deprecated
+ */
 const runMigrate = async () => {
   const sqliteDb = drizzle({
     client: createClient({ url: process.env.FILEBASE_URL! }),

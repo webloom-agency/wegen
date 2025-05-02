@@ -21,9 +21,7 @@ if (IS_DEV) {
   mcpClientsManager = globalThis.__mcpClientsManager__;
 } else {
   mcpClientsManager = createMCPClientsManager(storage);
-  if (!process.env.MCP_NO_INITIAL) {
-    mcpClientsManager.init();
-  }
+  mcpClientsManager.init();
 }
 
 export { mcpClientsManager };

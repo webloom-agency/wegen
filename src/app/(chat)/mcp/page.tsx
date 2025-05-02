@@ -4,7 +4,7 @@ import { appStore } from "@/app/store";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { MCPOverview } from "@/components/mcp-overview";
-import { selectMcpClientsAction } from "../api/mcp/actions";
+import { selectMcpClientsAction } from "@/app/api/mcp/actions";
 import useSWR from "swr";
 import { Skeleton } from "ui/skeleton";
 

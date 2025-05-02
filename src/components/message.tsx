@@ -13,6 +13,7 @@ import {
   ToolMessagePart,
   ReasoningPart,
 } from "./message-parts";
+import { Think } from "ui/think";
 
 interface Props {
   message: UIMessage;
@@ -150,19 +151,7 @@ export const ThinkingMessage = ({ className }: { className?: string }) => {
         <div className="flex flex-col gap-4 text-muted-foreground">
           <div className="flex items-center gap-2">
             <div className="flex space-x-2">
-              <motion.div
-                className="h-2 w-2 rounded-full bg-primary"
-                animate={{
-                  scale: [1, 1.5, 1],
-                  opacity: [0.6, 1, 0.6],
-                }}
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: 0,
-                }}
-              />
+              <Think />
             </div>
           </div>
         </div>

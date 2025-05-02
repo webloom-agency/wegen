@@ -17,7 +17,6 @@ import {
 } from "@/app/api/chat/actions";
 import { customModelProvider, isToolCallUnsupportedModel } from "lib/ai/models";
 
-import { getMockUserSession } from "lib/mock";
 import { mcpClientsManager } from "../mcp/mcp-manager";
 
 import { chatService } from "lib/db/chat-service";
@@ -29,6 +28,8 @@ import { z } from "zod";
 import { errorIf, safe } from "ts-safe";
 import { callMcpToolAction } from "../mcp/actions";
 import { extractMCPToolId } from "lib/ai/mcp/mcp-tool-id";
+import { auth } from "../auth/auth";
+import { redirect } from "next/navigation";
 
 const { insertMessage, insertThread, upsertMessage } = chatService;
 
@@ -57,7 +58,11 @@ export async function POST(request: Request) {
 
     let thread = id ? await rememberThreadAction(id) : null;
 
-    const userId = getMockUserSession().id;
+    const session = await auth();
+
+    if (!session?.user.id) {
+      return redirect("/login");
+    }
 
     const message = messages.at(-1)!;
 
@@ -74,7 +79,7 @@ export async function POST(request: Request) {
       thread = await insertThread({
         title,
         id: id ?? generateUUID(),
-        userId,
+        userId: session.user.id,
         projectId: projectId ?? null,
       });
     }
@@ -89,12 +94,10 @@ export async function POST(request: Request) {
     const mcpTools = mcpClientsManager.tools();
 
     const model = customModelProvider.getModel(modelName);
-
     const systemPrompt = mergeSystemPrompt(
-      SYSTEM_TIME_PROMPT,
-      projectInstructions?.systemPrompt,
+      projectInstructions?.systemPrompt || "- You are a helpful assistant.",
+      SYSTEM_TIME_PROMPT(session),
     );
-
     const isToolCallAllowed =
       !isToolCallUnsupportedModel(model) && toolChoice != "none";
 
