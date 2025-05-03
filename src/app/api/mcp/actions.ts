@@ -56,15 +56,16 @@ export async function insertMcpClientAction(
   name: string,
   config: MCPServerConfig,
 ) {
-  // Validate name to ensure it only contains alphanumeric characters
-  const nameSchema = z.string().regex(/^[a-zA-Z0-9]+$/, {
-    message: "Name must contain only alphanumeric characters (A-Z, a-z, 0-9)",
+  // Validate name to ensure it only contains alphanumeric characters and hyphens
+  const nameSchema = z.string().regex(/^[a-zA-Z0-9\-]+$/, {
+    message:
+      "Name must contain only alphanumeric characters (A-Z, a-z, 0-9) and hyphens (-)",
   });
 
   const result = nameSchema.safeParse(name);
   if (!result.success) {
     throw new Error(
-      "Name must contain only alphanumeric characters (A-Z, a-z, 0-9)",
+      "Name must contain only alphanumeric characters (A-Z, a-z, 0-9) and hyphens (-)",
     );
   }
 

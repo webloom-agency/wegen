@@ -72,15 +72,15 @@ export default function MCPEditor({
   );
 
   // Name validation schema
-  const nameSchema = z.string().regex(/^[a-zA-Z0-9]+$/, {
-    message: "Name must contain only alphanumeric characters",
+  const nameSchema = z.string().regex(/^[a-zA-Z0-9\-]+$/, {
+    message: "Name must contain only alphanumeric characters and hyphens",
   });
 
   const validateName = (nameValue: string): boolean => {
     const result = nameSchema.safeParse(nameValue);
     if (!result.success) {
       setNameError(
-        "Name must contain only alphanumeric characters (A-Z, a-z, 0-9)",
+        "Name must contain only alphanumeric characters (A-Z, a-z, 0-9) and hyphens (-)",
       );
       return false;
     }
@@ -123,7 +123,7 @@ export default function MCPEditor({
     if (!validateName(name)) {
       return handleErrorWithToast(
         new Error(
-          "Name must contain only alphanumeric characters (A-Z, a-z, 0-9)",
+          "Name must contain only alphanumeric characters (A-Z, a-z, 0-9) and hyphens (-)",
         ),
         "mcp-editor-error",
       );
