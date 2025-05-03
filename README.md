@@ -26,7 +26,13 @@ MCP Client Chatbot is a 100% community-driven open source project.
     - [Environment Variables](#environment-variables)
     - [MCP Server Setup](#mcp-server-setup)
   - [💡 Use Cases](#-use-cases)
-  - [🗺️ Roadmap: Upcoming Features](#️-roadmap-upcoming-features)
+  - [🗺️ Roadmap: Next Features](#️-roadmap-next-features)
+    - [🚀 Deployment \& Hosting](#-deployment--hosting)
+    - [🗣️ Audio \& Real-Time Chat](#️-audio--real-time-chat)
+    - [📎 File \& Image](#-file--image)
+    - [🔄 MCP Workflow](#-mcp-workflow)
+    - [🛠️ Built-in Tools \& UX](#️-built-in-tools--ux)
+    - [💻 LLM Code Write (with Daytona)](#-llm-code-write-with-daytona)
   - [🙌 Contributing](#-contributing)
 
 ---
@@ -151,20 +157,41 @@ You can connect MCP tools via:
 
 -----
 
-## 🗺️ Roadmap: Upcoming Features
+## 🗺️ Roadmap: Next Features
 
-We're making MCP Client Chatbot even more powerful with these planned features:
+MCP Client Chatbot is evolving with these upcoming features:
 
-* **🎨 Canvas Mode:** Real-time editing interface for LLM + user collaboration (e.g. code, blogs).
-* **🧩 LLM UI Generation:** Let LLMs render charts, tables, forms dynamically.
-* **📜 Rule Engine:** Persistent system prompt/rules across the session.
-* **🖼️ Image & File Uploads:** Multimodal interaction via uploads and image generation.
-* **🐙 GitHub Mounting:** Mount local GitHub repos to ask questions and work on code.
-* **📚 RAG Agent:** Retrieval-Augmented Generation using your own documents.
-* **🧠 Planning Agent:** Smarter agent that plans and executes complex tasks.
-* **🧑‍💻 Agent Builder:** Tool to create custom AI agents for specific goals.
+### 🚀 Deployment & Hosting
+- **Self Hosting:**  
+  - Easy deployment with Docker Compose  
+  - Vercel deployment support (MCP Server: SSE only)
 
-👉 See full roadmap in [ROADMAP.md](./docs/ROADMAP.md)
+### 🗣️ Audio & Real-Time Chat
+- **Open Audio Real-Time Chat:**  
+  - Real-time voice chat with MCP Server integration
+
+### 📎 File & Image
+- **File Attach & Image Generation:**  
+  - File upload and image generation  
+  - Multimodal conversation support
+
+### 🔄 MCP Workflow
+- **MCP Flow:**  
+  - Workflow automation with MCP Server integration
+
+### 🛠️ Built-in Tools & UX
+- **Default Tools for Chatbot:**  
+  - Collaborative document editing (like OpenAI Canvas: user & assistant co-editing)  
+  - RAG (Retrieval-Augmented Generation)  
+  - Useful built-in tools for chatbot UX (usable without MCP)
+
+### 💻 LLM Code Write (with Daytona)
+- **LLM-powered code writing and editing using Daytona integration**
+  - Seamless LLM-powered code writing, editing, and execution in a cloud development environment via Daytona integration. Instantly generate, modify, and run code with AI assistance—no local setup required.
+
+
+💡 If you have suggestions or need specific features, please create an [issue](https://github.com/cgoinglove/mcp-client-chatbot/issues)!
+
 
 -----
 
