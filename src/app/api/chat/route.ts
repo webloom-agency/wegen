@@ -30,6 +30,7 @@ import { callMcpToolAction } from "../mcp/actions";
 import { extractMCPToolId } from "lib/ai/mcp/mcp-tool-id";
 import { auth } from "../auth/auth";
 import { redirect } from "next/navigation";
+import { defaultTools } from "lib/ai/tools";
 
 const { insertMessage, insertThread, upsertMessage } = chatService;
 
@@ -117,6 +118,9 @@ export async function POST(request: Request) {
           return disableToolExecution(tools);
         }
         return tools;
+      })
+      .map((tools) => {
+        return { ...defaultTools, ...tools };
       })
       .orElse(undefined);
 

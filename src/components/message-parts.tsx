@@ -31,6 +31,10 @@ import { deleteMessagesByChatIdAfterTimestampAction } from "@/app/api/chat/actio
 import { toast } from "sonner";
 import { safe } from "ts-safe";
 import { ChatMessageAnnotation } from "app-types/chat";
+import { DefaultToolName } from "lib/ai/tools/utils";
+import { PieChart } from "./tool-invocation/pie-chart";
+import { BarChart } from "./tool-invocation/bar-chart";
+import { LineChart } from "./tool-invocation/line-chart";
 
 type MessagePart = UIMessage["parts"][number];
 
@@ -136,8 +140,9 @@ export const UserMessagePart = ({
           ref.current?.scrollIntoView({ behavior: "smooth" });
         }}
         data-testid="message-content"
-        className={cn("flex flex-col gap-4 border", {
-          "bg-accent text-accent-foreground px-4 py-3 rounded-2xl": isLast,
+        className={cn("flex flex-col gap-4", {
+          "bg-accent text-accent-foreground border px-4 py-3 rounded-2xl":
+            isLast,
         })}
       >
         {isLast ? (
@@ -289,82 +294,102 @@ export const ToolMessagePart = ({
   onPoxyToolCall,
 }: ToolMessagePartProps) => {
   const { toolInvocation } = part;
-  const { toolName, toolCallId, state } = toolInvocation;
+  const { toolName, toolCallId, state, args } = toolInvocation;
   const [isExpanded, setIsExpanded] = useState(false);
 
   const isExecuting = state !== "result" && (isLast || onPoxyToolCall);
 
+  const ToolResultComponent = useMemo(() => {
+    if (state === "result") {
+      switch (toolName) {
+        case DefaultToolName.CreatePieChart:
+          return <PieChart {...(args as any)} />;
+        case DefaultToolName.CreateBarChart:
+          return <BarChart {...(args as any)} />;
+        case DefaultToolName.CreateLineChart:
+          return <LineChart {...(args as any)} />;
+      }
+    }
+    return null;
+  }, [toolName, state]);
+
   return (
     <div key={toolCallId} className="flex flex-col gap-2 group">
-      <div className="flex flex-row gap-2 items-center cursor-pointer">
-        <Button
-          onClick={() => setIsExpanded(!isExpanded)}
-          variant="outline"
-          className={cn(
-            "flex flex-row gap-2 justify-between items-center text-muted-foreground min-w-44 bg-card",
-            isExecuting && "animate-pulse",
-          )}
-        >
-          <p className={cn("font-bold")}>{toolName}</p>
-          {isExecuting ? (
-            <Loader className="size-3 animate-spin" />
-          ) : (
-            <ChevronDown
+      {ToolResultComponent ? (
+        ToolResultComponent
+      ) : (
+        <>
+          <div className="flex flex-row gap-2 items-center cursor-pointer">
+            <Button
+              onClick={() => setIsExpanded(!isExpanded)}
+              variant="outline"
               className={cn(
-                isExpanded && "rotate-180",
-                "transition-transform",
-                "size-4",
+                "flex flex-row gap-2 justify-between items-center text-muted-foreground min-w-44 bg-card",
+                isExecuting && "animate-pulse",
               )}
-            />
-          )}
-        </Button>
-        {onPoxyToolCall && (
-          <>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => onPoxyToolCall(true)}
             >
-              <Check />
+              <p className={cn("font-bold")}>{toolName}</p>
+              {isExecuting ? (
+                <Loader className="size-3 animate-spin" />
+              ) : (
+                <ChevronDown
+                  className={cn(
+                    isExpanded && "rotate-180",
+                    "transition-transform",
+                    "size-4",
+                  )}
+                />
+              )}
             </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => onPoxyToolCall(false)}
-            >
-              <X />
-            </Button>
-          </>
-        )}
-      </div>
-      {isExpanded && (
-        <Card className="relative mt-2 p-4 max-h-[50vh] overflow-y-auto bg-card">
-          <CardContent className="flex flex-row gap-4 text-sm ">
-            <div className="w-1/2 min-w-0 flex flex-col">
-              <div className="flex items-center gap-2 mb-2 pt-2 pb-1  z-10">
-                <h5 className="text-muted-foreground text-sm font-medium">
-                  Inputs
-                </h5>
-              </div>
-              <JsonView data={toolInvocation.args} />
-            </div>
+            {onPoxyToolCall && (
+              <>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => onPoxyToolCall(true)}
+                >
+                  <Check />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => onPoxyToolCall(false)}
+                >
+                  <X />
+                </Button>
+              </>
+            )}
+          </div>
+          {isExpanded && (
+            <Card className="relative mt-2 p-4 max-h-[50vh] overflow-y-auto bg-card">
+              <CardContent className="flex flex-row gap-4 text-sm ">
+                <div className="w-1/2 min-w-0 flex flex-col">
+                  <div className="flex items-center gap-2 mb-2 pt-2 pb-1  z-10">
+                    <h5 className="text-muted-foreground text-sm font-medium">
+                      Inputs
+                    </h5>
+                  </div>
+                  <JsonView data={toolInvocation.args} />
+                </div>
 
-            <div className="w-1/2 min-w-0 pl-4 flex flex-col">
-              <div className="flex items-center gap-2 mb-4 pt-2 pb-1  z-10">
-                <h5 className="text-muted-foreground text-sm font-medium">
-                  Outputs
-                </h5>
-              </div>
-              <JsonView
-                data={
-                  toolInvocation.state === "result"
-                    ? toolInvocation.result
-                    : null
-                }
-              />
-            </div>
-          </CardContent>
-        </Card>
+                <div className="w-1/2 min-w-0 pl-4 flex flex-col">
+                  <div className="flex items-center gap-2 mb-4 pt-2 pb-1  z-10">
+                    <h5 className="text-muted-foreground text-sm font-medium">
+                      Outputs
+                    </h5>
+                  </div>
+                  <JsonView
+                    data={
+                      toolInvocation.state === "result"
+                        ? toolInvocation.result
+                        : null
+                    }
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
     </div>
   );
