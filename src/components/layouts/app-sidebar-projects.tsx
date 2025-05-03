@@ -103,7 +103,10 @@ export function AppSidebarProjects() {
                             className="flex items-center min-w-0 w-full"
                           >
                             <p className="truncate">{project.name}</p>
-                            <ProjectDropdown projectId={project.id}>
+                            <ProjectDropdown
+                              projectId={project.id}
+                              side="right"
+                            >
                               <Button
                                 variant="ghost"
                                 size="icon"

@@ -12,14 +12,17 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "ui/dropdown-menu";
 
 type Props = PropsWithChildren<{
   projectId: string;
+  side?: "top" | "bottom" | "left" | "right";
+  align?: "start" | "end" | "center";
 }>;
 
-export function ProjectDropdown({ projectId, children }: Props) {
+export function ProjectDropdown({ projectId, children, side, align }: Props) {
   const router = useRouter();
 
   const currentProjectId = appStore((state) => state.currentProjectId);
@@ -52,7 +55,11 @@ export function ProjectDropdown({ projectId, children }: Props) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
-      <DropdownMenuContent>
+      <DropdownMenuContent side={side} align={align}>
+        <div className="flex items-center gap-2 px-2 py-1 text-sm pt-2 font-semibold min-w-[160px]">
+          Project
+        </div>
+        <DropdownMenuSeparator />
         <DropdownMenuItem
           variant="destructive"
           onClick={handleDelete}
