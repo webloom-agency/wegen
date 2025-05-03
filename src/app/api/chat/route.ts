@@ -101,12 +101,13 @@ export async function POST(request: Request) {
     const isToolCallAllowed =
       !isToolCallUnsupportedModel(model) && toolChoice != "none";
 
+    const requiredToolsAnnotations = annotations
+      .flatMap((annotation) => annotation.requiredTools)
+      .filter(Boolean) as string[];
+
     const tools = safe(mcpTools)
       .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
       .map((tools) => {
-        const requiredToolsAnnotations = annotations
-          .flatMap((annotation) => annotation.requiredTools)
-          .filter(Boolean) as string[];
         return filterToolsByMentions(requiredToolsAnnotations, tools);
       })
       .map((tools) => {
@@ -143,6 +144,10 @@ export async function POST(request: Request) {
           maxSteps: 10,
           experimental_transform: smoothStream({ chunking: "word" }),
           tools,
+          toolChoice:
+            isToolCallAllowed && requiredToolsAnnotations.length > 0
+              ? "required"
+              : "auto",
           onFinish: async ({ response, usage }) => {
             const appendMessages = appendResponseMessages({
               messages: [message],
