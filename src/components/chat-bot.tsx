@@ -2,7 +2,14 @@
 
 import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import PromptInput from "./prompt-input";
 import clsx from "clsx";
 import { appStore } from "@/app/store";
@@ -21,12 +28,19 @@ type Props = {
   projectId?: string;
   initialMessages: Array<UIMessage>;
   selectedChatModel?: string;
+  action?: string;
+  slots?: {
+    emptySlot?: ReactNode;
+    inputBottomSlot?: ReactNode;
+  };
 };
 
 export default function ChatBot({
   threadId,
   projectId,
   initialMessages,
+  action,
+  slots,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -47,14 +61,14 @@ export default function ChatBot({
   } = useChat({
     id: threadId,
     api: "/api/chat",
-    body: { id: threadId, model, toolChoice, projectId },
+    body: { id: threadId, model, toolChoice, projectId, action },
     initialMessages: initialMessages,
     sendExtraMessageFields: true,
     generateId: generateUUID,
     experimental_throttle: 100,
     onFinish() {
       const chatPath = `/chat/${threadId}`;
-      if (window.location.pathname !== chatPath) {
+      if (window.location.pathname !== chatPath && action != "temporary-chat") {
         window.history.replaceState({}, "", chatPath);
         mutate("threads");
       }
@@ -140,15 +154,6 @@ export default function ChatBot({
       });
   }, [isInitialThreadEntry]);
 
-  // useEffect(() => {
-  //   if (status === "submitted") {
-  //     containerRef.current?.scrollTo({
-  //       top: containerRef.current?.scrollHeight,
-  //       behavior: "smooth",
-  //     });
-  //   }
-  // }, [status]);
-
   return (
     <div
       className={cn(
@@ -157,7 +162,11 @@ export default function ChatBot({
       )}
     >
       {emptyMessage ? (
-        <Greeting />
+        slots?.emptySlot ? (
+          slots.emptySlot
+        ) : (
+          <Greeting />
+        )
       ) : (
         <>
           <div
@@ -203,6 +212,7 @@ export default function ChatBot({
           isLoading={isLoading}
           onStop={stop}
         />
+        {slots?.inputBottomSlot}
       </div>
     </div>
   );

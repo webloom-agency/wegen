@@ -40,7 +40,7 @@ const requestBodySchema = z.object({
   messages: z.array(z.any()) as z.ZodType<Message[]>,
   model: z.string(),
   projectId: z.string().optional(),
-  action: z.enum(["update-assistant", ""]).optional(),
+  action: z.enum(["update-assistant", "temporary-chat", ""]).optional(),
   toolChoice: z.enum(["auto", "none", "manual"]).optional(),
 });
 
@@ -66,11 +66,13 @@ export async function POST(request: Request) {
 
     const message = messages.at(-1)!;
 
+    const isNoStore = action == "temporary-chat";
+
     if (!message) {
       return new Response("No user message found", { status: 400 });
     }
 
-    if (!thread) {
+    if (!thread && !isNoStore) {
       const title = await generateTitleFromUserMessageAction({
         message,
         model: customModelProvider.getModel(modelName),
@@ -149,13 +151,14 @@ export async function POST(request: Request) {
               ? "required"
               : "auto",
           onFinish: async ({ response, usage }) => {
+            if (isNoStore) return;
             const appendMessages = appendResponseMessages({
               messages: [message],
               responseMessages: response.messages,
             });
             if (action !== "update-assistant" && message.role == "user") {
               await insertMessage({
-                threadId: thread.id,
+                threadId: thread!.id,
                 model: null,
                 role: message.role,
                 parts: message.parts!,
@@ -171,7 +174,7 @@ export async function POST(request: Request) {
               dataStream.writeMessageAnnotation(usage.completionTokens);
               await upsertMessage({
                 model: modelName,
-                threadId: thread.id,
+                threadId: thread!.id,
                 role: assistantMessage.role,
                 id: assistantMessage.id,
                 parts: assistantMessage.parts as UIMessage["parts"],
