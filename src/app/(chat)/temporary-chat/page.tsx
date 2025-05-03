@@ -23,7 +23,9 @@ function EmptySlot() {
     <div className="max-w-3xl mx-auto my-4">
       {" "}
       <div className="rounded-xl p-6 flex flex-col gap-2 leading-relaxed text-center">
-        <h1 className="text-4xl font-semibold ">This chat won't be saved.</h1>
+        <h1 className="text-4xl font-semibold ">
+          This chat won&apos;t be saved.
+        </h1>
         <div className="text-muted-foreground text-2xl flex items-center gap-2">
           <p>Feel free to ask anything temporarily</p>
           <MessageCircleDashed />

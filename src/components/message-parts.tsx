@@ -17,15 +17,7 @@ import { Markdown } from "./markdown";
 import { PastesContentCard } from "./pasts-content";
 import { cn } from "lib/utils";
 import JsonView from "ui/json-view";
-import {
-  useMemo,
-  useState,
-  memo,
-  useEffect,
-  useRef,
-  lazy,
-  Suspense,
-} from "react";
+import { useMemo, useState, memo, useEffect, useRef, Suspense } from "react";
 import { MessageEditor } from "./message-editor";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useCopy } from "@/hooks/use-copy";
@@ -429,6 +421,7 @@ export const ToolMessagePart = memo(
   },
 );
 
+ToolMessagePart.displayName = "ToolMessagePart";
 export function ReasoningPart({
   reasoning,
   isThinking,
