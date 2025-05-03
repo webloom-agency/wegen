@@ -97,8 +97,10 @@ MCP tools independently from chat sessions for easier development and debugging.
 
 ### 📊 Built-in Chart Tools
 
+![May-04-2025 01-55-04](https://github.com/user-attachments/assets/7bf9d895-9023-44b1-b7f2-426ae4d7d643)
 
 Visualize chatbot responses as pie, bar, or line charts using the built-in tool — perfect for quick data insight during conversations.
+
 ---
 
 
