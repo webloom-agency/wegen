@@ -262,6 +262,16 @@ export const sqliteChatService: ChatService = {
     );
   },
 
+  deleteAllThreads: async (userId: string): Promise<void> => {
+    const threadIds = await db
+      .select({ id: ChatThreadSchema.id })
+      .from(ChatThreadSchema)
+      .where(eq(ChatThreadSchema.userId, userId));
+    await Promise.all(
+      threadIds.map((threadId) => sqliteChatService.deleteThread(threadId.id)),
+    );
+  },
+
   insertProject: async (
     project: Omit<Project, "id" | "createdAt" | "updatedAt">,
   ): Promise<Project> => {

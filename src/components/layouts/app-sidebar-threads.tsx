@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "ui/dropdown-menu";
 import {
-  deleteNonProjectThreadsAction,
+  deleteThreadsAction,
   selectThreadListByUserIdAction,
 } from "@/app/api/chat/actions";
 import { toast } from "sonner";
@@ -50,7 +50,7 @@ export function AppSidebarThreads() {
     onSuccess: (data) => storeMutate({ threadList: data }),
   });
   const handleDeleteAllThreads = async () => {
-    await toast.promise(deleteNonProjectThreadsAction(), {
+    await toast.promise(deleteThreadsAction(), {
       loading: "Deleting all threads...",
       success: () => {
         storeMutate({ threadList: [] });

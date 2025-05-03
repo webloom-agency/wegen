@@ -93,7 +93,7 @@ export async function updateThreadAction(
   await updateThread(id, { ...thread, userId });
 }
 
-export async function deleteNonProjectThreadsAction() {
+export async function deleteThreadsAction() {
   const userId = await getUserId();
   await deleteNonProjectThreads(userId);
 }

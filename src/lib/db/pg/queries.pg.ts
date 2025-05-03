@@ -178,6 +178,15 @@ export const pgChatService: ChatService = {
       threadIds.map((threadId) => pgChatService.deleteThread(threadId.id)),
     );
   },
+  deleteAllThreads: async (userId: string): Promise<void> => {
+    const threadIds = await db
+      .select({ id: ChatThreadSchema.id })
+      .from(ChatThreadSchema)
+      .where(eq(ChatThreadSchema.userId, userId));
+    await Promise.all(
+      threadIds.map((threadId) => pgChatService.deleteThread(threadId.id)),
+    );
+  },
 
   insertProject: async (
     project: Omit<Project, "id" | "createdAt" | "updatedAt">,
