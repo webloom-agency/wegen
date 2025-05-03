@@ -21,6 +21,8 @@ MCP Client Chatbot is a 100% community-driven open source project.
     - [⚡️ Quick Tool Mentions (`@`)](#️-quick-tool-mentions-)
     - [🔌 Adding MCP Servers Easily](#-adding-mcp-servers-easily)
     - [🛠️ Standalone Tool Testing](#️-standalone-tool-testing)
+    - [📊 Built-in Chart Tools](#-built-in-chart-tools)
+  - [Visualize chatbot responses as pie, bar, or line charts using the built-in tool — perfect for quick data insight during conversations.](#visualize-chatbot-responses-as-pie-bar-or-line-charts-using-the-built-in-tool--perfect-for-quick-data-insight-during-conversations)
   - [✨ Key Features](#-key-features)
   - [🚀 Getting Started](#-getting-started)
     - [Environment Variables](#environment-variables)
@@ -93,6 +95,10 @@ Add new MCP servers easily through the UI, and start using new tools without res
 
 MCP tools independently from chat sessions for easier development and debugging.
 
+### 📊 Built-in Chart Tools
+
+
+Visualize chatbot responses as pie, bar, or line charts using the built-in tool — perfect for quick data insight during conversations.
 ---
 
 
@@ -107,6 +113,8 @@ MCP tools independently from chat sessions for easier development and debugging.
 * **📄 Markdown UI:** Communicate in a clean, readable markdown-based interface.
 * **💾 Zero-Setup Local DB:** Uses SQLite by default for local storage (PostgreSQL also supported).
 * **🧩 Custom MCP Server Support:** Modify the built-in MCP server logic or create your own.
+* **📊 Built-in Chart Tools:** Generate pie, bar, and line charts directly in chat with natural prompts.
+
 
 ## 🚀 Getting Started
 
