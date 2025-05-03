@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/chart";
 
 import { JsonViewPopup } from "../json-view-popup";
-
+import { sanitizeCssVariableName } from "./utils";
 // LineChart component props interface
 export interface LineChartProps {
   // Chart title (required)
@@ -55,10 +55,6 @@ const chartColors = [
   "hsl(var(--chart-5))",
 ];
 
-const createKey = (label: string) => {
-  return label.replaceAll(" ", "").toLowerCase();
-};
-
 export function LineChart(props: LineChartProps) {
   const { title, data, description, yAxisLabel } = props;
 
@@ -74,7 +70,7 @@ export function LineChart(props: LineChartProps) {
       // Colors cycle through chart-1 ~ chart-5
       const colorIndex = index % chartColors.length;
 
-      config[createKey(seriesName)] = {
+      config[sanitizeCssVariableName(seriesName)] = {
         label: seriesName,
         color: chartColors[colorIndex],
       };
@@ -88,11 +84,12 @@ export function LineChart(props: LineChartProps) {
     return data.map((item) => {
       const result: any = {
         name: item.xAxisLabel,
+        label: item.xAxisLabel,
       };
 
       // Add each series value to the result
       item.series.forEach(({ seriesName, value }) => {
-        result[createKey(seriesName)] = value;
+        result[sanitizeCssVariableName(seriesName)] = value;
       });
 
       return result;
@@ -117,15 +114,10 @@ export function LineChart(props: LineChartProps) {
               <RechartsLineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
-                  dataKey="name"
+                  dataKey="label"
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tickFormatter={(value) =>
-                    typeof value === "string" && value.length > 3
-                      ? value.slice(0, 3)
-                      : value
-                  }
                 />
                 <YAxis
                   tickLine={false}
@@ -150,8 +142,9 @@ export function LineChart(props: LineChartProps) {
                   <Line
                     key={seriesName}
                     type="monotone"
-                    dataKey={createKey(seriesName)}
-                    stroke={`var(--color-${createKey(seriesName)})`}
+                    name={seriesName}
+                    dataKey={sanitizeCssVariableName(seriesName)}
+                    stroke={`var(--color-${sanitizeCssVariableName(seriesName)})`}
                     strokeWidth={2}
                     dot={false}
                   />

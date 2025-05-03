@@ -1,4 +1,5 @@
 import { tool as createTool } from "ai";
+import { wait } from "lib/utils";
 import { z } from "zod";
 
 export const createBarChartTool = createTool({
@@ -22,6 +23,7 @@ export const createBarChartTool = createTool({
     yAxisLabel: z.string().optional().describe("Label for Y-axis"),
   }),
   execute: async () => {
+    await wait(1000);
     return "Success";
   },
 });

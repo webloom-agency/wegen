@@ -30,7 +30,7 @@ const {
   selectThread,
   selectThreadsByUserId,
   updateThread,
-  deleteNonProjectThreads,
+  deleteAllThreads,
   selectProjectsByUserId,
   insertProject,
   selectProjectById,
@@ -95,7 +95,7 @@ export async function updateThreadAction(
 
 export async function deleteThreadsAction() {
   const userId = await getUserId();
-  await deleteNonProjectThreads(userId);
+  await deleteAllThreads(userId);
 }
 
 export async function generateExampleToolSchemaAction(options: {

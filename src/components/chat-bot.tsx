@@ -14,7 +14,7 @@ import PromptInput from "./prompt-input";
 import clsx from "clsx";
 import { appStore } from "@/app/store";
 import { cn, generateUUID } from "lib/utils";
-import { PreviewMessage, ThinkingMessage } from "./message";
+import { PreviewMessage } from "./message";
 import { Greeting } from "./greeting";
 import logger from "logger";
 import { useShallow } from "zustand/shallow";
@@ -197,7 +197,7 @@ export default function ChatBot({
               );
             })}
             {status === "submitted" && messages.at(-1)?.role === "user" && (
-              <ThinkingMessage className={spaceClass} />
+              <div className={spaceClass} />
             )}
             <div className="min-w-0 min-h-52" />
           </div>

@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/chart";
 
 import { JsonViewPopup } from "../json-view-popup";
-
+import { sanitizeCssVariableName } from "./utils";
 // BarChart component props interface
 export interface BarChartProps {
   // Chart title (required)
@@ -53,10 +53,6 @@ const chartColors = [
   "hsl(var(--chart-5))",
 ];
 
-const createKey = (label: string) => {
-  return label.replaceAll(" ", "").toLowerCase();
-};
-
 export function BarChart(props: BarChartProps) {
   const { title, data, description, yAxisLabel } = props;
 
@@ -72,7 +68,7 @@ export function BarChart(props: BarChartProps) {
       // Colors cycle through chart-1 ~ chart-5
       const colorIndex = index % chartColors.length;
 
-      config[createKey(seriesName)] = {
+      config[sanitizeCssVariableName(seriesName)] = {
         label: seriesName,
         color: chartColors[colorIndex],
       };
@@ -90,7 +86,7 @@ export function BarChart(props: BarChartProps) {
 
       // Add each series value to the result
       item.series.forEach(({ seriesName, value }) => {
-        result[createKey(seriesName)] = value;
+        result[sanitizeCssVariableName(seriesName)] = value;
       });
 
       return result;
@@ -141,8 +137,8 @@ export function BarChart(props: BarChartProps) {
                 {seriesNames.map((seriesName) => (
                   <Bar
                     key={seriesName}
-                    dataKey={createKey(seriesName)}
-                    fill={`var(--color-${createKey(seriesName)})`}
+                    dataKey={sanitizeCssVariableName(seriesName)}
+                    fill={`var(--color-${sanitizeCssVariableName(seriesName)})`}
                     radius={4}
                   />
                 ))}

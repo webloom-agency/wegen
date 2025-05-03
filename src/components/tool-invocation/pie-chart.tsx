@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/chart";
 
 import { JsonViewPopup } from "../json-view-popup";
+import { sanitizeCssVariableName } from "./utils";
 
 // PieChart component props interface
 export interface PieChartProps {
@@ -43,10 +44,6 @@ const chartColors = [
   "hsl(var(--chart-5))",
 ];
 
-const createKey = (label: string) => {
-  return label.replaceAll(" ", "").toLowerCase();
-};
-
 export function PieChart(props: PieChartProps) {
   const { title, data, unit, description } = props;
   // Calculate total value
@@ -69,7 +66,7 @@ export function PieChart(props: PieChartProps) {
     data.forEach((item, index) => {
       // Colors cycle through chart-1 ~ chart-5
       const colorIndex = index % chartColors.length;
-      config[createKey(item.label)] = {
+      config[sanitizeCssVariableName(item.label)] = {
         label: item.label,
         color: chartColors[colorIndex],
       };
@@ -85,7 +82,7 @@ export function PieChart(props: PieChartProps) {
       label: item.label,
       value: item.value,
       // Add fill property if needed
-      fill: `var(--color-${createKey(item.label)})`,
+      fill: `var(--color-${sanitizeCssVariableName(item.label)})`,
     }));
   }, [data]);
 
