@@ -24,7 +24,7 @@ To use the GitHub MCP server, use the following configuration. The MCP server us
     "GITHUB_PERSONAL_ACCESS_TOKEN": "<user-github-token>"
   }
 }
-
+```
 
 ## Setting Up the Project
 
@@ -38,7 +38,7 @@ To use the GitHub MCP server, use the following configuration. The MCP server us
      - Instructions to use the GitHub MCP server
      - Assign the role of a contributor managing this repository
 
-   ![System Prompt Setup](./images/system-prompt-setup.png)
+![System Prompt Setup](https://github.com/user-attachments/assets/9cd1ffad-7a44-4ca7-9cfa-f00bc655a772)
 
 ## Demonstration
 
@@ -46,7 +46,8 @@ To use the GitHub MCP server, use the following configuration. The MCP server us
   - When the user sends the message "check latest issue," the agent retrieves and summarizes the latest issue using the GitHub API.
   - Then, if the user instructs to "write a comment about the benefits," the agent writes the appropriate comment.
 
-  ![Commenting on Issue](./images/commenting-on-issue.gif)
+![Commenting on Issue](https://github.com/user-attachments/assets/dca87a09-9b5d-4918-bfbc-c44c9455418a)
+
 
 In this project thread, the chatbot can provide significant assistance. It can directly merge PRs or perform reviews as well.
 
