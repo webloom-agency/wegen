@@ -114,7 +114,11 @@ export function AppHeader() {
       </TooltipProvider>
       {componentByPage}
       <div className="flex-1" />
-      <Link href="/temporary-chat">
+      <Link
+        href={
+          currentPaths.startsWith("/temporary-chat") ? "/" : "/temporary-chat"
+        }
+      >
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
