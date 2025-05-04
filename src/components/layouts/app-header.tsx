@@ -117,7 +117,14 @@ export function AppHeader() {
       <Link href="/temporary-chat">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost">
+            <Button
+              size={"sm"}
+              variant={
+                currentPaths.startsWith("/temporary-chat")
+                  ? "secondary"
+                  : "ghost"
+              }
+            >
               {/* <MessageCircleDashed className="w-4 h-4 fill-foreground" /> */}
               temporary
             </Button>
