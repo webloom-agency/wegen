@@ -24,7 +24,7 @@ MCP Client Chatbot은 커뮤니티 주도의 100% 오픈소스 프로젝트입�
   - [🚀 시작하기](#-시작하기)
     - [환경 변수](#환경-변수)
     - [MCP 서버 설정](#mcp-서버-설정)
-  - [💡 사용 사례](#-사용-사례)
+  - [💡 팁 \& 가이드](#-팁--가이드)
   - [🗺️ 로드맵: 다음 기능](#️-로드맵-다음-기능)
     - [🚀 배포 \& 호스팅](#-배포--호스팅)
     - [🗣️ 오디오 \& 실시간 채팅](#️-오디오--실시간-채팅)
@@ -152,9 +152,12 @@ SQLite가 기본 DB(`db.sqlite`)입니다. PostgreSQL을 사용하려면 `.env`�
 
 -----
 
-## 💡 사용 사례
+## 💡 팁 & 가이드
 
-* [Supabase 통합](./docs/use-cases/supabase.md): MCP를 사용하여 Supabase DB, 인증 및 실시간 기능을 관리합니다.
+MCP Client Chatbot을 효과적으로 활용하기 위한 실용적인 팁과 가이드를 소개합니다:
+
+* [GitHub MCP 서버를 활용한 프로젝트 기능](./tips-guides/project_with_mcp.md): 시스템 프롬프트와 MCP 서버를 연동하여 GitHub 기반 프로젝트 관리를 도와주는 에이전트를 만드는 방법을 안내합니다.
+* **Docker 호스팅 가이드**: *곧 추가될 예정입니다...*
 
 -----
 
@@ -200,4 +203,4 @@ MCP Client Chatbot은 아래와 같은 기능들을 곧 지원할 예정입니�
 
 함께 만들어 나갑시다 🚀
 
-<img src="https://contrib.rocks/image?repo=cgoinglove/mcp-client-chatbot" />
+

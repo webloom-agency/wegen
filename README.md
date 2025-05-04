@@ -22,12 +22,11 @@ MCP Client Chatbot is a 100% community-driven open source project.
     - [🔌 Adding MCP Servers Easily](#-adding-mcp-servers-easily)
     - [🛠️ Standalone Tool Testing](#️-standalone-tool-testing)
     - [📊 Built-in Chart Tools](#-built-in-chart-tools)
-  - [Visualize chatbot responses as pie, bar, or line charts using the built-in tool — perfect for quick data insight during conversations.](#visualize-chatbot-responses-as-pie-bar-or-line-charts-using-the-built-in-tool--perfect-for-quick-data-insight-during-conversations)
   - [✨ Key Features](#-key-features)
   - [🚀 Getting Started](#-getting-started)
     - [Environment Variables](#environment-variables)
     - [MCP Server Setup](#mcp-server-setup)
-  - [💡 Use Cases](#-use-cases)
+  - [💡 Tips \& Guides](#-tips--guides)
   - [🗺️ Roadmap: Next Features](#️-roadmap-next-features)
     - [🚀 Deployment \& Hosting](#-deployment--hosting)
     - [🗣️ Audio \& Real-Time Chat](#️-audio--real-time-chat)
@@ -161,9 +160,12 @@ You can connect MCP tools via:
 
 -----
 
-## 💡 Use Cases
+## 💡 Tips & Guides
+Here are some practical tips and guides for using MCP Client Chatbot:
 
-* [Supabase Integration](./docs/use-cases/supabase.md): Use MCP to manage Supabase DB, auth, and real-time features.
+* [Project Feature with MCP Server](./docs/tips-guides/project_with_mcp.md): Learn how to integrate system instructions and structures with MCP servers to build an agent that assists with GitHub-based project management.
+
+* [Docker Hosting Guide](#): Coming soon...
 
 -----
 
@@ -211,6 +213,5 @@ We welcome all contributions! Bug reports, feature ideas, code improvements — 
 
 Let’s build it together 🚀
 
-<img src="https://contrib.rocks/image?repo=cgoinglove/mcp-client-chatbot" />
 
 
