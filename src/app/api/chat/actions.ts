@@ -220,3 +220,9 @@ export async function rememberThreadAction(threadId: string) {
   await serverCache.set(key, thread);
   return thread;
 }
+
+export async function updateProjectNameAction(id: string, name: string) {
+  const updatedProject = await updateProject(id, { name });
+  await serverCache.delete(CacheKeys.project(id));
+  return updatedProject;
+}

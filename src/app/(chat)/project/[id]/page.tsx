@@ -121,7 +121,9 @@ export default function ProjectPage() {
                 {project?.name}
               </h1>
               <div className="flex-1" />
-              <ProjectDropdown projectId={id as string}>
+              <ProjectDropdown
+                project={project ?? { id: id as string, name: "" }}
+              >
                 <Button variant="ghost" size="icon">
                   <MoreHorizontal />
                 </Button>
