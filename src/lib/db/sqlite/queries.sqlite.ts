@@ -7,15 +7,17 @@ import type {
 import {
   ChatMessageSchema,
   ChatThreadSchema,
+  McpServerBindingSchema,
   ProjectSchema,
   UserSchema,
 } from "./schema.sqlite";
 import { sqliteDb as db } from "./db.sqlite";
-import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import { generateUUID } from "lib/utils";
 import { UIMessage } from "ai";
 import { User, UserService, UserZodSchema } from "app-types/user";
 import { generateHashedPassword } from "../utils";
+import { MCPServerBinding, MCPServerBindingOwnerType } from "app-types/mcp";
 
 const convertToDate = (timestamp: number): Date => {
   return new Date(timestamp);
@@ -80,6 +82,21 @@ const convertToChatMessage = (row: {
     annotations: row.annotations ? JSON.parse(row.annotations) : [],
   };
 };
+
+const convertToMcpServerBinding = (row: {
+  ownerType: string;
+  ownerId: string;
+  mcpId: string;
+  toolNames: string | null;
+}): MCPServerBinding => {
+  return {
+    ownerType: row.ownerType as MCPServerBinding["ownerType"],
+    ownerId: row.ownerId,
+    mcpId: row.mcpId,
+    toolNames: row.toolNames ? JSON.parse(row.toolNames) : [],
+  };
+};
+
 /**
  * @deprecated
  */
@@ -174,6 +191,17 @@ export const sqliteChatService: ChatService = {
     await db
       .delete(ChatMessageSchema)
       .where(eq(ChatMessageSchema.threadId, id));
+    await db
+      .delete(McpServerBindingSchema)
+      .where(
+        and(
+          eq(McpServerBindingSchema.ownerId, id),
+          eq(
+            McpServerBindingSchema.ownerType,
+            MCPServerBindingOwnerType.Thread,
+          ),
+        ),
+      );
     await db.delete(ChatThreadSchema).where(eq(ChatThreadSchema.id, id));
   },
 
@@ -361,7 +389,124 @@ export const sqliteChatService: ChatService = {
     await Promise.all(
       threadIds.map((threadId) => sqliteChatService.deleteThread(threadId.id)),
     );
+    await db
+      .delete(McpServerBindingSchema)
+      .where(
+        and(
+          eq(McpServerBindingSchema.ownerId, id),
+          eq(
+            McpServerBindingSchema.ownerType,
+            MCPServerBindingOwnerType.Project,
+          ),
+        ),
+      );
     await db.delete(ProjectSchema).where(eq(ProjectSchema.id, id));
+  },
+
+  insertMcpServerBinding: async (
+    binding: Omit<MCPServerBinding, "createdAt" | "updatedAt">,
+  ): Promise<MCPServerBinding> => {
+    const [result] = await db
+      .insert(McpServerBindingSchema)
+      .values({
+        ...binding,
+        toolNames: binding.toolNames ? JSON.stringify(binding.toolNames) : null,
+        createdAt: convertToTimestamp(new Date()),
+        updatedAt: convertToTimestamp(new Date()),
+      })
+      .returning();
+    return convertToMcpServerBinding(result);
+  },
+  selectMcpServerBindingsByOwnerId: async (
+    ownerId: string,
+    ownerType: MCPServerBinding["ownerType"],
+  ): Promise<MCPServerBinding[]> => {
+    const result = await db
+      .select()
+      .from(McpServerBindingSchema)
+      .where(
+        and(
+          eq(McpServerBindingSchema.ownerId, ownerId),
+          eq(McpServerBindingSchema.ownerType, ownerType),
+        ),
+      );
+    return result.map(convertToMcpServerBinding);
+  },
+  deleteMcpServerBindingsByOwnerId: async (
+    ownerId: string,
+    ownerType: MCPServerBinding["ownerType"],
+  ): Promise<void> => {
+    await db
+      .delete(McpServerBindingSchema)
+      .where(
+        and(
+          eq(McpServerBindingSchema.ownerId, ownerId),
+          eq(McpServerBindingSchema.ownerType, ownerType),
+        ),
+      );
+  },
+  updateMcpServerBindingToolNames: async (
+    ownerId: string,
+    ownerType: MCPServerBinding["ownerType"],
+    mcpId: string,
+    toolNames: string[],
+  ): Promise<void> => {
+    await db
+      .update(McpServerBindingSchema)
+      .set({ toolNames: JSON.stringify(toolNames) })
+      .where(
+        and(
+          eq(McpServerBindingSchema.ownerId, ownerId),
+          eq(McpServerBindingSchema.ownerType, ownerType),
+          eq(McpServerBindingSchema.mcpId, mcpId),
+        ),
+      );
+  },
+  saveMcpServerBindings: async (
+    ownerId: string,
+    ownerType: MCPServerBinding["ownerType"],
+    payload: {
+      delete?: Pick<MCPServerBinding, "mcpId">[];
+      upsert?: Pick<MCPServerBinding, "mcpId" | "toolNames">[];
+    },
+  ): Promise<void> => {
+    if (payload.delete?.length) {
+      await db.delete(McpServerBindingSchema).where(
+        and(
+          eq(McpServerBindingSchema.ownerId, ownerId),
+          eq(McpServerBindingSchema.ownerType, ownerType),
+          inArray(
+            McpServerBindingSchema.mcpId,
+            payload.delete.map((binding) => binding.mcpId),
+          ),
+        ),
+      );
+    }
+
+    if (payload.upsert?.length) {
+      await db
+        .insert(McpServerBindingSchema)
+        .values(
+          payload.upsert.map((binding) => ({
+            ...binding,
+            ownerId,
+            ownerType,
+            toolNames: JSON.stringify(binding.toolNames),
+            updatedAt: convertToTimestamp(new Date()),
+          })),
+        )
+        .onConflictDoUpdate({
+          target: [
+            McpServerBindingSchema.ownerType,
+            McpServerBindingSchema.ownerId,
+            McpServerBindingSchema.mcpId,
+          ],
+          set: {
+            toolNames: sql`excluded.tool_names`,
+            updatedAt: sql`CURRENT_TIMESTAMP`,
+          },
+        });
+    }
   },
 };
 

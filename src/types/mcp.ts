@@ -34,6 +34,18 @@ export type MCPServerInfo = {
   toolInfo: MCPToolInfo[];
 };
 
+export enum MCPServerBindingOwnerType {
+  Project = "project",
+  Thread = "thread",
+}
+
+export type MCPServerBinding = {
+  ownerType: MCPServerBindingOwnerType | (string & {});
+  ownerId: string;
+  mcpId: string;
+  toolNames: string[] | null;
+};
+
 // export type McpService = {
 //   selectServers: () => Promise<McpServerEntity[]>;
 //   insertServer: (server: {

@@ -18,7 +18,7 @@ import type { ChatThread, Project } from "app-types/chat";
 import { chatService } from "lib/db/chat-service";
 import { customModelProvider } from "lib/ai/models";
 import { toAny } from "lib/utils";
-import { MCPToolInfo } from "app-types/mcp";
+import { MCPServerBinding, MCPToolInfo } from "app-types/mcp";
 import { serverCache } from "lib/cache";
 import { CacheKeys } from "lib/cache/cache-keys";
 import { auth } from "../auth/auth";
@@ -36,6 +36,7 @@ const {
   selectProjectById,
   updateProject,
   deleteProject,
+  saveMcpServerBindings,
 } = chatService;
 
 export async function getUserId() {
@@ -136,6 +137,7 @@ export async function insertProjectAction({
 }: {
   name: string;
   instructions?: Project["instructions"];
+  mcpServerBindings?: Pick<MCPServerBinding, "mcpId" | "toolNames">[];
 }) {
   const userId = await getUserId();
   const project = await insertProject({
@@ -225,4 +227,15 @@ export async function updateProjectNameAction(id: string, name: string) {
   const updatedProject = await updateProject(id, { name });
   await serverCache.delete(CacheKeys.project(id));
   return updatedProject;
+}
+
+export async function saveMcpServerBindingsAction(
+  ownerId: string,
+  ownerType: MCPServerBinding["ownerType"],
+  payload: {
+    delete?: Pick<MCPServerBinding, "mcpId">[];
+    upsert?: Pick<MCPServerBinding, "mcpId" | "toolNames">[];
+  },
+) {
+  await saveMcpServerBindings(ownerId, ownerType, payload);
 }

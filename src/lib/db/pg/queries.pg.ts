@@ -7,13 +7,15 @@ import type {
 import {
   ChatMessageSchema,
   ChatThreadSchema,
+  McpServerBindingSchema,
   ProjectSchema,
   UserSchema,
 } from "./schema.pg";
 import { pgDb as db } from "./db.pg";
-import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import { User, UserService, UserZodSchema } from "app-types/user";
 import { generateHashedPassword } from "../utils";
+import { MCPServerBinding, MCPServerBindingOwnerType } from "app-types/mcp";
 
 export const pgChatService: ChatService = {
   insertThread: async (
@@ -107,6 +109,17 @@ export const pgChatService: ChatService = {
     await db
       .delete(ChatMessageSchema)
       .where(eq(ChatMessageSchema.threadId, id));
+    await db
+      .delete(McpServerBindingSchema)
+      .where(
+        and(
+          eq(
+            McpServerBindingSchema.ownerType,
+            MCPServerBindingOwnerType.Thread,
+          ),
+          eq(McpServerBindingSchema.ownerId, id),
+        ),
+      );
     await db.delete(ChatThreadSchema).where(eq(ChatThreadSchema.id, id));
   },
 
@@ -265,7 +278,124 @@ export const pgChatService: ChatService = {
     await Promise.all(
       threadIds.map((threadId) => pgChatService.deleteThread(threadId.id)),
     );
+    await db
+      .delete(McpServerBindingSchema)
+      .where(
+        and(
+          eq(
+            McpServerBindingSchema.ownerType,
+            MCPServerBindingOwnerType.Project,
+          ),
+          eq(McpServerBindingSchema.ownerId, id),
+        ),
+      );
     await db.delete(ProjectSchema).where(eq(ProjectSchema.id, id));
+  },
+
+  insertMcpServerBinding: async (
+    binding: Omit<MCPServerBinding, "createdAt" | "updatedAt">,
+  ): Promise<MCPServerBinding> => {
+    const [result] = await db
+      .insert(McpServerBindingSchema)
+      .values({
+        ...binding,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    return result;
+  },
+  selectMcpServerBindingsByOwnerId: async (
+    ownerId: string,
+    ownerType: MCPServerBinding["ownerType"],
+  ): Promise<MCPServerBinding[]> => {
+    const result = await db
+      .select()
+      .from(McpServerBindingSchema)
+      .where(
+        and(
+          eq(McpServerBindingSchema.ownerId, ownerId),
+          eq(McpServerBindingSchema.ownerType, ownerType),
+        ),
+      );
+    return result;
+  },
+  deleteMcpServerBindingsByOwnerId: async (
+    ownerId: string,
+    ownerType: MCPServerBinding["ownerType"],
+  ): Promise<void> => {
+    await db
+      .delete(McpServerBindingSchema)
+      .where(
+        and(
+          eq(McpServerBindingSchema.ownerId, ownerId),
+          eq(McpServerBindingSchema.ownerType, ownerType),
+        ),
+      );
+  },
+  updateMcpServerBindingToolNames: async (
+    ownerId: string,
+    ownerType: MCPServerBinding["ownerType"],
+    mcpId: string,
+    toolNames: string[],
+  ): Promise<void> => {
+    await db
+      .update(McpServerBindingSchema)
+      .set({ toolNames })
+      .where(
+        and(
+          eq(McpServerBindingSchema.ownerId, ownerId),
+          eq(McpServerBindingSchema.ownerType, ownerType),
+          eq(McpServerBindingSchema.mcpId, mcpId),
+        ),
+      );
+  },
+  saveMcpServerBindings: async (
+    ownerId: string,
+    ownerType: MCPServerBinding["ownerType"],
+    payload: {
+      delete?: Pick<MCPServerBinding, "mcpId">[];
+      upsert?: Pick<MCPServerBinding, "mcpId" | "toolNames">[];
+    },
+  ): Promise<void> => {
+    await db.transaction(async (tx) => {
+      if (payload.delete?.length) {
+        await tx.delete(McpServerBindingSchema).where(
+          and(
+            eq(McpServerBindingSchema.ownerId, ownerId),
+            eq(McpServerBindingSchema.ownerType, ownerType),
+            inArray(
+              McpServerBindingSchema.mcpId,
+              payload.delete.map((binding) => binding.mcpId),
+            ),
+          ),
+        );
+      }
+
+      if (payload.upsert?.length) {
+        const rows = payload.upsert.map(({ mcpId, toolNames }) => ({
+          ownerId,
+          ownerType,
+          mcpId,
+          toolNames,
+          updatedAt: new Date(),
+        }));
+        await tx
+          .insert(McpServerBindingSchema)
+          .values(rows)
+          .onConflictDoUpdate({
+            target: [
+              McpServerBindingSchema.ownerType,
+              McpServerBindingSchema.ownerId,
+              McpServerBindingSchema.mcpId,
+            ],
+            set: {
+              toolNames: sql`excluded.tool_names`,
+              updatedAt: sql`CURRENT_TIMESTAMP`,
+            },
+          });
+      }
+    });
   },
 };
 
