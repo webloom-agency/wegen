@@ -30,13 +30,6 @@ import {
   DialogTrigger,
 } from "ui/dialog";
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "ui/dropdown-menu";
 import { Input } from "ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "ui/popover";
 
@@ -139,12 +132,14 @@ function UpdateProjectNameDialog({
     e.stopPropagation();
     setIsUpdating(true);
     return safe(() => updateProjectNameAction(projectId, name))
+
       .watch(({ isOk, error }) => {
         setIsUpdating(false);
         setIsOpen(false);
         if (isOk) {
           onUpdated(name);
           mutate("projects");
+          mutate(`/projects/${projectId}`);
           toast.success("Project updated");
         } else {
           toast.error(error.message || "Failed to update project");
