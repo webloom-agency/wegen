@@ -58,7 +58,6 @@ export const MCPServerBindingSelector = (
     {
       onError: () => {
         signOut();
-        window.location.reload();
       },
     },
   );
