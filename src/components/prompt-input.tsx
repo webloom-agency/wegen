@@ -14,7 +14,6 @@ import { createMCPToolId } from "lib/ai/mcp/mcp-tool-id";
 import { ChatMessageAnnotation } from "app-types/chat";
 import dynamic from "next/dynamic";
 import { ToolChoiceDropDown } from "./tool-choice-dropdown";
-import { MCPIcon } from "ui/mcp-icon";
 
 import { MCPServerBindingSelector } from "./mcp-server-binding";
 import { MCPServerBinding } from "app-types/mcp";
