@@ -1,45 +1,52 @@
-import type {
-  ChatMessage,
-  ChatService,
-  ChatThread,
-  Project,
-} from "app-types/chat";
+import { ChatMessage, ChatService, ChatThread, Project } from "app-types/chat";
+
+import { pgDb as db } from "../db.pg";
 import {
   ChatMessageSchema,
   ChatThreadSchema,
   McpServerBindingSchema,
   ProjectSchema,
-  UserSchema,
-} from "./schema.pg";
-import { pgDb as db } from "./db.pg";
-import { and, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
-import { User, UserService, UserZodSchema } from "app-types/user";
-import { generateHashedPassword } from "../utils";
-import { MCPServerBinding, MCPServerBindingOwnerType } from "app-types/mcp";
+} from "../schema.pg";
+
+import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
+import { MCPServerBindingOwnerType } from "app-types/mcp";
+import { pgMcpService } from "./mcp-service.pg";
 
 export const pgChatService: ChatService = {
   insertThread: async (
     thread: Omit<ChatThread, "createdAt">,
   ): Promise<ChatThread> => {
-    const result = await db
+    const [result] = await db
       .insert(ChatThreadSchema)
       .values({
         title: thread.title,
         userId: thread.userId,
         projectId: thread.projectId,
         id: thread.id,
-        createdAt: new Date(),
       })
       .returning();
-    return result[0];
+    if (thread.projectId) {
+      const mcpServerBinding = await pgMcpService.selectMcpServerBinding(
+        thread.projectId,
+        MCPServerBindingOwnerType.Project,
+      );
+      if (mcpServerBinding) {
+        await pgMcpService.saveMcpServerBinding({
+          ownerId: result.id,
+          ownerType: MCPServerBindingOwnerType.Thread,
+          config: mcpServerBinding.config,
+        });
+      }
+    }
+    return result;
   },
 
   selectThread: async (id: string): Promise<ChatThread | null> => {
-    const result = await db
+    const [result] = await db
       .select()
       .from(ChatThreadSchema)
       .where(eq(ChatThreadSchema.id, id));
-    return result[0] ? result[0] : null;
+    return result;
   },
 
   selectMessagesByThreadId: async (
@@ -83,8 +90,8 @@ export const pgChatService: ChatService = {
         id: row.threadId,
         title: row.title,
         userId: row.userId,
-        createdAt: row.createdAt,
         projectId: row.projectId,
+        createdAt: row.createdAt,
       };
     });
   },
@@ -93,16 +100,15 @@ export const pgChatService: ChatService = {
     id: string,
     thread: Partial<Omit<ChatThread, "id" | "createdAt">>,
   ): Promise<ChatThread> => {
-    const entity = {
-      ...thread,
-      id,
-    } as ChatThread;
-    const result = await db
+    const [result] = await db
       .update(ChatThreadSchema)
-      .set(entity)
+      .set({
+        projectId: thread.projectId,
+        title: thread.title,
+      })
       .where(eq(ChatThreadSchema.id, id))
       .returning();
-    return result[0];
+    return result;
   },
 
   deleteThread: async (id: string): Promise<void> => {
@@ -113,11 +119,11 @@ export const pgChatService: ChatService = {
       .delete(McpServerBindingSchema)
       .where(
         and(
+          eq(McpServerBindingSchema.ownerId, id),
           eq(
             McpServerBindingSchema.ownerType,
             MCPServerBindingOwnerType.Thread,
           ),
-          eq(McpServerBindingSchema.ownerId, id),
         ),
       );
     await db.delete(ChatThreadSchema).where(eq(ChatThreadSchema.id, id));
@@ -128,14 +134,13 @@ export const pgChatService: ChatService = {
   ): Promise<ChatMessage> => {
     const entity = {
       ...message,
-      createdAt: new Date(),
       id: message.id,
     };
-    const result = await db
+    const [result] = await db
       .insert(ChatMessageSchema)
       .values(entity)
       .returning();
-    return result[0] as ChatMessage;
+    return result as ChatMessage;
   },
 
   upsertMessage: async (
@@ -177,6 +182,7 @@ export const pgChatService: ChatService = {
         ),
       );
   },
+
   deleteNonProjectThreads: async (userId: string): Promise<void> => {
     const threadIds = await db
       .select({ id: ChatThreadSchema.id })
@@ -191,6 +197,7 @@ export const pgChatService: ChatService = {
       threadIds.map((threadId) => pgChatService.deleteThread(threadId.id)),
     );
   },
+
   deleteAllThreads: async (userId: string): Promise<void> => {
     const threadIds = await db
       .select({ id: ChatThreadSchema.id })
@@ -262,12 +269,12 @@ export const pgChatService: ChatService = {
     id: string,
     project: Partial<Pick<Project, "name" | "instructions">>,
   ): Promise<Project> => {
-    const result = await db
+    const [result] = await db
       .update(ProjectSchema)
       .set(project)
       .where(eq(ProjectSchema.id, id))
       .returning();
-    return result[0] as Project;
+    return result as Project;
   },
 
   deleteProject: async (id: string): Promise<void> => {
@@ -291,209 +298,4 @@ export const pgChatService: ChatService = {
       );
     await db.delete(ProjectSchema).where(eq(ProjectSchema.id, id));
   },
-
-  insertMcpServerBinding: async (
-    binding: Omit<MCPServerBinding, "createdAt" | "updatedAt">,
-  ): Promise<MCPServerBinding> => {
-    const [result] = await db
-      .insert(McpServerBindingSchema)
-      .values({
-        ...binding,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning();
-    return result;
-  },
-  selectMcpServerBindingsByOwnerId: async (
-    ownerId: string,
-    ownerType: MCPServerBinding["ownerType"],
-  ): Promise<MCPServerBinding[]> => {
-    const result = await db
-      .select()
-      .from(McpServerBindingSchema)
-      .where(
-        and(
-          eq(McpServerBindingSchema.ownerId, ownerId),
-          eq(McpServerBindingSchema.ownerType, ownerType),
-        ),
-      );
-    return result;
-  },
-  deleteMcpServerBindingsByOwnerId: async (
-    ownerId: string,
-    ownerType: MCPServerBinding["ownerType"],
-  ): Promise<void> => {
-    await db
-      .delete(McpServerBindingSchema)
-      .where(
-        and(
-          eq(McpServerBindingSchema.ownerId, ownerId),
-          eq(McpServerBindingSchema.ownerType, ownerType),
-        ),
-      );
-  },
-  updateMcpServerBindingToolNames: async (
-    ownerId: string,
-    ownerType: MCPServerBinding["ownerType"],
-    mcpId: string,
-    toolNames: string[],
-  ): Promise<void> => {
-    await db
-      .update(McpServerBindingSchema)
-      .set({ toolNames })
-      .where(
-        and(
-          eq(McpServerBindingSchema.ownerId, ownerId),
-          eq(McpServerBindingSchema.ownerType, ownerType),
-          eq(McpServerBindingSchema.mcpId, mcpId),
-        ),
-      );
-  },
-  saveMcpServerBindings: async (
-    ownerId: string,
-    ownerType: MCPServerBinding["ownerType"],
-    payload: {
-      delete?: Pick<MCPServerBinding, "mcpId">[];
-      upsert?: Pick<MCPServerBinding, "mcpId" | "toolNames">[];
-    },
-  ): Promise<void> => {
-    await db.transaction(async (tx) => {
-      if (payload.delete?.length) {
-        await tx.delete(McpServerBindingSchema).where(
-          and(
-            eq(McpServerBindingSchema.ownerId, ownerId),
-            eq(McpServerBindingSchema.ownerType, ownerType),
-            inArray(
-              McpServerBindingSchema.mcpId,
-              payload.delete.map((binding) => binding.mcpId),
-            ),
-          ),
-        );
-      }
-
-      if (payload.upsert?.length) {
-        const rows = payload.upsert.map(({ mcpId, toolNames }) => ({
-          ownerId,
-          ownerType,
-          mcpId,
-          toolNames,
-          updatedAt: new Date(),
-        }));
-        await tx
-          .insert(McpServerBindingSchema)
-          .values(rows)
-          .onConflictDoUpdate({
-            target: [
-              McpServerBindingSchema.ownerType,
-              McpServerBindingSchema.ownerId,
-              McpServerBindingSchema.mcpId,
-            ],
-            set: {
-              toolNames: sql`excluded.tool_names`,
-              updatedAt: sql`CURRENT_TIMESTAMP`,
-            },
-          });
-      }
-    });
-  },
 };
-
-export const pgUserService: UserService = {
-  register: async (
-    user: Omit<User, "id"> & { plainPassword: string },
-  ): Promise<User> => {
-    const parsedUser = UserZodSchema.parse({
-      ...user,
-      password: user.plainPassword,
-    });
-    const exists = await pgUserService.existsByEmail(parsedUser.email);
-    if (exists) {
-      throw new Error("User already exists");
-    }
-
-    const hashedPassword = generateHashedPassword(parsedUser.password);
-    const result = await db
-      .insert(UserSchema)
-      .values({ ...parsedUser, password: hashedPassword })
-      .returning();
-    return result[0];
-  },
-  existsByEmail: async (email: string): Promise<boolean> => {
-    const result = await db
-      .select()
-      .from(UserSchema)
-      .where(eq(UserSchema.email, email));
-    return result.length > 0;
-  },
-  selectByEmail: async (
-    email: string,
-  ): Promise<(User & { password: string }) | null> => {
-    const [result] = await db
-      .select()
-      .from(UserSchema)
-      .where(eq(UserSchema.email, email));
-    return result ? result : null;
-  },
-  updateUser: async (
-    id: string,
-    user: Pick<User, "name" | "image">,
-  ): Promise<User> => {
-    const result = await db
-      .update(UserSchema)
-      .set({
-        name: user.name,
-        image: user.image,
-        updatedAt: new Date(),
-      })
-      .where(eq(UserSchema.id, id))
-      .returning();
-    return result[0];
-  },
-};
-
-// export const pgMcpService: McpService = {
-//   selectServers: async (): Promise<McpServerEntity[]> => {
-//     const result = await db.select().from(McpServerSchema);
-//     return result;
-//   },
-//   insertServer: async (server: {
-//     name: string;
-//     config: MCPServerConfig;
-//     enabled?: boolean;
-//   }): Promise<McpServerEntity> => {
-//     if (!isMaybeMCPServerConfig(server.config)) {
-//       throw new Error("Invalid MCP server configuration");
-//     }
-//     const [result] = await db
-//       .insert(McpServerSchema)
-//       .values({
-//         ...server,
-//         config: server.config,
-//       })
-//       .returning();
-//     return result;
-//   },
-//   updateServer: async (server: {
-//     id: string;
-//     name?: string;
-//     config?: MCPServerConfig;
-//     enabled?: boolean;
-//   }): Promise<McpServerEntity> => {
-//     if (!isMaybeMCPServerConfig(server.config)) {
-//       throw new Error("Invalid MCP server configuration");
-//     }
-//     const [result] = await db
-//       .update(McpServerSchema)
-//       .set({
-//         ...server,
-//         updatedAt: new Date(),
-//       })
-//       .where(eq(McpServerSchema.id, server.id))
-//       .returning();
-//     return result;
-//   },
-//   deleteServer: async (id: string): Promise<void> => {
-//     await db.delete(McpServerSchema).where(eq(McpServerSchema.id, id));
-//   },
-// };

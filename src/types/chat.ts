@@ -1,5 +1,4 @@
 import type { UIMessage, Message } from "ai";
-import { MCPServerBinding } from "./mcp";
 
 export type ChatThread = {
   id: string;
@@ -87,34 +86,4 @@ export type ChatService = {
   ): Promise<Project>;
 
   deleteProject(id: string): Promise<void>;
-
-  insertMcpServerBinding(
-    binding: Omit<MCPServerBinding, "createdAt" | "updatedAt">,
-  ): Promise<MCPServerBinding>;
-
-  selectMcpServerBindingsByOwnerId(
-    ownerId: string,
-    ownerType: MCPServerBinding["ownerType"],
-  ): Promise<MCPServerBinding[]>;
-
-  deleteMcpServerBindingsByOwnerId(
-    ownerId: string,
-    ownerType: MCPServerBinding["ownerType"],
-  ): Promise<void>;
-
-  updateMcpServerBindingToolNames(
-    ownerId: string,
-    ownerType: MCPServerBinding["ownerType"],
-    mcpId: string,
-    toolNames: string[],
-  ): Promise<void>;
-
-  saveMcpServerBindings(
-    ownerId: string,
-    ownerType: MCPServerBinding["ownerType"],
-    payload: {
-      delete?: Pick<MCPServerBinding, "mcpId">[];
-      upsert?: Pick<MCPServerBinding, "mcpId" | "toolNames">[];
-    },
-  ): Promise<void>;
 };

@@ -3,7 +3,6 @@ import {
   sqliteTable,
   text,
   integer,
-  check,
   primaryKey,
 } from "drizzle-orm/sqlite-core";
 
@@ -48,20 +47,13 @@ export const UserSchema = sqliteTable("user", {
 export const McpServerBindingSchema = sqliteTable(
   "mcp_server_binding",
   {
-    ownerType: text("owner_type").notNull(), // 'project' | 'thread'
-    ownerId: text("owner_id").notNull(), // project.id or chat_thread.id
-    mcpId: text("mcp_id").notNull(), // mcp_server.id
-    toolNames: text("tool_names").default(sql`'[]'`), // string[]
+    ownerType: text("owner_type").notNull(),
+    ownerId: text("owner_id").notNull(),
+    config: text("config").default(sql`'{}'`).notNull(),
     createdAt: integer("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: integer("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   },
-  (tbl) => [
-    primaryKey({ columns: [tbl.ownerType, tbl.ownerId, tbl.mcpId] }),
-    check(
-      "binding_owner_type_ck",
-      sql`${tbl.ownerType} IN ('project', 'thread')`,
-    ),
-  ],
+  (tbl) => [primaryKey({ columns: [tbl.ownerType, tbl.ownerId] })],
 );
 // export const McpServerSchema = sqliteTable("mcp_server", {
 //   id: text("id").primaryKey().notNull().default(sql`(random())`),

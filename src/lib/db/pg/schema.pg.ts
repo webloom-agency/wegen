@@ -1,3 +1,5 @@
+import { ChatMessage, Project } from "app-types/chat";
+import { MCPServerBindingConfig } from "app-types/mcp";
 import { sql } from "drizzle-orm";
 import {
   pgTable,
@@ -6,7 +8,6 @@ import {
   json,
   uuid,
   jsonb,
-  check,
   primaryKey,
 } from "drizzle-orm/pg-core";
 
@@ -25,7 +26,7 @@ export const ChatMessageSchema = pgTable("chat_message", {
   threadId: uuid("thread_id")
     .notNull()
     .references(() => ChatThreadSchema.id),
-  role: text("role").notNull(),
+  role: text("role").notNull().$type<ChatMessage["role"]>(),
   parts: json("parts").notNull().array(),
   attachments: json("attachments").array(),
   annotations: json("annotations").array(),
@@ -39,7 +40,7 @@ export const ProjectSchema = pgTable("project", {
   userId: uuid("user_id")
     .notNull()
     .references(() => UserSchema.id),
-  instructions: json("instructions"),
+  instructions: json("instructions").$type<Project["instructions"]>(),
   createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
@@ -59,18 +60,18 @@ export const McpServerBindingSchema = pgTable(
   {
     ownerType: text("owner_type").notNull(),
     ownerId: uuid("owner_id").notNull(),
-    mcpId: uuid("mcp_id").notNull(),
-    toolNames: jsonb("tool_names").$type<string[]>().default(sql`'[]'::jsonb`),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    config: jsonb("config")
+      .$type<MCPServerBindingConfig>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
   },
-  (tbl) => [
-    primaryKey({ columns: [tbl.ownerType, tbl.ownerId, tbl.mcpId] }),
-    check(
-      "binding_owner_type_ck",
-      sql`${tbl.ownerType} IN ('project', 'thread')`,
-    ),
-  ],
+  (tbl) => [primaryKey({ columns: [tbl.ownerType, tbl.ownerId] })],
 );
 
 // export const McpServerSchema = pgTable("mcp_server", {
