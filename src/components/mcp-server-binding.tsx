@@ -21,8 +21,8 @@ import equal from "fast-deep-equal";
 import { Button } from "ui/button";
 import { Skeleton } from "ui/skeleton";
 import { ChevronRightIcon, Info, Loader, WrenchIcon } from "lucide-react";
-import { cn } from "lib/utils";
-import { Card, CardContent } from "ui/card";
+import { capitalizeFirstLetter, cn } from "lib/utils";
+import { Card, CardContent, CardFooter } from "ui/card";
 import { MCPIcon } from "ui/mcp-icon";
 import { Separator } from "ui/separator";
 import { Switch } from "ui/switch";
@@ -179,82 +179,61 @@ export const MCPServerBindingSelector = (
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>{props.children}</PopoverTrigger>
+      <PopoverTrigger asChild>
+        {props.children || (
+          <Button
+            variant={"outline"}
+            className="rounded-full bg-secondary font-semibold"
+          >
+            <MCPIcon className="size-3.5 fill-muted-foreground" />
+            MCP Server
+          </Button>
+        )}
+      </PopoverTrigger>
       <PopoverContent
         className="p-0 border-none  w-full md:w-[440px]"
         align={props.align}
         side={props.side}
       >
         <Card
-          className="relative w-full py-0 overflow-hidden"
+          className="relative w-full py-0 overflow-hidden gap-0!"
           onClick={(e) => e.stopPropagation()}
         >
           <CardContent className="p-0 flex">
             <div className="flex-1 w-full">
-              <div className="p-4 w-full bg-card border-b">
-                <div className="flex items-center gap-1">
+              <div className="p-4 bg-card">
+                <div className="flex items-center gap-1 px-2">
                   <MCPIcon className="size-4 mr-1 fill-foreground" />
-                  <h4 className="text-lg font-semibold flex items-center gap-2">
-                    MCP Server{" "}
-                    {props.ownerType == "project"
-                      ? "Project Preset"
-                      : props.ownerType == "thread"
-                        ? "Thread Binding"
-                        : ""}
+                  <h4 className="text-lg font-semibold flex items-center gap-2 w-full">
+                    MCP Server Binding
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="ml-auto text-sm text-muted-foreground flex items-center gap-1">
+                          <Info className="size-4 text-muted-foreground ml-auto" />
+                          {capitalizeFirstLetter(props.ownerType)}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {props.ownerType === "project" ? (
+                          <ProjectInfo />
+                        ) : (
+                          <ThreadInfo />
+                        )}
+                      </TooltipContent>
+                    </Tooltip>
                   </h4>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="size-4 text-muted-foreground ml-auto" />
-                    </TooltipTrigger>
-                    <TooltipContent className=" p-6">
-                      <h1 className="text-lg font-semibold text-foreground mb-4">
-                        MCP Server Binding
-                      </h1>
-                      <p className="text-sm leading-snug text-muted-foreground">
-                        Once applied, this thread will only use the
-                        <br />
-                        <span className="text-primary font-medium">
-                          {" "}
-                          selected MCP Servers and Tools
-                        </span>
-                        .<br />
-                        <br /> You can
-                        <span className="text-primary font-medium">
-                          {" "}
-                          select an entire server
-                        </span>{" "}
-                        to enable all tools,
-                        <br /> or choose
-                        <span className="text-primary font-medium">
-                          {" "}
-                          specific tools individually
-                        </span>
-                        .
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Button
-                    variant={isDiff ? "secondary" : "ghost"}
-                    onClick={handleSave}
-                    className="font-semibold"
-                    disabled={!isDiff}
-                  >
-                    {isSaving ? (
-                      <Loader className="size-4 animate-spin" />
-                    ) : (
-                      "Apply"
-                    )}
-                  </Button>
                 </div>
               </div>
               <div className="flex flex-col h-[40vh] overflow-y-auto w-full">
                 {isLoading ? (
-                  <div className="flex flex-col gap-2">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
+                  <div className="flex flex-col gap-4 p-4">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
                   </div>
                 ) : items.length === 0 ? (
                   <div className="text-sm text-muted-foreground w-full h-full flex items-center justify-center">
@@ -262,16 +241,10 @@ export const MCPServerBindingSelector = (
                   </div>
                 ) : (
                   items.map((item) => (
-                    <div
-                      key={item.id}
-                      className={cn(
-                        "p-0 rounded-none",
-                        expanded.includes(item.id) && "bg-secondary",
-                      )}
-                    >
-                      <div className="flex flex-col w-full">
+                    <div key={item.id} className={cn("px-4 py-2")}>
+                      <div className="hover:bg-input flex flex-col w-full rounded-lg bg-secondary border overflow-hidden">
                         <div
-                          className="flex items-center gap-2 w-full cursor-pointer p-5 hover:bg-secondary transition-colors"
+                          className="flex items-center gap-2 w-full cursor-pointer p-5 transition-colors"
                           onClick={() => handleToggleExpanded(item.id)}
                         >
                           <span
@@ -355,8 +328,78 @@ export const MCPServerBindingSelector = (
               </div>
             </div>
           </CardContent>
+          <CardFooter className="py-2! flex justify-end border-t">
+            <Button
+              onClick={handleSave}
+              className="font-semibold"
+              disabled={!isDiff}
+            >
+              {isSaving ? <Loader className="size-4 animate-spin" /> : "Apply"}
+            </Button>
+          </CardFooter>
         </Card>
       </PopoverContent>
     </Popover>
   );
 };
+
+function ThreadInfo() {
+  return (
+    <div className="p-6">
+      <h1 className="text-lg font-semibold text-foreground mb-4">
+        MCP Server Binding
+      </h1>
+      <p className="text-sm leading-snug text-muted-foreground">
+        Once applied, this chat thread will only have access to the
+        <br />
+        <span className="text-primary font-medium">
+          selected MCP servers and their tools
+        </span>
+        .<br />
+        <br />
+        You can
+        <span className="text-primary font-medium">
+          {" "}
+          enable an entire server
+        </span>{" "}
+        to use all of its tools,
+        <br />
+        or
+        <span className="text-primary font-medium"> pick individual tools</span>{" "}
+        if you want finer control.
+      </p>
+    </div>
+  );
+}
+
+function ProjectInfo() {
+  return (
+    <div className="p-6">
+      <h1 className="text-lg font-semibold text-foreground mb-4">
+        MCP Project Preset
+      </h1>
+      <p className="text-sm leading-snug text-muted-foreground">
+        This preset defines which MCP servers and tools are available
+        <br />
+        for any chat thread created under this project.
+        <br />
+        <br />
+        You can
+        <span className="text-primary font-medium"> enable full servers</span>{" "}
+        to allow all tools,
+        <br />
+        or
+        <span className="text-primary font-medium">
+          {" "}
+          choose tools individually
+        </span>{" "}
+        to tailor the setup.
+        <br />
+        <br />
+        Threads created from this project will
+        <span className="text-primary font-medium"> automatically apply</span>{" "}
+        this configuration.
+      </p>
+    </div>
+  );
+}

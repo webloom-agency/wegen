@@ -182,15 +182,7 @@ export default function PromptInput({
                     ownerType={ownerType}
                     align="start"
                     side="top"
-                  >
-                    <Button
-                      variant={"outline"}
-                      className="rounded-full bg-secondary font-semibold"
-                    >
-                      <MCPIcon className="size-3.5 fill-muted-foreground" />
-                      MCP Server
-                    </Button>
-                  </MCPServerBindingSelector>
+                  />
                 )}
                 <div className="flex-1" />
 
