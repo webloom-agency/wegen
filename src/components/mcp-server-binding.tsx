@@ -162,6 +162,7 @@ export const MCPServerBindingSelector = (
   }, [config, storedConfig]);
 
   useEffect(() => {
+    if (!open) return;
     if (storedConfig) {
       setConfig(storedConfig);
     } else {
@@ -174,7 +175,7 @@ export const MCPServerBindingSelector = (
       }, {}) as MCPServerBindingConfig;
       setConfig(allCheckConfig);
     }
-  }, [storedConfig, mcpServerList]);
+  }, [storedConfig, mcpServerList, open]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
