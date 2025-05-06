@@ -23,7 +23,6 @@ import { safe } from "ts-safe";
 import { handleErrorWithToast } from "ui/shared-toast";
 import {
   connectMcpClientAction,
-  disconnectMcpClientAction,
   refreshMcpClientAction,
   removeMcpClientAction,
 } from "@/app/api/mcp/actions";
@@ -107,14 +106,6 @@ export const MCPCard = memo(function MCPCard({
     await pipeProcessing(() => removeMcpClientAction(name));
   }, [name]);
 
-  const handleToggleConnection = useCallback(async () => {
-    await pipeProcessing(() =>
-      status === "connected"
-        ? disconnectMcpClientAction(name)
-        : connectMcpClientAction(name),
-    );
-  }, [name, status]);
-
   return (
     <Card className="relative hover:border-foreground/20 transition-colors">
       {isLoading && (
@@ -126,21 +117,6 @@ export const MCPCard = memo(function MCPCard({
         <h4 className="font-bold text-lg ">{name}</h4>
         <div className="flex-1" />
 
-        <Label
-          htmlFor={`mcp-card-switch-${name}`}
-          className="mr-2 text-xs text-muted-foreground"
-        >
-          {status === "connected" ? "enabled" : "disabled"}
-        </Label>
-        <Switch
-          id={`mcp-card-switch-${name}`}
-          checked={status === "connected"}
-          onCheckedChange={handleToggleConnection}
-          className="mr-2"
-        />
-        <div className="h-4">
-          <Separator orientation="vertical" />
-        </div>
         <Tooltip>
           <TooltipTrigger asChild>
             <Link
@@ -156,6 +132,9 @@ export const MCPCard = memo(function MCPCard({
             <p>Tools Test</p>
           </TooltipContent>
         </Tooltip>
+        <div className="h-4">
+          <Separator orientation="vertical" />
+        </div>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" onClick={handleRefresh}>
