@@ -22,13 +22,10 @@ import { safe } from "ts-safe";
 
 import { handleErrorWithToast } from "ui/shared-toast";
 import {
-  connectMcpClientAction,
   refreshMcpClientAction,
   removeMcpClientAction,
 } from "@/app/api/mcp/actions";
 import type { MCPServerInfo, MCPToolInfo } from "app-types/mcp";
-import { Switch } from "ui/switch";
-import { Label } from "ui/label";
 import { ToolDetailPopup } from "./tool-detail-popup";
 
 // Tools list component
