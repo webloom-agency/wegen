@@ -164,6 +164,7 @@ export const MCPServerBindingSelector = (
 
   useEffect(() => {
     if (!open) return;
+    setExpanded([]);
     if (storedConfig) {
       setConfig(storedConfig);
     } else {
@@ -252,17 +253,14 @@ export const MCPServerBindingSelector = (
                         <div
                           className={cn(
                             item.status == "connected" && "hover:bg-input",
-                            "flex items-center w-full cursor-pointer px-5 transition-colors h-16",
+                            "flex items-center w-full cursor-pointer transition-colors h-16",
                           )}
-                          onClick={() => handleToggleExpanded(item.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleMcp(item.id);
+                          }}
                         >
-                          <div
-                            className="h-full flex items-center group/check gap-2"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleMcp(item.id);
-                            }}
-                          >
+                          <div className="h-full flex items-center group/check gap-2 ml-4">
                             <Checkbox
                               checked={item.checked}
                               className="group-hover/check:scale-110 duration-75"
@@ -298,20 +296,30 @@ export const MCPServerBindingSelector = (
                           ) : null}
 
                           <div className="flex-1" />
-                          <span className="text-xs text-muted-foreground">
-                            {item.tools.filter((tool) => tool.checked).length}{" "}
-                            tools
-                          </span>
+                          <div className="h-full group/expand flex items-center px-4">
+                            <Button
+                              variant={"ghost"}
+                              className="group-hover/expand:bg-input hover:bg-input!"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleExpanded(item.id);
+                              }}
+                            >
+                              <span className="text-xs select-none text-muted-foreground group-hover/expand:text-foreground">
+                                {`${item.tools.length} tools`}
+                              </span>
 
-                          <div className="h-4 mx-4">
-                            <Separator orientation="vertical" />
+                              <div className="h-4">
+                                <Separator orientation="vertical" />
+                              </div>
+                              <ChevronRightIcon
+                                className={cn(
+                                  "size-4 transition-transform duration-200 group-hover/expand:rotate-90",
+                                  expanded.includes(item.id) ? "rotate-90" : "",
+                                )}
+                              />
+                            </Button>
                           </div>
-                          <ChevronRightIcon
-                            className={cn(
-                              "size-4 transition-transform duration-200",
-                              expanded.includes(item.id) ? "rotate-90" : "",
-                            )}
-                          />
                         </div>
                         {expanded.includes(item.id) && (
                           <div className="pb-4">
