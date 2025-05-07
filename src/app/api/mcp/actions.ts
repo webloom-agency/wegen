@@ -8,15 +8,9 @@ import { z } from "zod";
 
 export async function selectMcpClientsAction() {
   const list = mcpClientsManager.getClients();
-  return list
-    .map((client) => {
-      return client.getInfo();
-    })
-    .sort(
-      (a, b) =>
-        (a.status === "connected" ? -1 : 1) -
-        (b.status === "connected" ? -1 : 1),
-    );
+  return list.map((client) => {
+    return client.getInfo();
+  });
 }
 
 export async function selectMcpClientAction(name: string) {

@@ -78,23 +78,29 @@ export const MCPServerBindingSelector = (
 
   const items = useMemo(() => {
     if (!mcpServerList) return [];
-    return mcpServerList.map((server) => {
-      const allowedTools: string[] = config
-        ? (config?.[server.name]?.allowedTools ?? [])
-        : server.toolInfo.map((tool) => tool.name);
-      return {
-        id: server.name,
-        serverName: server.name,
-        checked: allowedTools.length > 0,
-        tools: server.toolInfo.map((tool) => ({
-          name: tool.name,
-          checked: allowedTools.includes(tool.name),
-          description: tool.description,
-        })),
-        error: server.error,
-        status: server.status,
-      };
-    });
+    return [...mcpServerList]
+      .sort(
+        (a, b) =>
+          (a.status === "connected" ? -1 : 1) -
+          (b.status === "connected" ? -1 : 1),
+      )
+      .map((server) => {
+        const allowedTools: string[] = config
+          ? (config?.[server.name]?.allowedTools ?? [])
+          : server.toolInfo.map((tool) => tool.name);
+        return {
+          id: server.name,
+          serverName: server.name,
+          checked: allowedTools.length > 0,
+          tools: server.toolInfo.map((tool) => ({
+            name: tool.name,
+            checked: allowedTools.includes(tool.name),
+            description: tool.description,
+          })),
+          error: server.error,
+          status: server.status,
+        };
+      });
   }, [config, mcpServerList]);
 
   const handleToggleMcp = (serverName: string) => {
