@@ -25,7 +25,7 @@ import { capitalizeFirstLetter, cn } from "lib/utils";
 import { Card, CardContent, CardFooter } from "ui/card";
 import { MCPIcon } from "ui/mcp-icon";
 import { Separator } from "ui/separator";
-import { Switch } from "ui/switch";
+
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { signOut } from "next-auth/react";
@@ -92,6 +92,7 @@ export const MCPServerBindingSelector = (
           description: tool.description,
         })),
         error: server.error,
+        status: server.status,
       };
     });
   }, [config, mcpServerList]);
@@ -242,48 +243,67 @@ export const MCPServerBindingSelector = (
                 ) : (
                   items.map((item) => (
                     <div key={item.id} className={cn("px-4 py-2")}>
-                      <div className="flex flex-col w-full rounded-lg bg-secondary border overflow-hidden">
+                      <div
+                        className={cn(
+                          item.status == "disconnected" && "opacity-40",
+                          "flex flex-col w-full rounded-lg bg-secondary border overflow-hidden",
+                        )}
+                      >
                         <div
-                          className="flex items-center w-full cursor-pointer px-5 transition-colors h-16 hover:bg-input"
+                          className={cn(
+                            item.status == "connected" && "hover:bg-input",
+                            "flex items-center w-full cursor-pointer px-5 transition-colors h-16",
+                          )}
                           onClick={() => handleToggleExpanded(item.id)}
                         >
-                          <span
-                            className={cn(
-                              "font-semibold truncate",
-                              !item.checked && "text-muted-foreground",
-                            )}
-                          >
-                            {item.serverName}
-                          </span>
-                          {Boolean(item.error) && (
-                            <span className={cn("text-xs text-destructive")}>
-                              error
-                            </span>
-                          )}
-                          <div className="flex-1" />
-                          <span className="text-xs text-muted-foreground">
-                            {item.tools.length} tools
-                          </span>
-                          <div className="h-4 ml-4">
-                            <Separator orientation="vertical" />
-                          </div>
-
                           <div
-                            className="h-full flex items-center px-4 group/switch"
+                            className="h-full flex items-center group/check gap-2"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleToggleMcp(item.id);
                             }}
                           >
-                            <Switch
+                            <Checkbox
                               checked={item.checked}
-                              className="group-hover/switch:scale-110 duration-75"
+                              className="group-hover/check:scale-110 duration-75"
                               onClick={(e) => e.stopPropagation()}
                               onCheckedChange={() => handleToggleMcp(item.id)}
                             />
+                            <span
+                              className={cn(
+                                "font-semibold truncate select-none group-hover/check:text-foreground",
+                                !item.checked && "text-muted-foreground",
+                              )}
+                            >
+                              {item.serverName}
+                            </span>
                           </div>
 
-                          <div className="h-4 mr-4">
+                          {Boolean(item.error) ? (
+                            <span
+                              className={cn(
+                                "text-xs text-destructive ml-2 p-1 rounded",
+                              )}
+                            >
+                              error
+                            </span>
+                          ) : item.status === "disconnected" ? (
+                            <span
+                              className={cn(
+                                "text-xs text-muted-foreground ml-2 p-1 rounded",
+                              )}
+                            >
+                              disabled
+                            </span>
+                          ) : null}
+
+                          <div className="flex-1" />
+                          <span className="text-xs text-muted-foreground">
+                            {item.tools.filter((tool) => tool.checked).length}{" "}
+                            tools
+                          </span>
+
+                          <div className="h-4 mx-4">
                             <Separator orientation="vertical" />
                           </div>
                           <ChevronRightIcon
@@ -295,31 +315,37 @@ export const MCPServerBindingSelector = (
                         </div>
                         {expanded.includes(item.id) && (
                           <div className="pb-4">
-                            {item.tools.map((tool) => (
-                              <div
-                                key={tool.name}
-                                className={
-                                  "cursor-pointer px-8  p-2 flex items-center gap-2 hover:bg-input transition-colors"
-                                }
-                                onClick={() =>
-                                  handleToggleTool(item.id, tool.name)
-                                }
-                              >
-                                <WrenchIcon className="size-4 text-muted-foreground" />
-                                <div className="mx-1 flex-1">
-                                  <p className="font-medium text-xs mb-1">
-                                    {tool.name}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground line-clamp-1">
-                                    {tool.description}
-                                  </p>
+                            {item.tools.length > 0 ? (
+                              item.tools.map((tool) => (
+                                <div
+                                  key={tool.name}
+                                  className={
+                                    "cursor-pointer px-8  p-2 flex items-center gap-2 hover:bg-input transition-colors"
+                                  }
+                                  onClick={() =>
+                                    handleToggleTool(item.id, tool.name)
+                                  }
+                                >
+                                  <WrenchIcon className="size-4 text-muted-foreground" />
+                                  <div className="mx-1 flex-1">
+                                    <p className="font-medium text-xs mb-1">
+                                      {tool.name}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground line-clamp-1">
+                                      {tool.description}
+                                    </p>
+                                  </div>
+                                  <Checkbox
+                                    checked={tool.checked}
+                                    className="ml-auto"
+                                  />
                                 </div>
-                                <Checkbox
-                                  checked={tool.checked}
-                                  className="ml-auto"
-                                />
+                              ))
+                            ) : (
+                              <div className="text-sm text-muted-foreground w-full h-full flex items-center justify-center">
+                                No tools found.
                               </div>
-                            ))}
+                            )}
                           </div>
                         )}
                       </div>
