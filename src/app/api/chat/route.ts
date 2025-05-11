@@ -11,7 +11,7 @@ import {
 
 import { customModelProvider, isToolCallUnsupportedModel } from "lib/ai/models";
 
-import { mcpClientsManager } from "../mcp/mcp-manager";
+import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 
 import { chatRepository } from "lib/db/repository";
 import logger from "logger";

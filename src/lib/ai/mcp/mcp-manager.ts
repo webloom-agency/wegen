@@ -1,3 +1,5 @@
+import "server-only";
+
 import { createFileBasedMCPConfigsStorage } from "lib/ai/mcp/fb-mcp-config-storage";
 import {
   createMCPClientsManager,

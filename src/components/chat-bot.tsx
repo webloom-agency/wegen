@@ -16,7 +16,7 @@ import { appStore } from "@/app/store";
 import { cn, generateUUID } from "lib/utils";
 import { PreviewMessage } from "./message";
 import { Greeting } from "./greeting";
-import logger from "logger";
+
 import { useShallow } from "zustand/shallow";
 import { UIMessage } from "ai";
 
@@ -87,7 +87,6 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
       }
     },
     onError: (error) => {
-      logger.error(error);
       toast.error(error.message || "An error occured, please try again!");
     },
   });

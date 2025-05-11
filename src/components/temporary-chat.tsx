@@ -3,7 +3,7 @@
 import { appStore } from "@/app/store";
 import { useChat, UseChatHelpers } from "@ai-sdk/react";
 import { cn } from "lib/utils";
-import logger from "logger";
+
 import { PropsWithChildren, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "ui/button";
@@ -42,8 +42,7 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
     body: {
       model,
     },
-    onError: (error) => {
-      logger.error(error);
+    onError: () => {
       toast.error("An error occured, please try again!");
     },
   });
