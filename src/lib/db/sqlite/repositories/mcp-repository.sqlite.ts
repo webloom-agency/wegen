@@ -1,7 +1,7 @@
 import {
   MCPServerBinding,
   MCPServerBindingOwnerType,
-  McpService,
+  McpRepository,
 } from "app-types/mcp";
 import { sqliteDb as db } from "../db.sqlite";
 import { McpServerBindingSchema } from "../schema.sqlite";
@@ -11,7 +11,7 @@ import { convertToMcpServerBinding } from "./utils";
 /**
  * @deprecated
  */
-export const sqliteMcpService: McpService = {
+export const sqliteMcpRepository: McpRepository = {
   saveMcpServerBinding: async (
     entity: MCPServerBinding,
   ): Promise<MCPServerBinding> => {

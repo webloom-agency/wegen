@@ -1,4 +1,9 @@
-import { ChatMessage, ChatService, ChatThread, Project } from "app-types/chat";
+import {
+  ChatMessage,
+  ChatRepository,
+  ChatThread,
+  Project,
+} from "app-types/chat";
 
 import { pgDb as db } from "../db.pg";
 import {
@@ -10,9 +15,9 @@ import {
 
 import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
 import { MCPServerBindingOwnerType } from "app-types/mcp";
-import { pgMcpService } from "./mcp-service.pg";
+import { pgMcpRepository } from "./mcp-repository.pg";
 
-export const pgChatService: ChatService = {
+export const pgChatRepository: ChatRepository = {
   insertThread: async (
     thread: Omit<ChatThread, "createdAt">,
   ): Promise<ChatThread> => {
@@ -26,12 +31,12 @@ export const pgChatService: ChatService = {
       })
       .returning();
     if (thread.projectId) {
-      const mcpServerBinding = await pgMcpService.selectMcpServerBinding(
+      const mcpServerBinding = await pgMcpRepository.selectMcpServerBinding(
         thread.projectId,
         MCPServerBindingOwnerType.Project,
       );
       if (mcpServerBinding) {
-        await pgMcpService.saveMcpServerBinding({
+        await pgMcpRepository.saveMcpServerBinding({
           ownerId: result.id,
           ownerType: MCPServerBindingOwnerType.Thread,
           config: mcpServerBinding.config,
@@ -47,6 +52,43 @@ export const pgChatService: ChatService = {
       .from(ChatThreadSchema)
       .where(eq(ChatThreadSchema.id, id));
     return result;
+  },
+
+  selectThreadWithMessages: async (id: string) => {
+    if (!id) {
+      return null;
+    }
+    const [thread] = await db
+      .select()
+      .from(ChatThreadSchema)
+      .leftJoin(ProjectSchema, eq(ChatThreadSchema.projectId, ProjectSchema.id))
+      .leftJoin(
+        McpServerBindingSchema,
+        and(
+          eq(ChatThreadSchema.id, McpServerBindingSchema.ownerId),
+          eq(
+            McpServerBindingSchema.ownerType,
+            MCPServerBindingOwnerType.Thread,
+          ),
+        ),
+      )
+      .where(eq(ChatThreadSchema.id, id));
+
+    if (!thread) {
+      return null;
+    }
+
+    const messages = await pgChatRepository.selectMessagesByThreadId(id);
+    return {
+      id: thread.chat_thread.id,
+      title: thread.chat_thread.title,
+      userId: thread.chat_thread.userId,
+      createdAt: thread.chat_thread.createdAt,
+      projectId: thread.chat_thread.projectId,
+      instructions: thread.project?.instructions ?? null,
+      bindingConfig: thread.mcp_server_binding?.config ?? null,
+      messages,
+    };
   },
 
   selectMessagesByThreadId: async (
@@ -194,7 +236,7 @@ export const pgChatService: ChatService = {
         ),
       );
     await Promise.all(
-      threadIds.map((threadId) => pgChatService.deleteThread(threadId.id)),
+      threadIds.map((threadId) => pgChatRepository.deleteThread(threadId.id)),
     );
   },
 
@@ -204,7 +246,7 @@ export const pgChatService: ChatService = {
       .from(ChatThreadSchema)
       .where(eq(ChatThreadSchema.userId, userId));
     await Promise.all(
-      threadIds.map((threadId) => pgChatService.deleteThread(threadId.id)),
+      threadIds.map((threadId) => pgChatRepository.deleteThread(threadId.id)),
     );
   },
 
@@ -283,7 +325,7 @@ export const pgChatService: ChatService = {
       .from(ChatThreadSchema)
       .where(eq(ChatThreadSchema.projectId, id));
     await Promise.all(
-      threadIds.map((threadId) => pgChatService.deleteThread(threadId.id)),
+      threadIds.map((threadId) => pgChatRepository.deleteThread(threadId.id)),
     );
     await db
       .delete(McpServerBindingSchema)

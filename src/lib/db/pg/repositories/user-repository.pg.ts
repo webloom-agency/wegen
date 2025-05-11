@@ -1,14 +1,10 @@
-import { User, UserService, UserZodSchema } from "app-types/user";
+import { User, UserRepository, UserZodSchema } from "app-types/user";
 import { generateHashedPassword } from "lib/db/utils";
-import { sqliteDb as db } from "../db.sqlite";
-import { UserSchema } from "../schema.sqlite";
+import { pgDb as db } from "../db.pg";
+import { UserSchema } from "../schema.pg";
 import { eq } from "drizzle-orm";
-import { convertToTimestamp } from "./utils";
 
-/**
- * @deprecated
- */
-export const sqliteUserService: UserService = {
+export const pgUserRepository: UserRepository = {
   register: async (
     user: Omit<User, "id"> & { plainPassword: string },
   ): Promise<User> => {
@@ -16,10 +12,11 @@ export const sqliteUserService: UserService = {
       ...user,
       password: user.plainPassword,
     });
-    const exists = await sqliteUserService.existsByEmail(parsedUser.email);
+    const exists = await pgUserRepository.existsByEmail(parsedUser.email);
     if (exists) {
       throw new Error("User already exists");
     }
+
     const hashedPassword = generateHashedPassword(parsedUser.password);
     const result = await db
       .insert(UserSchema)
@@ -41,21 +38,21 @@ export const sqliteUserService: UserService = {
       .select()
       .from(UserSchema)
       .where(eq(UserSchema.email, email));
-    return result;
+    return result ? result : null;
   },
   updateUser: async (
     id: string,
     user: Pick<User, "name" | "image">,
   ): Promise<User> => {
-    const [result] = await db
+    const result = await db
       .update(UserSchema)
       .set({
         name: user.name,
         image: user.image,
-        updatedAt: convertToTimestamp(new Date()),
+        updatedAt: new Date(),
       })
       .where(eq(UserSchema.id, id))
       .returning();
-    return result;
+    return result[0];
   },
 };

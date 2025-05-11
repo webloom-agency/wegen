@@ -6,7 +6,7 @@ import { ProjectSystemMessagePopup } from "@/components/project-system-message-p
 import PromptInput from "@/components/prompt-input";
 import { ThreadDropdown } from "@/components/thread-dropdown";
 import { useChat } from "@ai-sdk/react";
-import { Project } from "app-types/chat";
+import { ChatApiSchemaRequestBody, Project } from "app-types/chat";
 import { generateUUID } from "lib/utils";
 
 import {
@@ -81,7 +81,16 @@ export default function ProjectPage() {
   const { input, setInput, append, stop, status } = useChat({
     id: threadId,
     api: "/api/chat",
-    body: { id: threadId, model, toolChoice, projectId: id as string },
+    experimental_prepareRequestBody: ({ messages }) => {
+      const request: ChatApiSchemaRequestBody = {
+        id: threadId,
+        model,
+        toolChoice,
+        projectId: id as string,
+        message: messages.at(-1)!,
+      };
+      return request;
+    },
     initialMessages: [],
     sendExtraMessageFields: true,
     generateId: generateUUID,

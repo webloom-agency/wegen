@@ -22,12 +22,13 @@ import { UIMessage } from "ai";
 
 import { safe } from "ts-safe";
 import { mutate } from "swr";
+import { ChatApiSchemaRequestBody } from "app-types/chat";
 
 type Props = {
   threadId: string;
-  projectId?: string;
   initialMessages: Array<UIMessage>;
   selectedChatModel?: string;
+  projectId?: string;
   action?: string;
   slots?: {
     emptySlot?: ReactNode;
@@ -37,9 +38,9 @@ type Props = {
 
 export default function ChatBot({
   threadId,
-  projectId,
   initialMessages,
   action,
+  projectId,
   slots,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -61,8 +62,17 @@ export default function ChatBot({
   } = useChat({
     id: threadId,
     api: "/api/chat",
-    body: { id: threadId, model, toolChoice, projectId, action },
-    initialMessages: initialMessages,
+    initialMessages,
+    experimental_prepareRequestBody: ({ messages }) => {
+      const request: ChatApiSchemaRequestBody = {
+        id: threadId,
+        model,
+        toolChoice,
+        projectId,
+        message: messages.at(-1)!,
+      };
+      return request;
+    },
     sendExtraMessageFields: true,
     generateId: generateUUID,
     experimental_throttle: 100,

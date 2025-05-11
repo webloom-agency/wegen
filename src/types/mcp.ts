@@ -52,7 +52,7 @@ export type MCPServerBinding = {
   config: MCPServerBindingConfig;
 };
 
-export type McpService = {
+export type McpRepository = {
   saveMcpServerBinding(entity: MCPServerBinding): Promise<MCPServerBinding>;
 
   selectMcpServerBinding(

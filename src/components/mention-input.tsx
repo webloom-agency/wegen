@@ -14,7 +14,7 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import { useLatest } from "@/hooks/use-latest";
-import { cn } from "@/lib/utils";
+import { cn } from "lib/utils";
 import { fuzzySearch } from "@/lib/fuzzy-search";
 import { WrenchIcon } from "lucide-react";
 import { MCPIcon } from "ui/mcp-icon";

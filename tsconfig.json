@@ -27,7 +27,6 @@
     ],
     "paths": {
       "ui/*": ["./src/components/ui/*"],
-      "service/*": ["./src/service/*"],
       "app-types/*": ["./src/types/*"],
       "logger": ["./src/lib/logger.ts"],
       "lib/*": ["./src/lib/*"],

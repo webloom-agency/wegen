@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createMCPToolId, extractMCPToolId, sanitizeFunctionName } from "./mcp-tool-id";
+import {
+  createMCPToolId,
+  extractMCPToolId,
+  sanitizeFunctionName,
+} from "./mcp-tool-id";
 
 describe("sanitizeFunctionName", () => {
   it("should sanitize names with invalid characters", () => {
@@ -24,7 +28,9 @@ describe("sanitizeFunctionName", () => {
   it("should allow dots and dashes", () => {
     expect(sanitizeFunctionName("valid.name")).toBe("valid.name");
     expect(sanitizeFunctionName("valid-name")).toBe("valid-name");
-    expect(sanitizeFunctionName("valid.name-with_underscore")).toBe("valid.name-with_underscore");
+    expect(sanitizeFunctionName("valid.name-with_underscore")).toBe(
+      "valid.name-with_underscore",
+    );
   });
 });
 
@@ -43,7 +49,7 @@ describe("createMCPToolId", () => {
     const longServerName = "s".repeat(40);
     const longToolName = "t".repeat(40);
     const toolId = createMCPToolId(longServerName, longToolName);
-    
+
     expect(toolId.length).toBeLessThanOrEqual(64);
     expect(toolId).toContain("_"); // Should still contain the separator
   });
@@ -62,7 +68,9 @@ describe("extractMCPToolId", () => {
   });
 
   it("should handle tool names with underscores", () => {
-    const { serverName, toolName } = extractMCPToolId("server_tool_with_underscores");
+    const { serverName, toolName } = extractMCPToolId(
+      "server_tool_with_underscores",
+    );
     expect(serverName).toBe("server");
     expect(toolName).toBe("tool_with_underscores");
   });

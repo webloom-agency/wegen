@@ -1,4 +1,9 @@
-import { ChatMessage, ChatService, ChatThread, Project } from "app-types/chat";
+import {
+  ChatMessage,
+  ChatRepository,
+  ChatThread,
+  Project,
+} from "app-types/chat";
 
 import { sqliteDb as db } from "../db.sqlite";
 import {
@@ -11,18 +16,19 @@ import {
   convertToChatMessage,
   convertToChatThread,
   convertToDate,
+  convertToMcpServerBinding,
   convertToProject,
   convertToTimestamp,
 } from "./utils";
 import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
 import { MCPServerBindingOwnerType } from "app-types/mcp";
 import { generateUUID } from "lib/utils";
-import { sqliteMcpService } from "./mcp-service.sqlite";
+import { sqliteMcpRepository } from "./mcp-repository.sqlite";
 
 /**
  * @deprecated
  */
-export const sqliteChatService: ChatService = {
+export const sqliteChatRepository: ChatRepository = {
   insertThread: async (
     thread: Omit<ChatThread, "createdAt">,
   ): Promise<ChatThread> => {
@@ -36,12 +42,12 @@ export const sqliteChatService: ChatService = {
       })
       .returning();
     if (thread.projectId) {
-      const mcpServerBinding = await sqliteMcpService.selectMcpServerBinding(
+      const mcpServerBinding = await sqliteMcpRepository.selectMcpServerBinding(
         thread.projectId,
         MCPServerBindingOwnerType.Project,
       );
       if (mcpServerBinding) {
-        await sqliteMcpService.saveMcpServerBinding({
+        await sqliteMcpRepository.saveMcpServerBinding({
           ownerId: result.id,
           ownerType: MCPServerBindingOwnerType.Thread,
           config: mcpServerBinding.config,
@@ -57,6 +63,47 @@ export const sqliteChatService: ChatService = {
       .from(ChatThreadSchema)
       .where(eq(ChatThreadSchema.id, id));
     return result[0] ? convertToChatThread(result[0]) : null;
+  },
+
+  selectThreadWithMessages: async (id: string) => {
+    if (!id) {
+      return null;
+    }
+    const [thread] = await db
+      .select()
+      .from(ChatThreadSchema)
+      .leftJoin(ProjectSchema, eq(ChatThreadSchema.projectId, ProjectSchema.id))
+      .leftJoin(
+        McpServerBindingSchema,
+        and(
+          eq(ChatThreadSchema.id, McpServerBindingSchema.ownerId),
+          eq(
+            McpServerBindingSchema.ownerType,
+            MCPServerBindingOwnerType.Thread,
+          ),
+        ),
+      )
+      .where(eq(ChatThreadSchema.id, id));
+
+    if (!thread) {
+      return null;
+    }
+
+    const messages = await sqliteChatRepository.selectMessagesByThreadId(id);
+    return {
+      id: thread.chat_thread.id,
+      title: thread.chat_thread.title,
+      userId: thread.chat_thread.userId,
+      createdAt: convertToDate(thread.chat_thread.createdAt),
+      projectId: thread.chat_thread.projectId,
+      instructions: thread.project
+        ? convertToProject(thread.project).instructions
+        : null,
+      bindingConfig: thread.mcp_server_binding?.config
+        ? convertToMcpServerBinding(thread.mcp_server_binding).config
+        : null,
+      messages,
+    };
   },
 
   selectMessagesByThreadId: async (
@@ -218,7 +265,9 @@ export const sqliteChatService: ChatService = {
         ),
       );
     await Promise.all(
-      threadIds.map((threadId) => sqliteChatService.deleteThread(threadId.id)),
+      threadIds.map((threadId) =>
+        sqliteChatRepository.deleteThread(threadId.id),
+      ),
     );
   },
 
@@ -228,7 +277,9 @@ export const sqliteChatService: ChatService = {
       .from(ChatThreadSchema)
       .where(eq(ChatThreadSchema.userId, userId));
     await Promise.all(
-      threadIds.map((threadId) => sqliteChatService.deleteThread(threadId.id)),
+      threadIds.map((threadId) =>
+        sqliteChatRepository.deleteThread(threadId.id),
+      ),
     );
   },
 
@@ -319,7 +370,9 @@ export const sqliteChatService: ChatService = {
       .from(ChatThreadSchema)
       .where(eq(ChatThreadSchema.projectId, id));
     await Promise.all(
-      threadIds.map((threadId) => sqliteChatService.deleteThread(threadId.id)),
+      threadIds.map((threadId) =>
+        sqliteChatRepository.deleteThread(threadId.id),
+      ),
     );
     await db
       .delete(McpServerBindingSchema)

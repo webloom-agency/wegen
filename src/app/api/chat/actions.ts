@@ -15,7 +15,7 @@ import {
 
 import type { ChatThread, Project } from "app-types/chat";
 
-import { chatService, mcpService } from "lib/db/service";
+import { chatRepository, mcpRepository } from "lib/db/repository";
 import { customModelProvider } from "lib/ai/models";
 import { toAny } from "lib/utils";
 import {
@@ -40,37 +40,39 @@ export async function generateTitleFromUserMessageAction({
   message,
   model,
 }: { message: Message; model: LanguageModel }) {
+  const prompt = toAny(message.parts?.at(-1))?.text || "unknown";
+
   const { text: title } = await generateText({
     model,
     system: CREATE_THREAD_TITLE_PROMPT,
-    prompt: JSON.stringify(message),
+    prompt,
   });
 
   return title.trim();
 }
 
 export async function selectThreadWithMessagesAction(threadId: string) {
-  const thread = await chatService.selectThread(threadId);
+  const thread = await chatRepository.selectThread(threadId);
   if (!thread) {
-    return null;
+    throw new Error("Thread not found");
   }
-  const messages = await chatService.selectMessagesByThreadId(threadId);
+  const messages = await chatRepository.selectMessagesByThreadId(threadId);
   return { ...thread, messages: messages ?? [] };
 }
 
 export async function deleteThreadAction(threadId: string) {
-  await chatService.deleteThread(threadId);
+  await chatRepository.deleteThread(threadId);
 }
 
 export async function deleteMessagesByChatIdAfterTimestampAction(
   messageId: string,
 ) {
-  await chatService.deleteMessagesByChatIdAfterTimestamp(messageId);
+  await chatRepository.deleteMessagesByChatIdAfterTimestamp(messageId);
 }
 
 export async function selectThreadListByUserIdAction() {
   const userId = await getUserId();
-  const threads = await chatService.selectThreadsByUserId(userId);
+  const threads = await chatRepository.selectThreadsByUserId(userId);
   return threads;
 }
 
@@ -79,12 +81,12 @@ export async function updateThreadAction(
   thread: Partial<Omit<ChatThread, "createdAt" | "updatedAt" | "userId">>,
 ) {
   const userId = await getUserId();
-  await chatService.updateThread(id, { ...thread, userId });
+  await chatRepository.updateThread(id, { ...thread, userId });
 }
 
 export async function deleteThreadsAction() {
   const userId = await getUserId();
-  await chatService.deleteAllThreads(userId);
+  await chatRepository.deleteAllThreads(userId);
 }
 
 export async function generateExampleToolSchemaAction(options: {
@@ -115,7 +117,7 @@ export async function generateExampleToolSchemaAction(options: {
 
 export async function selectProjectListByUserIdAction() {
   const userId = await getUserId();
-  const projects = await chatService.selectProjectsByUserId(userId);
+  const projects = await chatRepository.selectProjectsByUserId(userId);
   return projects;
 }
 
@@ -127,7 +129,7 @@ export async function insertProjectAction({
   instructions?: Project["instructions"];
 }) {
   const userId = await getUserId();
-  const project = await chatService.insertProject({
+  const project = await chatRepository.insertProject({
     name,
     userId,
     instructions: instructions ?? {
@@ -147,14 +149,14 @@ export async function insertProjectWithThreadAction({
   threadId: string;
 }) {
   const userId = await getUserId();
-  const project = await chatService.insertProject({
+  const project = await chatRepository.insertProject({
     name,
     userId,
     instructions: instructions ?? {
       systemPrompt: "",
     },
   });
-  await chatService.updateThread(threadId, {
+  await chatRepository.updateThread(threadId, {
     projectId: project.id,
   });
   await serverCache.delete(CacheKeys.thread(threadId));
@@ -162,7 +164,7 @@ export async function insertProjectWithThreadAction({
 }
 
 export async function selectProjectByIdAction(id: string) {
-  const project = await chatService.selectProjectById(id);
+  const project = await chatRepository.selectProjectById(id);
   return project;
 }
 
@@ -170,14 +172,14 @@ export async function updateProjectAction(
   id: string,
   project: Partial<Pick<Project, "name" | "instructions">>,
 ) {
-  const updatedProject = await chatService.updateProject(id, project);
+  const updatedProject = await chatRepository.updateProject(id, project);
   await serverCache.delete(CacheKeys.project(id));
   return updatedProject;
 }
 
 export async function deleteProjectAction(id: string) {
   await serverCache.delete(CacheKeys.project(id));
-  await chatService.deleteProject(id);
+  await chatRepository.deleteProject(id);
 }
 
 export async function rememberProjectInstructionsAction(
@@ -188,7 +190,7 @@ export async function rememberProjectInstructionsAction(
   if (cachedProject) {
     return cachedProject.instructions;
   }
-  const project = await chatService.selectProjectById(projectId);
+  const project = await chatRepository.selectProjectById(projectId);
   if (!project) {
     return null;
   }
@@ -202,7 +204,7 @@ export async function rememberThreadAction(threadId: string) {
   if (cachedThread) {
     return cachedThread;
   }
-  const thread = await chatService.selectThread(threadId);
+  const thread = await chatRepository.selectThread(threadId);
   if (!thread) {
     return null;
   }
@@ -222,7 +224,7 @@ export async function rememberMcpBindingAction(
   if (cachedMcpBinding) {
     return cachedMcpBinding;
   }
-  const mcpBinding = await mcpService.selectMcpServerBinding(
+  const mcpBinding = await mcpRepository.selectMcpServerBinding(
     ownerId,
     ownerType,
   );
@@ -231,7 +233,7 @@ export async function rememberMcpBindingAction(
 }
 
 export async function updateProjectNameAction(id: string, name: string) {
-  const updatedProject = await chatService.updateProject(id, { name });
+  const updatedProject = await chatRepository.updateProject(id, { name });
   await serverCache.delete(CacheKeys.project(id));
   return updatedProject;
 }
@@ -240,5 +242,5 @@ export async function saveMcpServerBindingsAction(entity: MCPServerBinding) {
   await serverCache.delete(
     CacheKeys.mcpBinding(entity.ownerId, entity.ownerType),
   );
-  await mcpService.saveMcpServerBinding(entity);
+  await mcpRepository.saveMcpServerBinding(entity);
 }

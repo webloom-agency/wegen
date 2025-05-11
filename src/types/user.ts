@@ -7,7 +7,7 @@ export type User = {
   image: string | null;
 };
 
-export type UserService = {
+export type UserRepository = {
   register: (
     user: Omit<User, "id"> & { plainPassword: string },
   ) => Promise<User>;

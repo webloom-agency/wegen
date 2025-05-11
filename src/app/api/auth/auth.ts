@@ -1,5 +1,5 @@
 import { compare } from "bcrypt-ts";
-import { userService } from "lib/db/service";
+import { userRepository } from "lib/db/repository";
 import NextAuth, { type DefaultSession } from "next-auth";
 import type { DefaultJWT } from "next-auth/jwt";
 import Credentials from "next-auth/providers/credentials";
@@ -36,7 +36,7 @@ export const {
     Credentials({
       credentials: {},
       async authorize({ email, password }: any) {
-        const user = await userService.selectByEmail(email);
+        const user = await userRepository.selectByEmail(email);
         if (!user) {
           return null;
         }

@@ -1,4 +1,6 @@
 import type { UIMessage, Message } from "ai";
+import { z } from "zod";
+import { MCPServerBindingConfig } from "./mcp";
 
 export type ChatThread = {
   id: string;
@@ -36,15 +38,36 @@ export type ChatMessageAnnotation = {
   [key: string]: any;
 };
 
+export const chatApiSchemaRequestBodySchema = z.object({
+  id: z.string(),
+  projectId: z.string().optional(),
+  message: z.any() as z.ZodType<UIMessage>,
+  model: z.string().min(1).max(2000),
+  toolChoice: z.enum(["auto", "none", "manual"]),
+});
+
+export type ChatApiSchemaRequestBody = z.infer<
+  typeof chatApiSchemaRequestBodySchema
+>;
+
 export type ToolInvocationUIPart = Extract<
   Exclude<Message["parts"], undefined>[number],
   { type: "tool-invocation" }
 >;
 
-export type ChatService = {
+export type ChatRepository = {
   insertThread(thread: Omit<ChatThread, "createdAt">): Promise<ChatThread>;
 
   selectThread(id: string): Promise<ChatThread | null>;
+
+  selectThreadWithMessages(id: string): Promise<
+    | (ChatThread & {
+        instructions: Project["instructions"] | null;
+        bindingConfig: MCPServerBindingConfig | null;
+        messages: ChatMessage[];
+      })
+    | null
+  >;
 
   selectMessagesByThreadId(threadId: string): Promise<ChatMessage[]>;
 

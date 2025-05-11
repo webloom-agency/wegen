@@ -1,13 +1,13 @@
 import {
   MCPServerBinding,
   MCPServerBindingOwnerType,
-  McpService,
+  McpRepository,
 } from "app-types/mcp";
 import { pgDb as db } from "../db.pg";
 import { McpServerBindingSchema } from "../schema.pg";
 import { and, eq } from "drizzle-orm";
 
-export const pgMcpService: McpService = {
+export const pgMcpRepository: McpRepository = {
   saveMcpServerBinding: async (
     entity: MCPServerBinding,
   ): Promise<MCPServerBinding> => {

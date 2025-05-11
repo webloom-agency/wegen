@@ -163,10 +163,7 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "mcp_server_binding_owner_type_owner_id_pk": {
-          "columns": [
-            "owner_type",
-            "owner_id"
-          ],
+          "columns": ["owner_type", "owner_id"],
           "name": "mcp_server_binding_owner_type_owner_id_pk"
         }
       },
@@ -286,9 +283,7 @@
       "indexes": {
         "user_email_unique": {
           "name": "user_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },
