@@ -93,12 +93,6 @@ export async function POST(request: Request) {
 
     const mcpTools = mcpClientsManager.tools();
 
-    const systemPrompt = mergeSystemPrompt(
-      thread?.instructions?.systemPrompt ||
-        "You are a friendly assistant! Keep your responses concise and helpful.",
-      SYSTEM_TIME_PROMPT(session),
-    );
-
     const isToolCallAllowed =
       !isToolCallUnsupportedModel(model) && toolChoice != "none";
 
@@ -155,11 +149,18 @@ export async function POST(request: Request) {
           );
         }
 
+        const systemPrompt = mergeSystemPrompt(
+          thread?.instructions?.systemPrompt ||
+            "You are a friendly assistant! Keep your responses concise and helpful.",
+          SYSTEM_TIME_PROMPT(session),
+        );
+
         const result = streamText({
           model,
           system: systemPrompt,
           messages,
           maxSteps: 10,
+          experimental_continueSteps: true,
           experimental_transform: smoothStream({ chunking: "word" }),
           tools,
           toolChoice:
@@ -184,17 +185,16 @@ export async function POST(request: Request) {
                 }),
               });
             }
-
             const assistantMessage = appendMessages.at(-1);
-
             if (assistantMessage) {
               const annotations = appendAnnotations(
                 assistantMessage.annotations,
                 {
                   usageTokens: usage.completionTokens,
+                  toolChoice,
                 },
               );
-              dataStream.writeMessageAnnotation(annotations);
+              dataStream.writeMessageAnnotation(annotations.at(-1)!);
               await chatRepository.upsertMessage({
                 model: modelName,
                 threadId: thread!.id,

@@ -95,7 +95,6 @@ export function manualToolExecuteByLastMessage(
 }
 
 export function handleError(error: any) {
-  console.log(error);
   logger.error(error);
   return "Oops, an error occured!";
 }

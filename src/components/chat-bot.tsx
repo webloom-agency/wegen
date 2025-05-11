@@ -22,13 +22,15 @@ import { UIMessage } from "ai";
 
 import { safe } from "ts-safe";
 import { mutate } from "swr";
-import { ChatApiSchemaRequestBody } from "app-types/chat";
+import {
+  ChatApiSchemaRequestBody,
+  ChatMessageAnnotation,
+} from "app-types/chat";
 
 type Props = {
   threadId: string;
   initialMessages: Array<UIMessage>;
   selectedChatModel?: string;
-  projectId?: string;
   action?: string;
   slots?: {
     emptySlot?: ReactNode;
@@ -40,7 +42,6 @@ export default function ChatBot({
   threadId,
   initialMessages,
   action,
-  projectId,
   slots,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -68,7 +69,6 @@ export default function ChatBot({
         id: threadId,
         model,
         toolChoice,
-        projectId,
         message: messages.at(-1)!,
       };
       return request;
@@ -119,14 +119,16 @@ export default function ChatBot({
     useState(false);
 
   const isPendingToolCall = useMemo(() => {
-    if (status != "ready" || toolChoice != "manual") return;
+    if (status != "ready") return;
     const lastMessage = messages.at(-1);
     if (lastMessage?.role != "assistant") return;
+    const annotation = lastMessage.annotations?.at(-1) as ChatMessageAnnotation;
+    if (annotation?.toolChoice != "manual") return;
     const lastPart = lastMessage.parts.at(-1);
     if (lastPart?.type != "tool-invocation") return;
     if (lastPart.toolInvocation.state != "call") return;
     return true;
-  }, [status, toolChoice, messages]);
+  }, [status, messages]);
 
   const proxyToolCall = useCallback(
     (answer: boolean) => {

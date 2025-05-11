@@ -35,6 +35,7 @@ export type ChatMessage = {
 export type ChatMessageAnnotation = {
   requiredTools?: string[];
   usageTokens?: number;
+  toolChoice?: "auto" | "none" | "manual";
   [key: string]: any;
 };
 

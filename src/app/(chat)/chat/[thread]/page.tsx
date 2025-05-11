@@ -39,7 +39,6 @@ export default async function Page({
     <ChatBot
       threadId={threadId}
       key={threadId}
-      projectId={thread.projectId ?? undefined}
       initialMessages={initialMessages}
     />
   );
