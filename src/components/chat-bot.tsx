@@ -26,6 +26,7 @@ import {
   ChatApiSchemaRequestBody,
   ChatMessageAnnotation,
 } from "app-types/chat";
+import { useLatest } from "@/hooks/use-latest";
 
 type Props = {
   threadId: string;
@@ -44,6 +45,12 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     useShallow((state) => [state.mutate, state.model, state.toolChoice]),
   );
 
+  const latestRef = useLatest({
+    toolChoice,
+    model,
+    threadId,
+  });
+
   const {
     messages,
     input,
@@ -60,9 +67,9 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     initialMessages,
     experimental_prepareRequestBody: ({ messages }) => {
       const request: ChatApiSchemaRequestBody = {
-        id: threadId,
-        model,
-        toolChoice,
+        id: latestRef.current.threadId,
+        model: latestRef.current.model,
+        toolChoice: latestRef.current.toolChoice,
         message: messages.at(-1)!,
       };
       return request;
