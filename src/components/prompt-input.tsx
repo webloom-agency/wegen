@@ -93,6 +93,7 @@ export default function PromptInput({
   };
 
   const submit = () => {
+    if (isLoading) return;
     const userMessage = input?.trim() || "";
 
     const pastedContentsParsed = pastedContents.map((content) => ({

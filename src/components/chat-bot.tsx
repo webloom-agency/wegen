@@ -66,11 +66,13 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     api: "/api/chat",
     initialMessages,
     experimental_prepareRequestBody: ({ messages }) => {
+      const lastMessage = messages.at(-1)!;
+      vercelAISdkV4ToolInvocationIssueCatcher(lastMessage);
       const request: ChatApiSchemaRequestBody = {
         id: latestRef.current.threadId,
         model: latestRef.current.model,
         toolChoice: latestRef.current.toolChoice,
-        message: messages.at(-1)!,
+        message: lastMessage,
       };
       return request;
     },
@@ -120,14 +122,14 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     useState(false);
 
   const isPendingToolCall = useMemo(() => {
-    if (status != "ready") return;
+    if (status != "ready") return false;
     const lastMessage = messages.at(-1);
-    if (lastMessage?.role != "assistant") return;
+    if (lastMessage?.role != "assistant") return false;
     const annotation = lastMessage.annotations?.at(-1) as ChatMessageAnnotation;
-    if (annotation?.toolChoice != "manual") return;
+    if (annotation?.toolChoice != "manual") return false;
     const lastPart = lastMessage.parts.at(-1);
-    if (lastPart?.type != "tool-invocation") return;
-    if (lastPart.toolInvocation.state != "call") return;
+    if (lastPart?.type != "tool-invocation") return false;
+    if (lastPart.toolInvocation.state != "call") return false;
     return true;
   }, [status, messages]);
 
@@ -202,7 +204,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
                       ? proxyToolCall
                       : undefined
                   }
-                  isLoading={isLoading || isExecutingProxyToolCall}
+                  isLoading={isLoading || isPendingToolCall}
                   isLastMessage={isLastMessage}
                   setMessages={setMessages}
                   reload={reload}
@@ -224,11 +226,19 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
           ownerId={threadId}
           ownerType="thread"
           setInput={setInput}
-          isLoading={isLoading}
+          isLoading={isLoading || isPendingToolCall}
           onStop={stop}
         />
         {slots?.inputBottomSlot}
       </div>
     </div>
   );
+}
+
+function vercelAISdkV4ToolInvocationIssueCatcher(message: UIMessage) {
+  if (message.role != "assistant") return;
+  const lastPart = message.parts.at(-1);
+  if (lastPart?.type != "tool-invocation") return;
+  if (!message.toolInvocations)
+    message.toolInvocations = [lastPart.toolInvocation];
 }
