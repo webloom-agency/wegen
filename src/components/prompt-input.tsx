@@ -26,7 +26,7 @@ interface PromptInputProps {
   ownerType?: MCPServerBinding["ownerType"];
   ownerId: string;
   append: UseChatHelpers["append"];
-  isTemporaryChat?: boolean;
+  visibleMcpBinding?: boolean;
   isLoading?: boolean;
 }
 
@@ -44,7 +44,7 @@ export default function PromptInput({
   setInput,
   onStop,
   isLoading,
-  isTemporaryChat,
+  visibleMcpBinding = true,
   ownerType = "thread",
   ownerId,
 }: PromptInputProps) {
@@ -175,7 +175,7 @@ export default function PromptInput({
                 </div>
 
                 <ToolChoiceDropDown />
-                {!isTemporaryChat && (
+                {!visibleMcpBinding && (
                   <MCPServerBindingSelector
                     ownerId={ownerId}
                     ownerType={ownerType}

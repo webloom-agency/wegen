@@ -31,19 +31,13 @@ type Props = {
   threadId: string;
   initialMessages: Array<UIMessage>;
   selectedChatModel?: string;
-  action?: string;
   slots?: {
     emptySlot?: ReactNode;
     inputBottomSlot?: ReactNode;
   };
 };
 
-export default function ChatBot({
-  threadId,
-  initialMessages,
-  action,
-  slots,
-}: Props) {
+export default function ChatBot({ threadId, initialMessages, slots }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [appStoreMutate, model, toolChoice] = appStore(
@@ -78,7 +72,7 @@ export default function ChatBot({
     experimental_throttle: 100,
     onFinish() {
       const chatPath = `/chat/${threadId}`;
-      if (window.location.pathname !== chatPath && action != "temporary-chat") {
+      if (window.location.pathname !== chatPath) {
         window.history.replaceState({}, "", chatPath);
         mutate("threads");
       }
@@ -222,7 +216,6 @@ export default function ChatBot({
           append={append}
           ownerId={threadId}
           ownerType="thread"
-          isTemporaryChat={action == "temporary-chat"}
           setInput={setInput}
           isLoading={isLoading}
           onStop={stop}

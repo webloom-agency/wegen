@@ -27,6 +27,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { GithubIcon } from "ui/github-icon";
 import { useShallow } from "zustand/shallow";
+import TemporaryChat from "../temporary-chat";
 
 function ThreadDropdownComponent() {
   const [threadList, currentThreadId, projectList] = appStore(
@@ -114,30 +115,9 @@ export function AppHeader() {
       </TooltipProvider>
       {componentByPage}
       <div className="flex-1" />
-      <Link
-        href={
-          currentPaths.startsWith("/temporary-chat") ? "/" : "/temporary-chat"
-        }
-      >
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size={"sm"}
-              variant={
-                currentPaths.startsWith("/temporary-chat")
-                  ? "secondary"
-                  : "ghost"
-              }
-            >
-              {/* <MessageCircleDashed className="w-4 h-4 fill-foreground" /> */}
-              temporary
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent align="end" side="bottom">
-            <p>Temporary Chat</p>
-          </TooltipContent>
-        </Tooltip>
-      </Link>
+
+      <TemporaryChat />
+
       <Link
         href="https://github.com/cgoinglove/mcp-client-chatbot"
         target="_blank"
