@@ -26,7 +26,7 @@ interface PromptInputProps {
   ownerType?: MCPServerBinding["ownerType"];
   ownerId: string;
   append: UseChatHelpers["append"];
-  visibleMcpBinding?: boolean;
+  toolDisabled?: boolean;
   isLoading?: boolean;
 }
 
@@ -44,7 +44,7 @@ export default function PromptInput({
   setInput,
   onStop,
   isLoading,
-  visibleMcpBinding = true,
+  toolDisabled,
   ownerType = "thread",
   ownerId,
 }: PromptInputProps) {
@@ -174,14 +174,16 @@ export default function PromptInput({
                   <Paperclip className="size-4" />
                 </div>
 
-                <ToolChoiceDropDown />
-                {!visibleMcpBinding && (
-                  <MCPServerBindingSelector
-                    ownerId={ownerId}
-                    ownerType={ownerType}
-                    align="start"
-                    side="top"
-                  />
+                {!toolDisabled && (
+                  <>
+                    <ToolChoiceDropDown />
+                    <MCPServerBindingSelector
+                      ownerId={ownerId}
+                      ownerType={ownerType}
+                      align="start"
+                      side="top"
+                    />
+                  </>
                 )}
                 <div className="flex-1" />
 

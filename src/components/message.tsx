@@ -17,7 +17,7 @@ import { Think } from "ui/think";
 
 interface Props {
   message: UIMessage;
-  threadId: string;
+  threadId?: string;
   isLoading: boolean;
   isLastMessage: boolean;
   setMessages: UseChatHelpers["setMessages"];

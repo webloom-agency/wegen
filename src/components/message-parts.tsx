@@ -56,7 +56,7 @@ interface AssistMessagePartProps {
   part: AssistMessagePart;
   message: UIMessage;
   isLast: boolean;
-  threadId: string;
+  threadId?: string;
   setMessages: UseChatHelpers["setMessages"];
   reload: UseChatHelpers["reload"];
 }
@@ -211,7 +211,11 @@ export const AssistMessagePart = ({
 
   const handleModelChange = (model: string) => {
     safe(() => setIsLoading(true))
-      .ifOk(() => deleteMessagesByChatIdAfterTimestampAction(message.id))
+      .ifOk(() =>
+        threadId
+          ? deleteMessagesByChatIdAfterTimestampAction(message.id)
+          : Promise.resolve(),
+      )
       .ifOk(() =>
         setMessages((messages) => {
           const index = messages.findIndex((m) => m.id === message.id);
