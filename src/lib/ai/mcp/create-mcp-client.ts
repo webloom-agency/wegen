@@ -122,7 +122,6 @@ export class MCPClient {
       }
 
       await client.connect(transport);
-      client.onerror = this.log.error;
       this.log.info(
         `Connected to MCP server in ${((Date.now() - startedAt) / 1000).toFixed(2)}s`,
       );
@@ -169,14 +168,12 @@ export class MCPClient {
     return this.client;
   }
   async disconnect() {
-    if (this.isConnected) {
-      this.log.info("Disconnecting from MCP server");
-      await this.locker.wait();
-      this.isConnected = false;
-      const client = this.client;
-      this.client = undefined;
-      await client?.close().catch((e) => this.log.error(e));
-    }
+    this.log.info("Disconnecting from MCP server");
+    await this.locker.wait();
+    this.isConnected = false;
+    const client = this.client;
+    this.client = undefined;
+    await client?.close().catch((e) => this.log.error(e));
   }
   async callTool(toolName: string, input?: unknown) {
     return safe(() => this.log.info("tool call", toolName))

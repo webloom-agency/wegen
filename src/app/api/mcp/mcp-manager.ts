@@ -9,14 +9,13 @@ declare global {
   var __mcpClientsManager__: MCPClientsManager | undefined;
 }
 
-const storage = createFileBasedMCPConfigsStorage();
-
 let mcpClientsManager: MCPClientsManager;
 
 if (!process.env.MCP_NO_INITIAL) {
   if (!globalThis.__mcpClientsManager__) {
+    const storage = createFileBasedMCPConfigsStorage();
     globalThis.__mcpClientsManager__ = createMCPClientsManager(storage);
-    await globalThis.__mcpClientsManager__.init();
+    globalThis.__mcpClientsManager__.init();
   }
   mcpClientsManager = globalThis.__mcpClientsManager__;
 }
