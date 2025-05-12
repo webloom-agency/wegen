@@ -145,11 +145,14 @@ export const UserMessagePart = ({
           ref.current?.scrollIntoView({ behavior: "smooth" });
         }}
         data-testid="message-content"
-        className={cn("flex flex-col gap-4", {
-          "bg-accent text-accent-foreground border px-4 py-3 rounded-2xl":
-            isLast,
-          "opacity-50": isError,
-        })}
+        className={cn(
+          "flex flex-col gap-4 bg-accent",
+          {
+            "text-accent-foreground border px-4 py-3 rounded-2xl": isLast,
+            "opacity-50": isError,
+          },
+          isError && "border-destructive",
+        )}
       >
         {isLast ? (
           <p className="whitespace-pre-wrap text-sm">
@@ -252,7 +255,7 @@ export const AssistMessagePart = ({
       <div
         data-testid="message-content"
         className={cn("flex flex-col gap-4", {
-          "opacity-50": isError,
+          "opacity-50 border border-destructive bg-card": isError,
         })}
       >
         <Markdown>{part.text}</Markdown>
@@ -354,12 +357,7 @@ export const ToolMessagePart = memo(
     }, [toolName, state]);
 
     return (
-      <div
-        key={toolCallId}
-        className={cn("flex flex-col gap-2 group", {
-          "opacity-50": isError,
-        })}
-      >
+      <div key={toolCallId} className="flex flex-col gap-2 group">
         {ToolResultComponent ? (
           ToolResultComponent
         ) : (
@@ -371,6 +369,7 @@ export const ToolMessagePart = memo(
                 className={cn(
                   "flex flex-row gap-2 justify-between items-center text-muted-foreground min-w-44 bg-card",
                   isExecuting && "animate-pulse",
+                  isError && "border-destructive",
                 )}
               >
                 <p className={cn("font-bold")}>{toolName}</p>

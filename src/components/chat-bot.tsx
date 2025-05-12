@@ -212,7 +212,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
                       : undefined
                   }
                   isLoading={isLoading || isPendingToolCall}
-                  isError={!!error}
+                  isError={!!error && isLastMessage}
                   isLastMessage={isLastMessage}
                   setMessages={setMessages}
                   reload={reload}

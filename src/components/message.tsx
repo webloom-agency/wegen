@@ -79,7 +79,7 @@ const PurePreviewMessage = ({
                 <ReasoningPart
                   key={key}
                   reasoning={part.reasoning}
-                  isThinking={isLastPart && isLoading && isLastMessage}
+                  isThinking={isLastPart}
                 />
               );
             }
@@ -91,7 +91,7 @@ const PurePreviewMessage = ({
                   status={status}
                   part={part}
                   isLast={isLastPart}
-                  isError={isError && isLastMessage && isLastPart}
+                  isError={isError}
                   message={message}
                   setMessages={setMessages}
                   reload={reload}
@@ -109,7 +109,7 @@ const PurePreviewMessage = ({
                   message={message}
                   setMessages={setMessages}
                   reload={reload}
-                  isError={isError && isLastMessage && isLastPart}
+                  isError={isError}
                 />
               );
             }
@@ -122,7 +122,7 @@ const PurePreviewMessage = ({
                   onPoxyToolCall={isLast ? onPoxyToolCall : undefined}
                   key={key}
                   part={part}
-                  isError={isError && isLastMessage && isLastPart}
+                  isError={isError}
                 />
               );
             }
