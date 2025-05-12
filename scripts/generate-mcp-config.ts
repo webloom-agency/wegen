@@ -4,7 +4,7 @@ import { MCP_CONFIG_PATH } from "lib/ai/mcp/config-path";
 const DEFAULT_CONFIG = {
   playwright: {
     command: "npx",
-    args: ["@playwright/mcp@latest"],
+    args: ["-y", "@playwright/mcp@latest"],
   },
   custom: {
     command: "tsx",

@@ -116,24 +116,25 @@ export function AppHeader() {
       {componentByPage}
       <div className="flex-1" />
 
-      <TemporaryChat />
+      <div className="flex items-center gap-1">
+        <TemporaryChat />
+        <Link
+          href="https://github.com/cgoinglove/mcp-client-chatbot"
+          target="_blank"
+        >
+          <Button variant="ghost" size="icon">
+            <GithubIcon className="w-4 h-4 fill-foreground" />
+          </Button>
+        </Link>
 
-      <Link
-        href="https://github.com/cgoinglove/mcp-client-chatbot"
-        target="_blank"
-      >
-        <Button variant="ghost" size="icon">
-          <GithubIcon className="w-4 h-4 fill-foreground" />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          {isMounted && icon}
         </Button>
-      </Link>
-
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      >
-        {isMounted && icon}
-      </Button>
+      </div>
     </header>
   );
 }

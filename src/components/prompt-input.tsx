@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, CornerRightUp, Paperclip, Pause } from "lucide-react";
-import { ReactNode, useMemo, useState } from "react";
+import { ReactNode, useCallback, useMemo, useState } from "react";
 import { Button } from "ui/button";
 import { notImplementedToast } from "ui/shared-toast";
 import { PastesContentCard } from "./pasts-content";
@@ -28,6 +28,8 @@ interface PromptInputProps {
   append: UseChatHelpers["append"];
   toolDisabled?: boolean;
   isLoading?: boolean;
+  model?: string;
+  setModel?: (model: string) => void;
 }
 
 const MentionInput = dynamic(() => import("./mention-input"), {
@@ -40,6 +42,8 @@ const MentionInput = dynamic(() => import("./mention-input"), {
 export default function PromptInput({
   placeholder = "What do you want to know?",
   append,
+  model,
+  setModel,
   input,
   setInput,
   onStop,
@@ -48,8 +52,23 @@ export default function PromptInput({
   ownerType = "thread",
   ownerId,
 }: PromptInputProps) {
-  const [appStoreMutate, model, mcpList] = appStore(
-    useShallow((state) => [state.mutate, state.model, state.mcpList]),
+  const [mcpList, globalModel, appStoreMutate] = appStore(
+    useShallow((state) => [state.mcpList, state.model, state.mutate]),
+  );
+
+  const chatModel = useMemo(() => {
+    return model ?? globalModel;
+  }, [model, globalModel]);
+
+  const setChatModel = useCallback(
+    (model: string) => {
+      if (setModel) {
+        setModel(model);
+      } else {
+        appStoreMutate({ model });
+      }
+    },
+    [setModel, appStoreMutate],
   );
 
   const [toolMentionItems, setToolMentionItems] = useState<
@@ -189,14 +208,12 @@ export default function PromptInput({
                 <div className="flex-1" />
 
                 <SelectModel
-                  onSelect={(model) => {
-                    appStoreMutate({ model });
-                  }}
+                  onSelect={setChatModel}
                   providers={modelList}
-                  model={model}
+                  model={chatModel}
                 >
                   <Button variant={"ghost"} className="rounded-full">
-                    {model}
+                    {chatModel}
                     <ChevronDown className="size-3" />
                   </Button>
                 </SelectModel>

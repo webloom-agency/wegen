@@ -17,11 +17,11 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import PromptInput from "./prompt-input";
 import { ErrorMessage, PreviewMessage } from "./message";
-import { X } from "lucide-react";
+import { MessageCircleDashed, X } from "lucide-react";
 import { Separator } from "ui/separator";
 import { useLatest } from "@/hooks/use-latest";
 import { UIMessage } from "ai";
-
+import { useShallow } from "zustand/shallow";
 export default function TemporaryChat({ children }: PropsWithChildren) {
   const [open, setOpen] = useState(false);
   const model = appStore((state) => state.model);
@@ -88,17 +88,16 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
                 onClick={() => {
                   setOpen(!open);
                 }}
-                size={"sm"}
-                className="rounded-full gap-2 flex items-center"
-                variant={"secondary"}
+                variant={"ghost"}
               >
-                temporary
-                <Separator orientation="vertical" className="h-3!" />
-                <span className="text-xs text-muted-foreground">⌘K</span>
+                <MessageCircleDashed />
               </Button>
             </TooltipTrigger>
             <TooltipContent align="end" side="bottom">
-              <p>Temporary Chat</p>
+              <p className="text-xs flex items-center gap-2">
+                Toggle Temporary Chat
+                <span className="text-xs text-muted-foreground">⌘K</span>
+              </p>
             </TooltipContent>
           </Tooltip>
         )}
@@ -175,6 +174,10 @@ function DrawerTemporaryContent({
 
   const autoScrollRef = useRef(false);
 
+  const [temporaryModel, appStoreMutate] = appStore(
+    useShallow((state) => [state.temporaryModel, state.mutate]),
+  );
+
   useEffect(() => {
     containerRef.current?.scrollTo({
       top: containerRef.current?.scrollHeight,
@@ -250,6 +253,10 @@ function DrawerTemporaryContent({
           input={input}
           append={append}
           ownerId={""}
+          model={temporaryModel}
+          setModel={(model) => {
+            appStoreMutate({ temporaryModel: model });
+          }}
           toolDisabled
           placeholder="Feel free to ask anything temporarily"
           setInput={setInput}

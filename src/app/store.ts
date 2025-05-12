@@ -10,9 +10,9 @@ export interface AppState {
   projectList: Omit<Project, "instructions">[];
   currentThreadId: ChatThread["id"] | null;
   currentProjectId: Project["id"] | null;
-
   toolChoice: "auto" | "none" | "manual";
   model: string;
+  temporaryModel: string;
 }
 
 export interface AppDispatch {
@@ -30,6 +30,7 @@ export const appStore = create<AppState & AppDispatch>()(
       toolChoice: "auto",
       modelList: [],
       model: DEFAULT_MODEL,
+      temporaryModel: DEFAULT_MODEL,
       mutate: set,
     }),
     {
@@ -37,6 +38,7 @@ export const appStore = create<AppState & AppDispatch>()(
       partialize: (state) => ({
         model: state.model || DEFAULT_MODEL,
         toolChoice: state.toolChoice || "auto",
+        temporaryModel: state.temporaryModel || DEFAULT_MODEL,
       }),
     },
   ),
