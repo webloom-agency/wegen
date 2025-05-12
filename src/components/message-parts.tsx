@@ -50,6 +50,7 @@ interface UserMessagePartProps {
   setMessages: UseChatHelpers["setMessages"];
   reload: UseChatHelpers["reload"];
   status: UseChatHelpers["status"];
+  isError?: boolean;
 }
 
 interface AssistMessagePartProps {
@@ -59,12 +60,14 @@ interface AssistMessagePartProps {
   threadId?: string;
   setMessages: UseChatHelpers["setMessages"];
   reload: UseChatHelpers["reload"];
+  isError?: boolean;
 }
 
 interface ToolMessagePartProps {
   part: ToolMessagePart;
   isLast: boolean;
   onPoxyToolCall?: (answer: boolean) => void;
+  isError?: boolean;
 }
 
 interface HighlightedTextProps {
@@ -97,6 +100,7 @@ export const UserMessagePart = ({
   message,
   setMessages,
   reload,
+  isError,
 }: UserMessagePartProps) => {
   const { copied, copy } = useCopy();
   const [mode, setMode] = useState<"view" | "edit">("view");
@@ -144,6 +148,7 @@ export const UserMessagePart = ({
         className={cn("flex flex-col gap-4", {
           "bg-accent text-accent-foreground border px-4 py-3 rounded-2xl":
             isLast,
+          "opacity-50": isError,
         })}
       >
         {isLast ? (
@@ -204,6 +209,7 @@ export const AssistMessagePart = ({
   reload,
   message,
   setMessages,
+  isError,
   threadId,
 }: AssistMessagePartProps) => {
   const { copied, copy } = useCopy();
@@ -243,7 +249,12 @@ export const AssistMessagePart = ({
     <div
       className={cn(isLoading && "animate-pulse", "flex flex-col gap-2 group")}
     >
-      <div data-testid="message-content" className="flex flex-col gap-4">
+      <div
+        data-testid="message-content"
+        className={cn("flex flex-col gap-4", {
+          "opacity-50": isError,
+        })}
+      >
         <Markdown>{part.text}</Markdown>
       </div>
       {isLast && (
@@ -294,7 +305,7 @@ export const AssistMessagePart = ({
 };
 
 export const ToolMessagePart = memo(
-  ({ part, isLast, onPoxyToolCall }: ToolMessagePartProps) => {
+  ({ part, isLast, onPoxyToolCall, isError }: ToolMessagePartProps) => {
     const { toolInvocation } = part;
     const { toolName, toolCallId, state, args } = toolInvocation;
     const [isExpanded, setIsExpanded] = useState(false);
@@ -343,7 +354,12 @@ export const ToolMessagePart = memo(
     }, [toolName, state]);
 
     return (
-      <div key={toolCallId} className="flex flex-col gap-2 group">
+      <div
+        key={toolCallId}
+        className={cn("flex flex-col gap-2 group", {
+          "opacity-50": isError,
+        })}
+      >
         {ToolResultComponent ? (
           ToolResultComponent
         ) : (

@@ -75,6 +75,10 @@ export async function selectThreadListByUserIdAction() {
   const threads = await chatRepository.selectThreadsByUserId(userId);
   return threads;
 }
+export async function selectMessagesByThreadIdAction(threadId: string) {
+  const messages = await chatRepository.selectMessagesByThreadId(threadId);
+  return messages;
+}
 
 export async function updateThreadAction(
   id: string,

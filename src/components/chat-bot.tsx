@@ -13,7 +13,7 @@ import {
 import PromptInput from "./prompt-input";
 import clsx from "clsx";
 import { appStore } from "@/app/store";
-import { cn, generateUUID } from "lib/utils";
+import { cn, generateUUID, truncateString } from "lib/utils";
 import { ErrorMessage, PreviewMessage } from "./message";
 import { Greeting } from "./greeting";
 
@@ -88,7 +88,10 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
       }
     },
     onError: (error) => {
-      toast.error(error.message || "An error occured, please try again!");
+      toast.error(
+        truncateString(error.message, 100) ||
+          "An error occured, please try again!",
+      );
     },
   });
 
@@ -97,7 +100,10 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     [status],
   );
 
-  const emptyMessage = useMemo(() => messages.length === 0, [messages.length]);
+  const emptyMessage = useMemo(
+    () => messages.length === 0 && !error,
+    [messages.length, error],
+  );
 
   const isInitialThreadEntry = useMemo(
     () =>
@@ -110,12 +116,13 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
 
   const needSpaceClass = useCallback(
     (index: number) => {
-      if (isInitialThreadEntry || index != messages.length - 1) return false;
+      if (error || isInitialThreadEntry || index != messages.length - 1)
+        return false;
       const message = messages[index];
       if (message.role === "user") return false;
       return true;
     },
-    [messages],
+    [messages, error],
   );
 
   const [isExecutingProxyToolCall, setIsExecutingProxyToolCall] =
@@ -205,6 +212,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
                       : undefined
                   }
                   isLoading={isLoading || isPendingToolCall}
+                  isError={!!error}
                   isLastMessage={isLastMessage}
                   setMessages={setMessages}
                   reload={reload}
@@ -216,6 +224,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
               <div className={spaceClass} />
             )}
             {error && <ErrorMessage error={error} />}
+            <div className="min-w-0 min-h-52" />
           </div>
         </>
       )}

@@ -105,8 +105,7 @@ export function handleError(error: any) {
     return error.message;
   }
   logger.error(error);
-  console.log(`Error Name: ${error.name}`);
-  return "Oops, an error occured!";
+  return errorToString(error.message);
 }
 
 export function convertToMessage(message: ChatMessage): Message {

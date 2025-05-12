@@ -162,6 +162,7 @@ export async function POST(request: Request) {
           maxSteps: 10,
           experimental_continueSteps: true,
           experimental_transform: smoothStream({ chunking: "word" }),
+          maxRetries: 0,
           tools,
           toolChoice:
             isToolCallAllowed && requiredToolsAnnotations.length > 0
