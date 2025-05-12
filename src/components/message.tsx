@@ -192,6 +192,11 @@ export const ErrorMessage = ({
             </Button>
           )}
         </AlertDescription>
+        <AlertDescription>
+          <p className="text-sm text-muted-foreground my-2">
+            This message was not saved. Please try the chat again.
+          </p>
+        </AlertDescription>
       </Alert>
     </div>
   );
