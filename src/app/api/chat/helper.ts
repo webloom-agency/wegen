@@ -1,4 +1,10 @@
-import { Message, Tool, ToolInvocation, tool as createTool } from "ai";
+import {
+  LoadAPIKeyError,
+  Message,
+  Tool,
+  ToolInvocation,
+  tool as createTool,
+} from "ai";
 import {
   ChatMessage,
   ChatMessageAnnotation,
@@ -95,7 +101,11 @@ export function manualToolExecuteByLastMessage(
 }
 
 export function handleError(error: any) {
+  if (LoadAPIKeyError.isInstance(error)) {
+    return error.message;
+  }
   logger.error(error);
+  console.log(`Error Name: ${error.name}`);
   return "Oops, an error occured!";
 }
 

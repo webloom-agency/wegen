@@ -216,8 +216,6 @@ export async function POST(request: Request) {
     });
   } catch (error: any) {
     logger.error(error);
-    return new Response(error.message || "Oops, an error occured!", {
-      status: 500,
-    });
+    return redirect("/login");
   }
 }

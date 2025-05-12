@@ -5,7 +5,6 @@ import { useChat, UseChatHelpers } from "@ai-sdk/react";
 import { cn } from "lib/utils";
 
 import { PropsWithChildren, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import { Button } from "ui/button";
 import {
   Drawer,
@@ -17,7 +16,7 @@ import {
 } from "ui/drawer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import PromptInput from "./prompt-input";
-import { PreviewMessage } from "./message";
+import { ErrorMessage, PreviewMessage } from "./message";
 import { X } from "lucide-react";
 import { Separator } from "ui/separator";
 import { useLatest } from "@/hooks/use-latest";
@@ -35,6 +34,7 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
     status,
     reload,
     setMessages,
+    error,
     stop,
   } = useChat({
     api: "/api/chat/temporary",
@@ -43,7 +43,7 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
       model,
     },
     onError: () => {
-      toast.error("An error occured, please try again!");
+      setMessages((prev) => prev.slice(0, -1));
     },
   });
 
@@ -55,21 +55,27 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
   const latestRef = useLatest(isLoading);
 
   useEffect(() => {
-    if (open) {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (
-          (e.metaKey || e.ctrlKey) &&
-          e.key.toLowerCase() === "e" &&
-          !latestRef.current
-        ) {
-          e.preventDefault();
-          e.stopPropagation();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        (e.metaKey || e.ctrlKey) &&
+        !latestRef.current &&
+        ["e", "k"].includes(e.key.toLowerCase())
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (e.key.toLowerCase() === "e" && open) {
           setMessages([]);
         }
-      };
-      window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
-    }
+
+        if (e.key.toLowerCase() === "k") {
+          setOpen(!open);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open]);
 
   return (
@@ -83,9 +89,12 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
                   setOpen(!open);
                 }}
                 size={"sm"}
-                variant={open ? "secondary" : "ghost"}
+                className="rounded-full gap-2 flex items-center"
+                variant={"secondary"}
               >
                 temporary
+                <Separator orientation="vertical" className="h-3!" />
+                <span className="text-xs text-muted-foreground">⌘K</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent align="end" side="bottom">
@@ -125,6 +134,7 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
         <DrawerTemporaryContent
           isLoading={isLoading}
           messages={messages}
+          error={error}
           input={input}
           setInput={setInput}
           append={append}
@@ -144,6 +154,7 @@ function DrawerTemporaryContent({
   setInput,
   append,
   status,
+  error,
   isLoading,
   setMessages,
   reload,
@@ -155,6 +166,7 @@ function DrawerTemporaryContent({
   append: UseChatHelpers["append"];
   status: "submitted" | "streaming" | "ready" | "error";
   isLoading: boolean;
+  error: Error | undefined;
   setMessages: UseChatHelpers["setMessages"];
   reload: UseChatHelpers["reload"];
   stop: UseChatHelpers["stop"];
@@ -230,6 +242,7 @@ function DrawerTemporaryContent({
             />
           );
         })}
+        {error && <ErrorMessage error={error} />}
       </div>
 
       <div className={"w-full my-6 mt-auto"}>

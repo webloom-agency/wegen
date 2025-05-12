@@ -100,7 +100,7 @@ export function AppHeader() {
   }, [theme]);
 
   return (
-    <header className="sticky top-0 z-50 flex items-center px-2 py-1">
+    <header className="sticky top-0 z-50 flex items-center px-2 py-2">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>

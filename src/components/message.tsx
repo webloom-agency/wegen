@@ -143,3 +143,16 @@ export const PreviewMessage = memo(
     return true;
   },
 );
+
+export const ErrorMessage = ({ error }: { error: Error }) => {
+  return (
+    <div className="w-full mx-auto max-w-3xl px-6">
+      <Alert variant="destructive" className="border-destructive">
+        <AlertTitle>Chat Error</AlertTitle>
+        <AlertDescription className="whitespace-pre-wrap">
+          {error.message.slice(0, 2000)}
+        </AlertDescription>
+      </Alert>
+    </div>
+  );
+};

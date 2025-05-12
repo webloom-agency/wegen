@@ -14,7 +14,7 @@ import PromptInput from "./prompt-input";
 import clsx from "clsx";
 import { appStore } from "@/app/store";
 import { cn, generateUUID } from "lib/utils";
-import { PreviewMessage } from "./message";
+import { ErrorMessage, PreviewMessage } from "./message";
 import { Greeting } from "./greeting";
 
 import { useShallow } from "zustand/shallow";
@@ -60,6 +60,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     reload,
     setMessages,
     addToolResult,
+    error,
     stop,
   } = useChat({
     id: threadId,
@@ -214,7 +215,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
             {status === "submitted" && messages.at(-1)?.role === "user" && (
               <div className={spaceClass} />
             )}
-            <div className="min-w-0 min-h-52" />
+            {error && <ErrorMessage error={error} />}
           </div>
         </>
       )}
