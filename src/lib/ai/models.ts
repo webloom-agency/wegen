@@ -56,7 +56,7 @@ export const isToolCallUnsupportedModel = (model: LanguageModel) => {
   ].includes(model);
 };
 
-export const DEFAULT_MODEL = "gpt-4.1-mini";
+export const DEFAULT_MODEL = "4o";
 
 const fallbackModel = allModels.openai[DEFAULT_MODEL];
 
