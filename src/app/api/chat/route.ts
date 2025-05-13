@@ -121,8 +121,6 @@ export async function POST(request: Request) {
       })
       .orElse(undefined);
 
-    console.log(`allowed Tools: ${Object.keys(tools ?? {}).join(", ")}`);
-
     const messages: Message[] = isLastMessageUserMessage
       ? appendClientMessage({
           messages: previousMessages,
