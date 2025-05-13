@@ -14,9 +14,6 @@ import { createMCPToolId } from "lib/ai/mcp/mcp-tool-id";
 import { ChatMessageAnnotation } from "app-types/chat";
 import dynamic from "next/dynamic";
 import { ToolChoiceDropDown } from "./tool-choice-dropdown";
-
-import { MCPServerBindingSelector } from "./mcp-server-binding";
-import { MCPServerBinding } from "app-types/mcp";
 import { PROMPT_PASTE_MAX_LENGTH } from "lib/const";
 import { ToolSelector } from "./tool-selector";
 
@@ -25,8 +22,6 @@ interface PromptInputProps {
   setInput: (value: string) => void;
   input: string;
   onStop: () => void;
-  ownerType?: MCPServerBinding["ownerType"];
-  ownerId: string;
   append: UseChatHelpers["append"];
   toolDisabled?: boolean;
   isLoading?: boolean;
@@ -51,8 +46,6 @@ export default function PromptInput({
   onStop,
   isLoading,
   toolDisabled,
-  ownerType = "thread",
-  ownerId,
 }: PromptInputProps) {
   const [mcpList, globalModel, appStoreMutate] = appStore(
     useShallow((state) => [state.mcpList, state.model, state.mutate]),
@@ -199,13 +192,8 @@ export default function PromptInput({
                 {!toolDisabled && (
                   <>
                     <ToolChoiceDropDown />
-                    <MCPServerBindingSelector
-                      ownerId={ownerId}
-                      ownerType={ownerType}
-                      align="start"
-                      side="top"
-                    />
-                    <ToolSelector />
+
+                    <ToolSelector align="start" side="top" />
                   </>
                 )}
                 <div className="flex-1" />

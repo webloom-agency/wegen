@@ -4,11 +4,28 @@ import { useStateWithBrowserStorage } from "@/hooks/use-state-with-browserstorag
 import { AppDefaultToolkit } from "app-types/chat";
 import { AllowedMCPServer } from "app-types/mcp";
 import { cn } from "lib/utils";
-import { ChartColumn, Check, ChevronRight, Package } from "lucide-react";
-import { PropsWithChildren, useCallback, useMemo } from "react";
+import {
+  ChartColumn,
+  ChevronRight,
+  Package,
+  Plus,
+  Wrench,
+  X,
+} from "lucide-react";
+import { PropsWithChildren, useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 import useSWR from "swr";
+import { Badge } from "ui/badge";
 import { Button } from "ui/button";
 import { Checkbox } from "ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +39,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "ui/dropdown-menu";
+import { Input } from "ui/input";
 import { MCPIcon } from "ui/mcp-icon";
 
 import { handleErrorWithToast } from "ui/shared-toast";
@@ -33,6 +51,14 @@ interface ToolSelectorProps {
   align?: "start" | "end" | "center";
   side?: "left" | "right" | "top" | "bottom";
 }
+
+const calculateToolCount = (
+  allowedMcpServers: Record<string, AllowedMCPServer>,
+) => {
+  return Object.values(allowedMcpServers).reduce((acc, server) => {
+    return acc + server.tools.length;
+  }, 0);
+};
 
 export function ToolSelector({
   children,
@@ -47,18 +73,24 @@ export function ToolSelector({
             variant={"outline"}
             className="rounded-full bg-secondary font-semibold"
           >
-            <MCPIcon className="size-3.5 fill-muted-foreground" />
+            <Wrench className="size-3.5 fill-muted-foreground" />
             Tools
           </Button>
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-80" align={align} side={side}>
+      <DropdownMenuContent className="w-72" align={align} side={side}>
         <DropdownMenuLabel>Tools Setup</DropdownMenuLabel>
-        <ToolPresets />
-        <DropdownMenuSeparator />
-        <AppDefaultToolKitSelector />
-        <DropdownMenuSeparator />
-        <McpServerSelector />
+        <div className="py-2">
+          <ToolPresets />
+          <div className="px-2 py-1">
+            <DropdownMenuSeparator />
+          </div>
+          <AppDefaultToolKitSelector />
+          <div className="px-2 py-1">
+            <DropdownMenuSeparator />
+          </div>
+          <McpServerSelector />
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -73,10 +105,60 @@ interface Preset {
 }
 
 function ToolPresets() {
+  const [appStoreMutate, allowedMcpServers, allowedAppDefaultToolkit] =
+    appStore(
+      useShallow((state) => [
+        state.mutate,
+        state.allowedMcpServers,
+        state.allowedAppDefaultToolkit,
+      ]),
+    );
+  const [open, setOpen] = useState(false);
+  const [presetName, setPresetName] = useState("");
+
   const [presets, setPresets] = useStateWithBrowserStorage<Preset[]>(
     PRESET_KEY,
     [],
   );
+
+  const presetWithToolCount = useMemo(() => {
+    return presets.map((preset) => ({
+      ...preset,
+      toolCount: calculateToolCount(preset.allowedMcpServers ?? {}),
+    }));
+  }, [presets]);
+
+  const addPreset = useCallback(
+    (name: string) => {
+      if (name.trim() === "") {
+        toast.error("Preset name cannot be empty");
+        return;
+      }
+      if (presets.find((p) => p.name === name)) {
+        toast.error("Preset name already exists");
+        return;
+      }
+      setPresets((prev) => [
+        ...prev,
+        { name, allowedMcpServers, allowedAppDefaultToolkit },
+      ]);
+      setPresetName("");
+      setOpen(false);
+      toast.success("Preset saved");
+    },
+    [allowedMcpServers, allowedAppDefaultToolkit, presets],
+  );
+
+  const deletePreset = useCallback((index: number) => {
+    setPresets((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const applyPreset = useCallback((preset: Preset) => {
+    appStoreMutate({
+      allowedMcpServers: preset.allowedMcpServers,
+      allowedAppDefaultToolkit: preset.allowedAppDefaultToolkit,
+    });
+  }, []);
 
   return (
     <DropdownMenuGroup className="cursor-pointer">
@@ -87,11 +169,96 @@ function ToolPresets() {
         </DropdownMenuSubTrigger>
         <DropdownMenuPortal>
           <DropdownMenuSubContent className="w-80 max-h-96 overflow-y-auto">
-            <DropdownMenuLabel className="text-muted-foreground flex items-center gap-2">
-              'test'
+            <DropdownMenuLabel className="flex items-center text-muted-foreground gap-2">
+              Tool Presets
               <div className="flex-1" />
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button variant={"secondary"} size={"sm"} className="border">
+                    Save As Preset
+                    <Plus className="size-3.5" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Save As Preset</DialogTitle>
+                  </DialogHeader>
+                  <DialogDescription>
+                    Save the current tool configuration as a preset.
+                  </DialogDescription>
+                  <Input
+                    placeholder="Preset Name"
+                    value={presetName}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                        addPreset(presetName);
+                      }
+                    }}
+                    onChange={(e) => setPresetName(e.target.value)}
+                  />
+                  <Button
+                    variant={"secondary"}
+                    size={"sm"}
+                    className="border"
+                    onClick={() => {
+                      addPreset(presetName);
+                    }}
+                  >
+                    Save
+                  </Button>
+                </DialogContent>
+              </Dialog>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {presets.length === 0 ? (
+              <div className="text-sm text-muted-foreground w-full h-full flex flex-col items-center justify-center gap-2 py-6">
+                <p>No presets available yet</p>
+                <p className="text-xs px-4">
+                  Click{" "}
+                  <span className="px-1 py-0.5 rounded bg-secondary">
+                    Save As Preset
+                  </span>{" "}
+                  to get started.
+                </p>
+              </div>
+            ) : (
+              presetWithToolCount.map((preset, index) => {
+                return (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.preventDefault();
+                      applyPreset(preset);
+                    }}
+                    key={preset.name}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Badge
+                      variant={"secondary"}
+                      className="rounded-full border-input"
+                    >
+                      <Wrench className="size-3.5" />
+                      <span className="min-w-6 text-center">
+                        {preset.toolCount}
+                      </span>
+                    </Badge>
+                    <span className="font-semibold truncate">
+                      {preset.name}
+                    </span>
+
+                    <div className="flex-1" />
+                    <div
+                      className="p-1 hover:bg-input rounded-full cursor-pointer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        deletePreset(index);
+                      }}
+                    >
+                      <X className="size-3.5" />
+                    </div>
+                  </DropdownMenuItem>
+                );
+              })
+            )}
           </DropdownMenuSubContent>
         </DropdownMenuPortal>
       </DropdownMenuSub>
@@ -162,15 +329,10 @@ function McpServerSelector() {
   );
   return (
     <DropdownMenuGroup>
-      <DropdownMenuLabel className="text-muted-foreground flex items-center gap-2 text-xs">
-        <MCPIcon className="size-3.5 fill-muted-foreground" />
-        MCP Server
-      </DropdownMenuLabel>
-
       {isLoading ? (
         <div className="flex flex-col gap-2 px-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-8 w-full" />
+          {Array.from({ length: 2 }).map((_, i) => (
+            <Skeleton key={i} className="h-4 w-full" />
           ))}
         </div>
       ) : selectedMcpServerList.length === 0 ? (
@@ -204,12 +366,9 @@ function McpServerSelector() {
                 );
               }}
             >
-              <Check
-                className={cn(
-                  !server.checked && "opacity-0",
-                  "size-3 text-muted-foreground opacity-0",
-                )}
-              />
+              <div className="flex items-center justify-center p-1 rounded bg-input border">
+                <MCPIcon className="fill-foreground size-2.5" />
+              </div>
 
               <span className={cn("truncate", !server.checked && "opacity-40")}>
                 {server.serverName}
@@ -295,7 +454,7 @@ function AppDefaultToolKitSelector() {
     useShallow((state) => [state.mutate, state.allowedAppDefaultToolkit]),
   );
 
-  const toggleAppDefaultToolkit = useCallback((toolkit: string) => {
+  const toggleAppDefaultToolkit = useCallback((toolkit: AppDefaultToolkit) => {
     appStoreMutate((prev) => {
       const newAllowedAppDefaultToolkit = [
         ...(prev.allowedAppDefaultToolkit ?? []),
@@ -318,14 +477,16 @@ function AppDefaultToolKitSelector() {
         className="cursor-pointer font-semibold text-xs"
         onClick={(e) => {
           e.preventDefault();
-          toggleAppDefaultToolkit("chart");
+          toggleAppDefaultToolkit(AppDefaultToolkit.Visualization);
         }}
       >
         <ChartColumn className="size-3.5 text-blue-500 stroke-3" />
         Chart Tools
         <Switch
           className="ml-auto"
-          checked={allowedAppDefaultToolkit?.includes("chart")}
+          checked={allowedAppDefaultToolkit?.includes(
+            AppDefaultToolkit.Visualization,
+          )}
         />
       </DropdownMenuItem>
     </DropdownMenuGroup>

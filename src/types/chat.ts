@@ -1,6 +1,6 @@
 import type { UIMessage, Message } from "ai";
 import { z } from "zod";
-import { AllowedMCPServerZodSchema, MCPServerBindingConfig } from "./mcp";
+import { AllowedMCPServerZodSchema } from "./mcp";
 
 export type ChatThread = {
   id: string;
@@ -39,7 +39,9 @@ export type ChatMessageAnnotation = {
   [key: string]: any;
 };
 
-export type AppDefaultToolkit = "chart" | (string & {});
+export enum AppDefaultToolkit {
+  Visualization = "visualization",
+}
 
 export const chatApiSchemaRequestBodySchema = z.object({
   id: z.string(),
@@ -68,7 +70,6 @@ export type ChatRepository = {
   selectThreadWithMessages(id: string): Promise<
     | (ChatThread & {
         instructions: Project["instructions"] | null;
-        bindingConfig: MCPServerBindingConfig | null;
         messages: ChatMessage[];
       })
     | null

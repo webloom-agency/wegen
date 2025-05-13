@@ -16,7 +16,7 @@ import type { ConsolaInstance } from "consola";
 import { colorize } from "consola/utils";
 import { createDebounce, isNull, Locker, toAny } from "lib/utils";
 
-import { safe, watchError } from "ts-safe";
+import { safe } from "ts-safe";
 
 type ClientOptions = {
   autoDisconnectSeconds?: number;

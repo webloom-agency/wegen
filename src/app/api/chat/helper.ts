@@ -10,30 +10,17 @@ import {
   ChatMessageAnnotation,
   ToolInvocationUIPart,
 } from "app-types/chat";
-import type { MCPServerBindingConfig } from "app-types/mcp";
 import { extractMCPToolId } from "lib/ai/mcp/mcp-tool-id";
 import { errorToString, objectFlow, toAny } from "lib/utils";
 import { callMcpToolAction } from "../mcp/actions";
 import { safe } from "ts-safe";
 import logger from "logger";
-
-export function filterToolsByMcpBinding(
-  mcpBinding: MCPServerBindingConfig,
-  tools: Record<string, Tool>,
-) {
-  return objectFlow(tools).filter((_tool, key) => {
-    const { serverName, toolName } = extractMCPToolId(key);
-    const binding = mcpBinding[serverName];
-    if (binding?.allowedTools) {
-      return binding.allowedTools.includes(toolName);
-    }
-    return false;
-  });
-}
+import { defaultTools } from "lib/ai/tools";
+import { AllowedMCPServer } from "app-types/mcp";
 
 export function filterToolsByMentions(
-  mentions: string[],
   tools: Record<string, Tool>,
+  mentions: string[],
 ) {
   if (mentions.length === 0) {
     return tools;
@@ -41,6 +28,32 @@ export function filterToolsByMentions(
   return objectFlow(tools).filter((_tool, key) =>
     mentions.some((mention) => key.startsWith(mention)),
   );
+}
+
+export function filterToolsByAllowedMCPServers(
+  tools: Record<string, Tool>,
+  allowedMcpServers?: Record<string, AllowedMCPServer>,
+): Record<string, Tool> {
+  if (!allowedMcpServers) {
+    return tools;
+  }
+  return objectFlow(tools).filter((_tool, key) => {
+    const { serverName, toolName } = extractMCPToolId(key);
+    if (!allowedMcpServers[serverName]?.tools) return true;
+    return allowedMcpServers[serverName].tools.includes(toolName);
+  });
+}
+export function getAllowedDefaultToolkit(
+  allowedAppDefaultToolkit?: string[],
+): Record<string, Tool> {
+  if (!allowedAppDefaultToolkit) {
+    return Object.values(defaultTools).reduce((acc, toolkit) => {
+      return { ...acc, ...toolkit };
+    }, {});
+  }
+  return allowedAppDefaultToolkit.reduce((acc, toolkit) => {
+    return { ...acc, ...(defaultTools[toolkit] ?? {}) };
+  }, {});
 }
 
 export function excludeToolExecution(

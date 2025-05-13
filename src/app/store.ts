@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { AppDefaultToolkit, ChatThread, Project } from "app-types/chat";
+import { AppDefaultToolkit, ChatThread, Project } from "app-types/chat";
 
 import { DEFAULT_MODEL } from "lib/ai/models";
 import { AllowedMCPServer, MCPServerInfo } from "app-types/mcp";
@@ -29,7 +29,7 @@ const initialState: AppState = {
   currentProjectId: null,
   toolChoice: "auto",
   allowedMcpServers: undefined,
-  allowedAppDefaultToolkit: ["chart"],
+  allowedAppDefaultToolkit: [...Object.values(AppDefaultToolkit)],
   model: DEFAULT_MODEL,
   temporaryModel: DEFAULT_MODEL,
 };
@@ -41,7 +41,7 @@ export const appStore = create<AppState & AppDispatch>()(
       mutate: set,
     }),
     {
-      name: "mc-app-store",
+      name: "mc-app-store-v1.0.0",
       partialize: (state) => ({
         model: state.model || initialState.model,
         toolChoice: state.toolChoice || initialState.toolChoice,
