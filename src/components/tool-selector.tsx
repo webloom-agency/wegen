@@ -96,7 +96,7 @@ export function ToolSelector({
   );
 }
 
-const PRESET_KEY = "~tools-presets ";
+const PRESET_KEY = "~tools-presets";
 
 interface Preset {
   allowedMcpServers?: Record<string, AllowedMCPServer>;
@@ -225,8 +225,7 @@ function ToolPresets() {
               presetWithToolCount.map((preset, index) => {
                 return (
                   <DropdownMenuItem
-                    onClick={(e) => {
-                      e.preventDefault();
+                    onClick={() => {
                       applyPreset(preset);
                     }}
                     key={preset.name}
