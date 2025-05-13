@@ -41,13 +41,27 @@ type Props = {
 export default function ChatBot({ threadId, initialMessages, slots }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [appStoreMutate, model, toolChoice] = appStore(
-    useShallow((state) => [state.mutate, state.model, state.toolChoice]),
+  const [
+    appStoreMutate,
+    model,
+    toolChoice,
+    allowedAppDefaultToolkit,
+    allowedMcpServers,
+  ] = appStore(
+    useShallow((state) => [
+      state.mutate,
+      state.model,
+      state.toolChoice,
+      state.allowedAppDefaultToolkit,
+      state.allowedMcpServers,
+    ]),
   );
 
   const latestRef = useLatest({
     toolChoice,
     model,
+    allowedAppDefaultToolkit,
+    allowedMcpServers,
     threadId,
   });
 
@@ -73,6 +87,8 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
         id: latestRef.current.threadId,
         model: latestRef.current.model,
         toolChoice: latestRef.current.toolChoice,
+        allowedAppDefaultToolkit: latestRef.current.allowedAppDefaultToolkit,
+        allowedMcpServers: latestRef.current.allowedMcpServers,
         message: lastMessage,
       };
       return request;

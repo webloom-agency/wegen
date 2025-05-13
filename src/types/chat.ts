@@ -1,6 +1,6 @@
 import type { UIMessage, Message } from "ai";
 import { z } from "zod";
-import { MCPServerBindingConfig } from "./mcp";
+import { MCPAllowedServerZodSchema, MCPServerBindingConfig } from "./mcp";
 
 export type ChatThread = {
   id: string;
@@ -39,12 +39,16 @@ export type ChatMessageAnnotation = {
   [key: string]: any;
 };
 
+export type AppDefaultToolkit = "chart" | (string & {});
+
 export const chatApiSchemaRequestBodySchema = z.object({
   id: z.string(),
   projectId: z.string().optional(),
   message: z.any() as z.ZodType<UIMessage>,
   model: z.string().min(1).max(2000),
   toolChoice: z.enum(["auto", "none", "manual"]),
+  allowedMcpServers: z.record(z.string(), MCPAllowedServerZodSchema).optional(),
+  allowedAppDefaultToolkit: z.array(z.string()).optional(),
 });
 
 export type ChatApiSchemaRequestBody = z.infer<

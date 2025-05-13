@@ -17,6 +17,8 @@ import { ToolChoiceDropDown } from "./tool-choice-dropdown";
 
 import { MCPServerBindingSelector } from "./mcp-server-binding";
 import { MCPServerBinding } from "app-types/mcp";
+import { PROMPT_PASTE_MAX_LENGTH } from "lib/const";
+import { ToolSelector } from "./tool-selector";
 
 interface PromptInputProps {
   placeholder?: string;
@@ -105,7 +107,7 @@ export default function PromptInput({
 
   const handlePaste = (e: React.ClipboardEvent) => {
     const text = e.clipboardData.getData("text/plain");
-    if (text.length > 500) {
+    if (text.length > PROMPT_PASTE_MAX_LENGTH) {
       setPastedContents([...pastedContents, text]);
       e.preventDefault();
     }
@@ -203,6 +205,7 @@ export default function PromptInput({
                       align="start"
                       side="top"
                     />
+                    <ToolSelector />
                   </>
                 )}
                 <div className="flex-1" />

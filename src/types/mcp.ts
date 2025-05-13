@@ -11,6 +11,13 @@ export const MCPStdioConfigZodSchema = z.object({
   env: z.record(z.string(), z.string()).optional(),
 });
 
+export const MCPAllowedServerZodSchema = z.object({
+  tools: z.array(z.string()),
+  // resources: z.array(z.string()).optional(),
+});
+
+export type MCPAllowedServer = z.infer<typeof MCPAllowedServerZodSchema>;
+
 export type MCPSseConfig = z.infer<typeof MCPSseConfigZodSchema>;
 export type MCPStdioConfig = z.infer<typeof MCPStdioConfigZodSchema>;
 
