@@ -9,21 +9,18 @@ import { sqliteDb as db } from "../db.sqlite";
 import {
   ChatMessageSchema,
   ChatThreadSchema,
-  McpServerBindingSchema,
   ProjectSchema,
 } from "../schema.sqlite";
 import {
   convertToChatMessage,
   convertToChatThread,
   convertToDate,
-  convertToMcpServerBinding,
   convertToProject,
   convertToTimestamp,
 } from "./utils";
 import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
-import { MCPServerBindingOwnerType } from "app-types/mcp";
+
 import { generateUUID } from "lib/utils";
-import { sqliteMcpRepository } from "./mcp-repository.sqlite";
 
 /**
  * @deprecated
@@ -41,19 +38,6 @@ export const sqliteChatRepository: ChatRepository = {
         id: thread.id,
       })
       .returning();
-    if (thread.projectId) {
-      const mcpServerBinding = await sqliteMcpRepository.selectMcpServerBinding(
-        thread.projectId,
-        MCPServerBindingOwnerType.Project,
-      );
-      if (mcpServerBinding) {
-        await sqliteMcpRepository.saveMcpServerBinding({
-          ownerId: result.id,
-          ownerType: MCPServerBindingOwnerType.Thread,
-          config: mcpServerBinding.config,
-        });
-      }
-    }
     return convertToChatThread(result);
   },
 
@@ -73,16 +57,7 @@ export const sqliteChatRepository: ChatRepository = {
       .select()
       .from(ChatThreadSchema)
       .leftJoin(ProjectSchema, eq(ChatThreadSchema.projectId, ProjectSchema.id))
-      .leftJoin(
-        McpServerBindingSchema,
-        and(
-          eq(ChatThreadSchema.id, McpServerBindingSchema.ownerId),
-          eq(
-            McpServerBindingSchema.ownerType,
-            MCPServerBindingOwnerType.Thread,
-          ),
-        ),
-      )
+
       .where(eq(ChatThreadSchema.id, id));
 
     if (!thread) {
@@ -99,9 +74,7 @@ export const sqliteChatRepository: ChatRepository = {
       instructions: thread.project
         ? convertToProject(thread.project).instructions
         : null,
-      bindingConfig: thread.mcp_server_binding?.config
-        ? convertToMcpServerBinding(thread.mcp_server_binding).config
-        : null,
+
       messages,
     };
   },
@@ -172,17 +145,6 @@ export const sqliteChatRepository: ChatRepository = {
     await db
       .delete(ChatMessageSchema)
       .where(eq(ChatMessageSchema.threadId, id));
-    await db
-      .delete(McpServerBindingSchema)
-      .where(
-        and(
-          eq(McpServerBindingSchema.ownerId, id),
-          eq(
-            McpServerBindingSchema.ownerType,
-            MCPServerBindingOwnerType.Thread,
-          ),
-        ),
-      );
     await db.delete(ChatThreadSchema).where(eq(ChatThreadSchema.id, id));
   },
 
@@ -374,17 +336,7 @@ export const sqliteChatRepository: ChatRepository = {
         sqliteChatRepository.deleteThread(threadId.id),
       ),
     );
-    await db
-      .delete(McpServerBindingSchema)
-      .where(
-        and(
-          eq(McpServerBindingSchema.ownerId, id),
-          eq(
-            McpServerBindingSchema.ownerType,
-            MCPServerBindingOwnerType.Project,
-          ),
-        ),
-      );
+
     await db.delete(ProjectSchema).where(eq(ProjectSchema.id, id));
   },
 };

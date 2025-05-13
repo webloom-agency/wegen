@@ -1,6 +1,5 @@
 import { UIMessage } from "ai";
 import { ChatMessage, ChatThread, Project } from "app-types/chat";
-import { MCPServerBinding, MCPServerBindingConfig } from "app-types/mcp";
 
 export const convertToDate = (timestamp: number): Date => {
   return new Date(timestamp);
@@ -63,17 +62,5 @@ export const convertToChatMessage = (row: {
     attachments: row.attachments ? JSON.parse(row.attachments) : [],
     model: row.model,
     annotations: row.annotations ? JSON.parse(row.annotations) : [],
-  };
-};
-
-export const convertToMcpServerBinding = (row: {
-  ownerType: string;
-  ownerId: string;
-  config: string;
-}): MCPServerBinding => {
-  return {
-    ownerType: row.ownerType as MCPServerBinding["ownerType"],
-    ownerId: row.ownerId,
-    config: JSON.parse(row.config) as MCPServerBindingConfig,
   };
 };

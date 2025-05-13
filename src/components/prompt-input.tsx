@@ -14,17 +14,14 @@ import { createMCPToolId } from "lib/ai/mcp/mcp-tool-id";
 import { ChatMessageAnnotation } from "app-types/chat";
 import dynamic from "next/dynamic";
 import { ToolChoiceDropDown } from "./tool-choice-dropdown";
-
-import { MCPServerBindingSelector } from "./mcp-server-binding";
-import { MCPServerBinding } from "app-types/mcp";
+import { PROMPT_PASTE_MAX_LENGTH } from "lib/const";
+import { ToolSelector } from "./tool-selector";
 
 interface PromptInputProps {
   placeholder?: string;
   setInput: (value: string) => void;
   input: string;
   onStop: () => void;
-  ownerType?: MCPServerBinding["ownerType"];
-  ownerId: string;
   append: UseChatHelpers["append"];
   toolDisabled?: boolean;
   isLoading?: boolean;
@@ -49,8 +46,6 @@ export default function PromptInput({
   onStop,
   isLoading,
   toolDisabled,
-  ownerType = "thread",
-  ownerId,
 }: PromptInputProps) {
   const [mcpList, globalModel, appStoreMutate] = appStore(
     useShallow((state) => [state.mcpList, state.model, state.mutate]),
@@ -105,7 +100,7 @@ export default function PromptInput({
 
   const handlePaste = (e: React.ClipboardEvent) => {
     const text = e.clipboardData.getData("text/plain");
-    if (text.length > 500) {
+    if (text.length > PROMPT_PASTE_MAX_LENGTH) {
       setPastedContents([...pastedContents, text]);
       e.preventDefault();
     }
@@ -197,12 +192,8 @@ export default function PromptInput({
                 {!toolDisabled && (
                   <>
                     <ToolChoiceDropDown />
-                    <MCPServerBindingSelector
-                      ownerId={ownerId}
-                      ownerType={ownerType}
-                      align="start"
-                      side="top"
-                    />
+
+                    <ToolSelector align="start" side="top" />
                   </>
                 )}
                 <div className="flex-1" />

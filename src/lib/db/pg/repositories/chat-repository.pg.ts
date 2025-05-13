@@ -9,13 +9,10 @@ import { pgDb as db } from "../db.pg";
 import {
   ChatMessageSchema,
   ChatThreadSchema,
-  McpServerBindingSchema,
   ProjectSchema,
 } from "../schema.pg";
 
 import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
-import { MCPServerBindingOwnerType } from "app-types/mcp";
-import { pgMcpRepository } from "./mcp-repository.pg";
 
 export const pgChatRepository: ChatRepository = {
   insertThread: async (
@@ -30,19 +27,6 @@ export const pgChatRepository: ChatRepository = {
         id: thread.id,
       })
       .returning();
-    if (thread.projectId) {
-      const mcpServerBinding = await pgMcpRepository.selectMcpServerBinding(
-        thread.projectId,
-        MCPServerBindingOwnerType.Project,
-      );
-      if (mcpServerBinding) {
-        await pgMcpRepository.saveMcpServerBinding({
-          ownerId: result.id,
-          ownerType: MCPServerBindingOwnerType.Thread,
-          config: mcpServerBinding.config,
-        });
-      }
-    }
     return result;
   },
 
@@ -62,16 +46,6 @@ export const pgChatRepository: ChatRepository = {
       .select()
       .from(ChatThreadSchema)
       .leftJoin(ProjectSchema, eq(ChatThreadSchema.projectId, ProjectSchema.id))
-      .leftJoin(
-        McpServerBindingSchema,
-        and(
-          eq(ChatThreadSchema.id, McpServerBindingSchema.ownerId),
-          eq(
-            McpServerBindingSchema.ownerType,
-            MCPServerBindingOwnerType.Thread,
-          ),
-        ),
-      )
       .where(eq(ChatThreadSchema.id, id));
 
     if (!thread) {
@@ -86,7 +60,6 @@ export const pgChatRepository: ChatRepository = {
       createdAt: thread.chat_thread.createdAt,
       projectId: thread.chat_thread.projectId,
       instructions: thread.project?.instructions ?? null,
-      bindingConfig: thread.mcp_server_binding?.config ?? null,
       messages,
     };
   },
@@ -157,17 +130,7 @@ export const pgChatRepository: ChatRepository = {
     await db
       .delete(ChatMessageSchema)
       .where(eq(ChatMessageSchema.threadId, id));
-    await db
-      .delete(McpServerBindingSchema)
-      .where(
-        and(
-          eq(McpServerBindingSchema.ownerId, id),
-          eq(
-            McpServerBindingSchema.ownerType,
-            MCPServerBindingOwnerType.Thread,
-          ),
-        ),
-      );
+
     await db.delete(ChatThreadSchema).where(eq(ChatThreadSchema.id, id));
   },
 
@@ -327,17 +290,7 @@ export const pgChatRepository: ChatRepository = {
     await Promise.all(
       threadIds.map((threadId) => pgChatRepository.deleteThread(threadId.id)),
     );
-    await db
-      .delete(McpServerBindingSchema)
-      .where(
-        and(
-          eq(
-            McpServerBindingSchema.ownerType,
-            MCPServerBindingOwnerType.Project,
-          ),
-          eq(McpServerBindingSchema.ownerId, id),
-        ),
-      );
+
     await db.delete(ProjectSchema).where(eq(ProjectSchema.id, id));
   },
 };
