@@ -2,7 +2,7 @@ import { selectMcpClientsAction } from "@/app/api/mcp/actions";
 import { appStore } from "@/app/store";
 import { useStateWithBrowserStorage } from "@/hooks/use-state-with-browserstorage";
 import { AppDefaultToolkit } from "app-types/chat";
-import { AllowedMCPServer } from "app-types/mcp";
+import { AllowedMCPServer, MCPServerInfo } from "app-types/mcp";
 import { cn } from "lib/utils";
 import {
   ChartColumn,
@@ -54,9 +54,12 @@ interface ToolSelectorProps {
 
 const calculateToolCount = (
   allowedMcpServers: Record<string, AllowedMCPServer>,
+  mcpList: MCPServerInfo[],
 ) => {
-  return Object.values(allowedMcpServers).reduce((acc, server) => {
-    return acc + server.tools.length;
+  return mcpList.reduce((acc, server) => {
+    const count =
+      allowedMcpServers[server.name]?.tools?.length ?? server.toolInfo.length;
+    return acc + count;
   }, 0);
 };
 
@@ -105,12 +108,13 @@ interface Preset {
 }
 
 function ToolPresets() {
-  const [appStoreMutate, allowedMcpServers, allowedAppDefaultToolkit] =
+  const [appStoreMutate, allowedMcpServers, allowedAppDefaultToolkit, mcpList] =
     appStore(
       useShallow((state) => [
         state.mutate,
         state.allowedMcpServers,
         state.allowedAppDefaultToolkit,
+        state.mcpList,
       ]),
     );
   const [open, setOpen] = useState(false);
@@ -124,9 +128,9 @@ function ToolPresets() {
   const presetWithToolCount = useMemo(() => {
     return presets.map((preset) => ({
       ...preset,
-      toolCount: calculateToolCount(preset.allowedMcpServers ?? {}),
+      toolCount: calculateToolCount(preset.allowedMcpServers ?? {}, mcpList),
     }));
-  }, [presets]);
+  }, [presets, mcpList]);
 
   const addPreset = useCallback(
     (name: string) => {
