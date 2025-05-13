@@ -8,7 +8,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
   useSidebar,
 } from "ui/sidebar";
 import Link from "next/link";
@@ -32,7 +31,6 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="offcanvas">
-      <SidebarRail />
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-0.5">

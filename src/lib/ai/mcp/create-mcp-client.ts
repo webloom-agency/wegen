@@ -16,7 +16,7 @@ import type { ConsolaInstance } from "consola";
 import { colorize } from "consola/utils";
 import { createDebounce, isNull, Locker, toAny } from "lib/utils";
 
-import { safe, watchError } from "ts-safe";
+import { safe } from "ts-safe";
 
 type ClientOptions = {
   autoDisconnectSeconds?: number;
@@ -191,7 +191,13 @@ export class MCPClient {
         return v;
       })
       .ifOk(() => this.scheduleAutoDisconnect())
-      .watch(watchError((e) => this.log.error("Tool call failed", toolName, e)))
+      .watch((status) => {
+        if (!status.isOk) {
+          this.log.error("Tool call failed", toolName, status.error);
+        } else if (status.value?.isError) {
+          this.log.error("Tool call failed", toolName, status.value.content);
+        }
+      })
       .unwrap();
   }
 }

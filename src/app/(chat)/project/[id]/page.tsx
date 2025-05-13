@@ -149,10 +149,8 @@ export default function ProjectPage() {
         )}
 
         <PromptInput
-          ownerId={id as string}
           input={input}
           append={append}
-          ownerType="project"
           setInput={setInput}
           isLoading={isLoading}
           onStop={stop}

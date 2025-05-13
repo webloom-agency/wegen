@@ -15,14 +15,10 @@ import {
 
 import type { ChatThread, Project } from "app-types/chat";
 
-import { chatRepository, mcpRepository } from "lib/db/repository";
+import { chatRepository } from "lib/db/repository";
 import { customModelProvider } from "lib/ai/models";
 import { toAny } from "lib/utils";
-import {
-  MCPServerBinding,
-  MCPServerBindingConfig,
-  MCPToolInfo,
-} from "app-types/mcp";
+import { MCPToolInfo } from "app-types/mcp";
 import { serverCache } from "lib/cache";
 import { CacheKeys } from "lib/cache/cache-keys";
 import { auth } from "../auth/auth";
@@ -216,35 +212,8 @@ export async function rememberThreadAction(threadId: string) {
   return thread;
 }
 
-export async function rememberMcpBindingAction(
-  ownerId: string,
-  ownerType: MCPServerBinding["ownerType"],
-): Promise<MCPServerBindingConfig | null> {
-  if (!ownerId || !ownerType) {
-    return null;
-  }
-  const key = CacheKeys.mcpBinding(ownerId, ownerType);
-  const cachedMcpBinding = await serverCache.get<MCPServerBindingConfig>(key);
-  if (cachedMcpBinding) {
-    return cachedMcpBinding;
-  }
-  const mcpBinding = await mcpRepository.selectMcpServerBinding(
-    ownerId,
-    ownerType,
-  );
-  await serverCache.set(key, mcpBinding?.config);
-  return mcpBinding?.config ?? null;
-}
-
 export async function updateProjectNameAction(id: string, name: string) {
   const updatedProject = await chatRepository.updateProject(id, { name });
   await serverCache.delete(CacheKeys.project(id));
   return updatedProject;
-}
-
-export async function saveMcpServerBindingsAction(entity: MCPServerBinding) {
-  await serverCache.delete(
-    CacheKeys.mcpBinding(entity.ownerId, entity.ownerType),
-  );
-  await mcpRepository.saveMcpServerBinding(entity);
 }

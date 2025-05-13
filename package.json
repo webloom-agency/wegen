@@ -18,7 +18,7 @@
     "initial:env": "tsx scripts/copy-env.ts",
     "initial:mcp-config": "tsx scripts/generate-mcp-config.ts",
     "initial:flag-generate": "tsx scripts/flag.ts generate",
-    "initial": "pnpm install && pnpm initial:env && pnpm initial:mcp-config && pnpm db:migrate && pnpm initial:flag-generate",
+    "initial": "pnpm install && pnpm initial:env && pnpm initial:mcp-config && pnpm db:migrate && pnpm initial:flag-generate && pnpm clean .next",
     "clean": "tsx scripts/clean.ts",
     "db:generate": "drizzle-kit generate",
     "db:reset": "drizzle-kit drop && drizzle-kit push",

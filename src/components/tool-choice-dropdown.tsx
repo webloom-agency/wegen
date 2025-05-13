@@ -2,7 +2,7 @@
 
 import { appStore } from "@/app/store";
 import { cn } from "lib/utils";
-import { Check, ClipboardCheck, Wrench, Infinity, PenOff } from "lucide-react";
+import { Check, ClipboardCheck, Infinity, PenOff } from "lucide-react";
 import { useEffect } from "react";
 import { Button } from "ui/button";
 
@@ -49,13 +49,12 @@ export const ToolChoiceDropDown = () => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant={toolChoice == "none" ? "ghost" : "outline"}
+          variant={"outline"}
           className={cn(
-            toolChoice == "none" ? "text-muted-foreground" : "bg-transparent",
-            "font-semibold mr-1 rounded-full flex items-center gap-2",
+            toolChoice == "none" ? "text-muted-foreground" : "",
+            "font-semibold mr-1 rounded-full flex items-center gap-2 bg-transparent",
           )}
         >
-          <Wrench className="size-3.5" />
           <span>
             {toolChoice.charAt(0).toUpperCase() + toolChoice.slice(1)}
           </span>

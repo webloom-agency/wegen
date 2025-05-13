@@ -25,12 +25,10 @@ import { errorIf, safe } from "ts-safe";
 
 import { auth } from "../auth/auth";
 import { redirect } from "next/navigation";
-import { defaultTools } from "lib/ai/tools";
 
 import {
   appendAnnotations,
   excludeToolExecution,
-  filterToolsByMcpBinding,
   filterToolsByMentions,
   handleError,
   manualToolExecuteByLastMessage,
@@ -39,6 +37,8 @@ import {
   extractInProgressToolPart,
   assignToolResult,
   isUserMessage,
+  getAllowedDefaultToolkit,
+  filterToolsByAllowedMCPServers,
 } from "./helper";
 import { generateTitleFromUserMessageAction } from "./actions";
 
@@ -59,6 +59,8 @@ export async function POST(request: Request) {
       message,
       model: modelName,
       toolChoice,
+      allowedAppDefaultToolkit,
+      allowedMcpServers,
       projectId,
     } = chatApiSchemaRequestBodySchema.parse(json);
 
@@ -104,21 +106,18 @@ export async function POST(request: Request) {
       .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
       .map((tools) => {
         if (requiredToolsAnnotations.length) {
-          return filterToolsByMentions(requiredToolsAnnotations, tools);
+          return filterToolsByMentions(tools, requiredToolsAnnotations);
         }
-        if (thread?.bindingConfig) {
-          return filterToolsByMcpBinding(thread.bindingConfig, tools);
-        }
-        return tools;
+        return {
+          ...getAllowedDefaultToolkit(allowedAppDefaultToolkit),
+          ...filterToolsByAllowedMCPServers(tools, allowedMcpServers),
+        };
       })
       .map((tools) => {
         if (toolChoice == "manual") {
           return excludeToolExecution(tools);
         }
         return tools;
-      })
-      .map((tools) => {
-        return { ...defaultTools, ...tools };
       })
       .orElse(undefined);
 

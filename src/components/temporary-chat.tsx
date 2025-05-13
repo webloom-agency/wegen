@@ -252,7 +252,6 @@ function DrawerTemporaryContent({
         <PromptInput
           input={input}
           append={append}
-          ownerId={""}
           model={temporaryModel}
           setModel={(model) => {
             appStoreMutate({ temporaryModel: model });
