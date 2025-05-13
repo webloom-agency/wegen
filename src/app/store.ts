@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import type { AppDefaultToolkit, ChatThread, Project } from "app-types/chat";
 
 import { DEFAULT_MODEL } from "lib/ai/models";
-import { MCPAllowedServer, MCPServerInfo } from "app-types/mcp";
+import { AllowedMCPServer, MCPServerInfo } from "app-types/mcp";
 export interface AppState {
   threadList: ChatThread[];
   mcpList: MCPServerInfo[];
@@ -11,7 +11,7 @@ export interface AppState {
   currentThreadId: ChatThread["id"] | null;
   currentProjectId: Project["id"] | null;
   toolChoice: "auto" | "none" | "manual";
-  allowedMcpServers?: Record<string, MCPAllowedServer>;
+  allowedMcpServers?: Record<string, AllowedMCPServer>;
   allowedAppDefaultToolkit?: AppDefaultToolkit[];
   model: string;
   temporaryModel: string;
