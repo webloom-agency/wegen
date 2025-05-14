@@ -4,7 +4,8 @@ import { Message, smoothStream, streamText } from "ai";
 import { customModelProvider } from "lib/ai/models";
 import logger from "logger";
 import { mergeSystemPrompt } from "../helper";
-import { SYSTEM_TIME_PROMPT } from "lib/ai/prompts";
+import { buildUserSystemPrompt } from "lib/ai/prompts";
+import { userRepository } from "lib/db/repository";
 
 export async function POST(request: Request) {
   try {
@@ -23,9 +24,12 @@ export async function POST(request: Request) {
 
     const model = customModelProvider.getModel(modelName);
 
+    const userPreferences =
+      (await userRepository.getPreferences(session.user.id)) || undefined;
+
     const systemPrompt = mergeSystemPrompt(
       "You are a friendly assistant! Keep your responses concise and helpful.",
-      SYSTEM_TIME_PROMPT(session),
+      buildUserSystemPrompt(session, userPreferences),
     );
 
     return streamText({

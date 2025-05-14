@@ -13,9 +13,9 @@ import { customModelProvider, isToolCallUnsupportedModel } from "lib/ai/models";
 
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 
-import { chatRepository } from "lib/db/repository";
+import { chatRepository, userRepository } from "lib/db/repository";
 import logger from "logger";
-import { SYSTEM_TIME_PROMPT } from "lib/ai/prompts";
+import { buildUserSystemPrompt } from "lib/ai/prompts";
 import {
   chatApiSchemaRequestBodySchema,
   ChatMessageAnnotation,
@@ -148,10 +148,12 @@ export async function POST(request: Request) {
           );
         }
 
+        const userPreferences =
+          (await userRepository.getPreferences(session.user.id)) || undefined;
         const systemPrompt = mergeSystemPrompt(
           thread?.instructions?.systemPrompt ||
             "You are a friendly assistant! Keep your responses concise and helpful.",
-          SYSTEM_TIME_PROMPT(session),
+          buildUserSystemPrompt(session, userPreferences),
         );
 
         const result = streamText({
