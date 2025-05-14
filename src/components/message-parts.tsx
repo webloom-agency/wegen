@@ -255,8 +255,8 @@ export const AssistMessagePart = ({
     >
       <div
         data-testid="message-content"
-        className={cn("flex flex-col gap-4", {
-          "opacity-50 border border-destructive bg-card": isError,
+        className={cn("flex flex-col gap-4 px-2", {
+          "opacity-50 border border-destructive bg-card rounded-lg": isError,
         })}
       >
         <Markdown>{part.text}</Markdown>
