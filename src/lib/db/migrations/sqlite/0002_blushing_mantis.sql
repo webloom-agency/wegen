@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS `mcp_server_binding`;
+DROP TABLE IF EXISTS "mcp_server_binding";
