@@ -10,6 +10,7 @@ import {
   ChevronDownIcon,
   RefreshCw,
   X,
+  Wrench,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { Button } from "ui/button";
@@ -372,6 +373,7 @@ export const ToolMessagePart = memo(
                   isError && "border-destructive",
                 )}
               >
+                <Wrench className="size-3.5" />
                 <p className={cn("font-bold")}>{toolName}</p>
                 {isExecuting ? (
                   <Loader className="size-3 animate-spin" />
