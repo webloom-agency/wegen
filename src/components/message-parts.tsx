@@ -369,7 +369,7 @@ export const ToolMessagePart = memo(
                 variant="outline"
                 className={cn(
                   "flex flex-row gap-2 justify-between items-center text-muted-foreground min-w-44 bg-card",
-                  isExecuting && "animate-pulse",
+                  isExecuting && "animate-pulse bg-input",
                   isError && "border-destructive",
                 )}
               >
@@ -391,6 +391,7 @@ export const ToolMessagePart = memo(
                 <>
                   <Button
                     variant="outline"
+                    className="bg-input"
                     size="icon"
                     onClick={() => onPoxyToolCall(true)}
                   >
