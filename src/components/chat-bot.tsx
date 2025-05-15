@@ -128,8 +128,6 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     [initialMessages, messages],
   );
 
-  const spaceClass = "min-h-[55dvh]";
-
   const needSpaceClass = useCallback(
     (index: number) => {
       if (error || isInitialThreadEntry || index != messages.length - 1)
@@ -232,12 +230,12 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
                   isLastMessage={isLastMessage}
                   setMessages={setMessages}
                   reload={reload}
-                  className={needSpaceClass(index) ? spaceClass : ""}
+                  className={needSpaceClass(index) ? "min-h-[55dvh]" : ""}
                 />
               );
             })}
             {status === "submitted" && messages.at(-1)?.role === "user" && (
-              <div className={spaceClass} />
+              <div className="min-h-[calc(55dvh-56px)]" />
             )}
             {error && <ErrorMessage error={error} />}
             <div className="min-w-0 min-h-52" />

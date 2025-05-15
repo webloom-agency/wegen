@@ -79,7 +79,7 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
   }, [open]);
 
   return (
-    <Drawer direction="right" open={open} onOpenChange={setOpen}>
+    <Drawer handleOnly direction="right" open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
         {children ?? (
           <Tooltip>
