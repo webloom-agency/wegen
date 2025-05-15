@@ -117,7 +117,9 @@ export function handleError(error: any) {
   if (LoadAPIKeyError.isInstance(error)) {
     return error.message;
   }
+
   logger.error(error);
+  logger.error(error.name);
   return errorToString(error.message);
 }
 
