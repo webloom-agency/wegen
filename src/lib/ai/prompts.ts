@@ -29,10 +29,10 @@ ${session?.user?.email ? `- User Email: ${session?.user?.email}` : ""}
 `;
   }
 
-  if (userPreferences?.preferredFormality) {
+  if (userPreferences?.displayName) {
     prompt += `
 - When addressing this user:
-  * Maintain a ${userPreferences.preferredFormality} communication style
+  * Maintain a ${userPreferences.displayName} communication style
   * This affects your tone, level of detail, and conversational approach
 `;
   }

@@ -10,7 +10,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const preferences = await userRepository.getPreferences(session.user.id);
-    return NextResponse.json({ preferences });
+    return NextResponse.json(preferences ?? {});
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Failed to get preferences" },

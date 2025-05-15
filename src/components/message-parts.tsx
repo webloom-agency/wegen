@@ -147,10 +147,12 @@ export const UserMessagePart = ({
         }}
         data-testid="message-content"
         className={cn(
-          "flex flex-col gap-4 bg-accent",
+          "flex flex-col gap-4",
+
           {
             "text-accent-foreground border px-4 py-3 rounded-2xl": isLast,
             "opacity-50": isError,
+            "bg-accent": isLast,
           },
           isError && "border-destructive",
         )}

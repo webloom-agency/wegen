@@ -19,7 +19,6 @@ import {
   Loader,
   LogOutIcon,
   MessagesSquareIcon,
-  SettingsIcon,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import {
@@ -39,15 +38,18 @@ import useSWR from "swr";
 import { UserPreferences } from "app-types/user";
 import { fetcher } from "lib/utils";
 import { useObjectState } from "@/hooks/use-object-state";
-import { appStore } from "@/app/store";
+import { motion, AnimatePresence } from "framer-motion";
 import { safe } from "ts-safe";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export function AppSidebarUser() {
   const { data: session } = useSession();
 
   const user = session?.user;
+
+  const [isChatPreferencesDialogOpen, setIsChatPreferencesDialogOpen] =
+    useState(false);
 
   const logout = () => {
     signOut({
@@ -60,7 +62,10 @@ export function AppSidebarUser() {
   }
 
   return (
-    <Dialog defaultOpen>
+    <Dialog
+      open={isChatPreferencesDialogOpen}
+      onOpenChange={setIsChatPreferencesDialogOpen}
+    >
       <SidebarMenu>
         <SidebarMenuItem>
           <DropdownMenu>
@@ -126,7 +131,10 @@ export function AppSidebarUser() {
         </SidebarMenuItem>
       </SidebarMenu>
 
-      <ChatPreferencesDialogContent />
+      <ChatPreferencesDialogContent
+        onClose={() => setIsChatPreferencesDialogOpen(false)}
+        open={isChatPreferencesDialogOpen}
+      />
     </Dialog>
   );
 }
@@ -146,10 +154,16 @@ const professionExamples = [
   "eg. business analyst",
 ];
 
-function ChatPreferencesDialogContent() {
+function ChatPreferencesDialogContent({
+  onClose,
+  open,
+}: {
+  onClose: () => void;
+  open: boolean;
+}) {
   const { data: session } = useSession();
   const [preferences, setPreferences] = useObjectState<UserPreferences>({
-    preferredFormality: session?.user.name || "",
+    displayName: session?.user.name || "",
     responseStyleExample: "",
     profession: "",
   });
@@ -168,14 +182,30 @@ function ChatPreferencesDialogContent() {
         if (result.isOk) toast.success("Preferences saved");
         else toast.error("Failed to save preferences");
       })
-      .watch(() => setIsSaving(false));
+      .watch(() => setIsSaving(false))
+      .ifOk(() => onClose());
   };
-  useSWR<UserPreferences>("/api/user/preferences", fetcher, {
-    fallback: {},
-    onSuccess: (data) => {
-      setPreferences(data);
+  const { mutate: fetchPreferences } = useSWR<UserPreferences>(
+    "/api/user/preferences",
+    fetcher,
+    {
+      fallback: {},
+      onSuccess: (data) => {
+        setPreferences(data);
+      },
     },
-  });
+  );
+
+  useEffect(() => {
+    if (open) {
+      setPreferences({
+        displayName: session?.user.name || "",
+        responseStyleExample: "",
+        profession: "",
+      });
+      fetchPreferences();
+    }
+  }, [open]);
 
   return (
     <DialogContent hideClose className="w-full">
@@ -187,10 +217,10 @@ function ChatPreferencesDialogContent() {
         <div className="flex flex-col gap-2 text-foreground">
           <Label>What should we call you?</Label>
           <Input
-            value={preferences.preferredFormality}
+            value={preferences.displayName}
             onChange={(e) => {
               setPreferences({
-                preferredFormality: e.target.value,
+                displayName: e.target.value,
               });
             }}
           />
@@ -198,14 +228,21 @@ function ChatPreferencesDialogContent() {
 
         <div className="flex flex-col gap-2 text-foreground flex-1">
           <Label>What best describes your work?</Label>
-          <Input
-            value={preferences.profession}
-            onChange={(e) => {
-              setPreferences({
-                profession: e.target.value,
-              });
-            }}
-          />
+          <div className="relative w-full">
+            <Input
+              value={preferences.profession}
+              onChange={(e) => {
+                setPreferences({
+                  profession: e.target.value,
+                });
+              }}
+            />
+            {(preferences.profession?.length ?? 0) === 0 && (
+              <div className="absolute left-0 top-0 w-full h-full py-2 px-4 pointer-events-none">
+                <ExamplePlaceholder placeholder={professionExamples} />
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex flex-col gap-2 text-foreground">
           <Label>
@@ -215,16 +252,23 @@ function ChatPreferencesDialogContent() {
             Your preferences will apply to all conversations, within Anthropic’s
             guidelines.
           </span>
-          <Textarea
-            className="min-h-36 max-h-64 resize-none"
-            rows={6}
-            value={preferences.responseStyleExample}
-            onChange={(e) => {
-              setPreferences({
-                responseStyleExample: e.target.value,
-              });
-            }}
-          />
+          <div className="relative w-full">
+            <Textarea
+              className="min-h-36 max-h-64 resize-none"
+              rows={6}
+              value={preferences.responseStyleExample}
+              onChange={(e) => {
+                setPreferences({
+                  responseStyleExample: e.target.value,
+                });
+              }}
+            />
+            {(preferences.responseStyleExample?.length ?? 0) === 0 && (
+              <div className="absolute left-0 top-0 w-full h-full py-2 px-4 pointer-events-none">
+                <ExamplePlaceholder placeholder={responseStyleExamples} />
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <DialogFooter>
@@ -240,10 +284,42 @@ function ChatPreferencesDialogContent() {
   );
 }
 
-function ExamplePlaceholder({
-  placeholder,
-}: {
-  placeholder: string[];
-}) {
-  return <span className="text-xs text-muted-foreground"></span>;
+export function ExamplePlaceholder({ placeholder }: { placeholder: string[] }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIndex((prev) => (prev + 1) % placeholder.length);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [index, placeholder.length]);
+
+  return (
+    <div
+      className="text-sm text-muted-foreground w-full"
+      style={{ position: "relative", minHeight: 20, display: "inline-block" }}
+    >
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={index}
+          initial={{
+            opacity: 0,
+            clipPath: "inset(0 100% 0 0)",
+          }}
+          animate={{
+            opacity: 1,
+            clipPath: "inset(0 0% 0 0)",
+          }}
+          exit={{
+            opacity: 0,
+            clipPath: "inset(0 0% 0 0)",
+          }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          style={{ display: "inline-block", position: "absolute" }}
+        >
+          {placeholder[index]}
+        </motion.span>
+      </AnimatePresence>
+    </div>
+  );
 }

@@ -86,7 +86,7 @@ export function mergeSystemPrompt(
       if (!prompt) return null;
       const systemPrompt: Omit<Message, "id"> = {
         role: "system",
-        content: "",
+        content: prompt?.trim(),
         parts: [
           {
             type: "text",

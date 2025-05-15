@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export type UserPreferences = {
-  preferredFormality?: string; // How the user wants to be addressed
+  displayName?: string;
   profession?: string; // User's job or profession
   responseStyleExample?: string; // Example of preferred response style
 };
@@ -37,7 +37,7 @@ export const UserZodSchema = z.object({
 });
 
 export const UserPreferencesZodSchema = z.object({
-  preferredFormality: z.string().optional(),
+  displayName: z.string().optional(),
   profession: z.string().optional(),
   responseStyleExample: z.string().optional(),
 });
