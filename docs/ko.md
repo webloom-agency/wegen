@@ -126,6 +126,8 @@ pnpm dev
 
 브라우저에서 [http://localhost:3000](http://localhost:3000)을 열어 시작하세요.
 
+> **⚠️로컬 환경에서 프로덕션 테스트 시 주의사항:** `pnpm build`와 `pnpm start`로 로컬에서 프로덕션 빌드를 테스트할 때(별도 도메인 없이), NextAuth 설정에 `trustHost: true`를 추가하고 쿠키 보안 설정을 조정해야 인증 문제를 방지할 수 있습니다. 구체적인 변경 사항은 [이슈 #30](https://github.com/cgoinglove/mcp-client-chatbot/issues/30)을 참조하세요.
+
 -----
 
 ### 환경 변수
