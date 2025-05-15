@@ -16,7 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { Button } from "ui/button";
 import { Markdown } from "./markdown";
 import { PastesContentCard } from "./pasts-content";
-import { cn } from "lib/utils";
+import { cn, safeJSONParse, toAny } from "lib/utils";
 import JsonView from "ui/json-view";
 import { useMemo, useState, memo, useEffect, useRef, Suspense } from "react";
 import { MessageEditor } from "./message-editor";
@@ -313,6 +313,8 @@ export const ToolMessagePart = memo(
     const { toolInvocation } = part;
     const { toolName, toolCallId, state, args } = toolInvocation;
     const [isExpanded, setIsExpanded] = useState(false);
+    const { copied: copiedInput, copy: copyInput } = useCopy();
+    const { copied: copiedOutput, copy: copyOutput } = useCopy();
 
     const isExecuting = state !== "result" && (isLast || onPoxyToolCall);
 
@@ -356,6 +358,27 @@ export const ToolMessagePart = memo(
       }
       return null;
     }, [toolName, state]);
+
+    const result = useMemo(() => {
+      if (state === "result") {
+        return toolInvocation.result?.content
+          ? {
+              ...toolInvocation.result,
+              content: toolInvocation.result.content.map((node) => {
+                if (node.type === "text") {
+                  const parsed = safeJSONParse(node.text);
+                  return {
+                    ...node,
+                    text: parsed.success ? parsed.value : node.text,
+                  };
+                }
+                return node;
+              }),
+            }
+          : toolInvocation.result;
+      }
+      return null;
+    }, [state, toolInvocation]);
 
     return (
       <div key={toolCallId} className="flex flex-col gap-2 group">
@@ -411,10 +434,26 @@ export const ToolMessagePart = memo(
               <Card className="relative mt-2 p-4 max-h-[50vh] overflow-y-auto bg-card">
                 <CardContent className="flex flex-row gap-4 text-sm ">
                   <div className="w-1/2 min-w-0 flex flex-col">
-                    <div className="flex items-center gap-2 mb-2 pt-2 pb-1  z-10">
+                    <div className="flex items-center gap-2 mb-2 pt-2 pb-1 z-10">
                       <h5 className="text-muted-foreground text-sm font-medium">
                         Inputs
                       </h5>
+                      <div className="flex-1" />
+
+                      {copiedInput ? (
+                        <Check className="size-4" />
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-3 text-muted-foreground"
+                          onClick={() =>
+                            copyInput(JSON.stringify(toolInvocation.args))
+                          }
+                        >
+                          <Copy />
+                        </Button>
+                      )}
                     </div>
                     <JsonView data={toolInvocation.args} />
                   </div>
@@ -424,14 +463,25 @@ export const ToolMessagePart = memo(
                       <h5 className="text-muted-foreground text-sm font-medium">
                         Outputs
                       </h5>
+                      <div className="flex-1" />
+                      {copiedOutput ? (
+                        <Check className="size-4" />
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-3 text-muted-foreground"
+                          onClick={() =>
+                            copyOutput(
+                              JSON.stringify(toAny(toolInvocation).result),
+                            )
+                          }
+                        >
+                          <Copy />
+                        </Button>
+                      )}
                     </div>
-                    <JsonView
-                      data={
-                        toolInvocation.state === "result"
-                          ? toolInvocation.result
-                          : null
-                      }
-                    />
+                    <JsonView data={result} />
                   </div>
                 </CardContent>
               </Card>
