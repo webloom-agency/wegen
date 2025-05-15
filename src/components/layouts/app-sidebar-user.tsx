@@ -254,8 +254,7 @@ function ChatPreferencesDialogContent({
           </span>
           <div className="relative w-full">
             <Textarea
-              className="min-h-36 max-h-64 resize-none"
-              rows={6}
+              className="min-h-24 max-h-44 resize-none"
               value={preferences.responseStyleExample}
               onChange={(e) => {
                 setPreferences({
