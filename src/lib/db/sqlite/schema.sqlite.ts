@@ -35,6 +35,7 @@ export const UserSchema = sqliteTable("user", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   image: text("image"),
+  preferences: text("preferences").default("{}"),
   createdAt: integer("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: integer("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });

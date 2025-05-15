@@ -22,6 +22,8 @@ import { MCPToolInfo } from "app-types/mcp";
 import { serverCache } from "lib/cache";
 import { CacheKeys } from "lib/cache/cache-keys";
 import { auth } from "../auth/auth";
+import logger from "logger";
+import { redirect } from "next/navigation";
 
 export async function getUserId() {
   const session = await auth();
@@ -50,7 +52,8 @@ export async function generateTitleFromUserMessageAction({
 export async function selectThreadWithMessagesAction(threadId: string) {
   const thread = await chatRepository.selectThread(threadId);
   if (!thread) {
-    throw new Error("Thread not found");
+    logger.error("Thread not found", threadId);
+    return redirect("/");
   }
   const messages = await chatRepository.selectMessagesByThreadId(threadId);
   return { ...thread, messages: messages ?? [] };

@@ -1,4 +1,9 @@
-import { User, UserRepository, UserZodSchema } from "app-types/user";
+import {
+  User,
+  UserPreferences,
+  UserRepository,
+  UserZodSchema,
+} from "app-types/user";
 import { generateHashedPassword } from "lib/db/utils";
 import { pgDb as db } from "../db.pg";
 import { UserSchema } from "../schema.pg";
@@ -22,7 +27,11 @@ export const pgUserRepository: UserRepository = {
       .insert(UserSchema)
       .values({ ...parsedUser, password: hashedPassword })
       .returning();
-    return result[0];
+    const userObj = result[0];
+    return {
+      ...userObj,
+      preferences: userObj.preferences ?? undefined,
+    };
   },
   existsByEmail: async (email: string): Promise<boolean> => {
     const result = await db
@@ -38,13 +47,17 @@ export const pgUserRepository: UserRepository = {
       .select()
       .from(UserSchema)
       .where(eq(UserSchema.email, email));
-    return result ? result : null;
+    if (!result) return null;
+    return {
+      ...result,
+      preferences: result.preferences ?? undefined,
+    };
   },
   updateUser: async (
     id: string,
     user: Pick<User, "name" | "image">,
   ): Promise<User> => {
-    const result = await db
+    const [result] = await db
       .update(UserSchema)
       .set({
         name: user.name,
@@ -53,6 +66,33 @@ export const pgUserRepository: UserRepository = {
       })
       .where(eq(UserSchema.id, id))
       .returning();
-    return result[0];
+    return {
+      ...result,
+      preferences: result.preferences ?? undefined,
+    };
+  },
+  updatePreferences: async (
+    userId: string,
+    preferences: UserPreferences,
+  ): Promise<User> => {
+    const [result] = await db
+      .update(UserSchema)
+      .set({
+        preferences,
+        updatedAt: new Date(),
+      })
+      .where(eq(UserSchema.id, userId))
+      .returning();
+    return {
+      ...result,
+      preferences: result.preferences ?? undefined,
+    };
+  },
+  getPreferences: async (userId: string) => {
+    const [result] = await db
+      .select({ preferences: UserSchema.preferences })
+      .from(UserSchema)
+      .where(eq(UserSchema.id, userId));
+    return result?.preferences ?? null;
   },
 };

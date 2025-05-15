@@ -1,4 +1,5 @@
 import { ChatMessage, Project } from "app-types/chat";
+import { UserPreferences } from "app-types/user";
 import { sql } from "drizzle-orm";
 import { pgTable, text, timestamp, json, uuid } from "drizzle-orm/pg-core";
 
@@ -42,6 +43,7 @@ export const UserSchema = pgTable("user", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   image: text("image"),
+  preferences: json("preferences").default({}).$type<UserPreferences>(),
   createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
