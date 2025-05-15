@@ -160,7 +160,8 @@ export async function POST(request: Request) {
 
         const result = streamText({
           model,
-          messages: [...systemPrompt, ...messages],
+          system: systemPrompt,
+          messages,
           maxSteps: 10,
           experimental_continueSteps: true,
           experimental_transform: smoothStream({ chunking: "word" }),

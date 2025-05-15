@@ -14,40 +14,49 @@ export const buildUserSystemPrompt = (
   userPreferences?: UserPreferences,
 ) => {
   let prompt = `
-# User Information
+### User Context ###
+<user_information>
+- **System time:** ${new Date().toLocaleString()}
+${session?.user?.name ? `- **User Name:** ${session?.user?.name}` : ""}
+${session?.user?.email ? `- **User Email:** ${session?.user?.email}` : ""}
+</user_information>`.trim();
 
-- system time: ${new Date().toLocaleString()}
-${session?.user?.name ? `- User Name: ${session?.user?.name}` : ""}
-${session?.user?.email ? `- User Email: ${session?.user?.email}` : ""}
-`;
+  // Enhanced professional context with more specific guidance
   if (userPreferences?.profession) {
     prompt += `
-- This user works as a ${userPreferences.profession}. When providing explanations:
-  * Use relevant domain terminology they would be familiar with
-  * Consider practical applications in their professional context
-  * Acknowledge their professional perspective when appropriate
-`;
+    ### Professional Context ###
+    <profession>
+    - This user works as a **${userPreferences.profession}**.
+    - Use domain-specific language and examples relevant to this profession.
+    - Assume appropriate baseline knowledge and avoid oversimplification.
+    - Connect explanations to real-world professional applications when possible.
+    </profession>`.trim();
   }
 
+  // Enhanced addressing preferences
   if (userPreferences?.displayName) {
     prompt += `
-- When addressing this user:
-  * Maintain a ${userPreferences.displayName} communication style
-  * This affects your tone, level of detail, and conversational approach
-`;
+
+### Addressing Preferences ###
+<addressing>
+- **When addressing this user**:
+  * Use the following name: ${userPreferences.displayName}
+  * Use their name at appropriate moments to personalize the interaction
+</addressing>`.trim();
   }
 
+  // Enhanced response style guidance with more specific instructions
   if (userPreferences?.responseStyleExample) {
     prompt += `
-- Pattern your responses after this style example:
-  "${userPreferences.responseStyleExample}"
-  * This example reflects the user's preferred explanation style
-  * Use similar phrasing, complexity level, and approach to explanations
-`;
-  } else {
-    prompt += `
-- You are a friendly assistant! Keep your responses concise and helpful.
-`;
+  ### Communication Style ###
+  <response_style>
+  - Match your response style to this example:
+    """
+    ${userPreferences.responseStyleExample}
+    """
+  - Replicate its tone, complexity, and approach to explanation.
+  - Adapt this style naturally to different topics and query complexities.
+  </response_style>`.trim();
   }
 
   return prompt.trim();
@@ -56,12 +65,18 @@ ${session?.user?.email ? `- User Email: ${session?.user?.email}` : ""}
 export const buildProjectInstructionsSystemPrompt = (
   instructions?: Project["instructions"] | null,
 ) => {
-  if (!instructions) return undefined;
-  return `
-# Project Instructions
+  if (!instructions?.systemPrompt?.trim()) return undefined;
 
-${instructions.systemPrompt}
-`.trim();
+  return `
+### Project Context ###
+<project_instructions>
+- The assistant is supporting a project with the following background and goals.
+- Read carefully and follow these guidelines throughout the conversation.
+
+${instructions.systemPrompt.trim()}
+
+- Stay aligned with this project's context and objectives unless instructed otherwise.
+</project_instructions>`.trim();
 };
 
 export const SUMMARIZE_PROMPT = `\n
@@ -90,3 +105,16 @@ Step 2: Based on that question, generate a valid JSON input object that matches 
 `.trim()
 }
 `;
+
+export const MANUAL_REJECT_RESPONSE_PROMPT = `\n
+The user has declined to run the tool. Please respond with the following three approaches:
+
+1. Ask 1-2 specific questions to clarify the user's goal.
+
+2. Suggest the following three alternatives:
+   - A method to solve the problem without using tools
+   - A method utilizing a different type of tool
+   - A method using the same tool but with different parameters or input values
+
+3. Guide the user to choose their preferred direction with a friendly and clear tone.
+`.trim();

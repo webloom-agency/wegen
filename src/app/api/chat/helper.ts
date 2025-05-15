@@ -17,6 +17,7 @@ import { safe } from "ts-safe";
 import logger from "logger";
 import { defaultTools } from "lib/ai/tools";
 import { AllowedMCPServer } from "app-types/mcp";
+import { MANUAL_REJECT_RESPONSE_PROMPT } from "lib/ai/prompts";
 
 export function filterToolsByMentions(
   tools: Record<string, Tool>,
@@ -77,26 +78,11 @@ export function appendAnnotations(
   return [...annotations, ...newAnnotations];
 }
 
-export function mergeSystemPrompt(
-  ...prompts: (string | undefined)[]
-): Omit<Message, "id">[] {
-  if (prompts.length === 0) return [];
-  return prompts
-    .map((prompt) => {
-      if (!prompt) return null;
-      const systemPrompt: Omit<Message, "id"> = {
-        role: "system",
-        content: prompt?.trim(),
-        parts: [
-          {
-            type: "text",
-            text: prompt?.trim(),
-          },
-        ],
-      };
-      return systemPrompt;
-    })
-    .filter(Boolean) as Omit<Message, "id">[];
+export function mergeSystemPrompt(...prompts: (string | undefined)[]): string {
+  const filteredPrompts = prompts
+    .map((prompt) => prompt?.trim())
+    .filter(Boolean);
+  return filteredPrompts.join("\n\n");
 }
 
 export function manualToolExecuteByLastMessage(
@@ -114,8 +100,7 @@ export function manualToolExecuteByLastMessage(
     },
   )?.toolInvocation as Extract<ToolInvocation, { state: "result" }>;
 
-  if (!manulConfirmation?.result)
-    return "The user chose not to run the tool. Please suggest an alternative approach, continue the conversation without it, or ask for clarification if needed.";
+  if (!manulConfirmation?.result) return MANUAL_REJECT_RESPONSE_PROMPT;
 
   const toolId = extractMCPToolId(toolName);
 

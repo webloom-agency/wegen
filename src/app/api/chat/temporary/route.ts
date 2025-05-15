@@ -3,7 +3,6 @@ import { auth } from "../../auth/auth";
 import { Message, smoothStream, streamText } from "ai";
 import { customModelProvider } from "lib/ai/models";
 import logger from "logger";
-import { mergeSystemPrompt } from "../helper";
 import { buildUserSystemPrompt } from "lib/ai/prompts";
 import { userRepository } from "lib/db/repository";
 
@@ -27,14 +26,10 @@ export async function POST(request: Request) {
     const userPreferences =
       (await userRepository.getPreferences(session.user.id)) || undefined;
 
-    const systemPrompt = mergeSystemPrompt(
-      "You are a friendly assistant! Keep your responses concise and helpful.",
-      buildUserSystemPrompt(session, userPreferences),
-    );
-
     return streamText({
       model,
-      messages: [...systemPrompt, ...messages],
+      system: buildUserSystemPrompt(session, userPreferences),
+      messages,
       maxSteps: 10,
       experimental_continueSteps: true,
       experimental_transform: smoothStream({ chunking: "word" }),
