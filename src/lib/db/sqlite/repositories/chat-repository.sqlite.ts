@@ -10,6 +10,7 @@ import {
   ChatMessageSchema,
   ChatThreadSchema,
   ProjectSchema,
+  UserSchema,
 } from "../schema.sqlite";
 import {
   convertToChatMessage,
@@ -49,7 +50,7 @@ export const sqliteChatRepository: ChatRepository = {
     return result[0] ? convertToChatThread(result[0]) : null;
   },
 
-  selectThreadWithMessages: async (id: string) => {
+  selectThreadDetails: async (id: string) => {
     if (!id) {
       return null;
     }
@@ -57,7 +58,7 @@ export const sqliteChatRepository: ChatRepository = {
       .select()
       .from(ChatThreadSchema)
       .leftJoin(ProjectSchema, eq(ChatThreadSchema.projectId, ProjectSchema.id))
-
+      .leftJoin(UserSchema, eq(ChatThreadSchema.userId, UserSchema.id))
       .where(eq(ChatThreadSchema.id, id));
 
     if (!thread) {
@@ -74,7 +75,9 @@ export const sqliteChatRepository: ChatRepository = {
       instructions: thread.project
         ? convertToProject(thread.project).instructions
         : null,
-
+      userPreferences: thread.user?.preferences
+        ? JSON.parse(thread.user?.preferences)
+        : undefined,
       messages,
     };
   },

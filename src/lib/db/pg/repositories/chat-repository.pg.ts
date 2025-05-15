@@ -10,6 +10,7 @@ import {
   ChatMessageSchema,
   ChatThreadSchema,
   ProjectSchema,
+  UserSchema,
 } from "../schema.pg";
 
 import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
@@ -38,7 +39,7 @@ export const pgChatRepository: ChatRepository = {
     return result;
   },
 
-  selectThreadWithMessages: async (id: string) => {
+  selectThreadDetails: async (id: string) => {
     if (!id) {
       return null;
     }
@@ -46,6 +47,7 @@ export const pgChatRepository: ChatRepository = {
       .select()
       .from(ChatThreadSchema)
       .leftJoin(ProjectSchema, eq(ChatThreadSchema.projectId, ProjectSchema.id))
+      .leftJoin(UserSchema, eq(ChatThreadSchema.userId, UserSchema.id))
       .where(eq(ChatThreadSchema.id, id));
 
     if (!thread) {
@@ -60,6 +62,7 @@ export const pgChatRepository: ChatRepository = {
       createdAt: thread.chat_thread.createdAt,
       projectId: thread.chat_thread.projectId,
       instructions: thread.project?.instructions ?? null,
+      userPreferences: thread.user?.preferences ?? undefined,
       messages,
     };
   },

@@ -1,6 +1,7 @@
 import { MCPToolInfo } from "app-types/mcp";
 import { Session } from "next-auth";
 import { UserPreferences } from "app-types/user";
+import { Project } from "app-types/chat";
 
 export const CREATE_THREAD_TITLE_PROMPT = `\n
       - you will generate a short title based on the first message a user begins a conversation with
@@ -13,11 +14,12 @@ export const buildUserSystemPrompt = (
   userPreferences?: UserPreferences,
 ) => {
   let prompt = `
+# User Information
+
 - system time: ${new Date().toLocaleString()}
 ${session?.user?.name ? `- User Name: ${session?.user?.name}` : ""}
 ${session?.user?.email ? `- User Email: ${session?.user?.email}` : ""}
 `;
-
   if (userPreferences?.profession) {
     prompt += `
 - This user works as a ${userPreferences.profession}. When providing explanations:
@@ -42,9 +44,24 @@ ${session?.user?.email ? `- User Email: ${session?.user?.email}` : ""}
   * This example reflects the user's preferred explanation style
   * Use similar phrasing, complexity level, and approach to explanations
 `;
+  } else {
+    prompt += `
+- You are a friendly assistant! Keep your responses concise and helpful.
+`;
   }
 
   return prompt.trim();
+};
+
+export const buildProjectInstructionsSystemPrompt = (
+  instructions?: Project["instructions"] | null,
+) => {
+  if (!instructions) return undefined;
+  return `
+# Project Instructions
+
+${instructions.systemPrompt}
+`.trim();
 };
 
 export const SUMMARIZE_PROMPT = `\n

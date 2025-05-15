@@ -1,6 +1,7 @@
 import type { UIMessage, Message } from "ai";
 import { z } from "zod";
 import { AllowedMCPServerZodSchema } from "./mcp";
+import { UserPreferences } from "./user";
 
 export type ChatThread = {
   id: string;
@@ -67,10 +68,11 @@ export type ChatRepository = {
 
   selectThread(id: string): Promise<ChatThread | null>;
 
-  selectThreadWithMessages(id: string): Promise<
+  selectThreadDetails(id: string): Promise<
     | (ChatThread & {
         instructions: Project["instructions"] | null;
         messages: ChatMessage[];
+        userPreferences?: UserPreferences;
       })
     | null
   >;

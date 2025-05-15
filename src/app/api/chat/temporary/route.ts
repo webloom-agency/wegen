@@ -34,8 +34,7 @@ export async function POST(request: Request) {
 
     return streamText({
       model,
-      system: systemPrompt,
-      messages,
+      messages: [...systemPrompt, ...messages],
       maxSteps: 10,
       experimental_continueSteps: true,
       experimental_transform: smoothStream({ chunking: "word" }),

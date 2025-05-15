@@ -77,11 +77,26 @@ export function appendAnnotations(
   return [...annotations, ...newAnnotations];
 }
 
-export function mergeSystemPrompt(...prompts: (string | undefined)[]) {
+export function mergeSystemPrompt(
+  ...prompts: (string | undefined)[]
+): Omit<Message, "id">[] {
+  if (prompts.length === 0) return [];
   return prompts
-    .map((prompt) => prompt?.trim())
-    .filter(Boolean)
-    .join("\n\n---\n\n");
+    .map((prompt) => {
+      if (!prompt) return null;
+      const systemPrompt: Omit<Message, "id"> = {
+        role: "system",
+        content: "",
+        parts: [
+          {
+            type: "text",
+            text: prompt?.trim(),
+          },
+        ],
+      };
+      return systemPrompt;
+    })
+    .filter(Boolean) as Omit<Message, "id">[];
 }
 
 export function manualToolExecuteByLastMessage(
