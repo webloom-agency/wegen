@@ -1,6 +1,7 @@
 "use client";
 
 import { createDebounce } from "lib/utils";
+import { Loader } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -73,7 +74,7 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
           loading: false,
         });
       }
-    }, 300);
+    }, 500);
 
     return () => {
       debounce.clear();
@@ -82,10 +83,10 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
 
   if (state.loading) {
     return (
-      <div className="px-6 pb-6 overflow-auto">
+      <div className="px-6 overflow-auto">
         <div className="flex items-center justify-center h-20 w-full">
-          <div className="text-sm text-muted-foreground">
-            Rendering diagram...
+          <div className="text-muted-foreground flex items-center gap-2">
+            Rendering diagram <Loader className="size-4 animate-spin" />
           </div>
         </div>
       </div>
