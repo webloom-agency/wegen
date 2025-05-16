@@ -74,9 +74,9 @@ export function ToolSelector({
         {children ?? (
           <Button
             variant={"outline"}
-            className="rounded-full bg-secondary font-semibold"
+            className={"rounded-full bg-secondary font-semibold"}
           >
-            <Wrench className="size-3.5 fill-muted-foreground" />
+            <Wrench className="size-3.5" />
             Tools
           </Button>
         )}
