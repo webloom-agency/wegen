@@ -114,14 +114,18 @@ Tool Choice 모드(`Auto`, `Manual`, `None`)로 도구 호출 방식을 직접 �
 이 프로젝트는 [pnpm](https://pnpm.io/)을 권장 패키지 매니저로 사용합니다.
 
 ```bash
-# 1. 의존성 설치
+# 1. Install dependencies
 pnpm i
 
-# 2. 프로젝트 초기화(.env 생성, DB 설정)
+# 2. Initialize project (creates .env, sets up DB)
 pnpm initial
 
-# 3. 개발 서버 시작
+# 3. Start dev server
 pnpm dev
+
+# 4. (Optional) Build & start for local testing
+pnpm build:local && pnpm start
+# Use build:local for local start to ensure correct cookie settings
 ```
 
 브라우저에서 [http://localhost:3000](http://localhost:3000)을 열어 시작하세요.

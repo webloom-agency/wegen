@@ -42,6 +42,10 @@ export const sqliteChatRepository: ChatRepository = {
     return convertToChatThread(result);
   },
 
+  deleteChatMessage: async (id: string): Promise<void> => {
+    await db.delete(ChatMessageSchema).where(eq(ChatMessageSchema.id, id));
+  },
+
   selectThread: async (id: string): Promise<ChatThread | null> => {
     const result = await db
       .select()

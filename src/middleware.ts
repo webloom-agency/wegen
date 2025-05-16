@@ -11,11 +11,13 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/ping")) {
     return new Response("pong", { status: 200 });
   }
-
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
-    secureCookie: process.env.NODE_ENV === "production",
+    secureCookie:
+      process.env.DEPLOY_ENV === "local"
+        ? false
+        : process.env.NODE_ENV === "production",
   });
 
   if (!token) {

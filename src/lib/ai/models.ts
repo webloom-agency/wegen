@@ -17,8 +17,7 @@ export const allModels = {
     }),
   },
   google: {
-    "gemini-2.0": google("gemini-2.0-flash-exp"),
-    "gemini-2.0-thinking": google("gemini-2.0-flash-exp"),
+    "gemini-2.5-flash": google("gemini-2.5-flash-preview-04-17"),
     "gemini-2.5-pro": google("gemini-2.5-pro-exp-03-25"),
   },
   anthropic: {
@@ -27,8 +26,8 @@ export const allModels = {
   },
   xai: {
     "grok-2": xai("grok-2-1212"),
-    "grok-3-mini": xai("grok-3-mini-beta"),
-    "grok-3": xai("grok-3-beta"),
+    "grok-3-mini": xai("grok-3-mini-latest"),
+    "grok-3": xai("grok-3-latest"),
   },
   ollama: {
     "gemma3:1b": ollama("gemma3:1b"),
