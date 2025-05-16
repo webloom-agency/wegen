@@ -11,6 +11,7 @@ import {
   RefreshCw,
   X,
   Wrench,
+  Trash2,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { Button } from "ui/button";
@@ -18,7 +19,15 @@ import { Markdown } from "./markdown";
 import { PastesContentCard } from "./pasts-content";
 import { cn, safeJSONParse, toAny } from "lib/utils";
 import JsonView from "ui/json-view";
-import { useMemo, useState, memo, useEffect, useRef, Suspense } from "react";
+import {
+  useMemo,
+  useState,
+  memo,
+  useEffect,
+  useRef,
+  Suspense,
+  useCallback,
+} from "react";
 import { MessageEditor } from "./message-editor";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useCopy } from "@/hooks/use-copy";
@@ -27,7 +36,10 @@ import { Card, CardContent } from "ui/card";
 import { AnimatePresence, motion } from "framer-motion";
 import { SelectModel } from "./select-model";
 import { customModelProvider } from "lib/ai/models";
-import { deleteMessagesByChatIdAfterTimestampAction } from "@/app/api/chat/actions";
+import {
+  deleteMessageAction,
+  deleteMessagesByChatIdAfterTimestampAction,
+} from "@/app/api/chat/actions";
 
 import { toast } from "sonner";
 import { safe } from "ts-safe";
@@ -105,6 +117,7 @@ export const UserMessagePart = ({
 }: UserMessagePartProps) => {
   const { copied, copy } = useCopy();
   const [mode, setMode] = useState<"view" | "edit">("view");
+  const [isDeleting, setIsDeleting] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const toolMentions = useMemo(() => {
     if (!message.annotations?.length) return [];
@@ -119,6 +132,23 @@ export const UserMessagePart = ({
       ),
     );
   }, [message.annotations]);
+
+  const deleteMessage = useCallback(() => {
+    safe(() => setIsDeleting(true))
+      .ifOk(() => deleteMessageAction(message.id))
+      .ifOk(() =>
+        setMessages((messages) => {
+          const index = messages.findIndex((m) => m.id === message.id);
+          if (index !== -1) {
+            return messages.filter((_, i) => i !== index);
+          }
+          return messages;
+        }),
+      )
+      .ifFail((error) => toast.error(error.message))
+      .watch(() => setIsDeleting(false))
+      .unwrap();
+  }, [message.id]);
 
   useEffect(() => {
     if (status === "submitted" && isLast) {
@@ -175,20 +205,6 @@ export const UserMessagePart = ({
                   data-testid="message-edit-button"
                   variant="ghost"
                   size="icon"
-                  className="size-3! p-4! opacity-0 group-hover/message:opacity-100"
-                  onClick={() => setMode("edit")}
-                >
-                  <Pencil />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Edit</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  data-testid="message-edit-button"
-                  variant="ghost"
-                  size="icon"
                   className={cn(
                     "size-3! p-4! opacity-0 group-hover/message:opacity-100",
                   )}
@@ -198,6 +214,41 @@ export const UserMessagePart = ({
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Copy</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  data-testid="message-edit-button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-3! p-4! opacity-0 group-hover/message:opacity-100"
+                  onClick={() => setMode("edit")}
+                >
+                  <Pencil />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Edit</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  disabled={isDeleting}
+                  onClick={deleteMessage}
+                  variant="ghost"
+                  size="icon"
+                  className="size-3! p-4! opacity-0 group-hover/message:opacity-100 hover:text-destructive"
+                >
+                  {isDeleting ? (
+                    <Loader className="animate-spin" />
+                  ) : (
+                    <Trash2 />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="text-destructive" side="bottom">
+                Delete Message
+              </TooltipContent>
             </Tooltip>
           </>
         )}
@@ -220,6 +271,24 @@ export const AssistMessagePart = ({
 }: AssistMessagePartProps) => {
   const { copied, copy } = useCopy();
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const deleteMessage = useCallback(() => {
+    safe(() => setIsDeleting(true))
+      .ifOk(() => deleteMessageAction(message.id))
+      .ifOk(() =>
+        setMessages((messages) => {
+          const index = messages.findIndex((m) => m.id === message.id);
+          if (index !== -1) {
+            return messages.filter((_, i) => i !== index);
+          }
+          return messages;
+        }),
+      )
+      .ifFail((error) => toast.error(error.message))
+      .watch(() => setIsDeleting(false))
+      .unwrap();
+  }, [message.id]);
 
   const handleModelChange = (model: string) => {
     safe(() => setIsLoading(true))
@@ -303,6 +372,22 @@ export const AssistMessagePart = ({
               </div>
             </TooltipTrigger>
             <TooltipContent>Change Model</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={isDeleting}
+                onClick={deleteMessage}
+                className="size-3! p-4! opacity-0 group-hover/message:opacity-100 hover:text-destructive"
+              >
+                {isDeleting ? <Loader className="animate-spin" /> : <Trash2 />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="text-destructive" side="bottom">
+              Delete Message
+            </TooltipContent>
           </Tooltip>
         </div>
       )}

@@ -59,6 +59,10 @@ export async function selectThreadWithMessagesAction(threadId: string) {
   return { ...thread, messages: messages ?? [] };
 }
 
+export async function deleteMessageAction(messageId: string) {
+  await chatRepository.deleteChatMessage(messageId);
+}
+
 export async function deleteThreadAction(threadId: string) {
   await chatRepository.deleteThread(threadId);
 }
