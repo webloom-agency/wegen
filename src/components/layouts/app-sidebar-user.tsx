@@ -14,12 +14,7 @@ import { DropdownMenu } from "ui/dropdown-menu";
 import { SidebarMenuItem } from "ui/sidebar";
 import { SidebarMenu } from "ui/sidebar";
 import { Avatar } from "ui/avatar";
-import {
-  ChevronsUpDown,
-  Loader,
-  LogOutIcon,
-  MessagesSquareIcon,
-} from "lucide-react";
+import { ChevronsUpDown, Loader, LogOutIcon, Settings2 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import {
   Dialog,
@@ -117,7 +112,7 @@ export function AppSidebarUser() {
                   className="cursor-pointer"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <MessagesSquareIcon className="size-4 text-foreground" />
+                  <Settings2 className="size-4 text-foreground" />
                   <span>Chat Preferences</span>
                 </DropdownMenuItem>
               </DialogTrigger>
