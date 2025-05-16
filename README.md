@@ -148,9 +148,10 @@ The `pnpm initial` command generates a `.env` file. Add your API keys there:
 GOOGLE_GENERATIVE_AI_API_KEY=****
 OPENAI_API_KEY=****
 # ANTHROPIC_API_KEY=****
+AUTH_SECRET=
+POSTGRES_URL
 ```
-
-SQLite is the default DB (`db.sqlite`). To use PostgreSQL, set `USE_FILE_SYSTEM_DB=false` and define `POSTGRES_URL` in `.env`, please note SQLite doesn't work on vercel - trying this results in an erorr. 
+for auth secret run `pnpx auth secret`
 
 -----
 
@@ -160,7 +161,7 @@ You can connect MCP tools via:
 
 1. **UI Setup:** Go to http://localhost:3000/mcp and configure through the interface.
 2. **Direct File Edit:** Modify `.mcp-config.json` in project root, this doesn't work on vercel.
-3. **Custom Logic:** Edit `./custom-mcp-server/index.ts` to implement your own logic, this also doesn't run on vercel .
+3. **Custom Logic:** Edit `./custom-mcp-server/index.ts` to implement your own logic, this also doesn't run on vercel or docker.
 
 -----
 
