@@ -11,4 +11,7 @@ services:
       - DOCKER=1
     env_file:
       - .env
+    dns:
+      - 8.8.8.8  # Google's public DNS server
+      - 8.8.4.4  # Google's public DNS server
     restart: unless-stopped
