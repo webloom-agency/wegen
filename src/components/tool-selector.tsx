@@ -44,7 +44,7 @@ import { Input } from "ui/input";
 import { MCPIcon } from "ui/mcp-icon";
 
 import { handleErrorWithToast } from "ui/shared-toast";
-import { Skeleton } from "ui/skeleton";
+
 import { Switch } from "ui/switch";
 import { useShallow } from "zustand/shallow";
 
@@ -337,7 +337,7 @@ function McpServerSelector() {
   );
   return (
     <DropdownMenuGroup>
-      {selectedMcpServerList.length > 0 ? (
+      {!selectedMcpServerList.length ? (
         <div className="text-sm text-muted-foreground w-full h-full flex items-center justify-center py-6">
           No MCP servers found.
         </div>
