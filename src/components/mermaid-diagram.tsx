@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import { useCopy } from "@/hooks/use-copy";
 import { Button } from "ui/button";
 import { Clipboard, CheckIcon } from "lucide-react";
-import { cn } from "lib/utils";
 
 interface MermaidDiagramProps {
   chart: string;
@@ -16,12 +15,22 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
   const [svg, setSvg] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [renderAttempted, setRenderAttempted] = useState(false);
   const { copied, copy } = useCopy();
   const containerRef = useRef<HTMLDivElement>(null);
+  const previousChartRef = useRef<string>(chart);
 
   useEffect(() => {
-    // Load mermaid dynamically to avoid SSR issues
-    const loadMermaid = async () => {
+    // Reset states if chart has changed
+    if (previousChartRef.current !== chart) {
+      setLoading(true);
+      setError(null);
+      setRenderAttempted(false);
+      previousChartRef.current = chart;
+    }
+
+    // Debounce rendering to avoid flickering during streaming
+    const renderTimeout = setTimeout(async () => {
       try {
         const mermaid = (await import("mermaid")).default;
         
@@ -31,21 +40,38 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
           theme: theme === "dark" ? "dark" : "default",
           securityLevel: "loose",
           fontFamily: "inherit",
+          logLevel: 1, // Reduce console noise
         });
         
+        // Try to parse first - if this fails, don't attempt rendering
+        try {
+          mermaid.parse(chart);
+        } catch (_parseError) {
+          // If parsing fails, silently wait for more complete content
+          // Don't show an error, just keep loading state
+          return;
+        }
+        
+        // Only proceed to rendering if parse was successful
+        setRenderAttempted(true);
         const { svg } = await mermaid.render(`mermaid-${Date.now()}`, chart);
         setSvg(svg);
         setError(null);
-      } catch (err) {
-        console.error("Mermaid rendering error:", err);
-        setError(err instanceof Error ? err.message : "Failed to render diagram");
-      } finally {
         setLoading(false);
+      } catch (err) {
+        // Only show errors if this wasn't a transient state during streaming
+        if (renderAttempted) {
+          console.error("Mermaid rendering error:", err);
+          setError(err instanceof Error ? err.message : "Failed to render diagram");
+          setLoading(false);
+        }
       }
-    };
+    }, 300); // Delay rendering to avoid flickering during streaming
 
-    loadMermaid();
-  }, [chart, theme]);
+    return () => {
+      clearTimeout(renderTimeout);
+    };
+  }, [chart, theme, renderAttempted]);
 
   return (
     <div className="relative bg-accent/30 flex flex-col rounded-2xl overflow-hidden border">
@@ -64,10 +90,10 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
       </div>
       <div className="px-6 pb-6">
         {loading ? (
-          <div className="animate-pulse flex items-center justify-center h-20 w-full">
+          <div className="flex items-center justify-center h-20 w-full">
             <div className="text-sm text-muted-foreground">Rendering diagram...</div>
           </div>
-        ) : error ? (
+        ) : error && renderAttempted ? (
           <div className="text-red-500 p-4">
             <p>Error rendering Mermaid diagram:</p>
             <pre className="mt-2 p-2 bg-red-100 dark:bg-red-900/20 rounded text-xs overflow-auto">{error}</pre>
@@ -76,7 +102,7 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
         ) : (
           <div 
             ref={containerRef}
-            className={cn("flex justify-center transition-opacity", loading ? "opacity-0" : "opacity-100")}
+            className="flex justify-center transition-opacity duration-200"
             dangerouslySetInnerHTML={{ __html: svg }} 
           />
         )}

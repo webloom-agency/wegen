@@ -27,10 +27,10 @@ const MermaidDiagram = dynamic(
         <div className="w-full flex z-20 py-2 px-4 items-center">
           <span className="text-sm text-muted-foreground">mermaid</span>
         </div>
-        <div className="relative overflow-x-auto px-6 pb-6 animate-pulse">
+        <div className="relative overflow-x-auto px-6 pb-6">
           <div className="h-20 w-full flex items-center justify-center">
             <span className="text-muted-foreground">
-              Loading Mermaid diagram...
+              Loading Mermaid renderer...
             </span>
           </div>
         </div>
@@ -129,20 +129,22 @@ export function PreBlock({ children }: { children: any }) {
         .watch(() => setLoading(false));
     }
   }, [theme, language, code, isMermaid]);
+
+  // For Mermaid diagrams, let the MermaidDiagram component handle the validation
+  // and rendering internally to prevent flickering
+  if (isMermaid) {
+    return <MermaidDiagram chart={code} />;
+  }
+
+  // For other code blocks, render as before
   return (
-    <>
-      {isMermaid ? (
-        <MermaidDiagram chart={code} />
-      ) : (
-        <div
-          className={cn(
-            loading && "animate-pulse",
-            "text-sm flex bg-accent/30 flex-col rounded-2xl relative my-4 overflow-hidden border"
-          )}
-        >
-          {component}
-        </div>
+    <div
+      className={cn(
+        loading && "animate-pulse",
+        "text-sm flex bg-accent/30 flex-col rounded-2xl relative my-4 overflow-hidden border"
       )}
-    </>
+    >
+      {component}
+    </div>
   );
 }
