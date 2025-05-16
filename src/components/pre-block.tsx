@@ -37,7 +37,7 @@ const MermaidDiagram = dynamic(
       </div>
     ),
     ssr: false,
-  }
+  },
 );
 
 const PurePre = ({
@@ -75,15 +75,25 @@ const PurePre = ({
 
 export async function highlight(
   code: string,
-  lang: BundledLanguage,
+  lang: BundledLanguage | (string & {}),
   theme: string,
 ) {
-  const parsed: BundledLanguage = bundledLanguages[lang] ? lang : "md";
+  const parsed: BundledLanguage = (
+    bundledLanguages[lang] ? lang : "md"
+  ) as BundledLanguage;
 
   if (lang === "json") {
     return (
       <PurePre code={code} lang={lang}>
         <JsonView data={code} initialExpandDepth={3} />
+      </PurePre>
+    );
+  }
+
+  if (lang === "mermaid") {
+    return (
+      <PurePre code={code} lang={lang}>
+        <MermaidDiagram chart={code} />
       </PurePre>
     );
   }
@@ -107,41 +117,32 @@ export function PreBlock({ children }: { children: any }) {
   const code = children.props.children;
   const { theme } = useTheme();
   const language = children.props.className?.split("-")?.[1] || "bash";
-  const isMermaid = language === "mermaid";
   const [loading, setLoading] = useState(true);
   const [component, setComponent] = useState<JSX.Element | null>(
     <PurePre className="animate-pulse" code={code} lang={language}>
       {children}
-    </PurePre>
+    </PurePre>,
   );
 
   useLayoutEffect(() => {
-    if (!isMermaid) {
-      safe()
-        .map(() =>
-          highlight(
-            code,
-            language,
-            theme === "dark" ? "dark-plus" : "github-light"
-          )
-        )
-        .ifOk(setComponent)
-        .watch(() => setLoading(false));
-    }
-  }, [theme, language, code, isMermaid]);
-
-  // For Mermaid diagrams, let the MermaidDiagram component handle the validation
-  // and rendering internally to prevent flickering
-  if (isMermaid) {
-    return <MermaidDiagram chart={code} />;
-  }
+    safe()
+      .map(() =>
+        highlight(
+          code,
+          language,
+          theme === "dark" ? "dark-plus" : "github-light",
+        ),
+      )
+      .ifOk(setComponent)
+      .watch(() => setLoading(false));
+  }, [theme, language, code]);
 
   // For other code blocks, render as before
   return (
     <div
       className={cn(
         loading && "animate-pulse",
-        "text-sm flex bg-accent/30 flex-col rounded-2xl relative my-4 overflow-hidden border"
+        "text-sm flex bg-accent/30 flex-col rounded-2xl relative my-4 overflow-hidden border",
       )}
     >
       {component}

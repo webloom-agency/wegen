@@ -28,7 +28,6 @@ ${session?.user?.email ? `- **User Email:** ${session?.user?.email}` : ""}
     <profession>
     - This user works as a **${userPreferences.profession}**.
     - Use domain-specific language and examples relevant to this profession.
-    - Assume appropriate baseline knowledge and avoid oversimplification.
     - Connect explanations to real-world professional applications when possible.
     </profession>`.trim();
   }
@@ -46,28 +45,23 @@ ${session?.user?.email ? `- **User Email:** ${session?.user?.email}` : ""}
   }
 
   // Enhanced response style guidance with more specific instructions
-  if (userPreferences?.responseStyleExample) {
-    prompt += `
-  ### Communication Style ###
-  <response_style>
-  - Match your response style to this example:
-    """
-    ${userPreferences.responseStyleExample}
-    """
-  - Replicate its tone, complexity, and approach to explanation.
-  - Adapt this style naturally to different topics and query complexities.
-  </response_style>`.trim();
-  }
-
-  // Add Mermaid diagram guidelines
   prompt += `
-
-### Visualization Guidelines ###
-<visualization>
+  ### Communication Style ###
+<response_style>
+${
+  userPreferences?.responseStyleExample
+    ? `
+- Match your response style to this example:
+  """
+  ${userPreferences.responseStyleExample}
+- Replicate its tone, complexity, and approach to explanation.
+- Adapt this style naturally to different topics and query complexities.
+  """`.trim()
+    : ""
+}
 - If a diagram or chart is requested or would be helpful to express your thoughts, use mermaid code blocks.
 - Choose the appropriate diagram type based on the content you're explaining. All mermaid diagram types are available.
-- Ensure your diagram code is syntactically correct for the mermaid renderer.
-</visualization>`.trim();
+</response_style>`.trim();
 
   return prompt.trim();
 };
