@@ -180,13 +180,12 @@ export const UserMessagePart = ({
         data-testid="message-content"
         className={cn(
           "flex flex-col gap-4",
-
           {
-            "text-accent-foreground border px-4 py-3 rounded-2xl": isLast,
+            "text-accent-foreground px-4 py-3 rounded-3xl": isLast,
             "opacity-50": isError,
             "bg-accent": isLast,
           },
-          isError && "border-destructive",
+          isError && "border-destructive border",
         )}
       >
         {isLast ? (
