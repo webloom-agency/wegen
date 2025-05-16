@@ -129,11 +129,13 @@ pnpm initial
 
 # 3. Start dev server
 pnpm dev
+
+# 4. (Optional) Build & start for local testing
+pnpm build:local && pnpm start
+# Use build:local for local start to ensure correct cookie settings
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser to get started.
-
-> **⚠️Note for Local Production Testing:** When testing production builds locally with `pnpm build` and `pnpm start` (without a custom domain), you may need to configure NextAuth with `trustHost: true` and adjust cookie security settings to prevent authentication issues. See [issue #30](https://github.com/cgoinglove/mcp-client-chatbot/issues/30) for the specific changes.
 
 -----
 

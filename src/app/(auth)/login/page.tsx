@@ -38,7 +38,10 @@ export default function LoginPage() {
       .watch(watchError(handleErrorWithToast))
       .watch(() => setLoading(false))
       .ifOk(() => update())
-      .ifOk(() => router.push("/"))
+      .ifFail(handleErrorWithToast)
+      .ifOk(() => {
+        router.push("/");
+      })
       .unwrap();
   };
 

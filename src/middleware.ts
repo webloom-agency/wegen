@@ -11,20 +11,18 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/ping")) {
     return new Response("pong", { status: 200 });
   }
-
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
-    secureCookie:
-      process.env.NODE_ENV === "production" && process.env.NEXT_START !== "1",
+    secureCookie: process.env.NODE_ENV === "production" && process.env.NEXT_START !== "1",
   });
-
   if (!token) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();
 }
+
 
 export const config = {
   matcher: [

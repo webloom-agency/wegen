@@ -11,6 +11,7 @@ import {
   useSidebar,
 } from "ui/sidebar";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { useEffect } from "react";
 import { getStorageManager } from "lib/browser-stroage";
@@ -24,10 +25,23 @@ const browserSidebarStorage = getStorageManager<boolean>("sidebar_state");
 
 export function AppSidebar() {
   const { open } = useSidebar();
+  const router = useRouter();
 
   useEffect(() => {
     browserSidebarStorage.set(open);
   }, [open]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j") {
+        e.preventDefault();
+        e.stopPropagation();
+        router.push("/");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [router]);
 
   return (
     <Sidebar collapsible="offcanvas">

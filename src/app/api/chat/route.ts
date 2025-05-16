@@ -106,20 +106,25 @@ export async function POST(request: Request) {
     const tools = safe(mcpTools)
       .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
       .map((tools) => {
+        // filter tools by mentions
         if (requiredToolsAnnotations.length) {
           return filterToolsByMentions(tools, requiredToolsAnnotations);
         }
-        return {
-          ...getAllowedDefaultToolkit(allowedAppDefaultToolkit),
-          ...filterToolsByAllowedMCPServers(tools, allowedMcpServers),
-        };
+        // filter tools by allowed mcp servers
+        return filterToolsByAllowedMCPServers(tools, allowedMcpServers);
       })
+      // filter tools by tool choice
       .map((tools) => {
         if (toolChoice == "manual") {
           return excludeToolExecution(tools);
         }
         return tools;
       })
+      // add allowed default toolkit
+      .map((tools) => ({
+        ...getAllowedDefaultToolkit(allowedAppDefaultToolkit),
+        ...tools,
+      }))
       .orElse(undefined);
 
     const messages: Message[] = isLastMessageUserMessage

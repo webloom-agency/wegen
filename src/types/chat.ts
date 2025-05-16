@@ -68,6 +68,8 @@ export type ChatRepository = {
 
   selectThread(id: string): Promise<ChatThread | null>;
 
+  deleteChatMessage(id: string): Promise<void>;
+
   selectThreadDetails(id: string): Promise<
     | (ChatThread & {
         instructions: Project["instructions"] | null;

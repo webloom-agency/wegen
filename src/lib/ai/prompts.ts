@@ -19,45 +19,45 @@ export const buildUserSystemPrompt = (
 - **System time:** ${new Date().toLocaleString()}
 ${session?.user?.name ? `- **User Name:** ${session?.user?.name}` : ""}
 ${session?.user?.email ? `- **User Email:** ${session?.user?.email}` : ""}
+${userPreferences?.profession ? `- **User Profession:** ${userPreferences?.profession}` : ""}
 </user_information>`.trim();
-
-  // Enhanced professional context with more specific guidance
-  if (userPreferences?.profession) {
-    prompt += `
-    ### Professional Context ###
-    <profession>
-    - This user works as a **${userPreferences.profession}**.
-    - Use domain-specific language and examples relevant to this profession.
-    - Assume appropriate baseline knowledge and avoid oversimplification.
-    - Connect explanations to real-world professional applications when possible.
-    </profession>`.trim();
-  }
 
   // Enhanced addressing preferences
   if (userPreferences?.displayName) {
     prompt += `
-
 ### Addressing Preferences ###
 <addressing>
-- **When addressing this user**:
   * Use the following name: ${userPreferences.displayName}
   * Use their name at appropriate moments to personalize the interaction
 </addressing>`.trim();
   }
 
   // Enhanced response style guidance with more specific instructions
-  if (userPreferences?.responseStyleExample) {
-    prompt += `
-  ### Communication Style ###
-  <response_style>
-  - Match your response style to this example:
-    """
-    ${userPreferences.responseStyleExample}
-    """
-  - Replicate its tone, complexity, and approach to explanation.
-  - Adapt this style naturally to different topics and query complexities.
-  </response_style>`.trim();
-  }
+  prompt += `
+### Communication Style ###
+
+${
+  userPreferences?.responseStyleExample
+    ? `
+<response_style>
+- **Match your response style to this example**:
+  """
+  ${userPreferences.responseStyleExample}
+- Replicate its tone, complexity, and approach to explanation.
+- Adapt this style naturally to different topics and query complexities.
+  """
+</response_style>`.trim()
+    : ""
+}
+${
+  userPreferences?.profession
+    ? `
+- This user works as a **${userPreferences.profession}**.
+`.trim()
+    : ""
+}
+- If a diagram or chart is requested or would be helpful to express your thoughts, use mermaid code blocks.
+</response_style>`.trim();
 
   return prompt.trim();
 };
