@@ -240,7 +240,9 @@ function ChatPreferencesDialogContent({
           </div>
         </div>
         <div className="flex flex-col gap-2 text-foreground">
-          <Label>How should responses be tailored for you?</Label>
+          <Label>
+            What personal preferences should be taken into account in responses?
+          </Label>
           <span className="text-xs text-muted-foreground"></span>
           <div className="relative w-full">
             <Textarea
