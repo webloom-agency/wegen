@@ -30,7 +30,10 @@ export function AppSidebarMenus({ isOpen }: { isOpen: boolean }) {
                     </SidebarMenuButton>
                   </TooltipTrigger>
                   <TooltipContent side="right">
-                    <p>New Chat</p>
+                    <p>
+                      New Chat{" "}
+                      <span className="text-xs text-muted-foreground">⌘J</span>
+                    </p>
                   </TooltipContent>
                 </Link>
               </SidebarMenuItem>
