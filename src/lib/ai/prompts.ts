@@ -22,22 +22,11 @@ ${session?.user?.email ? `- **User Email:** ${session?.user?.email}` : ""}
 ${userPreferences?.profession ? `- **User Profession:** ${userPreferences?.profession}` : ""}
 </user_information>`.trim();
 
-  // Enhanced professional context with more specific guidance
-  if (userPreferences?.profession) {
-    prompt += `
-### Professional Context ###
-<profession>
-- This user works as a **${userPreferences.profession}**.
-- Connect explanations to real-world professional applications when possible.
-</profession>`.trim();
-  }
-
   // Enhanced addressing preferences
   if (userPreferences?.displayName) {
     prompt += `
 ### Addressing Preferences ###
 <addressing>
-- **When addressing this user**:
   * Use the following name: ${userPreferences.displayName}
   * Use their name at appropriate moments to personalize the interaction
 </addressing>`.trim();
@@ -46,20 +35,28 @@ ${userPreferences?.profession ? `- **User Profession:** ${userPreferences?.profe
   // Enhanced response style guidance with more specific instructions
   prompt += `
 ### Communication Style ###
-<response_style>
+
 ${
   userPreferences?.responseStyleExample
     ? `
-- Match your response style to this example:
+<response_style>
+- **Match your response style to this example**:
   """
   ${userPreferences.responseStyleExample}
 - Replicate its tone, complexity, and approach to explanation.
 - Adapt this style naturally to different topics and query complexities.
-  """`.trim()
+  """
+</response_style>`.trim()
+    : ""
+}
+${
+  userPreferences?.profession
+    ? `
+- This user works as a **${userPreferences.profession}**.
+`.trim()
     : ""
 }
 - If a diagram or chart is requested or would be helpful to express your thoughts, use mermaid code blocks.
-- Choose the appropriate diagram type based on the content you're explaining. All mermaid diagram types are available.
 </response_style>`.trim();
 
   return prompt.trim();
