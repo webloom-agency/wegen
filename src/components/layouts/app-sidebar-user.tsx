@@ -208,13 +208,13 @@ function ChatPreferencesDialogContent({
   }, [open]);
 
   return (
-    <DialogContent hideClose className="w-full">
+    <DialogContent hideClose className="md:max-w-2xl">
       <DialogTitle>Chat Preferences</DialogTitle>
-      <DialogDescription className="mb-8">
-        Introduce yourself to receive more personalized responses.
+      <DialogDescription>
+        {/* Introduce yourself to receive more personalized responses. */}
       </DialogDescription>
       <div className="flex flex-col gap-6 w-full">
-        <div className="flex flex-col gap-2 text-foreground">
+        <div className="flex flex-col gap-2">
           <Label>What should we call you?</Label>
           <Input
             value={preferences.displayName}
@@ -245,13 +245,8 @@ function ChatPreferencesDialogContent({
           </div>
         </div>
         <div className="flex flex-col gap-2 text-foreground">
-          <Label>
-            What personal preferences should the assistant consider when
-            generating responses?
-          </Label>
-          <span className="text-xs text-muted-foreground">
-            Preferences apply globally, as long as they follow safety rules.
-          </span>
+          <Label>How should responses be tailored for you?</Label>
+          <span className="text-xs text-muted-foreground"></span>
           <div className="relative w-full">
             <Textarea
               className="min-h-24 max-h-44 resize-none"
