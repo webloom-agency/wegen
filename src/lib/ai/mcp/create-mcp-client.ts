@@ -1,4 +1,3 @@
-// TODO: @brrock add logic to only allow sse on vercel and stdio and sse on local
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
@@ -18,6 +17,9 @@ import { colorize } from "consola/utils";
 import { createDebounce, isNull, Locker, toAny } from "lib/utils";
 
 import { safe } from "ts-safe";
+
+// Check if running on Vercel
+const isVercel = Boolean(process.env.VERCEL);
 
 type ClientOptions = {
   autoDisconnectSeconds?: number;
@@ -94,6 +96,11 @@ export class MCPClient {
       let transport: Transport;
       // Create appropriate transport based on server config type
       if (isMaybeStdioConfig(this.serverConfig)) {
+        // Skip stdio transport on Vercel
+        if (isVercel) {
+          throw new Error("Stdio transport is not supported on Vercel");
+        }
+
         const config = MCPStdioConfigZodSchema.parse(this.serverConfig);
         transport = new StdioClientTransport({
           command: config.command,

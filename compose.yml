@@ -1,0 +1,14 @@
+
+services:
+  mcp-client-chatbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_START=1
+      - DOCKER=1
+    env_file:
+      - .env
+    restart: unless-stopped

@@ -42,8 +42,6 @@ import {
 } from "./helper";
 import { generateTitleFromUserMessageAction } from "./actions";
 
-export const maxDuration = 120;
-
 export async function POST(request: Request) {
   try {
     const json = await request.json();

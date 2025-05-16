@@ -1,31 +1,40 @@
 import type { MCPServerConfig } from "app-types/mcp";
-import { dirname } from "path";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
 import type {
   MCPClientsManager,
   MCPConfigStorage,
 } from "./create-mcp-clients-manager";
-import chokidar from "chokidar";
-import type { FSWatcher } from "chokidar";
-import { createDebounce } from "lib/utils";
+import { dirname } from "path";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import chokidar, { type FSWatcher } from "chokidar";
 import equal from "fast-deep-equal";
+import { createDebounce } from "lib/utils";
 import logger from "logger";
 import { MCP_CONFIG_PATH } from "lib/ai/mcp/config-path";
 
-/**
- * Creates a file-based implementation of MCPServerStorage
- */
 export function createFileBasedMCPConfigsStorage(
   path?: string,
 ): MCPConfigStorage {
   const configPath = path || MCP_CONFIG_PATH;
+
+  // Detect Vercel environment
+  const isVercel = Boolean(process.env.VERCEL);
+
+  // Complete no-op implementation for Vercel
+  if (isVercel) {
+    return {
+      init: async () => {},
+      loadAll: async () => ({}),
+      save: async () => {},
+      delete: async () => {},
+      has: async () => false,
+    };
+  }
+
+  // Normal file-based implementation for non-Vercel environments
   const configs: Map<string, MCPServerConfig> = new Map();
   let watcher: FSWatcher | null = null;
   const debounce = createDebounce();
 
-  /**
-   * Persists the current config map to the file system
-   */
   async function saveToFile(): Promise<void> {
     const dir = dirname(configPath);
     await mkdir(dir, { recursive: true });
@@ -35,16 +44,13 @@ export function createFileBasedMCPConfigsStorage(
       "utf-8",
     );
   }
-  /**
-   * Initializes storage by reading existing config or creating empty file
-   */
+
   async function init(manager: MCPClientsManager): Promise<void> {
-    // Stop existing watcher if any
     if (watcher) {
       await watcher.close();
       watcher = null;
     }
-    // Read config file
+
     try {
       const configText = await readFile(configPath, { encoding: "utf-8" });
       const config = JSON.parse(configText ?? "{}");
@@ -54,7 +60,6 @@ export function createFileBasedMCPConfigsStorage(
       });
     } catch (err: any) {
       if (err.code === "ENOENT") {
-        // Create empty config file if doesn't exist
         await saveToFile();
       } else if (err instanceof SyntaxError) {
         throw new Error(
@@ -65,7 +70,6 @@ export function createFileBasedMCPConfigsStorage(
       }
     }
 
-    // Setup file watcher
     watcher = chokidar.watch(configPath, {
       persistent: true,
       awaitWriteFinish: true,
@@ -74,23 +78,20 @@ export function createFileBasedMCPConfigsStorage(
 
     watcher.on("change", () =>
       debounce(async () => {
-        {
-          try {
-            // Read the updated file
-            const configText = await readFile(configPath, {
-              encoding: "utf-8",
-            });
-            if (
-              equal(JSON.parse(configText ?? "{}"), Object.fromEntries(configs))
-            ) {
-              return;
-            }
-
-            await manager.cleanup();
-            await manager.init();
-          } catch (err) {
-            logger.error("Error detecting config file change:", err);
+        try {
+          const configText = await readFile(configPath, {
+            encoding: "utf-8",
+          });
+          if (
+            equal(JSON.parse(configText ?? "{}"), Object.fromEntries(configs))
+          ) {
+            return;
           }
+
+          await manager.cleanup();
+          await manager.init();
+        } catch (err) {
+          logger.error("Error detecting config file change:", err);
         }
       }, 1000),
     );
@@ -101,18 +102,14 @@ export function createFileBasedMCPConfigsStorage(
     async loadAll(): Promise<Record<string, MCPServerConfig>> {
       return Object.fromEntries(configs);
     },
-    // Saves a configuration with the given name
     async save(name: string, config: MCPServerConfig): Promise<void> {
       configs.set(name, config);
       await saveToFile();
     },
-    // Deletes a configuration by name
     async delete(name: string): Promise<void> {
       configs.delete(name);
       await saveToFile();
     },
-
-    // Checks if a configuration exists
     async has(name: string): Promise<boolean> {
       return configs.has(name);
     },

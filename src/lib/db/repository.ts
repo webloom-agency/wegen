@@ -1,14 +1,8 @@
 import { pgChatRepository } from "./pg/repositories/chat-repository.pg";
 import { pgUserRepository } from "./pg/repositories/user-repository.pg";
-import { sqliteChatRepository } from "./sqlite/repositories/chat-repository.sqlite";
-import { sqliteUserRepository } from "./sqlite/repositories/user-repository.sqlite";
+import { pgMcpRepository } from "./pg/repositories/mcp-repository.pg";
+import type { MCPRepository } from "./pg/repositories/mcp-repository.pg";
+export const chatRepository = pgChatRepository;
 
-export const chatRepository =
-  process.env.USE_FILE_SYSTEM_DB === "true"
-    ? sqliteChatRepository
-    : pgChatRepository;
-
-export const userRepository =
-  process.env.USE_FILE_SYSTEM_DB === "true"
-    ? sqliteUserRepository
-    : pgUserRepository;
+export const userRepository = pgUserRepository;
+export const mcpRepository: MCPRepository = pgMcpRepository;
