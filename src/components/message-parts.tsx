@@ -78,9 +78,11 @@ interface AssistMessagePartProps {
 
 interface ToolMessagePartProps {
   part: ToolMessagePart;
+  message: UIMessage;
   isLast: boolean;
   onPoxyToolCall?: (answer: boolean) => void;
   isError?: boolean;
+  setMessages: UseChatHelpers["setMessages"];
 }
 
 interface HighlightedTextProps {
@@ -396,15 +398,37 @@ export const AssistMessagePart = ({
 };
 
 export const ToolMessagePart = memo(
-  ({ part, isLast, onPoxyToolCall, isError }: ToolMessagePartProps) => {
+  ({
+    part,
+    isLast,
+    onPoxyToolCall,
+    isError,
+    message,
+    setMessages,
+  }: ToolMessagePartProps) => {
     const { toolInvocation } = part;
     const { toolName, toolCallId, state, args } = toolInvocation;
     const [isExpanded, setIsExpanded] = useState(false);
     const { copied: copiedInput, copy: copyInput } = useCopy();
     const { copied: copiedOutput, copy: copyOutput } = useCopy();
-
+    const [isDeleting, setIsDeleting] = useState(false);
     const isExecuting = state !== "result" && (isLast || onPoxyToolCall);
-
+    const deleteMessage = useCallback(() => {
+      safe(() => setIsDeleting(true))
+        .ifOk(() => deleteMessageAction(message.id))
+        .ifOk(() =>
+          setMessages((messages) => {
+            const index = messages.findIndex((m) => m.id === message.id);
+            if (index !== -1) {
+              return messages.filter((_, i) => i !== index);
+            }
+            return messages;
+          }),
+        )
+        .ifFail((error) => toast.error(error.message))
+        .watch(() => setIsDeleting(false))
+        .unwrap();
+    }, [message.id]);
     const ToolResultComponent = useMemo(() => {
       if (state === "result") {
         switch (toolName) {
@@ -572,6 +596,30 @@ export const ToolMessagePart = memo(
                   </div>
                 </CardContent>
               </Card>
+            )}
+            {isLast && (
+              <div className="flex flex-row gap-2 items-center">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      disabled={isDeleting}
+                      onClick={deleteMessage}
+                      variant="ghost"
+                      size="icon"
+                      className="size-3! p-4! opacity-0 group-hover/message:opacity-100 hover:text-destructive"
+                    >
+                      {isDeleting ? (
+                        <Loader className="animate-spin" />
+                      ) : (
+                        <Trash2 />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="text-destructive" side="bottom">
+                    Delete Message
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             )}
           </>
         )}

@@ -119,10 +119,12 @@ const PurePreviewMessage = ({
               return (
                 <ToolMessagePart
                   isLast={isLast}
+                  message={message}
                   onPoxyToolCall={isLast ? onPoxyToolCall : undefined}
                   key={key}
                   part={part}
                   isError={isError}
+                  setMessages={setMessages}
                 />
               );
             }
