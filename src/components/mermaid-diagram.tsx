@@ -1,112 +1,120 @@
 "use client";
 
+import { createDebounce } from "lib/utils";
 import { useTheme } from "next-themes";
-import { useEffect, useRef, useState } from "react";
-import { useCopy } from "@/hooks/use-copy";
-import { Button } from "ui/button";
-import { Clipboard, CheckIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+let mermaidModule: typeof import("mermaid").default | null = null;
+
+const loadMermaid = async () => {
+  if (!mermaidModule) {
+    mermaidModule = (await import("mermaid")).default;
+  }
+  return mermaidModule;
+};
 
 interface MermaidDiagramProps {
-  chart: string;
+  chart?: string;
 }
 
 export function MermaidDiagram({ chart }: MermaidDiagramProps) {
   const { theme } = useTheme();
-  const [svg, setSvg] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [renderAttempted, setRenderAttempted] = useState(false);
-  const { copied, copy } = useCopy();
+  const [state, setState] = useState<{
+    svg: string;
+    error: string | null;
+    loading: boolean;
+  }>({
+    svg: "",
+    error: null,
+    loading: true,
+  });
   const containerRef = useRef<HTMLDivElement>(null);
   const previousChartRef = useRef<string>(chart);
+  const debounce = useMemo(() => createDebounce(), []);
 
   useEffect(() => {
     // Reset states if chart has changed
     if (previousChartRef.current !== chart) {
-      setLoading(true);
-      setError(null);
-      setRenderAttempted(false);
+      setState((prev) => ({ ...prev, loading: true, error: null }));
       previousChartRef.current = chart;
     }
 
     // Debounce rendering to avoid flickering during streaming
-    const renderTimeout = setTimeout(async () => {
+    debounce(async () => {
+      if (!chart?.trim()) {
+        setState({ svg: "", error: null, loading: false });
+        return;
+      }
+
       try {
-        const mermaid = (await import("mermaid")).default;
-        
+        const mermaid = await loadMermaid();
+
         // Initialize mermaid with theme
         mermaid.initialize({
           startOnLoad: false,
           theme: theme === "dark" ? "dark" : "default",
           securityLevel: "loose",
-          fontFamily: "inherit",
-          logLevel: 1, // Reduce console noise
         });
-        
-        // Try to parse first - if this fails, don't attempt rendering
-        try {
-          mermaid.parse(chart);
-        } catch (_parseError) {
-          // If parsing fails, silently wait for more complete content
-          // Don't show an error, just keep loading state
-          return;
-        }
-        
-        // Only proceed to rendering if parse was successful
-        setRenderAttempted(true);
-        const { svg } = await mermaid.render(`mermaid-${Date.now()}`, chart);
-        setSvg(svg);
-        setError(null);
-        setLoading(false);
+
+        // // First try to parse to catch syntax errors early
+        await mermaid.parse(chart);
+
+        // Render the diagram
+        const id = `mermaid-${Date.now()}`;
+        const { svg } = await mermaid.render(id, chart);
+
+        setState({ svg, error: null, loading: false });
       } catch (err) {
-        // Only show errors if this wasn't a transient state during streaming
-        if (renderAttempted) {
-          console.error("Mermaid rendering error:", err);
-          setError(err instanceof Error ? err.message : "Failed to render diagram");
-          setLoading(false);
-        }
+        console.error("Mermaid rendering error:", err);
+        setState({
+          svg: "",
+          error:
+            err instanceof Error ? err.message : "Failed to render diagram",
+          loading: false,
+        });
       }
-    }, 300); // Delay rendering to avoid flickering during streaming
+    }, 300);
 
     return () => {
-      clearTimeout(renderTimeout);
+      debounce.clear();
     };
-  }, [chart, theme, renderAttempted]);
+  }, [chart, theme, debounce]);
+
+  if (state.loading) {
+    return (
+      <div className="px-6 pb-6 overflow-auto">
+        <div className="flex items-center justify-center h-20 w-full">
+          <div className="text-sm text-muted-foreground">
+            Rendering diagram...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (state.error) {
+    return (
+      <div className="px-6 pb-6 overflow-auto">
+        <div className="text-destructive p-4">
+          <p>Error rendering Mermaid diagram:</p>
+          <pre className="mt-2 p-2 bg-destructive/10 dark:bg-destructive/20 rounded text-xs overflow-auto">
+            {state.error}
+          </pre>
+          <pre className="mt-2 p-2 bg-accent/10 dark:bg-accent/20 rounded text-xs overflow-auto">
+            {chart}
+          </pre>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative bg-accent/30 flex flex-col rounded-2xl overflow-hidden border">
-      <div className="w-full flex z-20 py-2 px-4 items-center">
-        <span className="text-sm text-muted-foreground">mermaid</span>
-        <Button
-          size="icon"
-          variant={copied ? "secondary" : "ghost"}
-          className="ml-auto z-10 p-3! size-2! rounded-sm"
-          onClick={() => {
-            copy(chart);
-          }}
-        >
-          {copied ? <CheckIcon /> : <Clipboard className="size-3!" />}
-        </Button>
-      </div>
-      <div className="px-6 pb-6">
-        {loading ? (
-          <div className="flex items-center justify-center h-20 w-full">
-            <div className="text-sm text-muted-foreground">Rendering diagram...</div>
-          </div>
-        ) : error && renderAttempted ? (
-          <div className="text-red-500 p-4">
-            <p>Error rendering Mermaid diagram:</p>
-            <pre className="mt-2 p-2 bg-red-100 dark:bg-red-900/20 rounded text-xs overflow-auto">{error}</pre>
-            <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs overflow-auto">{chart}</pre>
-          </div>
-        ) : (
-          <div 
-            ref={containerRef}
-            className="flex justify-center transition-opacity duration-200"
-            dangerouslySetInnerHTML={{ __html: svg }} 
-          />
-        )}
-      </div>
+    <div className="px-6 pb-6 overflow-auto">
+      <div
+        ref={containerRef}
+        className="flex justify-center transition-opacity duration-200 overflow-auto"
+        dangerouslySetInnerHTML={{ __html: state.svg }}
+      />
     </div>
   );
 }
