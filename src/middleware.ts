@@ -14,7 +14,8 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
-    secureCookie: process.env.NODE_ENV === "production" && process.env.NEXT_START !== "1",
+    secureCookie:
+      process.env.NODE_ENV === "production" && process.env.NEXT_START !== "1",
   });
   if (!token) {
     return NextResponse.redirect(new URL("/login", request.url));
@@ -22,7 +23,6 @@ export async function middleware(request: NextRequest) {
 
   return NextResponse.next();
 }
-
 
 export const config = {
   matcher: [
