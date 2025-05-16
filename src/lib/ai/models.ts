@@ -26,8 +26,8 @@ export const allModels = {
   },
   xai: {
     "grok-2": xai("grok-2-1212"),
-    "grok-3-mini": xai("grok-3-mini-beta"),
-    "grok-3": xai("grok-3-beta"),
+    "grok-3-mini": xai("grok-3-mini-latest"),
+    "grok-3": xai("grok-3-latest"),
   },
   ollama: {
     "gemma3:1b": ollama("gemma3:1b"),
