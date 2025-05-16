@@ -352,8 +352,8 @@ function McpServerSelector() {
               icon={
                 <div className="flex items-center gap-2 ml-auto">
                   {server.tools.filter((t) => t.checked).length > 0 ? (
-                    <span className="text-xs text-muted-foreground font-normal">
-                      {server.tools.filter((t) => t.checked).length} tools
+                    <span className="w-5 h-5 items-center justify-center flex text-[8px] text-blue-500 font-normal rounded-full border border-border/40 bg-blue-500/5">
+                      {server.tools.filter((t) => t.checked).length}
                     </span>
                   ) : null}
 
@@ -368,11 +368,11 @@ function McpServerSelector() {
                 );
               }}
             >
-              <div className="flex items-center justify-center p-1 rounded bg-input border">
+              <div className="flex items-center justify-center p-1 rounded bg-input/40 border">
                 <MCPIcon className="fill-foreground size-2.5" />
               </div>
 
-              <span className={cn("truncate", !server.checked && "opacity-40")}>
+              <span className={cn("truncate", !server.checked && "opacity-30")}>
                 {server.serverName}
               </span>
               {Boolean(server.error) ? (
