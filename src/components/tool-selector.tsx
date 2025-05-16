@@ -7,6 +7,7 @@ import { cn } from "lib/utils";
 import {
   ChartColumn,
   ChevronRight,
+  Loader,
   Package,
   Plus,
   Wrench,
@@ -68,6 +69,15 @@ export function ToolSelector({
   align,
   side,
 }: PropsWithChildren<ToolSelectorProps>) {
+  const appStoreMutate = appStore((state) => state.mutate);
+  const { isLoading } = useSWR("mcp-list", selectMcpClientsAction, {
+    refreshInterval: 1000 * 60 * 1,
+    fallbackData: [],
+    onError: handleErrorWithToast,
+    onSuccess: (data) => {
+      appStoreMutate({ mcpList: data });
+    },
+  });
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -76,7 +86,11 @@ export function ToolSelector({
             variant={"outline"}
             className={"rounded-full bg-secondary font-semibold"}
           >
-            <Wrench className="size-3.5" />
+            {isLoading ? (
+              <Loader className="size-3.5 animate-spin" />
+            ) : (
+              <Wrench className="size-3.5" />
+            )}
             Tools
           </Button>
         )}
@@ -270,21 +284,12 @@ function ToolPresets() {
 }
 
 function McpServerSelector() {
-  const [appStoreMutate, allowedMcpServers] = appStore(
-    useShallow((state) => [state.mutate, state.allowedMcpServers]),
-  );
-
-  const { data: mcpServerList, isLoading } = useSWR(
-    "mcp-list",
-    selectMcpClientsAction,
-    {
-      refreshInterval: 1000 * 60 * 1,
-      fallbackData: [],
-      onError: handleErrorWithToast,
-      onSuccess: (data) => {
-        appStoreMutate({ mcpList: data });
-      },
-    },
+  const [appStoreMutate, allowedMcpServers, mcpServerList] = appStore(
+    useShallow((state) => [
+      state.mutate,
+      state.allowedMcpServers,
+      state.mcpList,
+    ]),
   );
 
   const selectedMcpServerList = useMemo(() => {
@@ -332,13 +337,7 @@ function McpServerSelector() {
   );
   return (
     <DropdownMenuGroup>
-      {isLoading ? (
-        <div className="flex flex-col gap-2 px-2">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <Skeleton key={i} className="h-4 w-full" />
-          ))}
-        </div>
-      ) : selectedMcpServerList.length === 0 ? (
+      {selectedMcpServerList.length > 0 ? (
         <div className="text-sm text-muted-foreground w-full h-full flex items-center justify-center py-6">
           No MCP servers found.
         </div>
