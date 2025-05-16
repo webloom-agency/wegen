@@ -15,7 +15,10 @@ import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 
 import { chatRepository } from "lib/db/repository";
 import logger from "logger";
-import { SYSTEM_TIME_PROMPT } from "lib/ai/prompts";
+import {
+  buildProjectInstructionsSystemPrompt,
+  buildUserSystemPrompt,
+} from "lib/ai/prompts";
 import {
   chatApiSchemaRequestBodySchema,
   ChatMessageAnnotation,
@@ -64,7 +67,7 @@ export async function POST(request: Request) {
 
     const model = customModelProvider.getModel(modelName);
 
-    let thread = await chatRepository.selectThreadWithMessages(id);
+    let thread = await chatRepository.selectThreadDetails(id);
 
     if (!thread) {
       const title = await generateTitleFromUserMessageAction({
@@ -77,7 +80,7 @@ export async function POST(request: Request) {
         title,
         userId: session.user.id,
       });
-      thread = await chatRepository.selectThreadWithMessages(newThread.id);
+      thread = await chatRepository.selectThreadDetails(newThread.id);
     }
 
     // if is false, it means the last message is manual tool execution
@@ -146,10 +149,11 @@ export async function POST(request: Request) {
           );
         }
 
+        const userPreferences = thread?.userPreferences || undefined;
+
         const systemPrompt = mergeSystemPrompt(
-          thread?.instructions?.systemPrompt ||
-            "You are a friendly assistant! Keep your responses concise and helpful.",
-          SYSTEM_TIME_PROMPT(session),
+          buildUserSystemPrompt(session, userPreferences),
+          buildProjectInstructionsSystemPrompt(thread?.instructions),
         );
 
         const result = streamText({
