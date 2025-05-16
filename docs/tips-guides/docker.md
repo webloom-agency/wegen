@@ -1,32 +1,67 @@
-# Using docker
-Docker is a convent way to manage containers and is perfect for this sort of app. 
-## Requirements 
-- x86-64 or arm(64) computer
-- Linux, mac (with docker desktop or equivalent) or Windows (w/wsl)
-- Docker and docker compose installed
+# Using Docker
+
+Docker provides a streamlined and efficient method for managing containerized applications, making it an ideal choice for deploying this project.
+
+## Requirements
+
+*   **Architecture:** An x86-64 or ARM(64) based computer.
+*   **Operating System:** Linux, macOS (with Docker Desktop or equivalent), or Windows (with WSL).
+*   **Software:** Docker and Docker Compose installed and configured.
+
 ## Steps
-1. In your terminal make sure you are in side the project, if you are not type 
-```sh 
-git clone https://github.com/cgoinglove/mcp-client-chatbot
-cd mcp-client-chatbot
-``` 
-2. Set up envs
-```sh
-cp .env.example .env
-```
-now file in the envs (you only need api keys for the AI provider you want to use)
-3. Now start and build the container
-```sh
-docker compose up -d --build
-```
-You are now good to go, visit http://<ipofserver>:3000/
-To stop container make sure you are in the directory
+
+1.  **Clone the Repository:**
+    Navigate to the desired directory in your terminal and clone the project repository. If you're not already in the project directory after cloning, change into it:
+
+    ```sh
+    git clone https://github.com/cgoinglove/mcp-client-chatbot
+    cd mcp-client-chatbot
+    ```
+
+2.  **Set up Environment Variables:**
+    Copy the example environment file and then open the newly created `.env` file to fill in the necessary environment variables. You only need to provide the API keys for the AI provider you intend to use.
+
+    ```sh
+    cp .env.example .env
+    ```
+
+3.  **Build and Start the Container:**
+    From the project's root directory, build the Docker image and start the container in detached mode (running in the background):
+
+    ```sh
+    docker compose up -d --build
+    ```
+
+    Your application should now be running. You can access it by visiting `http://<ipofserver>:3000/` in your web browser. Replace `<ipofserver>` with the IP address of the server where Docker is running (this will likely be `localhost` if you're running it on your local machine).
+
+## Managing the Container
+
+### Stopping the Container
+
+To stop the running container, ensure you are in the project's root directory and execute:
+
 ```sh
 docker compose down
 ```
-To update 
-```sh
-docker compose down
-git pull
-docker compose up -d --build
-```
+
+### Updating the Application
+
+To update the application to the latest version:
+
+1.  Stop the running container:
+
+    ```sh
+    docker compose down
+    ```
+
+2.  Pull the latest changes from the Git repository:
+
+    ```sh
+    git pull
+    ```
+
+3.  Rebuild the Docker image and start a new container:
+
+    ```sh
+    docker compose up -d --build
+    ```
