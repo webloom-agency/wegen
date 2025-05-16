@@ -16,6 +16,7 @@ import { Button } from "ui/button";
 import { Clipboard, CheckIcon } from "lucide-react";
 import JsonView from "ui/json-view";
 import { useCopy } from "@/hooks/use-copy";
+import dynamic from "next/dynamic";
 
 const PurePre = ({
   children,
@@ -80,6 +81,25 @@ export function PreBlock({ children }: { children: any }) {
   const { theme } = useTheme();
   const language = children.props.className?.split("-")?.[1] || "bash";
   const [loading, setLoading] = useState(true);
+  const isMermaid = language === "mermaid";
+
+  // For Mermaid diagrams, we use a dedicated component
+  if (isMermaid) {
+    const MermaidDiagram = dynamic(() => import("./mermaid-diagram").then(mod => mod.MermaidDiagram), {
+      loading: () => (
+        <div className="text-sm flex bg-accent/30 flex-col rounded-2xl relative my-4 overflow-hidden border">
+          <PurePre className="animate-pulse" code={code} lang={language}>
+            <div className="h-20 w-full flex items-center justify-center">
+              <span className="text-muted-foreground">Loading Mermaid diagram...</span>
+            </div>
+          </PurePre>
+        </div>
+      ),
+      ssr: false
+    });
+    
+    return <MermaidDiagram chart={code} />;
+  }
 
   const [component, setComponent] = useState<JSX.Element | null>(
     <PurePre className="animate-pulse" code={code} lang={language}>
