@@ -246,11 +246,11 @@ function ChatPreferencesDialogContent({
         </div>
         <div className="flex flex-col gap-2 text-foreground">
           <Label>
-            What personal preferences should Claude consider in responses?
+            What personal preferences should the assistant consider when
+            generating responses?
           </Label>
           <span className="text-xs text-muted-foreground">
-            Your preferences will apply to all conversations, within Anthropic’s
-            guidelines.
+            Preferences apply globally, as long as they follow safety rules.
           </span>
           <div className="relative w-full">
             <Textarea
