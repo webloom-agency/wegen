@@ -59,6 +59,16 @@ ${session?.user?.email ? `- **User Email:** ${session?.user?.email}` : ""}
   </response_style>`.trim();
   }
 
+  // Add Mermaid diagram guidelines
+  prompt += `
+
+### Visualization Guidelines ###
+<visualization>
+- If a diagram or chart is requested or would be helpful to express your thoughts, use mermaid code blocks.
+- Choose the appropriate diagram type based on the content you're explaining. All mermaid diagram types are available.
+- Ensure your diagram code is syntactically correct for the mermaid renderer.
+</visualization>`.trim();
+
   return prompt.trim();
 };
 

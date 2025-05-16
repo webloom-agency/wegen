@@ -16,13 +16,41 @@ import { Button } from "ui/button";
 import { Clipboard, CheckIcon } from "lucide-react";
 import JsonView from "ui/json-view";
 import { useCopy } from "@/hooks/use-copy";
+import dynamic from "next/dynamic";
+
+// Dynamically import MermaidDiagram component
+const MermaidDiagram = dynamic(
+  () => import("./mermaid-diagram").then((mod) => mod.MermaidDiagram),
+  {
+    loading: () => (
+      <div className="text-sm flex bg-accent/30 flex-col rounded-2xl relative my-4 overflow-hidden border">
+        <div className="w-full flex z-20 py-2 px-4 items-center">
+          <span className="text-sm text-muted-foreground">mermaid</span>
+        </div>
+        <div className="relative overflow-x-auto px-6 pb-6">
+          <div className="h-20 w-full flex items-center justify-center">
+            <span className="text-muted-foreground">
+              Loading Mermaid renderer...
+            </span>
+          </div>
+        </div>
+      </div>
+    ),
+    ssr: false,
+  }
+);
 
 const PurePre = ({
   children,
   className,
   code,
   lang,
-}: { children: any; className?: string; code: string; lang: string }) => {
+}: {
+  children: any;
+  className?: string;
+  code: string;
+  lang: string;
+}) => {
   const { copied, copy } = useCopy();
 
   return (
@@ -79,30 +107,41 @@ export function PreBlock({ children }: { children: any }) {
   const code = children.props.children;
   const { theme } = useTheme();
   const language = children.props.className?.split("-")?.[1] || "bash";
+  const isMermaid = language === "mermaid";
   const [loading, setLoading] = useState(true);
-
   const [component, setComponent] = useState<JSX.Element | null>(
     <PurePre className="animate-pulse" code={code} lang={language}>
       {children}
-    </PurePre>,
+    </PurePre>
   );
+
   useLayoutEffect(() => {
-    safe()
-      .map(() =>
-        highlight(
-          code,
-          language,
-          theme == "dark" ? "dark-plus" : "github-light",
-        ),
-      )
-      .ifOk(setComponent)
-      .watch(setLoading.bind(null, false));
-  }, [theme, language, code]);
+    if (!isMermaid) {
+      safe()
+        .map(() =>
+          highlight(
+            code,
+            language,
+            theme === "dark" ? "dark-plus" : "github-light"
+          )
+        )
+        .ifOk(setComponent)
+        .watch(() => setLoading(false));
+    }
+  }, [theme, language, code, isMermaid]);
+
+  // For Mermaid diagrams, let the MermaidDiagram component handle the validation
+  // and rendering internally to prevent flickering
+  if (isMermaid) {
+    return <MermaidDiagram chart={code} />;
+  }
+
+  // For other code blocks, render as before
   return (
     <div
       className={cn(
         loading && "animate-pulse",
-        "text-sm flex bg-accent/30 flex-col rounded-2xl relative my-4 overflow-hidden border",
+        "text-sm flex bg-accent/30 flex-col rounded-2xl relative my-4 overflow-hidden border"
       )}
     >
       {component}
