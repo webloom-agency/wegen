@@ -1,6 +1,7 @@
 import Link from "next/link";
 import React, { memo, PropsWithChildren } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { PreBlock } from "./pre-block";
 import { isJson, isString, toAny } from "lib/utils";
 import JsonView from "ui/json-view";
@@ -148,7 +149,12 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
       {isJson(children) ? (
         <JsonView data={children} />
       ) : (
-        <ReactMarkdown components={components}>{children}</ReactMarkdown>
+        <ReactMarkdown
+          components={components}
+          remarkPlugins={[remarkGfm]}
+        >
+          {children}
+        </ReactMarkdown>
       )}
     </article>
   );
