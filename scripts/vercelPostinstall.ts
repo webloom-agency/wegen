@@ -1,11 +1,11 @@
 import { exec } from "child_process";
+import { IS_VERCEL } from "lib/const";
 import { promisify } from "util";
 
 const execPromise = promisify(exec);
-const isVercel = process.env.VERCEL === "1";
 
 // Only run migrations on Vercel
-if (!isVercel) {
+if (!IS_VERCEL) {
   console.log("Not running on Vercel, skipping database migration.");
   process.exit(0);
 }

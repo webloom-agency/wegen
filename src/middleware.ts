@@ -15,7 +15,9 @@ export async function middleware(request: NextRequest) {
     req: request,
     secret: process.env.AUTH_SECRET,
     secureCookie:
-      process.env.NODE_ENV === "production" && process.env.NEXT_START !== "1",
+      process.env.NO_HTTPS == "local"
+        ? false
+        : process.env.NODE_ENV === "production",
   });
   if (!token) {
     return NextResponse.redirect(new URL("/login", request.url));
