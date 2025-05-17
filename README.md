@@ -149,7 +149,7 @@ GOOGLE_GENERATIVE_AI_API_KEY=****
 OPENAI_API_KEY=****
 # ANTHROPIC_API_KEY=****
 AUTH_SECRET=
-POSTGRES_URL
+POSTGRES_URL=
 ```
 for auth secret run `pnpx auth secret`
 
