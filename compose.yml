@@ -7,7 +7,7 @@ services:
       - '3000:3000'
     environment:
       - AUTH_TRUST_HOST=true
-      - NO_HTTPS=local
+      - NO_HTTPS=true
     env_file:
       - .env
     dns:
