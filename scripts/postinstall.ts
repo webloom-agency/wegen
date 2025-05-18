@@ -35,7 +35,7 @@ async function main() {
     console.log("Running in Docker, performing database migration.");
     await runCommand("pnpm db:migrate", "Database migration");
   } else {
-    console.log("Running in a normal environment, performing database migration and initial environment setup.");
+    console.log("Running in a normal environment, performing initial environment setup.");
     await runCommand("pnpm initial:env", "Initial environment setup");
   }
 }
