@@ -115,9 +115,8 @@ Visualize chatbot responses as pie, bar, or line charts using the built-in tool 
 * **📄 Markdown UI:** Communicate in a clean, readable markdown-based interface.
 * **🧩 Custom MCP Server Support:** Modify the built-in MCP server logic or create your own.
 * **📊 Built-in Chart Tools:** Generate pie, bar, and line charts directly in chat with natural prompts.
-* **Easy Deployment:** with vercel support baked in it makes an easily accesible chatbot. 
-* **Run anywhere:** with docker support just build the image and start docker compose and you are good to go
-## 🚀 Getting Started
+* **🛫Easy Deployment:** with vercel support baked in it makes an easily accesible chatbot. 
+* **🏃Run anywhere:** with docker support just build the image and start docker compose.
 
 This project uses [pnpm](https://pnpm.io/) as the recommended package manager.
 
