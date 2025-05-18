@@ -13,6 +13,7 @@ import {
   Wrench,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { PropsWithChildren, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -338,8 +339,16 @@ function McpServerSelector() {
   return (
     <DropdownMenuGroup>
       {!selectedMcpServerList.length ? (
-        <div className="text-sm text-muted-foreground w-full h-full flex items-center justify-center py-6">
-          No MCP servers found.
+        <div className="text-sm text-muted-foreground w-full h-full flex flex-col items-center justify-center py-6">
+          <div>No MCP servers detected.</div>
+          <Link href="/mcp">
+            <Button
+              variant={"ghost"}
+              className="mt-2 text-primary flex items-center gap-1"
+            >
+              Add a server <ChevronRight className="size-4" />
+            </Button>
+          </Link>
         </div>
       ) : (
         selectedMcpServerList.map((server) => (
