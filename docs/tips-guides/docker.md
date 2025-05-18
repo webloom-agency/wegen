@@ -19,7 +19,7 @@ Docker provides a streamlined and efficient method for managing containerized ap
     ```
 
 2.  **Set up Environment Variables:**
-    Copy the example environment file and then open the newly created `.env` file to fill in the necessary environment variables. You only need to provide the API keys for the AI provider you intend to use.
+    Copy the example environment file and then open the newly created `.env` file to fill in the necessary environment variables. You only need to provide the API keys for the AI provider you intend to use. You need an auth secret which can be made with `pnpx auth secret` and a database which I recommend neon or vercel postgres - any provider works
 
     ```sh
     cp .env.example .env
