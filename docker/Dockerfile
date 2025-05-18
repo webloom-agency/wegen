@@ -2,7 +2,7 @@ FROM node:23-alpine AS builder
 ARG IS_DOCKER_BUILD="1"
 WORKDIR /app
 
-COPY . . 
+COPY .. . 
 
 # Install pnpm
 RUN npm install -g pnpm
@@ -15,7 +15,11 @@ FROM node:23-alpine AS runner
 
 WORKDIR /app
 
-RUN npm install -g pnpm bun
+RUN npm install -g pnpm
+
+RUN apk add --no-cache curl bash \
+    && curl -fsSL https://bun.sh/install | bash \
+    && ln -s /root/.bun/bin/bun /usr/local/bin/bun
 
 # Add the UV installation steps
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/

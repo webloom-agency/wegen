@@ -3,7 +3,7 @@ import type {
   MCPClientsManager,
   MCPConfigStorage,
 } from "./create-mcp-clients-manager";
-import { mcpRepository } from "lib/db/repository"; // Adjust the import path as needed
+import { mcpRepository } from "lib/db/repository";
 import logger from "logger";
 import { createDebounce } from "lib/utils";
 
@@ -14,7 +14,7 @@ export function createDbBasedMCPConfigsStorage(): MCPConfigStorage {
   // Function to refresh clients when configs change
   const refreshClients = async () => {
     try {
-      const servers = await mcpRepository.getAllServers();
+      const servers = await mcpRepository.selectAllServers();
 
       // Get all current clients
       const currentClients = new Set(
@@ -61,7 +61,7 @@ export function createDbBasedMCPConfigsStorage(): MCPConfigStorage {
 
     async loadAll(): Promise<Record<string, MCPServerConfig>> {
       try {
-        const servers = await mcpRepository.getAllServers();
+        const servers = await mcpRepository.selectAllServers();
         return Object.fromEntries(
           servers
             .filter((server) => server.enabled)
@@ -75,12 +75,12 @@ export function createDbBasedMCPConfigsStorage(): MCPConfigStorage {
 
     async save(name: string, config: MCPServerConfig): Promise<void> {
       try {
-        const existingServer = await mcpRepository.getServerByName(name);
+        const existingServer = await mcpRepository.selectServerByName(name);
 
         if (existingServer) {
           await mcpRepository.updateServer(existingServer.id, { config });
         } else {
-          await mcpRepository.createServer({ name, config });
+          await mcpRepository.insertServer({ name, config });
         }
 
         // Trigger a refresh to apply changes
@@ -93,7 +93,7 @@ export function createDbBasedMCPConfigsStorage(): MCPConfigStorage {
 
     async delete(name: string): Promise<void> {
       try {
-        const server = await mcpRepository.getServerByName(name);
+        const server = await mcpRepository.selectServerByName(name);
         if (server) {
           await mcpRepository.deleteServer(server.id);
         }
@@ -111,7 +111,11 @@ export function createDbBasedMCPConfigsStorage(): MCPConfigStorage {
 
     async has(name: string): Promise<boolean> {
       try {
-        const server = await mcpRepository.getServerByName(name);
+        // Note: If you want to use `existsServerWithName` directly,
+        // this logic might need a slight adjustment depending on whether
+        // `existsServerWithName` also considers the `enabled` flag.
+        // For now, keeping the existing logic which checks `enabled`.
+        const server = await mcpRepository.selectServerByName(name);
         return !!server && server.enabled;
       } catch (error) {
         logger.error(

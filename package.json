@@ -24,7 +24,12 @@
     "db:studio": "drizzle-kit studio",
     "db:migrate": "tsx scripts/db-migrate.ts",
     "db:pull": "drizzle-kit pull",
-    "db:check": "drizzle-kit check"
+    "db:check": "drizzle-kit check",
+    "docker-compose:up": "cd docker && docker-compose up -d --build ",
+    "docker-compose:down": "cd docker && docker-compose down",
+    "docker-compose:logs": "cd docker && docker-compose logs -f",
+    "docker-compose:ps": "cd docker && docker-compose ps ",
+    "docker-compose:update": "git pull && cd docker && docker-compose up -d --build"
   },
   "dependencies": {
     "@ai-sdk-tool/parser": "^1.0.2",

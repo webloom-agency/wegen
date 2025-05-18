@@ -40,3 +40,31 @@ export type MCPServerInfo = {
   status: "connected" | "disconnected" | "loading";
   toolInfo: MCPToolInfo[];
 };
+export interface MCPRepository {
+  insertServer(server: {
+    name: string;
+    config: MCPServerConfig;
+    enabled?: boolean;
+  }): Promise<string>;
+  selectServerById(id: string): Promise<{
+    id: string;
+    name: string;
+    config: MCPServerConfig;
+    enabled: boolean;
+  } | null>;
+  selectServerByName(name: string): Promise<{
+    id: string;
+    name: string;
+    config: MCPServerConfig;
+    enabled: boolean;
+  } | null>;
+  selectAllServers(): Promise<
+    { id: string; name: string; config: MCPServerConfig; enabled: boolean }[]
+  >;
+  updateServer(
+    id: string,
+    data: { name?: string; config?: MCPServerConfig; enabled?: boolean },
+  ): Promise<void>;
+  deleteServer(id: string): Promise<void>;
+  existsServerWithName(name: string): Promise<boolean>;
+}

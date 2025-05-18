@@ -3,39 +3,10 @@ import { pgDb as db } from "../db.pg";
 import { McpServerSchema } from "../schema.pg";
 import { eq } from "drizzle-orm";
 import { generateUUID } from "lib/utils";
-
-// Define interface for the repository
-export interface MCPRepository {
-  createServer(server: {
-    name: string;
-    config: MCPServerConfig;
-    enabled?: boolean;
-  }): Promise<string>;
-  getServer(id: string): Promise<{
-    id: string;
-    name: string;
-    config: MCPServerConfig;
-    enabled: boolean;
-  } | null>;
-  getServerByName(name: string): Promise<{
-    id: string;
-    name: string;
-    config: MCPServerConfig;
-    enabled: boolean;
-  } | null>;
-  getAllServers(): Promise<
-    { id: string; name: string; config: MCPServerConfig; enabled: boolean }[]
-  >;
-  updateServer(
-    id: string,
-    data: { name?: string; config?: MCPServerConfig; enabled?: boolean },
-  ): Promise<void>;
-  deleteServer(id: string): Promise<void>;
-  hasServerWithName(name: string): Promise<boolean>;
-}
+import type { MCPRepository } from "app-types/mcp";
 
 export const pgMcpRepository: MCPRepository = {
-  async createServer(server) {
+  async insertServer(server) {
     const [result] = await db
       .insert(McpServerSchema)
       .values({
@@ -49,7 +20,7 @@ export const pgMcpRepository: MCPRepository = {
     return result.id;
   },
 
-  async getServer(id) {
+  async selectServerById(id) {
     const [result] = await db
       .select()
       .from(McpServerSchema)
@@ -65,7 +36,7 @@ export const pgMcpRepository: MCPRepository = {
     };
   },
 
-  async getServerByName(name) {
+  async selectServerByName(name) {
     const [result] = await db
       .select()
       .from(McpServerSchema)
@@ -81,7 +52,7 @@ export const pgMcpRepository: MCPRepository = {
     };
   },
 
-  async getAllServers() {
+  async selectAllServers() {
     const results = await db.select().from(McpServerSchema);
 
     return results.map((result) => ({
@@ -106,7 +77,7 @@ export const pgMcpRepository: MCPRepository = {
     await db.delete(McpServerSchema).where(eq(McpServerSchema.id, id));
   },
 
-  async hasServerWithName(name) {
+  async existsServerWithName(name) {
     const [result] = await db
       .select({ id: McpServerSchema.id })
       .from(McpServerSchema)
