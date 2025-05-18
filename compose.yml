@@ -21,14 +21,14 @@ services:
   #     POSTGRES_DB: your_database_name
   #     POSTGRES_USER: your_username
   #     POSTGRES_PASSWORD: your_password
-  #   # networks:
-  #   #   - mcp_network # Assuming you have a defined network called 'mcp_network'
-  #   # volumes:
-  #   #   - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - mcp_client_network # Assuming you have a defined network called 'mcp_network'
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
 
 # volumes:
 #   postgres_data:
 
 # networks:
-#   mcp_network:
+#   mcp_client_network:
 #     driver: bridge
