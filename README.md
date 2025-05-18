@@ -177,10 +177,10 @@ Here are some practical tips and guides for using MCP Client Chatbot:
 
 MCP Client Chatbot is evolving with these upcoming features:
 
-### 🚀 Deployment & Hosting
-- **Self Hosting:**  
-  - Easy deployment with Docker Compose  
-  - Vercel deployment support (MCP Server: SSE only)
+### 🚀 Deployment & Hosting ✅
+- **Self Hosting:**  ✅
+  - Easy deployment with Docker Compose  ✅
+  - Vercel deployment support (MCP Server: SSE only)✅
 
 ### 🗣️ Audio & Real-Time Chat
 - **Open Audio Real-Time Chat:**  
