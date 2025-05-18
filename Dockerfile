@@ -12,14 +12,11 @@ COPY scripts ./scripts
 # Install pnpm
 RUN npm install -g pnpm
 
-RUN sed -i '/"postinstall": "tsx scripts\/vercelPostinstall.ts",/d' package.json
-
 RUN pnpm install --frozen-lockfile
 
 # Copy the rest of the application code
 COPY . .
 
-RUN pnpm initial:flag-generate
 RUN pnpm build
 
 
