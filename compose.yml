@@ -14,3 +14,21 @@ services:
       - 8.8.8.8 # Google's public DNS server
       - 8.8.4.4 # Google's public DNS server
     restart: unless-stopped
+
+  # postgres:
+  #   image: postgres:17
+  #   environment:
+  #     POSTGRES_DB: your_database_name
+  #     POSTGRES_USER: your_username
+  #     POSTGRES_PASSWORD: your_password
+  #   # networks:
+  #   #   - mcp_network # Assuming you have a defined network called 'mcp_network'
+  #   # volumes:
+  #   #   - postgres_data:/var/lib/postgresql/data
+
+# volumes:
+#   postgres_data:
+
+# networks:
+#   mcp_network:
+#     driver: bridge

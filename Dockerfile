@@ -1,6 +1,6 @@
 # Stage 1: Build the Next.js application
 FROM node:23-alpine AS builder
-
+ARG IS_DOCKER_BUILD="1"
 WORKDIR /app
 
 # Copy package.json and pnpm-lock.yaml (if you have one) first

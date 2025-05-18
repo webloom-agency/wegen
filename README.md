@@ -4,6 +4,7 @@
 
 [![Local First](https://img.shields.io/badge/Local-First-blueviolet)](#)
 [![MCP Supported](https://img.shields.io/badge/MCP-Supported-00c853)](https://modelcontextprotocol.io/introduction)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/cgoinglove/mcp-client-chatbot&env=GOOGLE_GENERATIVE_AI_API_KEY&env=OPENAI_API_KEY&env=XAI_API_KEY&env=ANTHROPIC_API_KEY&env=POSTGRES_URL&env=AUTH_SECRET)
 
 **MCP Client Chatbot** is a versatile chat interface that supports various AI model providers like [OpenAI](https://openai.com/), [Anthropic](https://www.anthropic.com/), [Google](https://ai.google.dev/), and [Ollama](https://ollama.com/). **It is designed for instant execution in 100% local environments without complex configuration**, enabling users to fully control computing resources on their personal computer or server.
 
@@ -123,10 +124,8 @@ This project uses [pnpm](https://pnpm.io/) as the recommended package manager.
 ```bash
 # 1. Install dependencies
 pnpm i
-
-# 2. Initialize project (creates .env, sets up DB)
-pnpm initial
-
+# 2. Fill envs and migrate DB
+pnpm db:migrate
 # 3. Start dev server
 pnpm dev
 
@@ -142,7 +141,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to get start
 
 ### Environment Variables
 
-The `pnpm initial` command generates a `.env` file. Add your API keys there:
+The `pnpm i` command generates a `.env` file. Add your API keys there:
 
 ```dotenv
 GOOGLE_GENERATIVE_AI_API_KEY=****
@@ -160,8 +159,7 @@ for auth secret run `pnpx auth secret`
 You can connect MCP tools via:
 
 1. **UI Setup:** Go to http://localhost:3000/mcp and configure through the interface.
-2. **Direct File Edit:** Modify `.mcp-config.json` in project root, this doesn't work on vercel.
-3. **Custom Logic:** Edit `./custom-mcp-server/index.ts` to implement your own logic, this also doesn't run on vercel or docker.
+2. **Custom Logic:** Edit `./custom-mcp-server/index.ts` to implement your own logic, this also doesn't run on vercel or docker.
 
 -----
 
@@ -171,6 +169,8 @@ Here are some practical tips and guides for using MCP Client Chatbot:
 * [Project Feature with MCP Server](./docs/tips-guides/project_with_mcp.md): Learn how to integrate system instructions and structures with MCP servers to build an agent that assists with GitHub-based project management.
 
 * [Docker Hosting Guide](./docs/tips-guides/docker.md): Learn how to set up docker.
+
+* [Docker Hosting Guide](./docs/tips-guides/vercel.md): Learn how to set up vercel.
 
 -----
 

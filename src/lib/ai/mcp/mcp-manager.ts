@@ -1,8 +1,8 @@
-import { createDbBasedMCPConfigsStorage } from "lib/ai/mcp/db-mcp-config-storage";
+import { createDbBasedMCPConfigsStorage } from "./db-mcp-config-storage";
 import {
   createMCPClientsManager,
   type MCPClientsManager,
-} from "lib/ai/mcp/create-mcp-clients-manager";
+} from "./create-mcp-clients-manager";
 
 declare global {
   // eslint-disable-next-line no-var

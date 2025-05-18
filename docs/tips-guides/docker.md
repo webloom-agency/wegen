@@ -33,7 +33,19 @@ Docker provides a streamlined and efficient method for managing containerized ap
     ```
 
     Your application should now be running. You can access it by visiting `http://<ipofserver>:3000/` in your web browser. Replace `<ipofserver>` with the IP address of the server where Docker is running (this will likely be `localhost` if you're running it on your local machine).
-
+## Hosting your own postgres
+Hosting the app your self is great and all, but you DB is hosted somewhere else. This small guide shows you how to host your postgres with the APP. This guide is initened if you have done the steps above. If you haven't go do them now. 
+1. Open up compose.yml in a text editor
+2. Uncomment lines 18-34, chnage db name, db username and password if you want but the DB only accessible to the app making it secure. 
+3. Update env, change the database you had before to postgres://your_username:your_password@postgres:5432/your_database_name, if you changed DB name etc remeber to update here aswell. 
+4. Rerun the app
+```sh 
+docker compose up -d --build 
+```
+## What is possible in docker and what is not
+- Full support for MCP stdio servers that work with bunx, uvx and npx. 
+- Full support for SSE servers. 
+- And everything else as you would expect.
 ## Managing the Container
 
 ### Stopping the Container
