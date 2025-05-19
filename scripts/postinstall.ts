@@ -32,8 +32,7 @@ async function main() {
     console.log("Running on Vercel, performing database migration.");
     await runCommand("pnpm db:migrate", "Database migration");
   } else if (IS_DOCKER_BUILD) {
-    console.log("Running in Docker, performing database migration.");
-    await runCommand("pnpm db:migrate", "Database migration");
+    console.log("Running in Docker, nothing to do.");
   } else {
     console.log("Running in a normal environment, performing initial environment setup.");
     await runCommand("pnpm initial:env", "Initial environment setup");

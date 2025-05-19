@@ -2,7 +2,7 @@ FROM node:23-alpine AS builder
 ARG IS_DOCKER_BUILD="1"
 WORKDIR /app
 
-COPY .. . 
+COPY . . 
 
 # Install pnpm
 RUN npm install -g pnpm
@@ -29,7 +29,11 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/public ./public/
-
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+COPY --from=builder /app/scripts/db-migrate.ts ./scripts/db-migrate.ts
+COPY --from=builder /app/src/lib/db/pg/migrate.pg.ts ./src/lib/db/pg/migrate.pg.ts
+COPY --from=builder /app/src/lib/utils.ts ./src/lib/utils.ts
+COPY --from=builder /app/src/types/chat.ts ./src/types/chat.ts
 EXPOSE 3000
-
-CMD ["pnpm", "start"]
+ENV IS_DOCKER_BUILD="1"
+CMD ["pnpm db:migrate","&&","pnpm", "start"]
