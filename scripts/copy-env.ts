@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import { consola } from "consola";
 
 // Get current directory path
 const ROOT = process.cwd();
@@ -13,20 +12,20 @@ function copyEnvFile() {
 
   if (!fs.existsSync(envPath)) {
     try {
-      consola.warn(".env file not found. Copying from .env.example...");
+      console.warn(".env file not found. Copying from .env.example...");
       fs.copyFileSync(envExamplePath, envPath);
-      consola.success(".env file has been created.");
-      consola.warn(
+      console.log(".env file has been created.");
+      console.warn(
         "Important: You may need to edit the .env file to set your API keys.",
       );
       return true;
     } catch (error) {
-      consola.error("Error occurred while creating .env file.");
+      console.error("Error occurred while creating .env file.");
       console.error(error);
       return false;
     }
   } else {
-    consola.info(".env file already exists. Skipping...");
+    console.info(".env file already exists. Skipping...");
     return true;
   }
 }

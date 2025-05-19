@@ -1,23 +1,18 @@
 import { config } from "dotenv";
-import logger from "logger";
 import { colorize } from "consola/utils";
-import { IS_DOCKER_BUILD } from "lib/const";
-import { wait } from "lib/utils";
+
 config();
-if (IS_DOCKER_BUILD) {
-  console.log("waiting for DB to be ready...");
-  wait(100);
-}
+
 const promise = import("lib/db/pg/migrate.pg");
 
 await promise
   .then(() => {
-    logger.info("🚀 DB Migration completed");
+    console.info("🚀 DB Migration completed");
   })
   .catch((err) => {
-    logger.error(err);
+    console.error(err);
 
-    logger.warn(
+    console.warn(
       `
       ${colorize("red", "🚨 Migration failed due to incompatible schema.")}
       
