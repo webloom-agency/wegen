@@ -36,4 +36,5 @@ COPY --from=builder /app/src/lib/utils.ts ./src/lib/utils.ts
 COPY --from=builder /app/src/types/chat.ts ./src/types/chat.ts
 EXPOSE 3000
 ENV IS_DOCKER_BUILD="1"
-CMD ["pnpm db:migrate","&&","pnpm", "start"]
+
+CMD pnpm db:migrate && pnpm start
