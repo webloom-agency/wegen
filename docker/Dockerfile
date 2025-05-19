@@ -33,8 +33,8 @@ COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/scripts/db-migrate.ts ./scripts/db-migrate.ts
 COPY --from=builder /app/src/lib/db/pg/migrate.pg.ts ./src/lib/db/pg/migrate.pg.ts
 COPY --from=builder /app/src/lib/utils.ts ./src/lib/utils.ts
+COPY --from=builder /app/src/lib/db/migrations ./src/lib/db/migrations
 COPY --from=builder /app/src/types/chat.ts ./src/types/chat.ts
 EXPOSE 3000
-ENV IS_DOCKER_BUILD="1"
 
 CMD pnpm db:migrate && pnpm start
