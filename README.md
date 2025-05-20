@@ -26,9 +26,14 @@ MCP Client Chatbot is a 100% community-driven open source project.
     - [🛠️ Standalone Tool Testing](#️-standalone-tool-testing)
     - [📊 Built-in Chart Tools](#-built-in-chart-tools)
   - [✨ Key Features](#-key-features)
+    - [Quick Start (Local Version) 🚀](#quick-start-local-version-)
+    - [Quick Start (Docker Compose Version) 🐳](#quick-start-docker-compose-version-)
     - [Environment Variables](#environment-variables)
     - [MCP Server Setup](#mcp-server-setup)
   - [💡 Tips \& Guides](#-tips--guides)
+    - [Project Feature with MCP Server:](#project-feature-with-mcp-server)
+    - [Docker Hosting Guide:](#docker-hosting-guide)
+    - [Vercel Hosting Guide:](#vercel-hosting-guide)
   - [🗺️ Roadmap: Next Features](#️-roadmap-next-features)
     - [🚀 Deployment \& Hosting ✅](#-deployment--hosting-)
     - [🗣️ Audio \& Real-Time Chat](#️-audio--real-time-chat)
@@ -45,7 +50,6 @@ MCP Client Chatbot is a 100% community-driven open source project.
 
 Here are some quick examples of how you can use MCP Client Chatbot:
 
----
 
 ### 🧩 Browser Automation with Playwright MCP
 
@@ -94,7 +98,7 @@ Add new MCP servers easily through the UI, and start using new tools without res
 
 ![tool-test](https://github.com/user-attachments/assets/980dd645-333f-4e5c-8ac9-3dc59db19e14)
 
-MCP tools independently from chat sessions for easier development and debugging.
+Test MCP tools independently of chat sessions to simplify development and debugging.
 
 ### 📊 Built-in Chart Tools
 
@@ -116,27 +120,51 @@ Visualize chatbot responses as pie, bar, or line charts using the built-in tool 
 - **🧩 Custom MCP Server Support:** Modify the built-in MCP server logic or create your own.
 - **📊 Built-in Chart Tools:** Generate pie, bar, and line charts directly in chat with natural prompts.
 - **🛫Easy Deployment:** with vercel support baked in it makes an easily accesible chatbot.
-- **🏃Run anywhere:** with docker support just build the image and start docker compose.
+- **🏃Run anywhere:** Easily launch with Docker Compose—just build the image and run.
 
-This project uses [pnpm](https://pnpm.io/) as the recommended package manager.
+> This project uses [pnpm](https://pnpm.io/) as the recommended package manager.
+
+```bash
+# If you don't have pnpm:
+npm install -g pnpm
+```
+
+### Quick Start (Local Version) 🚀
 
 ```bash
 # 1. Install dependencies
 pnpm i
 
-# 2. Create environment variable file & Fill envs
-pnpm copy:env # This runs automatically in postinstall, so you can skip it.
+# 2. Create the environment variable file and fill in your .env values
+pnpm initial:env # This runs automatically in postinstall, so you can usually skip it.
 
-# If you don't have PostgreSQL running, use: pnpm docker:pg
-# 3. migrate DB
+# 3. (Optional) If you already have PostgreSQL running and .env is configured, skip this step
+pnpm docker:pg
+
+# 4. Run database migrations
 pnpm db:migrate
 
-# 4. Start dev server
+# 5. Start the development server
 pnpm dev
 
-# 4. (Optional) Build & start for local testing
+# 6. (Optional) Build & start for local production-like testing
 pnpm build:local && pnpm start
 # Use build:local for local start to ensure correct cookie settings
+```
+
+
+### Quick Start (Docker Compose Version) 🐳
+
+```bash
+# 1. Install dependencies
+pnpm i
+
+# 2. Create environment variable files and fill in the required values
+pnpm initial:env # This runs automatically in postinstall, so you can usually skip it.
+
+# 3. Build and start all services (including PostgreSQL) with Docker Compose
+pnpm docker-compose:up
+
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser to get started.
@@ -145,8 +173,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to get start
 
 ### Environment Variables
 
-The `pnpm i` command generates a `.env` file. Add your API keys there:
-
+The `pnpm i` command generates a `.env` file. Add your API keys there
+You only need to enter the keys for the providers you plan to use:
 ```dotenv
 GOOGLE_GENERATIVE_AI_API_KEY=****
 OPENAI_API_KEY=****
@@ -167,19 +195,22 @@ You can connect MCP tools via:
 1. **UI Setup:** Go to http://localhost:3000/mcp and configure through the interface.
 2. **Custom Logic:** Edit `./custom-mcp-server/index.ts` to implement your own logic, this also doesn't run on vercel or docker.
 
----
+
 
 ## 💡 Tips & Guides
 
 Here are some practical tips and guides for using MCP Client Chatbot:
 
-- [Project Feature with MCP Server](./docs/tips-guides/project_with_mcp.md): Learn how to integrate system instructions and structures with MCP servers to build an agent that assists with GitHub-based project management.
+### [Project Feature with MCP Server](./docs/tips-guides/project_with_mcp.md): 
+Learn how to integrate system instructions and structures with MCP servers to build an agent that assists with GitHub-based project management.
 
-- [Docker Hosting Guide](./docs/tips-guides/docker.md): Learn how to set up docker.
+### [Docker Hosting Guide](./docs/tips-guides/docker.md):
+Learn how to set up docker.
 
-- [Vercel Hosting Guide](./docs/tips-guides/vercel.md): Learn how to set up vercel.
+### [Vercel Hosting Guide](./docs/tips-guides/vercel.md):
+Learn how to set up vercel.
 
----
+
 
 ## 🗺️ Roadmap: Next Features
 
@@ -221,7 +252,7 @@ MCP Client Chatbot is evolving with these upcoming features:
 
 💡 If you have suggestions or need specific features, please create an [issue](https://github.com/cgoinglove/mcp-client-chatbot/issues)!
 
----
+
 
 ## 🙌 Contributing
 

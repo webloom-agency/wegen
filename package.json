@@ -15,7 +15,7 @@
     "lint:fix": "next lint --fix && biome lint --write --unsafe",
     "format": "biome format --write",
     "check-types": "tsc --noEmit",
-    "copy:env": "tsx scripts/copy-env.ts",
+    "initial:env": "tsx scripts/initial-env.ts",
     "postinstall": "tsx scripts/postinstall.ts",
     "clean": "tsx scripts/clean.ts",
     "db:generate": "drizzle-kit generate",

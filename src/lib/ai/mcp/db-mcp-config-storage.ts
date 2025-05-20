@@ -6,124 +6,130 @@ import type {
 import { mcpRepository } from "lib/db/repository";
 import logger from "logger";
 import { createDebounce } from "lib/utils";
-
+import equal from "fast-deep-equal";
 export function createDbBasedMCPConfigsStorage(): MCPConfigStorage {
-  const debounce = createDebounce();
+  // In-memory cache for configs
+  const configs: Map<string, MCPServerConfig> = new Map();
+
   let manager: MCPClientsManager;
 
-  // Function to refresh clients when configs change
-  const refreshClients = async () => {
+  const debounce = createDebounce();
+
+  // Loads all enabled server configs from the database into the in-memory cache
+  async function saveToCacheFromDb() {
     try {
       const servers = await mcpRepository.selectAllServers();
-
-      // Get all current clients
-      const currentClients = new Set(
-        manager.getClients().map((c) => c.getInfo().name),
-      );
-
-      // Process new or updated clients
-      for (const server of servers) {
-        if (server.enabled) {
-          if (currentClients.has(server.name)) {
-            // Refresh existing client with potential config updates
-            await manager.refreshClient(server.name, server.config);
-          } else {
-            // Add new client
-            await manager.addClient(server.name, server.config);
-          }
-          currentClients.delete(server.name);
-        }
-      }
-
-      // Remove clients that no longer exist in database or are disabled
-      for (const clientName of currentClients) {
-        await manager.removeClient(clientName);
-      }
+      configs.clear();
+      servers.forEach((server) => {
+        configs.set(server.name, server.config);
+      });
     } catch (error) {
-      logger.error("Failed to refresh MCP clients from database:", error);
+      logger.error("Failed to load MCP configs from database:", error);
     }
-  };
+  }
+
+  // Initializes the manager with configs from the database
+  async function init(_manager: MCPClientsManager): Promise<void> {
+    manager = _manager;
+  }
+
+  async function checkAndRefreshClients() {
+    let shouldRefresh = false;
+    await saveToCacheFromDb();
+    const dbConfigs = Array.from(configs.entries())
+      .map(([name, config]) => {
+        return {
+          name,
+          config,
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    const managerConfigs = manager
+      .getClients()
+      .map((client) => {
+        const info = client.getInfo();
+        return {
+          name: info.name,
+          config: info.config,
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    if (dbConfigs.length !== managerConfigs.length) {
+      shouldRefresh = true;
+    }
+
+    if (!equal(dbConfigs, managerConfigs)) {
+      shouldRefresh = true;
+    }
+
+    if (shouldRefresh) {
+      const refreshPromises = dbConfigs.map(({ name, config }) => {
+        const managerConfig = manager
+          .getClients()
+          .find((c) => c.getInfo().name === name)
+          ?.getInfo();
+        if (!managerConfig) {
+          return manager.addClient(name, config);
+        }
+        if (
+          !equal(managerConfig.config, config) &&
+          managerConfig.status === "connected"
+        ) {
+          return manager.refreshClient(name, config);
+        }
+      });
+      const deletePromises = managerConfigs
+        .filter((c) => {
+          const dbConfig = dbConfigs.find((c2) => c2.name === c.name);
+          return !dbConfig;
+        })
+        .map((c) => manager.removeClient(c.name));
+      await Promise.all([...refreshPromises, ...deletePromises]);
+    }
+  }
+
+  setInterval(() => debounce(checkAndRefreshClients, 5000), 60000).unref();
 
   return {
-    async init(_manager: MCPClientsManager): Promise<void> {
-      manager = _manager;
-
-      // Initial load of configs
-      await refreshClients();
-
-      // Set up polling for changes in database environment
-      // This is needed since we can't directly watch database changes
-      // A 30 second interval is reasonable for most use cases
-      setInterval(() => {
-        debounce(refreshClients, 1000);
-      }, 30000);
-    },
-
+    init,
     async loadAll(): Promise<Record<string, MCPServerConfig>> {
-      try {
-        const servers = await mcpRepository.selectAllServers();
-        return Object.fromEntries(
-          servers
-            .filter((server) => server.enabled)
-            .map((server) => [server.name, server.config]),
-        );
-      } catch (error) {
-        logger.error("Failed to load MCP configs from database:", error);
-        return {};
-      }
+      // Always load the latest configs from the database
+      await saveToCacheFromDb();
+      return Object.fromEntries(configs);
     },
-
     async save(name: string, config: MCPServerConfig): Promise<void> {
       try {
         const existingServer = await mcpRepository.selectServerByName(name);
-
         if (existingServer) {
           await mcpRepository.updateServer(existingServer.id, { config });
         } else {
           await mcpRepository.insertServer({ name, config });
         }
-
-        // Trigger a refresh to apply changes
-        debounce(refreshClients, 1000);
+        configs.set(name, config);
       } catch (error) {
         logger.error(`Failed to save MCP config "${name}" to database:`, error);
         throw error;
       }
     },
-
     async delete(name: string): Promise<void> {
       try {
         const server = await mcpRepository.selectServerByName(name);
         if (server) {
           await mcpRepository.deleteServer(server.id);
         }
-
-        // Trigger a refresh to apply changes
-        debounce(refreshClients, 1000);
+        configs.delete(name);
       } catch (error) {
         logger.error(
-          `Failed to delete MCP config "${name}" from database:`,
+          `Failed to delete MCP config "${name}" from database:",`,
           error,
         );
         throw error;
       }
     },
-
     async has(name: string): Promise<boolean> {
-      try {
-        // Note: If you want to use `existsServerWithName` directly,
-        // this logic might need a slight adjustment depending on whether
-        // `existsServerWithName` also considers the `enabled` flag.
-        // For now, keeping the existing logic which checks `enabled`.
-        const server = await mcpRepository.selectServerByName(name);
-        return !!server && server.enabled;
-      } catch (error) {
-        logger.error(
-          `Failed to check if MCP config "${name}" exists in database:`,
-          error,
-        );
-        return false;
-      }
+      return configs.has(name);
     },
   };
 }

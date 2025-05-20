@@ -3,6 +3,17 @@ import path from "path";
 
 // Get current directory path
 const ROOT = process.cwd();
+
+const DOCKER_ENV_PATH = path.join(ROOT, "docker", ".env");
+
+const DOCKER_ENV_CONTENT =
+  [
+    "POSTGRES_URL=postgres://your_username:your_password@postgres:5432/your_database_name",
+    "POSTGRES_DB=your_database_name",
+    "POSTGRES_USER=your_username",
+    "POSTGRES_PASSWORD=your_password",
+  ].join("\n") + "\n";
+
 /**
  * Copy .env.example to .env if .env doesn't exist
  */
@@ -18,7 +29,6 @@ function copyEnvFile() {
       console.warn(
         "Important: You may need to edit the .env file to set your API keys.",
       );
-      return true;
     } catch (error) {
       console.error("Error occurred while creating .env file.");
       console.error(error);
@@ -26,8 +36,22 @@ function copyEnvFile() {
     }
   } else {
     console.info(".env file already exists. Skipping...");
-    return true;
   }
+
+  if (!fs.existsSync(DOCKER_ENV_PATH)) {
+    try {
+      fs.writeFileSync(DOCKER_ENV_PATH, DOCKER_ENV_CONTENT, "utf-8");
+      console.log("/docker/.env file has been created.");
+    } catch (error) {
+      console.error("Error occurred while creating /docker/.env file.");
+      console.error(error);
+      return false;
+    }
+  } else {
+    console.info("/docker/.env file already exists. Skipping...");
+  }
+
+  return true;
 }
 
 // Execute copy operation

@@ -19,13 +19,18 @@ Docker provides a streamlined and efficient method for managing containerized ap
     ```
 
 2.  **Set up Environment Variables:**
-    Copy the example environment file and then open the newly created `.env` file to fill in the necessary environment variables. You only need to provide the API keys for the AI provider you intend to use. You need an auth secret which can be made with `pnpx auth secret`. Database is handled by docker so the default .env.example is fine.
+    Run `pnpm initial:env` to generate the `.env` file.  
+    Then, enter the API keys only for the LLM providers you plan to use.
 
-    ```sh
-    pnpm i
-    ```
+    You can generate an authentication secret (`AUTH_SECRET`) with the command:  
+    `pnpx auth secret`
 
-3.  **Build and Start the Container:**
+    For the database, Docker will handle all necessary configuration automatically,  
+    so the default `docker/.env` file is sufficient.
+
+
+
+1.  **Build and Start the Container:**
     From the project's root directory, build the Docker image and start the container in detached mode (running in the background):
 
     ```sh
