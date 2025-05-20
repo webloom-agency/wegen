@@ -33,7 +33,19 @@ Docker provides a streamlined and efficient method for managing containerized ap
     ```
 
     Your application should now be running. You can access it by visiting `http://<ipofserver>:3000/` in your web browser. Replace `<ipofserver>` with the IP address of the server where Docker is running (this will likely be `localhost` if you're running it on your local machine).
-
+## Using your own database
+If you don't want to host your own db, here are some steps
+1. Open up your docker compose file. `docker/compose.yml`
+Comment out the postgres section and the volume
+2. Update `.env.local` change your DB url
+3. Migrate the DB 
+```sh
+pnpm db:migrate
+```
+4. Run the app
+```sh
+pnpm docker-compose:up
+```
 ## What is possible in docker and what is not
 
 - Full support for MCP stdio servers that work with bunx, uvx and npx.
