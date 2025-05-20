@@ -179,6 +179,7 @@ You only need to enter the keys for the providers you plan to use:
 GOOGLE_GENERATIVE_AI_API_KEY=****
 OPENAI_API_KEY=****
 ANTHROPIC_API_KEY=****
+OPENROUTER_API_KEY=****
 AUTH_SECRET=
 POSTGRES_URL=
 ```
