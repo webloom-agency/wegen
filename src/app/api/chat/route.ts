@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     const session = await auth();
 
     if (!session?.user.id) {
-      return redirect("/login");
+      return new Response("Unauthorized", { status: 401 });
     }
 
     const {
@@ -223,6 +223,6 @@ export async function POST(request: Request) {
     });
   } catch (error: any) {
     logger.error(error);
-    return redirect("/login");
+    return new Response("Internal server error", { status: 500 });
   }
 }

@@ -1,6 +1,6 @@
-import { IS_DEV } from "lib/const";
 import { MemoryCache } from "./memory-cache";
 import { Cache } from "./cache.interface";
+import logger from "logger";
 
 let serverCache: Cache;
 
@@ -9,13 +9,11 @@ declare global {
   var __server__cache__: Cache | undefined;
 }
 
-if (IS_DEV) {
-  if (!globalThis.__server_cache__) {
-    globalThis.__server_cache__ = new MemoryCache();
-  }
-  serverCache = globalThis.__server_cache__;
+if (globalThis.__server__cache__) {
+  serverCache = globalThis.__server__cache__;
 } else {
-  serverCache = new MemoryCache();
+  globalThis.__server__cache__ = new MemoryCache();
+  serverCache = globalThis.__server__cache__;
 }
 
 export { serverCache };
