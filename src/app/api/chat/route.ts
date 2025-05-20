@@ -27,7 +27,6 @@ import {
 import { errorIf, safe } from "ts-safe";
 
 import { auth } from "../auth/auth";
-import { redirect } from "next/navigation";
 
 import {
   appendAnnotations,
