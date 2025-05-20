@@ -1,6 +1,5 @@
 import { MemoryCache } from "./memory-cache";
 import { Cache } from "./cache.interface";
-import logger from "logger";
 
 let serverCache: Cache;
 
