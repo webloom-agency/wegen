@@ -1,5 +1,9 @@
+import { config } from "dotenv";
 import type { NextConfig } from "next";
 
+config({
+  path: ".env.local",
+});
 export default () => {
   const nextConfig: NextConfig = {
     cleanDistDir: true,
@@ -8,7 +12,6 @@ export default () => {
     },
     env: {
       NO_HTTPS: process.env.NO_HTTPS,
-      AUTH_TRUST_HOST: process.env.AUTH_TRUST_HOST,
     },
   };
   return nextConfig;

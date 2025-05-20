@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
     req: request,
     secret: process.env.AUTH_SECRET,
     secureCookie:
-      process.env.NO_HTTPS == "true"
+      process.env.NO_HTTPS == "1"
         ? false
         : process.env.NODE_ENV === "production",
   });

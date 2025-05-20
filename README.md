@@ -139,7 +139,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to get start
 
 ### Environment Variables
 
-The `pnpm i` command generates a `.env` file. Add your API keys there:
+The `pnpm i` command generates a `.env.local` file. Add your API keys there:
 
 ```dotenv
 GOOGLE_GENERATIVE_AI_API_KEY=****

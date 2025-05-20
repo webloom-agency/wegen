@@ -4,7 +4,9 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { join } from "path";
 import { Pool } from "pg";
 
-config();
+config({
+  path: ".env.local",
+});
 
 const runMigrate = async () => {
   const pool = new Pool({
