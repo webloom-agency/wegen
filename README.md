@@ -151,6 +151,7 @@ The `pnpm i` command generates a `.env` file. Add your API keys there:
 GOOGLE_GENERATIVE_AI_API_KEY=****
 OPENAI_API_KEY=****
 ANTHROPIC_API_KEY=****
+OPENROUTER_API_KEY=****
 AUTH_SECRET=
 POSTGRES_URL=
 ```
