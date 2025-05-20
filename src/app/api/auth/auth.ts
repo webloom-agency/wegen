@@ -28,6 +28,8 @@ export const {
   signOut,
   auth,
 } = NextAuth({
+  secret: process.env.AUTH_SECRET,
+  trustHost: true,
   pages: {
     signIn: "/login",
     newUser: "/",
