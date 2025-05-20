@@ -4,6 +4,7 @@
 
 [![Local First](https://img.shields.io/badge/Local-First-blueviolet)](#)
 [![MCP Supported](https://img.shields.io/badge/MCP-Supported-00c853)](https://modelcontextprotocol.io/introduction)
+[![Discord](https://img.shields.io/discord/gCRu69Upnp?label=Discord&logo=discord&color=5865F2)](https://discord.gg/gCRu69Upnp)
 
 **MCP Client Chatbot** is a versatile chat interface that supports various AI model providers like [OpenAI](https://openai.com/), [Anthropic](https://www.anthropic.com/), [Google](https://ai.google.dev/), and [Ollama](https://ollama.com/). **It is designed for instant execution in 100% local environments without complex configuration**, enabling users to fully control computing resources on their personal computer or server.
 
@@ -35,6 +36,7 @@ MCP Client Chatbot is a 100% community-driven open source project.
     - [🛠️ Built-in Tools \& UX](#️-built-in-tools--ux)
     - [💻 LLM Code Write (with Daytona)](#-llm-code-write-with-daytona)
   - [🙌 Contributing](#-contributing)
+  - [💬 Join Our Discord](#-join-our-discord)
 
 ---
 
@@ -216,7 +218,13 @@ MCP Client Chatbot is evolving with these upcoming features:
 
 We welcome all contributions! Bug reports, feature ideas, code improvements — everything helps us build the best local AI assistant.
 
-Let’s build it together 🚀
+Let's build it together 🚀
+
+## 💬 Join Our Discord
+
+[![Discord](https://img.shields.io/discord/1199630812220510298?label=Discord&logo=discord&color=5865F2)](https://discord.gg/gCRu69Upnp)
+
+Connect with the community, ask questions, and get support on our official Discord server!
 
 
 
