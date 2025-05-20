@@ -1,9 +1,5 @@
-import { config } from "dotenv";
 import { colorize } from "consola/utils";
-
-config({
-  path: ".env.local",
-});
+import "load-env";
 
 const promise = import("lib/db/pg/migrate.pg");
 

@@ -123,9 +123,15 @@ This project uses [pnpm](https://pnpm.io/) as the recommended package manager.
 ```bash
 # 1. Install dependencies
 pnpm i
-# 2. Fill envs and migrate DB
+
+# 2. Create environment variable file & Fill envs
+pnpm copy:env # This runs automatically in postinstall, so you can skip it.
+
+# If you don't have PostgreSQL running, use: pnpm docker:pg
+# 3. migrate DB
 pnpm db:migrate
-# 3. Start dev server
+
+# 4. Start dev server
 pnpm dev
 
 # 4. (Optional) Build & start for local testing
@@ -139,7 +145,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to get start
 
 ### Environment Variables
 
-The `pnpm i` command generates a `.env.local` file. Add your API keys there:
+The `pnpm i` command generates a `.env` file. Add your API keys there:
 
 ```dotenv
 GOOGLE_GENERATIVE_AI_API_KEY=****

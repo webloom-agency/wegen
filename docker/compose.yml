@@ -6,9 +6,9 @@ services:
     ports:
       - '3000:3000'
     environment:
-      - NO_HTTPS='1'
+      - NO_HTTPS=1
     env_file:
-      - ../.env.local
+      - ../.env
     dns:
       - 8.8.8.8 # Google's public DNS server
       - 8.8.4.4 # Google's public DNS server

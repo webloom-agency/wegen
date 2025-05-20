@@ -19,7 +19,7 @@ Docker provides a streamlined and efficient method for managing containerized ap
     ```
 
 2.  **Set up Environment Variables:**
-    Copy the example environment file and then open the newly created `.env.local` file to fill in the necessary environment variables. You only need to provide the API keys for the AI provider you intend to use. You need an auth secret which can be made with `pnpx auth secret`. Database is handled by docker so the default .env.example is fine.
+    Copy the example environment file and then open the newly created `.env` file to fill in the necessary environment variables. You only need to provide the API keys for the AI provider you intend to use. You need an auth secret which can be made with `pnpx auth secret`. Database is handled by docker so the default .env.example is fine.
 
     ```sh
     pnpm i
@@ -33,19 +33,26 @@ Docker provides a streamlined and efficient method for managing containerized ap
     ```
 
     Your application should now be running. You can access it by visiting `http://<ipofserver>:3000/` in your web browser. Replace `<ipofserver>` with the IP address of the server where Docker is running (this will likely be `localhost` if you're running it on your local machine).
+
 ## Using your own database
+
 If you don't want to host your own db, here are some steps
+
 1. Open up your docker compose file. `docker/compose.yml`
-Comment out the postgres section and the volume
-2. Update `.env.local` change your DB url
-3. Migrate the DB 
+   Comment out the postgres section and the volume
+2. Update `.env` change your DB url
+3. Migrate the DB
+
 ```sh
 pnpm db:migrate
 ```
+
 4. Run the app
+
 ```sh
 pnpm docker-compose:up
 ```
+
 ## What is possible in docker and what is not
 
 - Full support for MCP stdio servers that work with bunx, uvx and npx.

@@ -1,9 +1,5 @@
-import { config } from "dotenv";
 import type { NextConfig } from "next";
 
-config({
-  path: ".env.local",
-});
 export default () => {
   const nextConfig: NextConfig = {
     cleanDistDir: true,
