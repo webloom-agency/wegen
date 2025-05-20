@@ -1,5 +1,5 @@
 FROM node:23-alpine AS builder
-ARG IS_DOCKER_BUILD="1"
+ARG DOCKER_BUILD="1"
 WORKDIR /app
 
 COPY . . 

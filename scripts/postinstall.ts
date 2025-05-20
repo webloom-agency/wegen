@@ -1,5 +1,5 @@
 import { exec } from "child_process";
-import { IS_VERCEL, IS_DOCKER_BUILD } from "lib/const"; // Import IS_DOCKER as well
+import { IS_VERCEL_ENV, IS_DOCKER_ENV } from "lib/const";
 import { promisify } from "util";
 
 const execPromise = promisify(exec);
@@ -27,14 +27,15 @@ async function runCommand(command: string, description: string) {
 }
 
 async function main() {
-
-  if (IS_VERCEL) {
+  if (IS_VERCEL_ENV) {
     console.log("Running on Vercel, performing database migration.");
     await runCommand("pnpm db:migrate", "Database migration");
-  } else if (IS_DOCKER_BUILD) {
+  } else if (IS_DOCKER_ENV) {
     console.log("Running in Docker, nothing to do.");
   } else {
-    console.log("Running in a normal environment, performing initial environment setup.");
+    console.log(
+      "Running in a normal environment, performing initial environment setup.",
+    );
     await runCommand("pnpm initial:env", "Initial environment setup");
   }
 }
