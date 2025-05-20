@@ -263,6 +263,6 @@ Let's build it together 🚀
 
 ## 💬 Join Our Discord
 
-[![Discord](https://img.shields.io/discord/gCRu69Upnp?label=Discord&logo=discord&color=5865F2)](https://discord.gg/gCRu69Upnp)
+[![Discord](https://img.shields.io/discord/1374047276074537103?label=Discord&logo=discord&color=5865F2)](https://discord.gg/gCRu69Upnp)
 
 Connect with the community, ask questions, and get support on our official Discord server!
