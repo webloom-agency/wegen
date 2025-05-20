@@ -1,4 +1,5 @@
 import { createDbBasedMCPConfigsStorage } from "./db-mcp-config-storage";
+import { createFileBasedMCPConfigsStorage } from "./fb-mcp-config-storage";
 import {
   createMCPClientsManager,
   type MCPClientsManager,
@@ -11,7 +12,10 @@ declare global {
 
 if (!globalThis.__mcpClientsManager__) {
   // Choose the appropriate storage implementation based on environment
-  const storage = createDbBasedMCPConfigsStorage();
+  const storage =
+    process.env.FILE_BASED_MCP_CONFIG === "true"
+      ? createFileBasedMCPConfigsStorage()
+      : createDbBasedMCPConfigsStorage();
   globalThis.__mcpClientsManager__ = createMCPClientsManager(storage);
 }
 
