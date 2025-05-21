@@ -195,7 +195,17 @@ You can connect MCP tools via:
 
 1. **UI Setup:** Go to http://localhost:3000/mcp and configure through the interface.
 2. **Custom Logic:** Edit `./custom-mcp-server/index.ts` to implement your own logic, this also doesn't run on vercel or docker.
-3. **File based for local dev:** make .mcp-config.json and put your servers in there. Only works in local dev, no docker or vercel env variable required
+3. **File based for local dev:** make .mcp-config.json and put your servers in there. Only works in local dev, no docker or vercel env variable required. For example 
+```jsonc
+// .mcp-config.json
+{
+  "playwright":  {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    },
+    ...
+}
+```
 
 
 ## 💡 Tips & Guides
