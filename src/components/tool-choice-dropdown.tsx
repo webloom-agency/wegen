@@ -1,7 +1,7 @@
 "use client";
 
 import { appStore } from "@/app/store";
-import { cn } from "lib/utils";
+import { capitalizeFirstLetter, cn } from "lib/utils";
 import { Check, ClipboardCheck, Infinity, PenOff } from "lucide-react";
 import { useEffect } from "react";
 import { Button } from "ui/button";
@@ -55,9 +55,7 @@ export const ToolChoiceDropDown = () => {
             "font-semibold mr-1 rounded-full flex items-center gap-2 bg-transparent",
           )}
         >
-          <span>
-            {toolChoice.charAt(0).toUpperCase() + toolChoice.slice(1)}
-          </span>
+          <span>{capitalizeFirstLetter(toolChoice)}</span>
           <Separator orientation="vertical" className="h-4" />
           <span className="text-xs text-muted-foreground">⌘P</span>
         </Button>

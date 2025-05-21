@@ -70,7 +70,9 @@ export function ToolSelector({
   align,
   side,
 }: PropsWithChildren<ToolSelectorProps>) {
-  const appStoreMutate = appStore((state) => state.mutate);
+  const [appStoreMutate, toolChoice] = appStore(
+    useShallow((state) => [state.mutate, state.toolChoice]),
+  );
   const { isLoading } = useSWR("mcp-list", selectMcpClientsAction, {
     refreshInterval: 1000 * 60 * 1,
     fallbackData: [],
@@ -85,7 +87,10 @@ export function ToolSelector({
         {children ?? (
           <Button
             variant={"outline"}
-            className={"rounded-full bg-secondary font-semibold"}
+            className={cn(
+              "rounded-full font-semibold bg-secondary",
+              toolChoice == "none" && "text-muted-foreground bg-transparent",
+            )}
           >
             {isLoading ? (
               <Loader className="size-3.5 animate-spin" />
