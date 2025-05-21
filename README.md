@@ -4,7 +4,7 @@
 
 [![Local First](https://img.shields.io/badge/Local-First-blueviolet)](#)
 [![MCP Supported](https://img.shields.io/badge/MCP-Supported-00c853)](https://modelcontextprotocol.io/introduction)
-[![Discord](https://img.shields.io/discord/gCRu69Upnp?label=Discord&logo=discord&color=5865F2)](https://discord.gg/gCRu69Upnp)
+[![Discord](https://img.shields.io/discord/1374047276074537103?label=Discord&logo=discord&color=5865F2)](https://discord.gg/gCRu69Upnp)
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/cgoinglove/mcp-client-chatbot&env=OPENAI_API_KEY&env=AUTH_SECRET&envDescription=Learn+more+about+how+to+get+the+API+Keys+for+the+application&envLink=https://github.com/cgoinglove/mcp-client-chatbot/blob/main/.env.example&demo-title=MCP+Client+Chatbot&demo-description=An+Open-Source+MCP+Chatbot+Template+Built+With+Next.js+and+the+AI+SDK+by+Vercel.&products=[{"type":"integration","protocol":"storage","productSlug":"neon","integrationSlug":"neon"}])
 
@@ -184,6 +184,7 @@ OLLAMA_BASE_URL=http://localhost:11434/api
 DEFAULT_MODEL=4o
 AUTH_SECRET=
 POSTGRES_URL=
+FILE_BASED_MCP_CONFIG=false
 ```
 
 for auth secret run `pnpx auth secret`
@@ -196,7 +197,17 @@ You can connect MCP tools via:
 
 1. **UI Setup:** Go to http://localhost:3000/mcp and configure through the interface.
 2. **Custom Logic:** Edit `./custom-mcp-server/index.ts` to implement your own logic, this also doesn't run on vercel or docker.
-
+3. **File based for local dev:** make .mcp-config.json and put your servers in there. Only works in local dev, no docker or vercel env variable required. For example 
+```jsonc
+// .mcp-config.json
+{
+  "playwright":  {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    },
+    ...
+}
+```
 
 
 ## 💡 Tips & Guides
@@ -264,6 +275,6 @@ Let's build it together 🚀
 
 ## 💬 Join Our Discord
 
-[![Discord](https://img.shields.io/discord/gCRu69Upnp?label=Discord&logo=discord&color=5865F2)](https://discord.gg/gCRu69Upnp)
+[![Discord](https://img.shields.io/discord/1374047276074537103?label=Discord&logo=discord&color=5865F2)](https://discord.gg/gCRu69Upnp)
 
 Connect with the community, ask questions, and get support on our official Discord server!

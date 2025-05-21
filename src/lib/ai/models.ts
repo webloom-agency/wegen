@@ -6,9 +6,13 @@ import { xai } from "@ai-sdk/xai";
 import { LanguageModel, wrapLanguageModel } from "ai";
 import { gemmaToolMiddleware } from "@ai-sdk-tool/parser";
 import { openrouter } from '@openrouter/ai-sdk-provider';
+
 const ollama = createOllama({
   baseURL: process.env.OLLAMA_BASE_URL || "http://localhost:11434/api"
 })
+
+
+
 export const allModels = {
   openai: {
     "4o-mini": openai("gpt-4o-mini", {}),
@@ -47,8 +51,8 @@ export const allModels = {
   },
   openRouter: {
     "qwen3-8b:free": openrouter("qwen/qwen3-8b:free"),
-    "qwen3-14b:free": openrouter("qwen/qwen3-14b:free")
-  }
+    "qwen3-14b:free": openrouter("qwen/qwen3-14b:free"),
+  },
 } as const;
 
 export const isToolCallUnsupportedModel = (model: LanguageModel) => {
