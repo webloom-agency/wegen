@@ -68,7 +68,7 @@ export const isToolCallUnsupportedModel = (model: LanguageModel) => {
   ].includes(model);
 };
 
-export const DEFAULT_MODEL = process.env.DEFAULT_MODEL || "4o";
+export const DEFAULT_MODEL =  "4o";
 
 const fallbackModel = allModels.openai[DEFAULT_MODEL];
 
