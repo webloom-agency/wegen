@@ -95,4 +95,11 @@ export const pgUserRepository: UserRepository = {
       .where(eq(UserSchema.id, userId));
     return result?.preferences ?? null;
   },
+  findById: async (userId: string) => {
+    const [result] = await db
+      .select()
+      .from(UserSchema)
+      .where(eq(UserSchema.id, userId));
+    return (result as User) ?? null;
+  },
 };

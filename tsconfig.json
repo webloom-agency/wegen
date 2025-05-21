@@ -30,6 +30,7 @@
       "app-types/*": ["./src/types/*"],
       "logger": ["./src/lib/logger.ts"],
       "lib/*": ["./src/lib/*"],
+      "load-env": ["./src/lib/load-env.ts"],
       "@/*": ["./src/*"]
     }
   },

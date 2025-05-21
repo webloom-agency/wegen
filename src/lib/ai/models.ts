@@ -5,6 +5,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { xai } from "@ai-sdk/xai";
 import { LanguageModel, wrapLanguageModel } from "ai";
 import { gemmaToolMiddleware } from "@ai-sdk-tool/parser";
+import { openrouter } from '@openrouter/ai-sdk-provider';
 
 export const allModels = {
   openai: {
@@ -42,6 +43,10 @@ export const allModels = {
       middleware: gemmaToolMiddleware,
     }),
   },
+  openRouter: {
+    "qwen3-8b:free": openrouter("qwen/qwen3-8b:free"),
+    "qwen3-14b:free": openrouter("qwen/qwen3-14b:free")
+  }
 } as const;
 
 export const isToolCallUnsupportedModel = (model: LanguageModel) => {
@@ -52,6 +57,8 @@ export const isToolCallUnsupportedModel = (model: LanguageModel) => {
     allModels.xai["grok-3-mini"],
     allModels.google["gemini-2.0-thinking"],
     allModels.ollama["gemma3:1b"],
+    allModels.openRouter["qwen3-8b:free"],
+    allModels.openRouter["qwen3-14b:free"],
   ].includes(model);
 };
 

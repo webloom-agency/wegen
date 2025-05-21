@@ -27,7 +27,6 @@ import {
 import { errorIf, safe } from "ts-safe";
 
 import { auth } from "../auth/auth";
-import { redirect } from "next/navigation";
 
 import {
   appendAnnotations,
@@ -45,8 +44,6 @@ import {
 } from "./helper";
 import { generateTitleFromUserMessageAction } from "./actions";
 
-export const maxDuration = 120;
-
 export async function POST(request: Request) {
   try {
     const json = await request.json();
@@ -54,7 +51,7 @@ export async function POST(request: Request) {
     const session = await auth();
 
     if (!session?.user.id) {
-      return redirect("/login");
+      return new Response("Unauthorized", { status: 401 });
     }
 
     const {
@@ -225,6 +222,6 @@ export async function POST(request: Request) {
     });
   } catch (error: any) {
     logger.error(error);
-    return redirect("/login");
+    return new Response("Internal server error", { status: 500 });
   }
 }

@@ -28,6 +28,7 @@ export type UserRepository = {
     preferences: UserPreferences,
   ) => Promise<User>;
   getPreferences: (userId: string) => Promise<UserPreferences | null>;
+  findById: (userId: string) => Promise<User | null>;
 };
 
 export const UserZodSchema = z.object({
