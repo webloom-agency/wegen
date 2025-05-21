@@ -8,6 +8,7 @@ import { SidebarGroup } from "ui/sidebar";
 import { TooltipProvider } from "ui/tooltip";
 import Link from "next/link";
 import { Library, MessageCircleDashed } from "lucide-react";
+import { getShortcutKeyList, Shortcuts } from "lib/keyboard-shortcuts";
 
 export function AppSidebarMenus({ isOpen }: { isOpen: boolean }) {
   return (
@@ -32,7 +33,9 @@ export function AppSidebarMenus({ isOpen }: { isOpen: boolean }) {
                   <TooltipContent side="right">
                     <p>
                       New Chat{" "}
-                      <span className="text-xs text-muted-foreground">⌘J</span>
+                      <span className="text-xs text-muted-foreground ml-2">
+                        {getShortcutKeyList(Shortcuts.openNewChat).join(" + ")}
+                      </span>
                     </p>
                   </TooltipContent>
                 </Link>

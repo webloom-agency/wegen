@@ -27,6 +27,19 @@ import {
   ChatMessageAnnotation,
 } from "app-types/chat";
 import { useLatest } from "@/hooks/use-latest";
+import { isShortcutEvent, Shortcuts } from "lib/keyboard-shortcuts";
+import { Button } from "ui/button";
+import { deleteThreadAction } from "@/app/api/chat/actions";
+import { useRouter } from "next/navigation";
+import { Loader } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "ui/dialog";
 
 type Props = {
   threadId: string;
@@ -56,14 +69,6 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
       state.allowedMcpServers,
     ]),
   );
-
-  const latestRef = useLatest({
-    toolChoice,
-    model,
-    allowedAppDefaultToolkit,
-    allowedMcpServers,
-    threadId,
-  });
 
   const {
     messages,
@@ -109,6 +114,17 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
           "An error occured, please try again!",
       );
     },
+  });
+
+  const [isDeleteThreadPopupOpen, setIsDeleteThreadPopupOpen] = useState(false);
+
+  const latestRef = useLatest({
+    toolChoice,
+    model,
+    allowedAppDefaultToolkit,
+    allowedMcpServers,
+    messages,
+    threadId,
   });
 
   const isLoading = useMemo(
@@ -190,6 +206,32 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
       });
   }, [isInitialThreadEntry]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const messages = latestRef.current.messages;
+      if (messages.length === 0) return;
+      const isLastMessageCopy = isShortcutEvent(e, Shortcuts.lastMessageCopy);
+      const isDeleteThread = isShortcutEvent(e, Shortcuts.deleteThread);
+      if (!isDeleteThread && !isLastMessageCopy) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (isLastMessageCopy) {
+        const lastMessage = messages.at(-1);
+        const lastMessageText = lastMessage!.parts
+          .filter((part) => part.type == "text")
+          ?.at(-1)?.text;
+        if (!lastMessageText) return;
+        navigator.clipboard.writeText(lastMessageText);
+        toast.success("Last message copied to clipboard");
+      }
+      if (isDeleteThread) {
+        setIsDeleteThreadPopupOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   return (
     <div
       className={cn(
@@ -252,6 +294,11 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
         />
         {slots?.inputBottomSlot}
       </div>
+      <DeleteThreadPopup
+        threadId={threadId}
+        onClose={() => setIsDeleteThreadPopupOpen(false)}
+        open={isDeleteThreadPopupOpen}
+      />
     </div>
   );
 }
@@ -262,4 +309,45 @@ function vercelAISdkV4ToolInvocationIssueCatcher(message: UIMessage) {
   if (lastPart?.type != "tool-invocation") return;
   if (!message.toolInvocations)
     message.toolInvocations = [lastPart.toolInvocation];
+}
+
+function DeleteThreadPopup({
+  threadId,
+  onClose,
+  open,
+}: { threadId: string; onClose: () => void; open: boolean }) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
+  const handleDelete = useCallback(() => {
+    setIsDeleting(true);
+    safe(() => deleteThreadAction(threadId))
+      .watch(() => setIsDeleting(false))
+      .ifOk(() => {
+        toast.success("Thread deleted successfully");
+        router.push("/");
+      })
+      .ifFail(() => toast.error("Failed to delete thread"))
+      .watch(() => onClose());
+  }, [threadId, router]);
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete Chat</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete this Chat thread?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="destructive" onClick={handleDelete} autoFocus>
+            Delete
+            {isDeleting && <Loader className="size-3.5 ml-2 animate-spin" />}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }

@@ -4,7 +4,7 @@ import { appStore } from "@/app/store";
 import { useChat, UseChatHelpers } from "@ai-sdk/react";
 import { cn } from "lib/utils";
 
-import { PropsWithChildren, useEffect, useMemo, useRef, useState } from "react";
+import { PropsWithChildren, useEffect, useMemo, useRef } from "react";
 import { Button } from "ui/button";
 import {
   Drawer,
@@ -19,12 +19,21 @@ import PromptInput from "./prompt-input";
 import { ErrorMessage, PreviewMessage } from "./message";
 import { MessageCircleDashed, X } from "lucide-react";
 import { Separator } from "ui/separator";
-import { useLatest } from "@/hooks/use-latest";
 import { UIMessage } from "ai";
 import { useShallow } from "zustand/shallow";
+import {
+  getShortcutKeyList,
+  isShortcutEvent,
+  Shortcuts,
+} from "lib/keyboard-shortcuts";
 export default function TemporaryChat({ children }: PropsWithChildren) {
-  const [open, setOpen] = useState(false);
-  const model = appStore((state) => state.model);
+  const [model, open, appStoreMutate] = appStore(
+    useShallow((state) => [state.model, state.openTemporaryChat, state.mutate]),
+  );
+
+  const setOpen = (bool: boolean) => {
+    appStoreMutate({ openTemporaryChat: bool });
+  };
 
   const {
     messages,
@@ -52,25 +61,23 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
     [status],
   );
 
-  const latestRef = useLatest(isLoading);
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        (e.metaKey || e.ctrlKey) &&
-        !latestRef.current &&
-        ["e", "k"].includes(e.key.toLowerCase())
+      if (isShortcutEvent(e, Shortcuts.toggleTemporaryChat)) {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(!open);
+      } else if (
+        isShortcutEvent(e, {
+          shortcut: {
+            command: true,
+            key: "e",
+          },
+        })
       ) {
         e.preventDefault();
         e.stopPropagation();
-
-        if (e.key.toLowerCase() === "e" && open) {
-          setMessages([]);
-        }
-
-        if (e.key.toLowerCase() === "k") {
-          setOpen(!open);
-        }
+        setMessages([]);
       }
     };
 
@@ -96,7 +103,11 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
             <TooltipContent align="end" side="bottom">
               <p className="text-xs flex items-center gap-2">
                 Toggle Temporary Chat
-                <span className="text-xs text-muted-foreground">⌘K</span>
+                <span className="text-xs text-muted-foreground">
+                  {getShortcutKeyList(Shortcuts.toggleTemporaryChat).join(
+                    " + ",
+                  )}
+                </span>
               </p>
             </TooltipContent>
           </Tooltip>

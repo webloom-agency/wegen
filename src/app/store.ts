@@ -15,6 +15,9 @@ export interface AppState {
   allowedAppDefaultToolkit?: AppDefaultToolkit[];
   model: string;
   temporaryModel: string;
+  openTemporaryChat: boolean;
+  openShortcutsPopup: boolean;
+  openChatPreferences: boolean;
 }
 
 export interface AppDispatch {
@@ -32,6 +35,9 @@ const initialState: AppState = {
   allowedAppDefaultToolkit: [...Object.values(AppDefaultToolkit)],
   model: DEFAULT_MODEL,
   temporaryModel: DEFAULT_MODEL,
+  openTemporaryChat: false,
+  openShortcutsPopup: false,
+  openChatPreferences: false,
 };
 
 export const appStore = create<AppState & AppDispatch>()(

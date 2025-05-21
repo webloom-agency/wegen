@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
-  DialogPortal,
   DialogTitle,
   DialogTrigger,
 } from "ui/dialog";
@@ -96,78 +95,77 @@ export function ChatPreferencesPopup({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogPortal>
-        <DialogContent hideClose className="md:max-w-2xl">
-          <DialogTitle>Chat Preferences</DialogTitle>
-          <DialogDescription>
-            {/* Introduce yourself to receive more personalized responses. */}
-          </DialogDescription>
-          <div className="flex flex-col gap-6 w-full">
-            <div className="flex flex-col gap-2">
-              <Label>What should we call you?</Label>
+
+      <DialogContent hideClose className="md:max-w-2xl">
+        <DialogTitle>Chat Preferences</DialogTitle>
+        <DialogDescription>
+          {/* Introduce yourself to receive more personalized responses. */}
+        </DialogDescription>
+        <div className="flex flex-col gap-6 w-full">
+          <div className="flex flex-col gap-2">
+            <Label>What should we call you?</Label>
+            <Input
+              value={preferences.displayName}
+              onChange={(e) => {
+                setPreferences({
+                  displayName: e.target.value,
+                });
+              }}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2 text-foreground flex-1">
+            <Label>What best describes your work?</Label>
+            <div className="relative w-full">
               <Input
-                value={preferences.displayName}
+                value={preferences.profession}
                 onChange={(e) => {
                   setPreferences({
-                    displayName: e.target.value,
+                    profession: e.target.value,
                   });
                 }}
               />
-            </div>
-
-            <div className="flex flex-col gap-2 text-foreground flex-1">
-              <Label>What best describes your work?</Label>
-              <div className="relative w-full">
-                <Input
-                  value={preferences.profession}
-                  onChange={(e) => {
-                    setPreferences({
-                      profession: e.target.value,
-                    });
-                  }}
-                />
-                {(preferences.profession?.length ?? 0) === 0 && (
-                  <div className="absolute left-0 top-0 w-full h-full py-2 px-4 pointer-events-none">
-                    <ExamplePlaceholder placeholder={professionExamples} />
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="flex flex-col gap-2 text-foreground">
-              <Label>
-                What personal preferences should be taken into account in
-                responses?
-              </Label>
-              <span className="text-xs text-muted-foreground"></span>
-              <div className="relative w-full">
-                <Textarea
-                  className="min-h-24 max-h-44 resize-none"
-                  value={preferences.responseStyleExample}
-                  onChange={(e) => {
-                    setPreferences({
-                      responseStyleExample: e.target.value,
-                    });
-                  }}
-                />
-                {(preferences.responseStyleExample?.length ?? 0) === 0 && (
-                  <div className="absolute left-0 top-0 w-full h-full py-2 px-4 pointer-events-none">
-                    <ExamplePlaceholder placeholder={responseStyleExamples} />
-                  </div>
-                )}
-              </div>
+              {(preferences.profession?.length ?? 0) === 0 && (
+                <div className="absolute left-0 top-0 w-full h-full py-2 px-4 pointer-events-none">
+                  <ExamplePlaceholder placeholder={professionExamples} />
+                </div>
+              )}
             </div>
           </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="ghost">Cancel</Button>
-            </DialogClose>
-            <Button disabled={isSaving} onClick={savePreferences}>
-              Save
-              {isSaving && <Loader className="size-4 ml-2 animate-spin" />}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </DialogPortal>
+          <div className="flex flex-col gap-2 text-foreground">
+            <Label>
+              What personal preferences should be taken into account in
+              responses?
+            </Label>
+            <span className="text-xs text-muted-foreground"></span>
+            <div className="relative w-full">
+              <Textarea
+                className="min-h-24 max-h-44 resize-none"
+                value={preferences.responseStyleExample}
+                onChange={(e) => {
+                  setPreferences({
+                    responseStyleExample: e.target.value,
+                  });
+                }}
+              />
+              {(preferences.responseStyleExample?.length ?? 0) === 0 && (
+                <div className="absolute left-0 top-0 w-full h-full py-2 px-4 pointer-events-none">
+                  <ExamplePlaceholder placeholder={responseStyleExamples} />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="ghost">Cancel</Button>
+          </DialogClose>
+          <Button disabled={isSaving} onClick={savePreferences}>
+            Save
+            {isSaving && <Loader className="size-4 ml-2 animate-spin" />}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
   );
 }

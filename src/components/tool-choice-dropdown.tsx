@@ -1,6 +1,11 @@
 "use client";
 
 import { appStore } from "@/app/store";
+import {
+  getShortcutKeyList,
+  isShortcutEvent,
+  Shortcuts,
+} from "lib/keyboard-shortcuts";
 import { capitalizeFirstLetter, cn } from "lib/utils";
 import { Check, ClipboardCheck, Infinity, PenOff } from "lucide-react";
 import { useEffect } from "react";
@@ -26,7 +31,7 @@ export const ToolChoiceDropDown = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "p") {
+      if (isShortcutEvent(e, Shortcuts.toolMode)) {
         e.preventDefault();
         e.stopPropagation();
         appStoreMutate(({ toolChoice }) => {
@@ -65,7 +70,7 @@ export const ToolChoiceDropDown = () => {
           Tool Choice
           <DropdownMenuShortcut>
             <span className="text-xs text-muted-foreground bg-muted rounded-md px-2 py-0.5">
-              ⌘P
+              {getShortcutKeyList(Shortcuts.toolMode).join("")}
             </span>
           </DropdownMenuShortcut>
         </DropdownMenuLabel>

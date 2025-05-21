@@ -14,19 +14,16 @@ import { DropdownMenu } from "ui/dropdown-menu";
 import { SidebarMenuItem } from "ui/sidebar";
 import { SidebarMenu } from "ui/sidebar";
 import { Avatar } from "ui/avatar";
-import { ChevronsUpDown, LogOutIcon, Settings2 } from "lucide-react";
+import { ChevronsUpDown, Command, LogOutIcon, Settings2 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 
-import { ChatPreferencesPopup } from "../chat-preferences-popup";
-import { useState } from "react";
+import { appStore } from "@/app/store";
 
 export function AppSidebarUser() {
   const { data: session } = useSession();
 
   const user = session?.user;
-
-  const [isChatPreferencesDialogOpen, setIsChatPreferencesDialogOpen] =
-    useState(false);
+  const appStoreMutate = appStore((state) => state.mutate);
 
   const logout = () => {
     signOut({
@@ -85,12 +82,20 @@ export function AppSidebarUser() {
 
             <DropdownMenuItem
               className="cursor-pointer"
-              onClick={() => setIsChatPreferencesDialogOpen(true)}
+              onClick={() => appStoreMutate({ openChatPreferences: true })}
             >
               <Settings2 className="size-4 text-foreground" />
               <span>Chat Preferences </span>
             </DropdownMenuItem>
 
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => appStoreMutate({ openShortcutsPopup: true })}
+            >
+              <Command className="size-4 text-foreground" />
+              <span>Keyboard Shortcuts</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout} className="cursor-pointer">
               <LogOutIcon className="size-4 text-foreground" />
               <span>Sign out</span>
@@ -98,10 +103,6 @@ export function AppSidebarUser() {
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
-      <ChatPreferencesPopup
-        open={isChatPreferencesDialogOpen}
-        onOpenChange={setIsChatPreferencesDialogOpen}
-      />
     </SidebarMenu>
   );
 }
