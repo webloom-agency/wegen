@@ -189,7 +189,7 @@ export const UserMessagePart = ({
         )}
       >
         {isLast ? (
-          <p className="whitespace-pre-wrap text-sm">
+          <p className="whitespace-pre-wrap text-sm min-w-10">
             <HighlightedText text={part.text} mentions={toolMentions} />
           </p>
         ) : (
