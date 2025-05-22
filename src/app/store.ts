@@ -53,6 +53,9 @@ export const appStore = create<AppState & AppDispatch>()(
         toolChoice: state.toolChoice || initialState.toolChoice,
         allowedMcpServers:
           state.allowedMcpServers || initialState.allowedMcpServers,
+        allowedAppDefaultToolkit:
+          state.allowedAppDefaultToolkit ||
+          initialState.allowedAppDefaultToolkit,
         temporaryModel: state.temporaryModel || initialState.temporaryModel,
       }),
     },
