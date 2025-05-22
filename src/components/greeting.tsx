@@ -1,5 +1,6 @@
 "use client";
 
+import { AutoVoice } from "@/hooks/use-realtime-chat";
 import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { useMemo } from "react";
@@ -49,6 +50,7 @@ export const Greeting = () => {
         </h1>
         <div className="text-4xl"></div>
       </div>
+      <AutoVoice />
     </motion.div>
   );
 };
