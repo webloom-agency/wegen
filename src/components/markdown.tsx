@@ -149,10 +149,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
       {isJson(children) ? (
         <JsonView data={children} />
       ) : (
-        <ReactMarkdown
-          components={components}
-          remarkPlugins={[remarkGfm]}
-        >
+        <ReactMarkdown components={components} remarkPlugins={[remarkGfm]}>
           {children}
         </ReactMarkdown>
       )}

@@ -181,7 +181,7 @@ export const UserMessagePart = ({
         className={cn(
           "flex flex-col gap-4",
           {
-            "text-accent-foreground px-4 py-3 rounded-3xl": isLast,
+            "text-accent-foreground px-4 py-3 rounded-2xl": isLast,
             "opacity-50": isError,
             "bg-accent": isLast,
           },
@@ -189,7 +189,7 @@ export const UserMessagePart = ({
         )}
       >
         {isLast ? (
-          <p className="whitespace-pre-wrap text-sm">
+          <p className={cn("whitespace-pre-wrap text-sm")}>
             <HighlightedText text={part.text} mentions={toolMentions} />
           </p>
         ) : (

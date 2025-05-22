@@ -28,6 +28,7 @@ import Link from "next/link";
 import { GithubIcon } from "ui/github-icon";
 import { useShallow } from "zustand/shallow";
 import TemporaryChat from "../temporary-chat";
+import { getShortcutKeyList, Shortcuts } from "lib/keyboard-shortcuts";
 
 function ThreadDropdownComponent() {
   const [threadList, currentThreadId, projectList] = appStore(
@@ -109,7 +110,12 @@ export function AppHeader() {
             </Toggle>
           </TooltipTrigger>
           <TooltipContent align="start" side="bottom">
-            <p>Toggle Sidebar</p>
+            <p>
+              Toggle Sidebar
+              <span className="text-xs text-muted-foreground ml-2">
+                {getShortcutKeyList(Shortcuts.toggleSidebar).join(" + ")}
+              </span>
+            </p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

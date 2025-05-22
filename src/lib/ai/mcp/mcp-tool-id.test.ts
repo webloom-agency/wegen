@@ -19,10 +19,10 @@ describe("sanitizeFunctionName", () => {
     expect(sanitizeFunctionName("a_valid")).toBe("a_valid");
   });
 
-  it("should truncate names to 64 characters", () => {
+  it("should truncate names to 124 characters", () => {
     const longName = "a".repeat(100);
-    expect(sanitizeFunctionName(longName).length).toBe(64);
-    expect(sanitizeFunctionName(longName)).toBe("a".repeat(64));
+    expect(sanitizeFunctionName(longName).length).toBe(124);
+    expect(sanitizeFunctionName(longName)).toBe("a".repeat(124));
   });
 
   it("should allow dots and dashes", () => {
@@ -45,12 +45,12 @@ describe("createMCPToolId", () => {
     expect(toolId).toBe("server_name_tool_function");
   });
 
-  it("should ensure the combined name doesn't exceed 64 characters", () => {
+  it("should ensure the combined name doesn't exceed 124 characters", () => {
     const longServerName = "s".repeat(40);
     const longToolName = "t".repeat(40);
     const toolId = createMCPToolId(longServerName, longToolName);
 
-    expect(toolId.length).toBeLessThanOrEqual(64);
+    expect(toolId.length).toBeLessThanOrEqual(124);
     expect(toolId).toContain("_"); // Should still contain the separator
   });
 

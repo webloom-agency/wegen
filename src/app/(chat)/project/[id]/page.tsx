@@ -5,6 +5,7 @@ import { ProjectDropdown } from "@/components/project-dropdown";
 import { ProjectSystemMessagePopup } from "@/components/project-system-message-popup";
 import PromptInput from "@/components/prompt-input";
 import { ThreadDropdown } from "@/components/thread-dropdown";
+import { useLatest } from "@/hooks/use-latest";
 import { useChat } from "@ai-sdk/react";
 import { ChatApiSchemaRequestBody, Project } from "app-types/chat";
 import { generateUUID } from "lib/utils";
@@ -74,9 +75,28 @@ export default function ProjectPage() {
 
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
-  const [appStoreMutate, model, toolChoice] = appStore(
-    useShallow((state) => [state.mutate, state.model, state.toolChoice]),
+  const [
+    appStoreMutate,
+    model,
+    toolChoice,
+    allowedMcpServers,
+    allowedAppDefaultToolkit,
+  ] = appStore(
+    useShallow((state) => [
+      state.mutate,
+      state.model,
+      state.toolChoice,
+      state.allowedMcpServers,
+      state.allowedAppDefaultToolkit,
+    ]),
   );
+
+  const latestRef = useLatest({
+    model,
+    toolChoice,
+    allowedMcpServers,
+    allowedAppDefaultToolkit,
+  });
 
   const { input, setInput, append, stop, status } = useChat({
     id: threadId,
@@ -84,8 +104,10 @@ export default function ProjectPage() {
     experimental_prepareRequestBody: ({ messages }) => {
       const request: ChatApiSchemaRequestBody = {
         id: threadId,
-        model,
-        toolChoice,
+        model: latestRef.current.model,
+        toolChoice: latestRef.current.toolChoice,
+        allowedAppDefaultToolkit: latestRef.current.allowedAppDefaultToolkit,
+        allowedMcpServers: latestRef.current.allowedMcpServers,
         projectId: id as string,
         message: messages.at(-1)!,
       };

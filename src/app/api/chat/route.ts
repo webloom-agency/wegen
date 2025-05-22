@@ -222,6 +222,6 @@ export async function POST(request: Request) {
     });
   } catch (error: any) {
     logger.error(error);
-    return new Response("Internal server error", { status: 500 });
+    return new Response(error.message, { status: 500 });
   }
 }
