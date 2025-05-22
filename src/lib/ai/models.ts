@@ -5,13 +5,11 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { xai } from "@ai-sdk/xai";
 import { LanguageModel, wrapLanguageModel } from "ai";
 import { gemmaToolMiddleware } from "@ai-sdk-tool/parser";
-import { openrouter } from '@openrouter/ai-sdk-provider';
+import { openrouter } from "@openrouter/ai-sdk-provider";
 
 const ollama = createOllama({
-  baseURL: process.env.OLLAMA_BASE_URL || "http://localhost:11434/api"
-})
-
-
+  baseURL: process.env.OLLAMA_BASE_URL || "http://localhost:11434/api",
+});
 
 export const allModels = {
   openai: {
@@ -68,7 +66,7 @@ export const isToolCallUnsupportedModel = (model: LanguageModel) => {
   ].includes(model);
 };
 
-export const DEFAULT_MODEL =  "4o";
+export const DEFAULT_MODEL = "4o";
 
 const fallbackModel = allModels.openai[DEFAULT_MODEL];
 

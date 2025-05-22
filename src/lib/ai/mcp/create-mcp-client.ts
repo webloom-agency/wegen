@@ -14,7 +14,13 @@ import { isMaybeSseConfig, isMaybeStdioConfig } from "./is-mcp-config";
 import logger from "logger";
 import type { ConsolaInstance } from "consola";
 import { colorize } from "consola/utils";
-import { createDebounce, isNull, Locker, toAny } from "lib/utils";
+import {
+  createDebounce,
+  errorToString,
+  isNull,
+  Locker,
+  toAny,
+} from "lib/utils";
 
 import { safe } from "ts-safe";
 import { IS_MCP_SERVER_SSE_ONLY } from "lib/const";
@@ -204,6 +210,15 @@ export class MCPClient {
         } else if (status.value?.isError) {
           this.log.error("Tool call failed", toolName, status.value.content);
         }
+      })
+      .ifFail((error) => {
+        return {
+          error: {
+            message: errorToString(error),
+            name: error?.name,
+          },
+          isError: true,
+        };
       })
       .unwrap();
   }
