@@ -27,8 +27,12 @@ import {
   Shortcuts,
 } from "lib/keyboard-shortcuts";
 export default function TemporaryChat({ children }: PropsWithChildren) {
-  const [model, open, appStoreMutate] = appStore(
-    useShallow((state) => [state.model, state.openTemporaryChat, state.mutate]),
+  const [temporaryModel, open, appStoreMutate] = appStore(
+    useShallow((state) => [
+      state.temporaryModel,
+      state.openTemporaryChat,
+      state.mutate,
+    ]),
   );
 
   const setOpen = (bool: boolean) => {
@@ -49,7 +53,7 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
     api: "/api/chat/temporary",
     experimental_throttle: 100,
     body: {
-      model,
+      model: temporaryModel,
     },
     onError: () => {
       setMessages((prev) => prev.slice(0, -1));
