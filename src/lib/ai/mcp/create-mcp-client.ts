@@ -213,10 +213,17 @@ export class MCPClient {
       })
       .ifFail((error) => {
         return {
-          error: {
-            message: errorToString(error),
-            name: error?.name,
-          },
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                error: {
+                  message: errorToString(error),
+                  name: error?.name,
+                },
+              }),
+            },
+          ],
           isError: true,
         };
       })
