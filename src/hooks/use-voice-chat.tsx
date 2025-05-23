@@ -3,16 +3,99 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import React from "react";
 import { Mic, MicOff, Wifi } from "lucide-react";
 import { fetcher } from "lib/utils";
-import { VOICE_MODELS } from "lib/ai/realtime/open-ai/voice-model";
+import { VOICE_MODELS } from "lib/ai/realtime/open-ai/voice-models";
+import { UIMessage } from "ai";
 
-export const useVoiceChat = () => {
-  // const [messages,setMessages] = useState<any[]>([]);
+export interface VoiceChatAdapter {
+  startSession: () => Promise<void>;
+  stopSession: () => Promise<void>;
+  startListening: () => Promise<void>;
+  stopListening: () => Promise<void>;
+  onMessage: (callback: (message: UIMessage) => void) => void;
+}
+
+export const useVoiceChat = (adapter: VoiceChatAdapter) => {
+  const [messages, setMessages] = useState<UIMessage[]>([]);
+  const [isActive, setIsActive] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const stop = useCallback(async () => {
+    try {
+      try {
+        await adapter.stopListening();
+      } catch (err) {
+        console.error("Error stopping listening:", err);
+      }
+      await adapter.stopSession();
+    } catch (err) {
+      console.error("Error stopping session:", err);
+    } finally {
+      setIsActive(false);
+      setIsListening(false);
+    }
+  }, [adapter]);
+
+  const start = useCallback(async () => {
+    setError(null);
+    try {
+      await adapter.startSession();
+      setIsActive(true);
+    } catch (err) {
+      setError(err as Error);
+      await stop();
+    }
+  }, [adapter, stop]);
+
+  const startListening = useCallback(async () => {
+    if (!isActive) return;
+    setError(null);
+    try {
+      await adapter.startListening();
+      setIsListening(true);
+    } catch (err) {
+      setError(err as Error);
+      await stop();
+    }
+  }, [adapter, isActive, stop]);
+
+  const stopListening = useCallback(async () => {
+    if (!isActive) return;
+    try {
+      await adapter.stopListening();
+    } catch (err) {
+      console.error("Error stopping listening:", err);
+    } finally {
+      setIsListening(false);
+    }
+  }, [adapter, isActive]);
+
+  useEffect(() => {
+    adapter.onMessage((message) => {
+      setMessages((prev) => [...prev, message]);
+    });
+  }, [adapter]);
+
+  useEffect(() => {
+    return () => {
+      stop();
+    };
+  }, [stop]);
+
+  return {
+    messages,
+    isActive,
+    isListening,
+    error,
+    start,
+    stop,
+    startListening,
+    stopListening,
+  };
 };
 
 export const AutoVoice = () => {
   const [logs, setLogs] = useState<any[]>([]);
-  const [toolCall, setToolCall] = useState<any>(null);
-  const [isSessionStarted, setIsSessionStarted] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
 
@@ -87,7 +170,6 @@ export const AutoVoice = () => {
       peerConnection.current.close();
     }
 
-    setIsSessionStarted(false);
     setIsSessionActive(false);
     setDataChannel(null);
     peerConnection.current = null;
@@ -133,7 +215,7 @@ export const AutoVoice = () => {
   function stopRecording() {
     setIsListening(false);
 
-    // Stop existing mic tracks so the user’s mic is off
+    // Stop existing mic tracks so the user's mic is off
     if (audioStream) {
       audioStream.getTracks().forEach((track) => track.stop());
     }
@@ -172,36 +254,36 @@ export const AutoVoice = () => {
   );
   // Attach event listeners to the data channel when a new one is created
   useEffect(() => {
-    if (dataChannel) {
-      // Append new server events to the list
-      dataChannel.addEventListener("message", (e) => {
-        const event = JSON.parse(e.data);
-        if (event.type === "response.done") {
-          const output = event.response.output[0];
-          setLogs((prev) => [output, ...prev]);
-          if (output?.type === "function_call") {
-            console.log("Function call:", output);
-          }
-        }
-      });
+    if (!dataChannel) return;
 
-      // Set session active when the data channel is opened
-      dataChannel.addEventListener("open", () => {
-        setIsSessionActive(true);
-        setIsListening(true);
-        setLogs([]);
-        // Send session config
-        const sessionUpdate = {
-          type: "session.update",
-          session: {
-            // tools: TOOLS,
-            // instructions: INSTRUCTIONS,
-          },
-        };
-        sendClientEvent(sessionUpdate);
-        console.log("Session update sent:", sessionUpdate);
-      });
-    }
+    // Append new server events to the list
+    dataChannel.addEventListener("message", (e) => {
+      const event = JSON.parse(e.data);
+      if (event.type === "response.done") {
+        const output = event.response.output[0];
+        setLogs((prev) => [output, ...prev]);
+        if (output?.type === "function_call") {
+          console.log("Function call:", output);
+        }
+      }
+    });
+
+    // Set session active when the data channel is opened
+    dataChannel.addEventListener("open", () => {
+      setIsSessionActive(true);
+      setIsListening(true);
+      setLogs([]);
+      // Send session config
+      const sessionUpdate = {
+        type: "session.update",
+        session: {
+          // tools: TOOLS,
+          // instructions: INSTRUCTIONS,
+        },
+      };
+      sendClientEvent(sessionUpdate);
+      console.log("Session update sent:", sessionUpdate);
+    });
   }, [dataChannel, sendClientEvent]);
 
   const handleConnectClick = async () => {
@@ -225,12 +307,21 @@ export const AutoVoice = () => {
   };
 
   return (
-    <Controls
-      handleConnectClick={handleConnectClick}
-      handleMicToggleClick={handleMicToggleClick}
-      isConnected={isSessionActive}
-      isListening={isListening}
-    />
+    <>
+      <Controls
+        handleConnectClick={handleConnectClick}
+        handleMicToggleClick={handleMicToggleClick}
+        isConnected={isSessionActive}
+        isListening={isListening}
+      />
+      <div className="mt-4 p-4 bg-slate-800 rounded overflow-auto max-h-64">
+        {logs.map((log, idx) => (
+          <div key={idx} className="text-white text-sm mb-2">
+            {JSON.stringify(log)}
+          </div>
+        ))}
+      </div>
+    </>
   );
 };
 
