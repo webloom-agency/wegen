@@ -421,6 +421,7 @@ export function useOpenAIVoiceChat(
   const start = useCallback(async () => {
     if (isActive || isLoading) return;
     setIsLoading(true);
+    setError(null);
     try {
       const session = await createSession();
       const sessionToken = session.client_secret.value;
@@ -509,11 +510,11 @@ export function useOpenAIVoiceChat(
         peerConnection.current.close();
         peerConnection.current = null;
       }
+      tracks.current = [];
       stopListening();
       setIsActive(false);
       setIsListening(false);
       setIsLoading(false);
-      tracks.current = [];
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
     }
