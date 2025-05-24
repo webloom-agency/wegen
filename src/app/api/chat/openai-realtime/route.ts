@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       return new Response("Unauthorized", { status: 401 });
     }
 
-    const { model, voice, allowedMcpServers, toolChoice, threadId } =
+    const { voice, allowedMcpServers, toolChoice, threadId } =
       (await request.json()) as {
         model: string;
         voice: string;
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       },
 
       body: JSON.stringify({
-        model: model || "gpt-4o-mini-realtime-preview-2024-12-17",
+        model: "gpt-4o-mini-realtime-preview-2024-12-17",
         voice: voice || "alloy",
         input_audio_transcription: {
           model: "whisper-1",
