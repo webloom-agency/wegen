@@ -116,8 +116,13 @@ export function VoiceChatBot({
       <DrawerTrigger asChild>{children}</DrawerTrigger>
       <DrawerPortal>
         <DrawerOverlay />
-        <DrawerContent className="max-h-[100vh]! h-full border-none! rounded-none! flex flex-col">
-          <div className="w-full flex justify-end p-6">
+        <DrawerContent className="bg-card/50 backdrop-blur-sm max-h-[100vh]! h-full border-none! rounded-none! flex flex-col">
+          <div
+            className="w-full flex justify-end p-6"
+            style={{
+              userSelect: "text",
+            }}
+          >
             <DrawerTitle>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
