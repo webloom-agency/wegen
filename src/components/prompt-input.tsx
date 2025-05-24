@@ -1,6 +1,12 @@
 "use client";
 
-import { ChevronDown, CornerRightUp, Paperclip, Pause } from "lucide-react";
+import {
+  ChevronDown,
+  CornerRightUp,
+  Mic,
+  Paperclip,
+  Pause,
+} from "lucide-react";
 import { ReactNode, useCallback, useMemo, useState } from "react";
 import { Button } from "ui/button";
 import { notImplementedToast } from "ui/shared-toast";
@@ -16,6 +22,7 @@ import dynamic from "next/dynamic";
 import { ToolChoiceDropDown } from "./tool-choice-dropdown";
 import { PROMPT_PASTE_MAX_LENGTH } from "lib/const";
 import { ToolSelector } from "./tool-selector";
+import { VoiceChatBot } from "./voice-chat-bot";
 
 interface PromptInputProps {
   placeholder?: string;
@@ -208,6 +215,13 @@ export default function PromptInput({
                     <ChevronDown className="size-3" />
                   </Button>
                 </SelectModel>
+                {!isLoading && !input.length && (
+                  <VoiceChatBot onClose={() => {}}>
+                    <Button variant={"ghost"} className="rounded-full">
+                      <Mic className="size-3" />
+                    </Button>
+                  </VoiceChatBot>
+                )}
 
                 <div
                   onClick={() => {

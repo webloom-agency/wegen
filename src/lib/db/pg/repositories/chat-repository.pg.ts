@@ -14,6 +14,8 @@ import {
 } from "../schema.pg";
 
 import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
+import { pgUserRepository } from "./user-repository.pg";
+import { UserPreferences } from "app-types/user";
 
 export const pgChatRepository: ChatRepository = {
   insertThread: async (
@@ -69,6 +71,42 @@ export const pgChatRepository: ChatRepository = {
       userPreferences: thread.user?.preferences ?? undefined,
       messages,
     };
+  },
+
+  selectThreadInstructions: async (userId, threadId) => {
+    const result = {
+      instructions: null as Project["instructions"] | null,
+      userPreferences: undefined as UserPreferences | undefined,
+      threadId: undefined as string | undefined,
+      projectId: undefined as string | undefined,
+    };
+
+    const user = await pgUserRepository.findById(userId);
+
+    if (!user) throw new Error("User not found");
+
+    result.userPreferences = user.preferences;
+
+    if (threadId) {
+      const [thread] = await db
+        .select({
+          threadId: ChatThreadSchema.id,
+          projectId: ChatThreadSchema.projectId,
+          instructions: ProjectSchema.instructions,
+        })
+        .from(ChatThreadSchema)
+        .leftJoin(
+          ProjectSchema,
+          eq(ChatThreadSchema.projectId, ProjectSchema.id),
+        )
+        .where(eq(ChatThreadSchema.id, threadId));
+      if (thread) {
+        result.instructions = thread.instructions;
+        result.projectId = thread.projectId ?? undefined;
+        result.threadId = thread.threadId;
+      }
+    }
+    return result;
   },
 
   selectMessagesByThreadId: async (

@@ -165,7 +165,8 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     const annotation = lastMessage.annotations?.at(-1) as ChatMessageAnnotation;
     if (annotation?.toolChoice != "manual") return false;
     const lastPart = lastMessage.parts.at(-1);
-    if (lastPart?.type != "tool-invocation") return false;
+    if (!lastPart) return false;
+    if (lastPart.type != "tool-invocation") return false;
     if (lastPart.toolInvocation.state != "call") return false;
     return true;
   }, [status, messages]);

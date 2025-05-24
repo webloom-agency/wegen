@@ -1,21 +1,91 @@
 import { NextRequest } from "next/server";
+import { auth } from "../../auth/auth";
+import { AllowedMCPServer } from "app-types/mcp";
+import { chatRepository } from "lib/db/repository";
+import { filterToolsByAllowedMCPServers, mergeSystemPrompt } from "../helper";
+import {
+  buildProjectInstructionsSystemPrompt,
+  buildUserSystemPrompt,
+} from "lib/ai/prompts";
+import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
+import { errorIf, safe } from "ts-safe";
+import { DEFAULT_VOICE_TOOLS } from "lib/ai/speech";
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const model = searchParams.get("model");
-    const voice = searchParams.get("voice");
+    if (!process.env.OPENAI_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: "OPENAI_API_KEY is not set" }),
+        {
+          status: 500,
+        },
+      );
+    }
+
+    const session = await auth();
+
+    if (!session?.user.id) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
+    const { model, voice, allowedMcpServers, toolChoice, threadId } =
+      (await request.json()) as {
+        model: string;
+        voice: string;
+        allowedMcpServers: Record<string, AllowedMCPServer>;
+        toolChoice: "auto" | "none" | "manual";
+        threadId?: string;
+      };
+
+    const { instructions, userPreferences } =
+      await chatRepository.selectThreadInstructions(session.user.id, threadId);
+
+    const systemPrompt = mergeSystemPrompt(
+      buildUserSystemPrompt(session, userPreferences),
+      buildProjectInstructionsSystemPrompt(instructions),
+    );
+
+    const mcpTools = mcpClientsManager.tools();
+
+    const tools = safe(mcpTools)
+      .map(errorIf(() => toolChoice === "none" && "Not allowed"))
+      .map((tools) => {
+        return filterToolsByAllowedMCPServers(tools, allowedMcpServers);
+      })
+      .map((tools) => {
+        return Object.entries(tools).map(([name, tool]) => {
+          return {
+            name,
+            type: "function",
+            description: tool.description,
+            parameters: tool.parameters?.jsonSchema ?? {
+              type: "object",
+              properties: {},
+              required: [],
+            },
+          };
+        });
+      })
+      .map((tools) => {
+        return [...tools, ...DEFAULT_VOICE_TOOLS];
+      })
+      .orElse(undefined);
+
     const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
+
       body: JSON.stringify({
         model: model || "gpt-4o-mini-realtime-preview-2024-12-17",
         voice: voice || "alloy",
-        instructions:
-          "# 영어 선생님입니다. 영어를 알려주세요. 처음시작은 무조건  한국말로 대답 해주세요",
+        input_audio_transcription: {
+          model: "whisper-1",
+        },
+        instructions: systemPrompt,
+        tools: tools,
       }),
     });
 
