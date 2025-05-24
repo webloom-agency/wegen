@@ -32,7 +32,7 @@ const initialState: AppState = {
   currentProjectId: null,
   toolChoice: "auto",
   allowedMcpServers: undefined,
-  allowedAppDefaultToolkit: [...Object.values(AppDefaultToolkit)],
+  allowedAppDefaultToolkit: [],
   model: DEFAULT_MODEL,
   temporaryModel: DEFAULT_MODEL,
   openTemporaryChat: false,
