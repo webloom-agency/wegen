@@ -6,7 +6,6 @@ import {
   UIMessageWithCompleted,
   VoiceChatSession,
 } from "..";
-import { useLatest } from "@/hooks/use-latest";
 import { generateUUID } from "lib/utils";
 import { TextPart } from "ai";
 import {
@@ -76,6 +75,7 @@ const createUIMessage = (m: {
   id?: string;
   role: "user" | "assistant";
   content: Content;
+  completed?: boolean;
 }): UIMessageWithCompleted => {
   const id = m.id ?? generateUUID();
   return {
@@ -83,7 +83,7 @@ const createUIMessage = (m: {
     role: m.role,
     content: "",
     parts: [createUIPart(m.content)],
-    completed: false,
+    completed: m.completed ?? false,
   };
 };
 
@@ -114,7 +114,6 @@ export function useOpenAIVoiceChat(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [messages, setMessages] = useState<UIMessageWithCompleted[]>([]);
-  const [micVolume, setMicVolume] = useState<number>(0);
   const peerConnection = useRef<RTCPeerConnection | null>(null);
   const dataChannel = useRef<RTCDataChannel | null>(null);
   const audioElement = useRef<HTMLAudioElement | null>(null);
@@ -122,55 +121,6 @@ export function useOpenAIVoiceChat(
   const { setTheme } = useTheme();
 
   const tracks = useRef<RTCRtpSender[]>([]);
-  const latest = useLatest(messages);
-
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
-
-  const measureMicVolume = useCallback(() => {
-    if (!analyserRef.current) return;
-    const bufferLength = analyserRef.current.fftSize;
-    const dataArray = new Uint8Array(bufferLength);
-    analyserRef.current.getByteTimeDomainData(dataArray);
-    let sum = 0;
-    for (let i = 0; i < bufferLength; i++) {
-      const value = (dataArray[i] - 128) / 128;
-      sum += value * value;
-    }
-    const rms = Math.sqrt(sum / bufferLength);
-    const volume = Math.min(100, Math.max(0, Math.round(rms * 100)));
-    setMicVolume(volume);
-    animationFrameRef.current = requestAnimationFrame(measureMicVolume);
-  }, []);
-
-  const setupMicAnalyser = useCallback(() => {
-    if (audioStream.current && !audioContextRef.current) {
-      const audioContext = new (
-        window.AudioContext || (window as any).webkitAudioContext
-      )();
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      const source = audioContext.createMediaStreamSource(audioStream.current);
-      source.connect(analyser);
-      audioContextRef.current = audioContext;
-      analyserRef.current = analyser;
-      measureMicVolume();
-    }
-  }, []);
-
-  const cleanupMicAnalyser = useCallback(() => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    analyserRef.current = null;
-    setMicVolume(0);
-  }, []);
 
   const startListening = useCallback(async () => {
     try {
@@ -186,7 +136,6 @@ export function useOpenAIVoiceChat(
         });
       }
       setIsListening(true);
-      setupMicAnalyser();
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
     }
@@ -205,7 +154,6 @@ export function useOpenAIVoiceChat(
         });
       }
       setIsListening(false);
-      cleanupMicAnalyser();
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
     }
@@ -273,11 +221,11 @@ export function useOpenAIVoiceChat(
     }: { callId: string; toolName: string; args: string; id: string }) => {
       let toolResult: any = "success";
       stopListening();
-
+      const toolArgs = JSON.parse(args);
       if (DEFAULT_VOICE_TOOLS.some((t) => t.name === toolName)) {
         switch (toolName) {
-          case "toggleBrowserTheme":
-            setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+          case "changeBrowserTheme":
+            setTheme(toolArgs?.theme || "dark");
             break;
           case "endConversation":
             stop();
@@ -285,7 +233,7 @@ export function useOpenAIVoiceChat(
         }
       } else {
         const toolId = extractMCPToolId(toolName);
-        const toolArgs = JSON.parse(args);
+
         toolResult = await callMcpToolAction(
           toolId.serverName,
           toolId.toolName,
@@ -345,7 +293,7 @@ export function useOpenAIVoiceChat(
             parts: [
               {
                 type: "text",
-                text: "...speaking",
+                text: "",
               },
             ],
             completed: true,
@@ -365,11 +313,12 @@ export function useOpenAIVoiceChat(
           break;
         }
         case "response.audio_transcript.delta": {
-          const message = latest.current.findLast(
-            (m) => m.id == event.item_id,
-          )!;
-          if (!message) {
-            setMessages((prev) => [
+          setMessages((prev) => {
+            const message = prev.findLast((m) => m.id == event.item_id)!;
+            if (message) {
+              return prev;
+            }
+            return [
               ...prev,
               createUIMessage({
                 role: "assistant",
@@ -379,8 +328,8 @@ export function useOpenAIVoiceChat(
                   text: "",
                 },
               }),
-            ]);
-          }
+            ];
+          });
           break;
         }
         case "response.audio_transcript.done": {
@@ -388,7 +337,10 @@ export function useOpenAIVoiceChat(
             const textPart = prev.parts.find((p) => p.type == "text");
             if (!textPart) return prev;
             textPart.text = event.transcript || "";
-            return prev;
+            return {
+              ...prev,
+              completed: true,
+            };
           });
           break;
         }
@@ -403,6 +355,7 @@ export function useOpenAIVoiceChat(
               state: "call",
               toolCallId: event.call_id,
             },
+            completed: true,
           });
           setMessages((prev) => [...prev, message]);
           clientFunctionCall({
@@ -477,7 +430,6 @@ export function useOpenAIVoiceChat(
         setIsListening(false);
       });
       const offer = await pc.createOffer();
-      console.log(session);
       await pc.setLocalDescription(offer);
       const sdpResponse = await fetch(`https://api.openai.com/v1/realtime`, {
         method: "POST",
@@ -524,7 +476,6 @@ export function useOpenAIVoiceChat(
   useEffect(() => {
     return () => {
       stop();
-      cleanupMicAnalyser();
     };
   }, [stop]);
 
@@ -544,6 +495,5 @@ export function useOpenAIVoiceChat(
     stop,
     startListening,
     stopListening,
-    micVolume,
   };
 }

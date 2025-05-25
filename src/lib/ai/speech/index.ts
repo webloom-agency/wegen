@@ -8,7 +8,6 @@ export interface VoiceChatSession {
   isLoading: boolean;
   messages: UIMessageWithCompleted[];
   error: Error | null;
-  micVolume: number;
   start: () => Promise<void>;
   stop: () => Promise<void>;
   startListening: () => Promise<void>;
@@ -22,12 +21,17 @@ export type VoiceChatHook = (props?: {
 export const DEFAULT_VOICE_TOOLS = [
   {
     type: "function",
-    name: "toggleBrowserTheme",
-    description: "Toggle the browser theme between light and dark",
+    name: "changeBrowserTheme",
+    description: "Change the browser theme",
     parameters: {
       type: "object",
-      properties: {},
-      required: [],
+      properties: {
+        theme: {
+          type: "string",
+          enum: ["light", "dark"],
+        },
+      },
+      required: ["theme"],
     },
   },
   {

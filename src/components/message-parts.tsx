@@ -79,10 +79,10 @@ interface AssistMessagePartProps {
 interface ToolMessagePartProps {
   part: ToolMessagePart;
   message: UIMessage;
-  isLast: boolean;
+  isLast?: boolean;
   onPoxyToolCall?: (answer: boolean) => void;
   isError?: boolean;
-  setMessages: UseChatHelpers["setMessages"];
+  setMessages?: UseChatHelpers["setMessages"];
 }
 
 interface HighlightedTextProps {
@@ -416,7 +416,7 @@ export const ToolMessagePart = memo(
       safe(() => setIsDeleting(true))
         .ifOk(() => deleteMessageAction(message.id))
         .ifOk(() =>
-          setMessages((messages) => {
+          setMessages?.((messages) => {
             const index = messages.findIndex((m) => m.id === message.id);
             if (index !== -1) {
               return messages.filter((_, i) => i !== index);
@@ -427,7 +427,7 @@ export const ToolMessagePart = memo(
         .ifFail((error) => toast.error(error.message))
         .watch(() => setIsDeleting(false))
         .unwrap();
-    }, [message.id]);
+    }, [message.id, setMessages]);
     const ToolResultComponent = useMemo(() => {
       if (state === "result") {
         switch (toolName) {

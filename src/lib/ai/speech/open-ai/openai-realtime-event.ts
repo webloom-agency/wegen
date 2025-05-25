@@ -87,6 +87,14 @@ export type OpenAIRealtimeServerEvent =
       transcript: string;
     }
   | {
+      type: "response.audio.done";
+      event_id: string;
+      response_id: string;
+      item_id: string;
+      output_index: number;
+      content_index: number;
+    }
+  | {
       type: "response.function_call_arguments.done";
       event_id: string;
       response_id: string;

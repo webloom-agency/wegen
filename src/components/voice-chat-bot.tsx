@@ -2,7 +2,7 @@
 
 import { useObjectState } from "@/hooks/use-object-state";
 import { UIMessage } from "ai";
-import { VoiceChatHook } from "lib/ai/speech";
+import { UIMessageWithCompleted, VoiceChatHook } from "lib/ai/speech";
 
 import {
   OPENAI_VOICE,
@@ -10,6 +10,8 @@ import {
 } from "lib/ai/speech/open-ai/use-voice-chat.openai";
 import { cn } from "lib/utils";
 import {
+  AudioWaveformIcon,
+  CheckIcon,
   Loader,
   MicIcon,
   MicOffIcon,
@@ -49,8 +51,11 @@ import {
   DropdownMenuTrigger,
 } from "ui/dropdown-menu";
 import { GeminiIcon } from "ui/gemini-icon";
+import { MessageLoading } from "ui/message-loading";
 import { OpenAIIcon } from "ui/openai-icon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
+import { ToolMessagePart } from "./message-parts";
+import { FlipWords } from "ui/flip-words";
 
 interface VoiceChatBotProps {
   onEnd?: (messages: UIMessage[]) => Promise<void>;
@@ -58,7 +63,14 @@ interface VoiceChatBotProps {
 }
 
 const isNotEmptyUIMessage = (message: UIMessage) => {
-  return message.role === "user" && message.content.length === 0;
+  return message.parts.some((v) => {
+    if (v.type === "text") {
+      return v.text.trim() !== "";
+    } else if (v.type === "tool-invocation") {
+      return !v.toolInvocation;
+    }
+    return true;
+  });
 };
 
 export function VoiceChatBot({
@@ -87,8 +99,8 @@ export function VoiceChatBot({
   const {
     isListening,
     isLoading,
+    isActive,
     messages,
-    micVolume,
     error,
     start,
     startListening,
@@ -107,19 +119,23 @@ export function VoiceChatBot({
   }, [messages]);
 
   useEffect(() => {
-    if (!isOpen) {
-      stop();
-      return;
-    }
-    start();
     return () => {
       stop();
     };
-  }, [voiceProvider, isOpen]);
+  }, [voiceProvider]);
+
+  useEffect(() => {
+    if (isOpen) {
+      // start();
+    } else {
+      stop();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (error) {
       toast.error(error.message);
+      stop();
     }
   }, [error]);
 
@@ -165,6 +181,7 @@ export function VoiceChatBot({
                         <DropdownMenuSubContent>
                           {Object.entries(OPENAI_VOICE).map(([key, value]) => (
                             <DropdownMenuItem
+                              className="cursor-pointer flex items-center justify-between"
                               onClick={() =>
                                 setVoiceProvider({
                                   provider: "openai",
@@ -176,6 +193,11 @@ export function VoiceChatBot({
                               key={key}
                             >
                               {key}
+
+                              {value ===
+                                voiceProvider.providerOptions.model && (
+                                <CheckIcon className="size-3.5" />
+                              )}
                             </DropdownMenuItem>
                           ))}
                         </DropdownMenuSubContent>
@@ -204,7 +226,7 @@ export function VoiceChatBot({
               </DropdownMenu>
             </DrawerTitle>
           </div>
-          <div className="flex-1 mx-auto max-w-2xl">
+          <div className="flex-1 mx-auto max-w-3xl w-full">
             {error ? (
               <Alert variant={"destructive"}>
                 <TriangleAlertIcon className="size-4 " />
@@ -217,13 +239,25 @@ export function VoiceChatBot({
                   </p>
                 </AlertDescription>
               </Alert>
-            ) : isLoading ? (
+            ) : null}
+            {isLoading ? (
               <div className="flex-1">loading</div>
             ) : (
-              <div className="flex-1">voice {micVolume}</div>
+              <div className="flex-1 w-full overflow-y-auto">
+                <Messages messages={messages} />
+              </div>
             )}
           </div>
           <div className="w-full p-6 flex items-center justify-center gap-4">
+            <Button
+              variant={"secondary"}
+              size={"icon"}
+              onClick={() => {
+                stop();
+              }}
+            >
+              stop
+            </Button>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -231,7 +265,9 @@ export function VoiceChatBot({
                   size={"icon"}
                   disabled={isClosing || isLoading}
                   onClick={() => {
-                    if (isListening) {
+                    if (!isActive) {
+                      start();
+                    } else if (isListening) {
                       stopListening();
                     } else {
                       startListening();
@@ -239,21 +275,31 @@ export function VoiceChatBot({
                   }}
                   className={cn(
                     "rounded-full p-6",
-                    !isListening && "bg-destructive/20 text-destructive",
-                    isLoading && "animate-pulse",
+                    isActive &&
+                      !isLoading &&
+                      !isListening &&
+                      "bg-destructive/20 text-destructive",
+                    (isLoading || !isActive) &&
+                      "bg-accent-foreground text-accent hover:bg-accent-foreground/80",
                   )}
                 >
                   {isLoading || isClosing ? (
                     <Loader className="size-6 animate-spin" />
+                  ) : !isActive ? (
+                    <AudioWaveformIcon className="size-6" />
                   ) : isListening ? (
-                    <MicOffIcon className="size-6" />
-                  ) : (
                     <MicIcon className="size-6" />
+                  ) : (
+                    <MicOffIcon className="size-6" />
                   )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {isListening ? "Open Mic" : "Close Mic"}
+                {!isActive
+                  ? "Start Conversation"
+                  : isListening
+                    ? "Close Mic"
+                    : "Open Mic"}
               </TooltipContent>
             </Tooltip>
             <Tooltip>
@@ -276,5 +322,63 @@ export function VoiceChatBot({
         </DrawerContent>
       </DrawerPortal>
     </Drawer>
+  );
+}
+
+function Messages({ messages }: { messages: UIMessageWithCompleted[] }) {
+  return (
+    <div className="flex flex-col px-6 gap-6 w-full text-sm">
+      {messages.map((message) => (
+        <div
+          key={message.id}
+          className={cn(
+            "flex px-4 py-3",
+            message.role == "user" &&
+              "ml-auto max-w-2xl bg-accent-foreground text-accent rounded-2xl w-fit",
+          )}
+        >
+          {!message.completed ? (
+            <MessageLoading
+              className={
+                message.role == "user"
+                  ? "text-accent"
+                  : "text-accent-foreground"
+              }
+            />
+          ) : (
+            message.parts.map((part, index) => {
+              if (part.type === "text") {
+                return !part.text ? (
+                  <MessageLoading
+                    className={
+                      message.role == "user"
+                        ? "text-accent"
+                        : "text-accent-foreground"
+                    }
+                    key={index}
+                  />
+                ) : message.role == "user" ? (
+                  <p key={index} className="whitespace-pre-wrap">
+                    {part.text}
+                  </p>
+                ) : (
+                  <FlipWords words={[part.text]} key={index} />
+                );
+              } else if (part.type === "tool-invocation") {
+                return (
+                  <ToolMessagePart
+                    key={index}
+                    part={part}
+                    message={message}
+                    isLast={part.toolInvocation.state != "result"}
+                  />
+                );
+              }
+              return <p key={index}>{part.type} unknown part</p>;
+            })
+          )}
+        </div>
+      ))}
+    </div>
   );
 }
