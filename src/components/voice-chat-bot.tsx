@@ -65,8 +65,6 @@ const isNotEmptyUIMessage = (message: UIMessage) => {
   return message.parts.some((v) => {
     if (v.type === "text") {
       return v.text.trim() !== "";
-    } else if (v.type === "tool-invocation") {
-      return !v.toolInvocation;
     }
     return true;
   });
