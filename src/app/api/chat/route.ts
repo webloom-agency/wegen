@@ -161,11 +161,10 @@ export async function POST(request: Request) {
         );
 
         // Precompute toolChoice to avoid repeated tool calls
-        const pendingTool = extractInProgressToolPart(messages.slice(-2));
         const computedToolChoice =
           isToolCallAllowed &&
           requiredToolsAnnotations.length > 0 &&
-          pendingTool
+          inProgressToolStep
             ? "required"
             : "auto";
 
