@@ -1,9 +1,9 @@
 "use client";
 
 import {
+  AudioWaveformIcon,
   ChevronDown,
   CornerRightUp,
-  Mic,
   Paperclip,
   Pause,
 } from "lucide-react";
@@ -23,6 +23,7 @@ import { ToolChoiceDropDown } from "./tool-choice-dropdown";
 import { PROMPT_PASTE_MAX_LENGTH } from "lib/const";
 import { ToolSelector } from "./tool-selector";
 import { VoiceChatBot } from "./voice-chat-bot";
+import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 
 interface PromptInputProps {
   placeholder?: string;
@@ -215,33 +216,40 @@ export default function PromptInput({
                     <ChevronDown className="size-3" />
                   </Button>
                 </SelectModel>
-                {!isLoading && !input.length && (
-                  <VoiceChatBot onClose={() => {}}>
-                    <Button variant={"ghost"} className="rounded-full">
-                      <Mic className="size-3" />
-                    </Button>
+                {!isLoading && !input.length ? (
+                  <VoiceChatBot>
+                    <div>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="fade-in animate-in cursor-pointer text-background rounded-full p-2 bg-primary hover:bg-primary/90 transition-all duration-200">
+                            <AudioWaveformIcon size={16} />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>Voice Chat Mode</TooltipContent>
+                      </Tooltip>
+                    </div>
                   </VoiceChatBot>
+                ) : (
+                  <div
+                    onClick={() => {
+                      if (isLoading) {
+                        onStop();
+                      } else {
+                        submit();
+                      }
+                    }}
+                    className="fade-in animate-in cursor-pointer text-muted-foreground rounded-full p-2 bg-secondary hover:bg-accent-foreground hover:text-accent transition-all duration-200"
+                  >
+                    {isLoading ? (
+                      <Pause
+                        size={16}
+                        className="fill-muted-foreground text-muted-foreground"
+                      />
+                    ) : (
+                      <CornerRightUp size={16} />
+                    )}
+                  </div>
                 )}
-
-                <div
-                  onClick={() => {
-                    if (isLoading) {
-                      onStop();
-                    } else {
-                      submit();
-                    }
-                  }}
-                  className="cursor-pointer text-muted-foreground rounded-full p-2 bg-secondary hover:bg-accent-foreground hover:text-accent transition-all duration-200"
-                >
-                  {isLoading ? (
-                    <Pause
-                      size={16}
-                      className="fill-muted-foreground text-muted-foreground"
-                    />
-                  ) : (
-                    <CornerRightUp size={16} />
-                  )}
-                </div>
               </div>
             </div>
           </div>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useObjectState } from "@/hooks/use-object-state";
+import { UIMessage } from "ai";
+import { VoiceChatHook } from "lib/ai/speech";
 
 import {
   OPENAI_VOICE,
@@ -15,8 +17,15 @@ import {
   TriangleAlertIcon,
   XIcon,
 } from "lucide-react";
-import { PropsWithChildren, useEffect, useState } from "react";
+import {
+  PropsWithChildren,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { toast } from "sonner";
+import { safe } from "ts-safe";
 import { Alert, AlertDescription, AlertTitle } from "ui/alert";
 import { Button } from "ui/button";
 
@@ -44,16 +53,20 @@ import { OpenAIIcon } from "ui/openai-icon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 
 interface VoiceChatBotProps {
-  onClose: () => void;
+  onEnd?: (messages: UIMessage[]) => Promise<void>;
   threadId?: string;
 }
 
-export function VoiceChatBot({
-  onClose,
+const isNotEmptyUIMessage = (message: UIMessage) => {
+  return message.role === "user" && message.content.length === 0;
+};
 
+export function VoiceChatBot({
+  onEnd,
   children,
 }: PropsWithChildren<VoiceChatBotProps>) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   const [voiceProvider, setVoiceProvider] = useObjectState({
     provider: "openai",
@@ -62,32 +75,36 @@ export function VoiceChatBot({
     },
   });
 
-  //   const Hook = useMemo<VoiceChatHook>(() => {
-  //     switch (voiceProvider.provider) {
-  //       case "openai":
-  //         return useOpenAIVoiceChat;
-  //       default:
-  //         return useOpenAIVoiceChat;
-  //     }
-  //   }, [voiceProvider.provider]);
+  const Hook = useMemo<VoiceChatHook>(() => {
+    switch (voiceProvider.provider) {
+      case "openai":
+        return useOpenAIVoiceChat;
+      default:
+        return useOpenAIVoiceChat;
+    }
+  }, [voiceProvider.provider]);
 
   const {
     isListening,
     isLoading,
+    messages,
     micVolume,
     error,
-
     start,
     startListening,
     stop,
     stopListening,
-  } = useOpenAIVoiceChat(voiceProvider.providerOptions);
+  } = Hook(voiceProvider.providerOptions);
 
-  useEffect(() => {
-    if (!isOpen) {
-      onClose();
-    }
-  }, [isOpen]);
+  const endVoiceChat = useCallback(async () => {
+    setIsClosing(true);
+    await safe(() => stop());
+    await safe(() =>
+      onEnd?.(messages.filter((v) => v.completed && isNotEmptyUIMessage(v))),
+    );
+    setIsClosing(false);
+    setIsOpen(false);
+  }, [messages]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -212,6 +229,7 @@ export function VoiceChatBot({
                 <Button
                   variant={"secondary"}
                   size={"icon"}
+                  disabled={isClosing || isLoading}
                   onClick={() => {
                     if (isListening) {
                       stopListening();
@@ -225,7 +243,7 @@ export function VoiceChatBot({
                     isLoading && "animate-pulse",
                   )}
                 >
-                  {isLoading ? (
+                  {isLoading || isClosing ? (
                     <Loader className="size-6 animate-spin" />
                   ) : isListening ? (
                     <MicOffIcon className="size-6" />
@@ -244,11 +262,8 @@ export function VoiceChatBot({
                   variant={"secondary"}
                   size={"icon"}
                   className="rounded-full p-6"
-                  disabled={isLoading}
-                  onClick={() => {
-                    stop();
-                    setIsOpen(false);
-                  }}
+                  disabled={isLoading || isClosing}
+                  onClick={endVoiceChat}
                 >
                   <XIcon className="text-foreground size-6" />
                 </Button>

@@ -422,6 +422,7 @@ export function useOpenAIVoiceChat(
     if (isActive || isLoading) return;
     setIsLoading(true);
     setError(null);
+    setMessages([]);
     try {
       const session = await createSession();
       const sessionToken = session.client_secret.value;
