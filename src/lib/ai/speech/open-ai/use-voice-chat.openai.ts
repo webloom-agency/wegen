@@ -179,6 +179,9 @@ export function useOpenAIVoiceChat(
           }),
         },
       );
+      if (response.status !== 200) {
+        throw new Error(await response.text());
+      }
       return response.json();
     }, [
       model,
