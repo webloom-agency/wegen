@@ -160,6 +160,14 @@ export async function POST(request: Request) {
           buildProjectInstructionsSystemPrompt(thread?.instructions),
         );
 
+        // Precompute toolChoice to avoid repeated tool calls
+        const computedToolChoice =
+          isToolCallAllowed &&
+          requiredToolsAnnotations.length > 0 &&
+          inProgressToolStep
+            ? "required"
+            : "auto";
+
         const result = streamText({
           model,
           system: systemPrompt,
@@ -169,10 +177,7 @@ export async function POST(request: Request) {
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 0,
           tools,
-          toolChoice:
-            isToolCallAllowed && requiredToolsAnnotations.length > 0
-              ? "required"
-              : "auto",
+          toolChoice: computedToolChoice,
           onFinish: async ({ response, usage }) => {
             const appendMessages = appendResponseMessages({
               messages: messages.slice(-1),

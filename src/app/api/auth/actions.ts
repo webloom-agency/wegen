@@ -16,6 +16,9 @@ export async function existsByEmailAction(email: string) {
 export async function registerAction(
   user: Omit<User, "id"> & { plainPassword: string },
 ) {
+  if (process.env.DISABLE_REGISTRATION === "true") {
+    throw new Error("Registration is currently not supported.");
+  }
   const createdUser = await userRepository.register(user);
   return createdUser;
 }
