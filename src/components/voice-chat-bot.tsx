@@ -2,7 +2,11 @@
 
 import { useObjectState } from "@/hooks/use-object-state";
 import { UIMessage } from "ai";
-import { UIMessageWithCompleted, VoiceChatHook } from "lib/ai/speech";
+import {
+  DEFAULT_VOICE_TOOLS,
+  UIMessageWithCompleted,
+  VoiceChatHook,
+} from "lib/ai/speech";
 
 import {
   OPENAI_VOICE,
@@ -57,8 +61,8 @@ import { OpenAIIcon } from "ui/openai-icon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { ToolMessagePart } from "./message-parts";
 import { FlipWords } from "ui/flip-words";
-import { ToolSelector } from "./tool-selector";
-import { ToolChoiceDropDown } from "./tool-choice-dropdown";
+
+import { EnabledMcpTools } from "./enabled-mcp-tools";
 
 interface VoiceChatBotProps {
   onEnd?: (messages: UIMessage[]) => Promise<void>;
@@ -74,6 +78,16 @@ const isNotEmptyUIMessage = (message: UIMessage) => {
     return true;
   });
 };
+
+const prependTools = [
+  {
+    serverName: "Browser",
+    tools: DEFAULT_VOICE_TOOLS.map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+    })),
+  },
+];
 
 export function VoiceChatBot({
   onEnd,
@@ -140,7 +154,7 @@ export function VoiceChatBot({
 
   useEffect(() => {
     if (isOpen) {
-      // startWithSound();
+      startWithSound();
     } else if (isActive) {
       stop();
     }
@@ -163,174 +177,180 @@ export function VoiceChatBot({
       <DrawerTrigger asChild>{children}</DrawerTrigger>
       <DrawerPortal>
         <DrawerOverlay />
-        <DrawerContent className="bg-card/50 backdrop-blur-sm max-h-[100vh]! h-full border-none! rounded-none! flex flex-col">
-          <div
-            className="w-full flex p-6"
-            style={{
-              userSelect: "text",
-            }}
-          >
-            <DrawerTitle className="flex items-center gap-2 w-full">
-              <ToolChoiceDropDown />
-              <ToolSelector align="start" side="bottom" />
-
-              <div className="flex-1" />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant={"ghost"} size={"icon"}>
-                    <Settings2Icon className="text-foreground size-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  side="left"
-                  className="min-w-40"
+        <DrawerContent className="max-h-[100vh]! h-full border-none! rounded-none! flex flex-col">
+          <div className="w-full h-full flex flex-col bg-background">
+            <div
+              className="w-full flex p-6"
+              style={{
+                userSelect: "text",
+              }}
+            >
+              <DrawerTitle className="flex items-center gap-2 w-full">
+                <EnabledMcpTools
                   align="start"
-                >
-                  <DropdownMenuGroup className="cursor-pointer">
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger
-                        className="flex items-center gap-2 cursor-pointer"
-                        icon=""
-                      >
-                        <OpenAIIcon className="size-3.5 stroke-none fill-foreground" />
-                        Open AI
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuPortal>
-                        <DropdownMenuSubContent>
-                          {Object.entries(OPENAI_VOICE).map(([key, value]) => (
-                            <DropdownMenuItem
-                              className="cursor-pointer flex items-center justify-between"
-                              onClick={() =>
-                                setVoiceProvider({
-                                  provider: "openai",
-                                  providerOptions: {
-                                    model: value,
-                                  },
-                                })
-                              }
-                              key={key}
-                            >
-                              {key}
-
-                              {value ===
-                                voiceProvider.providerOptions.model && (
-                                <CheckIcon className="size-3.5" />
-                              )}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuSubContent>
-                      </DropdownMenuPortal>
-                    </DropdownMenuSub>
-                    <DropdownMenuSub>
+                  side="bottom"
+                  prependTools={prependTools}
+                />
+                <div className="flex-1" />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant={"ghost"} size={"icon"}>
+                      <Settings2Icon className="text-foreground size-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    side="left"
+                    className="min-w-40"
+                    align="start"
+                  >
+                    <DropdownMenuGroup className="cursor-pointer">
                       <DropdownMenuSub>
                         <DropdownMenuSubTrigger
-                          className="flex items-center gap-2 text-muted-foreground"
+                          className="flex items-center gap-2 cursor-pointer"
                           icon=""
                         >
-                          <GeminiIcon className="size-3.5" />
-                          Gemini
+                          <OpenAIIcon className="size-3.5 stroke-none fill-foreground" />
+                          Open AI
                         </DropdownMenuSubTrigger>
                         <DropdownMenuPortal>
                           <DropdownMenuSubContent>
-                            <div className="text-xs text-muted-foreground p-6">
-                              Not Implemented Yet
-                            </div>
+                            {Object.entries(OPENAI_VOICE).map(
+                              ([key, value]) => (
+                                <DropdownMenuItem
+                                  className="cursor-pointer flex items-center justify-between"
+                                  onClick={() =>
+                                    setVoiceProvider({
+                                      provider: "openai",
+                                      providerOptions: {
+                                        model: value,
+                                      },
+                                    })
+                                  }
+                                  key={key}
+                                >
+                                  {key}
+
+                                  {value ===
+                                    voiceProvider.providerOptions.model && (
+                                    <CheckIcon className="size-3.5" />
+                                  )}
+                                </DropdownMenuItem>
+                              ),
+                            )}
                           </DropdownMenuSubContent>
                         </DropdownMenuPortal>
                       </DropdownMenuSub>
-                    </DropdownMenuSub>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </DrawerTitle>
-          </div>
-          <div className="flex-1 min-h-0 mx-auto w-full">
-            {error ? (
-              <div className="max-w-3xl mx-auto">
-                <Alert variant={"destructive"}>
-                  <TriangleAlertIcon className="size-4 " />
-                  <AlertTitle className="">Error</AlertTitle>
-                  <AlertDescription>{error.message}</AlertDescription>
+                      <DropdownMenuSub>
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger
+                            className="flex items-center gap-2 text-muted-foreground"
+                            icon=""
+                          >
+                            <GeminiIcon className="size-3.5" />
+                            Gemini
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuPortal>
+                            <DropdownMenuSubContent>
+                              <div className="text-xs text-muted-foreground p-6">
+                                Not Implemented Yet
+                              </div>
+                            </DropdownMenuSubContent>
+                          </DropdownMenuPortal>
+                        </DropdownMenuSub>
+                      </DropdownMenuSub>
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </DrawerTitle>
+            </div>
+            <div className="flex-1 min-h-0 mx-auto w-full">
+              {error ? (
+                <div className="max-w-3xl mx-auto">
+                  <Alert variant={"destructive"}>
+                    <TriangleAlertIcon className="size-4 " />
+                    <AlertTitle className="">Error</AlertTitle>
+                    <AlertDescription>{error.message}</AlertDescription>
 
-                  <AlertDescription className="my-4 ">
-                    <p className="text-muted-foreground ">
-                      Please close the voice chat and try again.
-                    </p>
-                  </AlertDescription>
-                </Alert>
-              </div>
-            ) : null}
-            {isLoading ? (
-              <div className="flex-1">loading</div>
-            ) : (
-              <div className="h-full w-full">
-                <Messages messages={messages} />
-              </div>
-            )}
-          </div>
-          <div className="w-full p-6 flex items-center justify-center gap-4">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={"secondary"}
-                  size={"icon"}
-                  disabled={isClosing || isLoading}
-                  onClick={() => {
-                    if (!isActive) {
-                      startWithSound();
-                    } else if (isListening) {
-                      stopListening();
-                    } else {
-                      startListening();
-                    }
-                  }}
-                  className={cn(
-                    "rounded-full p-6",
+                    <AlertDescription className="my-4 ">
+                      <p className="text-muted-foreground ">
+                        Please close the voice chat and try again.
+                      </p>
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              ) : null}
+              {isLoading ? (
+                <div className="flex-1">loading</div>
+              ) : (
+                <div className="h-full w-full">
+                  <Messages messages={messages} />
+                </div>
+              )}
+            </div>
+            <div className="w-full p-6 flex items-center justify-center gap-4">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={"secondary"}
+                    size={"icon"}
+                    disabled={isClosing || isLoading}
+                    onClick={() => {
+                      if (!isActive) {
+                        startWithSound();
+                      } else if (isListening) {
+                        stopListening();
+                      } else {
+                        startListening();
+                      }
+                    }}
+                    className={cn(
+                      "rounded-full p-6",
 
-                    isLoading
-                      ? "bg-accent-foreground text-accent animate-pulse"
-                      : !isActive
-                        ? "bg-green-500/10 text-green-500 hover:bg-green-500/30"
-                        : !isListening
-                          ? "bg-destructive/30 text-destructive hover:bg-destructive/10"
-                          : "",
-                  )}
-                >
-                  {isLoading || isClosing ? (
-                    <Loader className="size-6 animate-spin" />
-                  ) : !isActive ? (
-                    <PhoneIcon className="size-6 fill-green-500 stroke-none" />
-                  ) : isListening ? (
-                    <MicIcon className="size-6" />
-                  ) : (
-                    <MicOffIcon className="size-6" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {!isActive
-                  ? "Start Conversation"
-                  : isListening
-                    ? "Close Mic"
-                    : "Open Mic"}
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={"secondary"}
-                  size={"icon"}
-                  className="rounded-full p-6"
-                  disabled={isLoading || isClosing}
-                  onClick={endVoiceChat}
-                >
-                  <XIcon className="text-foreground size-6" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>End conversation</p>
-              </TooltipContent>
-            </Tooltip>
+                      isLoading
+                        ? "bg-accent-foreground text-accent animate-pulse"
+                        : !isActive
+                          ? "bg-green-500/10 text-green-500 hover:bg-green-500/30"
+                          : !isListening
+                            ? "bg-destructive/30 text-destructive hover:bg-destructive/10"
+                            : "",
+                    )}
+                  >
+                    {isLoading || isClosing ? (
+                      <Loader className="size-6 animate-spin" />
+                    ) : !isActive ? (
+                      <PhoneIcon className="size-6 fill-green-500 stroke-none" />
+                    ) : isListening ? (
+                      <MicIcon className="size-6" />
+                    ) : (
+                      <MicOffIcon className="size-6" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {!isActive
+                    ? "Start Conversation"
+                    : isListening
+                      ? "Close Mic"
+                      : "Open Mic"}
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={"secondary"}
+                    size={"icon"}
+                    className="rounded-full p-6"
+                    disabled={isLoading || isClosing}
+                    onClick={endVoiceChat}
+                  >
+                    <XIcon className="text-foreground size-6" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>End conversation</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
         </DrawerContent>
       </DrawerPortal>
@@ -350,24 +370,27 @@ function Messages({ messages }: { messages: UIMessageWithCompleted[] }) {
     }
   }, [messages.length]);
   return (
-    <div className="w-full text-sm overflow-y-auto h-full" ref={ref}>
-      <div className="max-w-3xl mx-auto flex flex-col px-6 gap-6 pb-44">
+    <div className="select-text w-full overflow-y-auto h-full" ref={ref}>
+      <div className="max-w-4xl mx-auto flex flex-col px-6 gap-6 pb-44">
         {messages.map((message) => (
           <div
             key={message.id}
             className={cn(
               "flex px-4 py-3",
               message.role == "user" &&
-                "ml-auto max-w-2xl bg-accent-foreground text-accent rounded-2xl w-fit",
+                "ml-auto max-w-2xl text-foreground rounded-2xl w-fit bg-card",
+              message.role == "assistant" &&
+                !message.completed &&
+                "bg-foreground rounded-2xl w-fit",
             )}
           >
             {!message.completed ? (
               <MessageLoading
-                className={
+                className={cn(
                   message.role == "user"
-                    ? "text-accent"
-                    : "text-accent-foreground"
-                }
+                    ? "text-muted-foreground"
+                    : "text-background",
+                )}
               />
             ) : (
               message.parts.map((part, index) => {
@@ -376,7 +399,7 @@ function Messages({ messages }: { messages: UIMessageWithCompleted[] }) {
                     <MessageLoading
                       className={
                         message.role == "user"
-                          ? "text-accent"
+                          ? "text-muted-foreground"
                           : "text-accent-foreground"
                       }
                       key={index}

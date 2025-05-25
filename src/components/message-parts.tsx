@@ -491,7 +491,7 @@ export const ToolMessagePart = memo(
     }, [state, toolInvocation]);
 
     return (
-      <div key={toolCallId} className="flex flex-col gap-2 group">
+      <div key={toolCallId} className="flex flex-col gap-2 group w-full">
         {ToolResultComponent ? (
           ToolResultComponent
         ) : (
