@@ -49,6 +49,7 @@ import { Skeleton } from "ui/skeleton";
 import { PieChart } from "./tool-invocation/pie-chart";
 import { BarChart } from "./tool-invocation/bar-chart";
 import { LineChart } from "./tool-invocation/line-chart";
+import { PROMPT_PASTE_MAX_LENGTH } from "lib/const";
 
 type MessagePart = UIMessage["parts"][number];
 
@@ -188,7 +189,7 @@ export const UserMessagePart = ({
           isError && "border-destructive border",
         )}
       >
-        {isLast ? (
+        {isLast || part.text.length <= PROMPT_PASTE_MAX_LENGTH ? (
           <p className={cn("whitespace-pre-wrap text-sm")}>
             <HighlightedText text={part.text} mentions={toolMentions} />
           </p>
