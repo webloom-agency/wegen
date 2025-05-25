@@ -17,6 +17,7 @@ import {
   PhoneIcon,
   Settings2Icon,
   TriangleAlertIcon,
+  WrenchIcon,
   XIcon,
 } from "lucide-react";
 import {
@@ -57,10 +58,11 @@ import { OpenAIIcon } from "ui/openai-icon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { ToolMessagePart } from "./message-parts";
 import { FlipWords } from "ui/flip-words";
+import { ToolSelector } from "./tool-selector";
+import { ToolChoiceDropDown } from "./tool-choice-dropdown";
 
 interface VoiceChatBotProps {
   onEnd?: (messages: UIMessage[]) => Promise<void>;
-  threadId?: string;
 }
 
 const isNotEmptyUIMessage = (message: UIMessage) => {
@@ -164,21 +166,16 @@ export function VoiceChatBot({
         <DrawerOverlay />
         <DrawerContent className="bg-card/50 backdrop-blur-sm max-h-[100vh]! h-full border-none! rounded-none! flex flex-col">
           <div
-            className="w-full flex justify-end p-6"
+            className="w-full flex p-6"
             style={{
               userSelect: "text",
             }}
           >
-            <DrawerTitle>
-              <Button
-                variant={"secondary"}
-                size={"icon"}
-                onClick={() => {
-                  stop();
-                }}
-              >
-                stop
-              </Button>
+            <DrawerTitle className="flex items-center gap-2 w-full">
+              <ToolChoiceDropDown />
+              <ToolSelector align="start" side="bottom" />
+
+              <div className="flex-1" />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant={"ghost"} size={"icon"}>
