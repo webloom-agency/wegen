@@ -227,9 +227,6 @@ export function useOpenAIVoiceChat(
           case "changeBrowserTheme":
             setTheme(toolArgs?.theme || "dark");
             break;
-          case "endConversation":
-            stop();
-            break;
         }
       } else {
         const toolId = extractMCPToolId(toolName);
@@ -419,23 +416,6 @@ export function useOpenAIVoiceChat(
         setIsActive(true);
         setIsListening(true);
         setIsLoading(false);
-
-        dataChannel.current?.send(
-          JSON.stringify({
-            type: "conversation.item.create",
-            item: {
-              type: "message",
-              role: "system",
-              content: [
-                {
-                  type: "input_text",
-                  text: "Start the conversation by greeting the user in their language.",
-                },
-              ],
-            },
-          }),
-        );
-        dataChannel.current?.send(JSON.stringify({ type: "response.create" }));
       });
       dc.addEventListener("close", () => {
         setIsActive(false);

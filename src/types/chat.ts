@@ -129,4 +129,8 @@ export type ChatRepository = {
   ): Promise<Project>;
 
   deleteProject(id: string): Promise<void>;
+
+  insertMessages(
+    messages: Omit<ChatMessage, "createdAt">[],
+  ): Promise<ChatMessage[]>;
 };

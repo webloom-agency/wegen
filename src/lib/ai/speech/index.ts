@@ -34,14 +34,4 @@ export const DEFAULT_VOICE_TOOLS = [
       required: ["theme"],
     },
   },
-  {
-    type: "function",
-    name: "endConversation",
-    description: "End the conversation",
-    parameters: {
-      type: "object",
-      properties: {},
-      required: [],
-    },
-  },
 ];

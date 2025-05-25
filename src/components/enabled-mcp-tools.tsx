@@ -68,7 +68,7 @@ export function EnabledMcpTools({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         {children || (
-          <Button variant={"ghost"}>
+          <Button variant={"secondary"}>
             Tool <ChevronDownIcon />
           </Button>
         )}

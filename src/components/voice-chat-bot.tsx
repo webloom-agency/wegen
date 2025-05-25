@@ -1,6 +1,5 @@
 "use client";
 
-import { useObjectState } from "@/hooks/use-object-state";
 import { UIMessage } from "ai";
 import {
   DEFAULT_VOICE_TOOLS,
@@ -12,7 +11,7 @@ import {
   OPENAI_VOICE,
   useOpenAIVoiceChat,
 } from "lib/ai/speech/open-ai/use-voice-chat.openai";
-import { cn } from "lib/utils";
+import { cn, nextTick } from "lib/utils";
 import {
   CheckIcon,
   Loader,
@@ -22,15 +21,10 @@ import {
   Settings2Icon,
   TriangleAlertIcon,
   XIcon,
+  MessagesSquareIcon,
+  MessageSquareMoreIcon,
 } from "lucide-react";
-import {
-  PropsWithChildren,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { safe } from "ts-safe";
 import { Alert, AlertDescription, AlertTitle } from "ui/alert";
@@ -42,7 +36,6 @@ import {
   DrawerOverlay,
   DrawerPortal,
   DrawerTitle,
-  DrawerTrigger,
 } from "ui/drawer";
 import {
   DropdownMenu,
@@ -63,10 +56,10 @@ import { ToolMessagePart } from "./message-parts";
 import { FlipWords } from "ui/flip-words";
 
 import { EnabledMcpTools } from "./enabled-mcp-tools";
-
-interface VoiceChatBotProps {
-  onEnd?: (messages: UIMessage[]) => Promise<void>;
-}
+import { ToolInvocationUIPart } from "app-types/chat";
+import { appStore } from "@/app/store";
+import { useShallow } from "zustand/shallow";
+import { mutate } from "swr";
 
 const isNotEmptyUIMessage = (message: UIMessage) => {
   return message.parts.some((v) => {
@@ -79,6 +72,26 @@ const isNotEmptyUIMessage = (message: UIMessage) => {
   });
 };
 
+function mergeConsecutiveMessages(messages: UIMessage[]): UIMessage[] {
+  if (messages.length === 0) return [];
+
+  const merged: UIMessage[] = [];
+  let current = { ...messages[0], parts: [...messages[0].parts] };
+
+  for (let i = 1; i < messages.length; i++) {
+    const msg = messages[i];
+    if (msg.role === current.role) {
+      current.parts = [...current.parts, ...msg.parts];
+    } else {
+      merged.push(current);
+      current = { ...msg, parts: [...msg.parts] };
+    }
+  }
+  merged.push(current);
+
+  return merged;
+}
+
 const prependTools = [
   {
     serverName: "Browser",
@@ -89,29 +102,30 @@ const prependTools = [
   },
 ];
 
-export function VoiceChatBot({
-  onEnd,
-  children,
-}: PropsWithChildren<VoiceChatBotProps>) {
-  const [isOpen, setIsOpen] = useState(false);
+export function VoiceChatBot() {
+  const [appStoreMutate, voiceChat, model, currentThreadId, currentProjectId] =
+    appStore(
+      useShallow((state) => [
+        state.mutate,
+        state.voiceChat,
+        state.model,
+        state.currentThreadId,
+        state.currentProjectId,
+      ]),
+    );
+
   const [isClosing, setIsClosing] = useState(false);
   const startAudio = useRef<HTMLAudioElement>(null);
-
-  const [voiceProvider, setVoiceProvider] = useObjectState({
-    provider: "openai",
-    providerOptions: {
-      model: OPENAI_VOICE["Alloy"],
-    },
-  });
+  const [useCompactView, setUseCompactView] = useState(false);
 
   const Hook = useMemo<VoiceChatHook>(() => {
-    switch (voiceProvider.provider) {
+    switch (voiceChat.options.provider) {
       case "openai":
         return useOpenAIVoiceChat;
       default:
         return useOpenAIVoiceChat;
     }
-  }, [voiceProvider.provider]);
+  }, [voiceChat.options.provider]);
 
   const {
     isListening,
@@ -123,7 +137,7 @@ export function VoiceChatBot({
     startListening,
     stop,
     stopListening,
-  } = Hook(voiceProvider.providerOptions);
+  } = Hook(voiceChat.options.providerOptions);
 
   const startWithSound = useCallback(() => {
     if (!startAudio.current) {
@@ -137,12 +151,35 @@ export function VoiceChatBot({
   const endVoiceChat = useCallback(async () => {
     setIsClosing(true);
     await safe(() => stop());
-    await safe(() =>
-      onEnd?.(messages.filter((v) => v.completed && isNotEmptyUIMessage(v))),
-    );
+    await safe(() => {
+      if (!currentThreadId) return;
+      const saveMessages = messages.filter(
+        (v) => v.completed && isNotEmptyUIMessage(v),
+      );
+      return fetch(`/api/chat/${currentThreadId}`, {
+        method: "POST",
+        body: JSON.stringify({
+          messages: mergeConsecutiveMessages(saveMessages),
+          model,
+          projectId: currentProjectId,
+        }),
+      });
+    }).ifOk(() => {
+      if (messages.length && currentThreadId) {
+        nextTick().then(() => {
+          mutate("threads");
+          window.location.href = `/chat/${currentThreadId}`;
+        });
+      }
+    });
     setIsClosing(false);
-    setIsOpen(false);
-  }, [messages]);
+    appStoreMutate({
+      voiceChat: {
+        ...voiceChat,
+        isOpen: false,
+      },
+    });
+  }, [messages, currentProjectId, model, currentThreadId]);
 
   useEffect(() => {
     return () => {
@@ -150,15 +187,15 @@ export function VoiceChatBot({
         stop();
       }
     };
-  }, [voiceProvider]);
+  }, [voiceChat.options.provider]);
 
   useEffect(() => {
-    if (isOpen) {
+    if (voiceChat.isOpen) {
       startWithSound();
     } else if (isActive) {
       stop();
     }
-  }, [isOpen]);
+  }, [voiceChat.isOpen]);
 
   useEffect(() => {
     if (error && isActive) {
@@ -168,29 +205,46 @@ export function VoiceChatBot({
   }, [error]);
 
   return (
-    <Drawer
-      dismissible={false}
-      open={isOpen}
-      onOpenChange={setIsOpen}
-      direction="top"
-    >
-      <DrawerTrigger asChild>{children}</DrawerTrigger>
+    <Drawer dismissible={false} open={voiceChat.isOpen} direction="top">
       <DrawerPortal>
         <DrawerOverlay />
         <DrawerContent className="max-h-[100vh]! h-full border-none! rounded-none! flex flex-col">
           <div className="w-full h-full flex flex-col bg-background">
             <div
-              className="w-full flex p-6"
+              className="w-full flex p-6 gap-2"
               style={{
                 userSelect: "text",
               }}
             >
+              <div className="flex items-center">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={"secondary"}
+                      size={"icon"}
+                      onClick={() => setUseCompactView(!useCompactView)}
+                    >
+                      {useCompactView ? (
+                        <MessageSquareMoreIcon />
+                      ) : (
+                        <MessagesSquareIcon />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {useCompactView
+                      ? "Compact display mode"
+                      : "Conversation display mode"}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <DrawerTitle className="flex items-center gap-2 w-full">
                 <EnabledMcpTools
                   align="start"
                   side="bottom"
                   prependTools={prependTools}
                 />
+
                 <div className="flex-1" />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -219,10 +273,15 @@ export function VoiceChatBot({
                                 <DropdownMenuItem
                                   className="cursor-pointer flex items-center justify-between"
                                   onClick={() =>
-                                    setVoiceProvider({
-                                      provider: "openai",
-                                      providerOptions: {
-                                        model: value,
+                                    appStoreMutate({
+                                      voiceChat: {
+                                        ...voiceChat,
+                                        options: {
+                                          provider: "openai",
+                                          providerOptions: {
+                                            model: value,
+                                          },
+                                        },
                                       },
                                     })
                                   }
@@ -231,7 +290,8 @@ export function VoiceChatBot({
                                   {key}
 
                                   {value ===
-                                    voiceProvider.providerOptions.model && (
+                                    voiceChat.options.providerOptions
+                                      ?.model && (
                                     <CheckIcon className="size-3.5" />
                                   )}
                                 </DropdownMenuItem>
@@ -280,10 +340,14 @@ export function VoiceChatBot({
                 </div>
               ) : null}
               {isLoading ? (
-                <div className="flex-1">loading</div>
+                <div className="flex-1"></div>
               ) : (
                 <div className="h-full w-full">
-                  <Messages messages={messages} />
+                  {useCompactView ? (
+                    <CompactMessageView messages={messages} />
+                  ) : (
+                    <ConversationView messages={messages} />
+                  )}
                 </div>
               )}
             </div>
@@ -358,7 +422,9 @@ export function VoiceChatBot({
   );
 }
 
-function Messages({ messages }: { messages: UIMessageWithCompleted[] }) {
+function ConversationView({
+  messages,
+}: { messages: UIMessageWithCompleted[] }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -427,6 +493,65 @@ function Messages({ messages }: { messages: UIMessageWithCompleted[] }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function CompactMessageView({
+  messages,
+}: { messages: UIMessageWithCompleted[] }) {
+  const { toolMessage, assistantMessage } = useMemo(() => {
+    return {
+      toolMessage: messages.findLast((v) =>
+        v.parts.some((v) => v.type === "tool-invocation"),
+      ),
+      assistantMessage: messages.findLast(
+        (v) => v.role === "assistant" && v.parts.some((v) => v.type === "text"),
+      ),
+    };
+  }, [messages]);
+
+  return (
+    <div className="mx-auto max-w-5xl flex flex-col gap-6 w-full h-full ">
+      <div className="h-10 w-full relative z-50">
+        <div className="absolute top-0 left-0 w-full h-full">
+          {toolMessage && (
+            <ToolMessagePart
+              part={toolMessage.parts[0] as ToolInvocationUIPart}
+              message={toolMessage}
+              isLast={true}
+            />
+          )}
+        </div>
+      </div>
+      {assistantMessage ? (
+        <div className="flex flex-col gap-2 text-4xl font-semibold w-full min-h-0 overflow-y-auto select-text flex-1">
+          {assistantMessage.parts.map((v, index) => {
+            if (v.type === "text") {
+              if (assistantMessage.completed) {
+                return (
+                  <div
+                    key={index}
+                    className="w-full h-full flex items-center justify-center"
+                  >
+                    <FlipWords words={[v.text]} key={index} />
+                  </div>
+                );
+              } else {
+                return (
+                  <div
+                    key={index}
+                    className="w-full h-full flex items-center justify-center"
+                  >
+                    <MessageLoading className="text-muted-foreground size-20" />
+                  </div>
+                );
+              }
+            }
+            return null;
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }

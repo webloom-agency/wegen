@@ -338,4 +338,14 @@ export const pgChatRepository: ChatRepository = {
 
     await db.delete(ProjectSchema).where(eq(ProjectSchema.id, id));
   },
+
+  insertMessages: async (
+    messages: Omit<ChatMessage, "createdAt">[],
+  ): Promise<ChatMessage[]> => {
+    const result = await db
+      .insert(ChatMessageSchema)
+      .values(messages)
+      .returning();
+    return result as ChatMessage[];
+  },
 };

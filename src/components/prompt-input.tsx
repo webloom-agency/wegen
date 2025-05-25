@@ -22,7 +22,6 @@ import dynamic from "next/dynamic";
 import { ToolChoiceDropDown } from "./tool-choice-dropdown";
 import { PROMPT_PASTE_MAX_LENGTH } from "lib/const";
 import { ToolSelector } from "./tool-selector";
-import { VoiceChatBot } from "./voice-chat-bot";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 
 interface PromptInputProps {
@@ -35,6 +34,7 @@ interface PromptInputProps {
   isLoading?: boolean;
   model?: string;
   setModel?: (model: string) => void;
+  voiceDisabled?: boolean;
 }
 
 const MentionInput = dynamic(() => import("./mention-input"), {
@@ -54,6 +54,7 @@ export default function PromptInput({
   onStop,
   isLoading,
   toolDisabled,
+  voiceDisabled,
 }: PromptInputProps) {
   const [mcpList, globalModel, appStoreMutate] = appStore(
     useShallow((state) => [state.mcpList, state.model, state.mutate]),
@@ -216,19 +217,25 @@ export default function PromptInput({
                     <ChevronDown className="size-3" />
                   </Button>
                 </SelectModel>
-                {!isLoading && !input.length ? (
-                  <VoiceChatBot>
-                    <div>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="fade-in animate-in cursor-pointer text-background rounded-full p-2 bg-primary hover:bg-primary/90 transition-all duration-200">
-                            <AudioWaveformIcon size={16} />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>Voice Chat Mode</TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </VoiceChatBot>
+                {!isLoading && !input.length && !voiceDisabled ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div
+                        onClick={() => {
+                          appStoreMutate((state) => ({
+                            voiceChat: {
+                              ...state.voiceChat,
+                              isOpen: true,
+                            },
+                          }));
+                        }}
+                        className="fade-in animate-in cursor-pointer text-background rounded-full p-2 bg-primary hover:bg-primary/90 transition-all duration-200"
+                      >
+                        <AudioWaveformIcon size={16} />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>Voice Chat Mode</TooltipContent>
+                  </Tooltip>
                 ) : (
                   <div
                     onClick={() => {

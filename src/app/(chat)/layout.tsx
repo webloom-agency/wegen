@@ -8,6 +8,7 @@ import { appStore } from "../store";
 import { useShallow } from "zustand/shallow";
 import { useEffect } from "react";
 import { isShortcutEvent, Shortcuts } from "@/lib/keyboard-shortcuts";
+import { VoiceChatBot } from "@/components/voice-chat-bot";
 export default function ChatLayout({
   children,
 }: { children: React.ReactNode }) {
@@ -58,6 +59,7 @@ export default function ChatLayout({
         open={openChatPreferences}
         onOpenChange={(open) => appStoreMutate({ openChatPreferences: open })}
       />
+      <VoiceChatBot />
     </SidebarProvider>
   );
 }

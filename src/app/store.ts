@@ -4,6 +4,7 @@ import { AppDefaultToolkit, ChatThread, Project } from "app-types/chat";
 
 import { DEFAULT_MODEL } from "lib/ai/models";
 import { AllowedMCPServer, MCPServerInfo } from "app-types/mcp";
+import { OPENAI_VOICE } from "lib/ai/speech/open-ai/use-voice-chat.openai";
 export interface AppState {
   threadList: ChatThread[];
   mcpList: MCPServerInfo[];
@@ -18,6 +19,13 @@ export interface AppState {
   openTemporaryChat: boolean;
   openShortcutsPopup: boolean;
   openChatPreferences: boolean;
+  voiceChat: {
+    isOpen: boolean;
+    options: {
+      provider: string;
+      providerOptions?: Record<string, any>;
+    };
+  };
 }
 
 export interface AppDispatch {
@@ -38,6 +46,15 @@ const initialState: AppState = {
   openTemporaryChat: false,
   openShortcutsPopup: false,
   openChatPreferences: false,
+  voiceChat: {
+    isOpen: false,
+    options: {
+      provider: "openai",
+      providerOptions: {
+        model: OPENAI_VOICE["Alloy"],
+      },
+    },
+  },
 };
 
 export const appStore = create<AppState & AppDispatch>()(
@@ -57,6 +74,11 @@ export const appStore = create<AppState & AppDispatch>()(
           state.allowedAppDefaultToolkit ||
           initialState.allowedAppDefaultToolkit,
         temporaryModel: state.temporaryModel || initialState.temporaryModel,
+        voiceChat: {
+          ...initialState.voiceChat,
+          ...state.voiceChat,
+          isOpen: false,
+        },
       }),
     },
   ),

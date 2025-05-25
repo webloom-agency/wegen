@@ -131,10 +131,12 @@ export default function ProjectPage() {
   useEffect(() => {
     appStoreMutate({
       currentProjectId: id as string,
+      currentThreadId: threadId,
     });
     return () => {
       appStoreMutate({
         currentProjectId: undefined,
+        currentThreadId: undefined,
       });
     };
   }, [id]);

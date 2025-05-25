@@ -279,6 +279,7 @@ function DrawerTemporaryContent({
           toolDisabled
           placeholder="Feel free to ask anything temporarily"
           setInput={setInput}
+          voiceDisabled
           isLoading={isLoading}
           onStop={stop}
         />
