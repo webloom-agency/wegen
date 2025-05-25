@@ -236,8 +236,9 @@ MCP Client Chatbot is evolving with these upcoming features:
 
 ### 🗣️ Audio & Real-Time Chat
 
-- **Open Audio Real-Time Chat:**
+- **Open Audio Real-Time Chat:** ✅
   - Real-time voice chat with MCP Server integration
+  - Currently supports **OpenAI** provider (Gemini support coming soon)
 
 ### 📎 File & Image
 

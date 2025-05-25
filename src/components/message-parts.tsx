@@ -49,6 +49,7 @@ import { Skeleton } from "ui/skeleton";
 import { PieChart } from "./tool-invocation/pie-chart";
 import { BarChart } from "./tool-invocation/bar-chart";
 import { LineChart } from "./tool-invocation/line-chart";
+import { PROMPT_PASTE_MAX_LENGTH } from "lib/const";
 
 type MessagePart = UIMessage["parts"][number];
 
@@ -79,10 +80,10 @@ interface AssistMessagePartProps {
 interface ToolMessagePartProps {
   part: ToolMessagePart;
   message: UIMessage;
-  isLast: boolean;
+  isLast?: boolean;
   onPoxyToolCall?: (answer: boolean) => void;
   isError?: boolean;
-  setMessages: UseChatHelpers["setMessages"];
+  setMessages?: UseChatHelpers["setMessages"];
 }
 
 interface HighlightedTextProps {
@@ -181,14 +182,14 @@ export const UserMessagePart = ({
         className={cn(
           "flex flex-col gap-4",
           {
-            "text-accent-foreground px-4 py-3 rounded-2xl": isLast,
+            "bg-accent text-accent-foreground px-4 py-3 rounded-2xl":
+              isLast || part.text.length <= PROMPT_PASTE_MAX_LENGTH,
             "opacity-50": isError,
-            "bg-accent": isLast,
           },
           isError && "border-destructive border",
         )}
       >
-        {isLast ? (
+        {isLast || part.text.length <= PROMPT_PASTE_MAX_LENGTH ? (
           <p className={cn("whitespace-pre-wrap text-sm")}>
             <HighlightedText text={part.text} mentions={toolMentions} />
           </p>
@@ -416,7 +417,7 @@ export const ToolMessagePart = memo(
       safe(() => setIsDeleting(true))
         .ifOk(() => deleteMessageAction(message.id))
         .ifOk(() =>
-          setMessages((messages) => {
+          setMessages?.((messages) => {
             const index = messages.findIndex((m) => m.id === message.id);
             if (index !== -1) {
               return messages.filter((_, i) => i !== index);
@@ -427,7 +428,7 @@ export const ToolMessagePart = memo(
         .ifFail((error) => toast.error(error.message))
         .watch(() => setIsDeleting(false))
         .unwrap();
-    }, [message.id]);
+    }, [message.id, setMessages]);
     const ToolResultComponent = useMemo(() => {
       if (state === "result") {
         switch (toolName) {
@@ -491,7 +492,7 @@ export const ToolMessagePart = memo(
     }, [state, toolInvocation]);
 
     return (
-      <div key={toolCallId} className="flex flex-col gap-2 group">
+      <div key={toolCallId} className="flex flex-col gap-2 group w-full">
         {ToolResultComponent ? (
           ToolResultComponent
         ) : (

@@ -117,7 +117,12 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
           </Tooltip>
         )}
       </DrawerTrigger>
-      <DrawerContent className="w-full md:w-2xl px-2 flex flex-col">
+      <DrawerContent
+        style={{
+          userSelect: "text",
+        }}
+        className="w-full md:w-2xl px-2 flex flex-col"
+      >
         <DrawerHeader>
           <DrawerTitle className="flex items-center gap-2">
             <p>Temporary Chat</p>
@@ -274,6 +279,7 @@ function DrawerTemporaryContent({
           toolDisabled
           placeholder="Feel free to ask anything temporarily"
           setInput={setInput}
+          voiceDisabled
           isLoading={isLoading}
           onStop={stop}
         />

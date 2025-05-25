@@ -4,6 +4,8 @@ import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 import { isMaybeMCPServerConfig } from "lib/ai/mcp/is-mcp-config";
 import { detectConfigChanges } from "lib/ai/mcp/mcp-config-diff";
 import { z } from "zod";
+import { safe } from "ts-safe";
+import { errorToString } from "lib/utils";
 
 export async function selectMcpClientsAction() {
   const list = mcpClientsManager.getClients();
@@ -110,20 +112,36 @@ export async function callMcpToolAction(
   toolName: string,
   input?: unknown,
 ) {
-  const client = mcpClientsManager
-    .getClients()
-    .find((client) => client.getInfo().name === mcpName);
-  if (!client) {
-    throw new Error("Client not found");
-  }
-  return client.callTool(toolName, input).then((res) => {
-    if (res?.isError) {
-      throw new Error(
-        res.content?.[0]?.text ??
-          JSON.stringify(res.content, null, 2) ??
-          "Unknown error",
-      );
+  return safe(() => {
+    const client = mcpClientsManager
+      .getClients()
+      .find((client) => client.getInfo().name === mcpName);
+    if (!client) {
+      throw new Error("Client not found");
     }
-    return res;
-  });
+    return client.callTool(toolName, input).then((res) => {
+      if (res?.isError) {
+        throw new Error(
+          res.content?.[0]?.text ??
+            JSON.stringify(res.content, null, 2) ??
+            "Unknown error",
+        );
+      }
+      return res;
+    });
+  })
+    .ifFail((err) => {
+      return {
+        isError: true,
+        content: [
+          JSON.stringify({
+            error: {
+              message: errorToString(err),
+              name: err?.name,
+            },
+          }),
+        ],
+      };
+    })
+    .unwrap();
 }

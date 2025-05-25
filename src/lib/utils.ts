@@ -251,3 +251,7 @@ export function convertToUIMessage(message: ChatMessage): UIMessage {
   };
   return um;
 }
+
+export async function nextTick() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}

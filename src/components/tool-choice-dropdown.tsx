@@ -24,7 +24,7 @@ import {
 import { Separator } from "ui/separator";
 import { useShallow } from "zustand/shallow";
 
-export const ToolChoiceDropDown = () => {
+export const ToolChoiceDropDown = ({ disabled }: { disabled?: boolean }) => {
   const [toolChoice, appStoreMutate] = appStore(
     useShallow((state) => [state.toolChoice, state.mutate]),
   );
@@ -52,7 +52,7 @@ export const ToolChoiceDropDown = () => {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger asChild disabled={disabled}>
         <Button
           variant={"outline"}
           className={cn(

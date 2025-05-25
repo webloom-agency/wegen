@@ -1,6 +1,12 @@
 "use client";
 
-import { ChevronDown, CornerRightUp, Paperclip, Pause } from "lucide-react";
+import {
+  AudioWaveformIcon,
+  ChevronDown,
+  CornerRightUp,
+  Paperclip,
+  Pause,
+} from "lucide-react";
 import { ReactNode, useCallback, useMemo, useState } from "react";
 import { Button } from "ui/button";
 import { notImplementedToast } from "ui/shared-toast";
@@ -16,6 +22,7 @@ import dynamic from "next/dynamic";
 import { ToolChoiceDropDown } from "./tool-choice-dropdown";
 import { PROMPT_PASTE_MAX_LENGTH } from "lib/const";
 import { ToolSelector } from "./tool-selector";
+import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 
 interface PromptInputProps {
   placeholder?: string;
@@ -27,6 +34,7 @@ interface PromptInputProps {
   isLoading?: boolean;
   model?: string;
   setModel?: (model: string) => void;
+  voiceDisabled?: boolean;
 }
 
 const MentionInput = dynamic(() => import("./mention-input"), {
@@ -46,6 +54,7 @@ export default function PromptInput({
   onStop,
   isLoading,
   toolDisabled,
+  voiceDisabled,
 }: PromptInputProps) {
   const [mcpList, globalModel, appStoreMutate] = appStore(
     useShallow((state) => [state.mcpList, state.model, state.mutate]),
@@ -208,26 +217,46 @@ export default function PromptInput({
                     <ChevronDown className="size-3" />
                   </Button>
                 </SelectModel>
-
-                <div
-                  onClick={() => {
-                    if (isLoading) {
-                      onStop();
-                    } else {
-                      submit();
-                    }
-                  }}
-                  className="cursor-pointer text-muted-foreground rounded-full p-2 bg-secondary hover:bg-accent-foreground hover:text-accent transition-all duration-200"
-                >
-                  {isLoading ? (
-                    <Pause
-                      size={16}
-                      className="fill-muted-foreground text-muted-foreground"
-                    />
-                  ) : (
-                    <CornerRightUp size={16} />
-                  )}
-                </div>
+                {!isLoading && !input.length && !voiceDisabled ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div
+                        onClick={() => {
+                          appStoreMutate((state) => ({
+                            voiceChat: {
+                              ...state.voiceChat,
+                              isOpen: true,
+                            },
+                          }));
+                        }}
+                        className="fade-in animate-in cursor-pointer text-background rounded-full p-2 bg-primary hover:bg-primary/90 transition-all duration-200"
+                      >
+                        <AudioWaveformIcon size={16} />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>Voice Chat Mode</TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <div
+                    onClick={() => {
+                      if (isLoading) {
+                        onStop();
+                      } else {
+                        submit();
+                      }
+                    }}
+                    className="fade-in animate-in cursor-pointer text-muted-foreground rounded-full p-2 bg-secondary hover:bg-accent-foreground hover:text-accent transition-all duration-200"
+                  >
+                    {isLoading ? (
+                      <Pause
+                        size={16}
+                        className="fill-muted-foreground text-muted-foreground"
+                      />
+                    ) : (
+                      <CornerRightUp size={16} />
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
