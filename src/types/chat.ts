@@ -131,6 +131,6 @@ export type ChatRepository = {
   deleteProject(id: string): Promise<void>;
 
   insertMessages(
-    messages: Omit<ChatMessage, "createdAt">[],
+    messages: PartialBy<ChatMessage, "createdAt">[],
   ): Promise<ChatMessage[]>;
 };

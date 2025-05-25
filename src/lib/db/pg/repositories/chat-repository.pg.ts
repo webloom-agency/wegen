@@ -340,7 +340,7 @@ export const pgChatRepository: ChatRepository = {
   },
 
   insertMessages: async (
-    messages: Omit<ChatMessage, "createdAt">[],
+    messages: PartialBy<ChatMessage, "createdAt">[],
   ): Promise<ChatMessage[]> => {
     const result = await db
       .insert(ChatMessageSchema)

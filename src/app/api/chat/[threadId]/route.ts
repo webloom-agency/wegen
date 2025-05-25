@@ -32,6 +32,7 @@ export async function POST(
     messages.map((message) => ({
       ...message,
       threadId: thread.id,
+      createdAt: message.createdAt ? new Date(message.createdAt) : undefined,
     })),
   );
   return new Response(

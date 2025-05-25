@@ -84,6 +84,7 @@ const createUIMessage = (m: {
     content: "",
     parts: [createUIPart(m.content)],
     completed: m.completed ?? false,
+    createdAt: new Date(),
   };
 };
 
