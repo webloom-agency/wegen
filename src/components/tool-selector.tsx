@@ -52,6 +52,7 @@ import { useShallow } from "zustand/shallow";
 interface ToolSelectorProps {
   align?: "start" | "end" | "center";
   side?: "left" | "right" | "top" | "bottom";
+  disabled?: boolean;
 }
 
 const calculateToolCount = (
@@ -69,6 +70,7 @@ export function ToolSelector({
   children,
   align,
   side,
+  disabled,
 }: PropsWithChildren<ToolSelectorProps>) {
   const [appStoreMutate, toolChoice] = appStore(
     useShallow((state) => [state.mutate, state.toolChoice]),
@@ -83,7 +85,7 @@ export function ToolSelector({
   });
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger asChild disabled={disabled}>
         {children ?? (
           <Button
             variant={"outline"}

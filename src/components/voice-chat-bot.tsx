@@ -17,7 +17,6 @@ import {
   PhoneIcon,
   Settings2Icon,
   TriangleAlertIcon,
-  WrenchIcon,
   XIcon,
 } from "lucide-react";
 import {
