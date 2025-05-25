@@ -20,7 +20,7 @@ describe("sanitizeFunctionName", () => {
   });
 
   it("should truncate names to 124 characters", () => {
-    const longName = "a".repeat(100);
+    const longName = "a".repeat(150);
     expect(sanitizeFunctionName(longName).length).toBe(124);
     expect(sanitizeFunctionName(longName)).toBe("a".repeat(124));
   });
