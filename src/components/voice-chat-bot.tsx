@@ -80,6 +80,7 @@ export function VoiceChatBot({
 }: PropsWithChildren<VoiceChatBotProps>) {
   const [isOpen, setIsOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const startAudio = useRef<HTMLAudioElement>(null);
 
   const [voiceProvider, setVoiceProvider] = useObjectState({
     provider: "openai",
@@ -109,6 +110,15 @@ export function VoiceChatBot({
     stopListening,
   } = Hook(voiceProvider.providerOptions);
 
+  const startWithSound = useCallback(() => {
+    if (!startAudio.current) {
+      startAudio.current = new Audio("/sounds/start_voice.ogg");
+    }
+    start().then(() => {
+      startAudio.current?.play().catch(() => {});
+    });
+  }, [start]);
+
   const endVoiceChat = useCallback(async () => {
     setIsClosing(true);
     await safe(() => stop());
@@ -121,20 +131,22 @@ export function VoiceChatBot({
 
   useEffect(() => {
     return () => {
-      stop();
+      if (isActive) {
+        stop();
+      }
     };
   }, [voiceProvider]);
 
   useEffect(() => {
     if (isOpen) {
-      // start();
-    } else {
+      // startWithSound();
+    } else if (isActive) {
       stop();
     }
   }, [isOpen]);
 
   useEffect(() => {
-    if (error) {
+    if (error && isActive) {
       toast.error(error.message);
       stop();
     }
@@ -269,7 +281,7 @@ export function VoiceChatBot({
                   disabled={isClosing || isLoading}
                   onClick={() => {
                     if (!isActive) {
-                      start();
+                      startWithSound();
                     } else if (isListening) {
                       stopListening();
                     } else {
