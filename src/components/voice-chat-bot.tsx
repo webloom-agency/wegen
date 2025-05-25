@@ -10,11 +10,11 @@ import {
 } from "lib/ai/speech/open-ai/use-voice-chat.openai";
 import { cn } from "lib/utils";
 import {
-  AudioWaveformIcon,
   CheckIcon,
   Loader,
   MicIcon,
   MicOffIcon,
+  PhoneIcon,
   Settings2Icon,
   TriangleAlertIcon,
   XIcon,
@@ -24,6 +24,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { toast } from "sonner";
@@ -157,6 +158,15 @@ export function VoiceChatBot({
             }}
           >
             <DrawerTitle>
+              <Button
+                variant={"secondary"}
+                size={"icon"}
+                onClick={() => {
+                  stop();
+                }}
+              >
+                stop
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant={"ghost"} size={"icon"}>
@@ -226,38 +236,31 @@ export function VoiceChatBot({
               </DropdownMenu>
             </DrawerTitle>
           </div>
-          <div className="flex-1 mx-auto max-w-3xl w-full">
+          <div className="flex-1 min-h-0 mx-auto w-full">
             {error ? (
-              <Alert variant={"destructive"}>
-                <TriangleAlertIcon className="size-4 " />
-                <AlertTitle className="">Error</AlertTitle>
-                <AlertDescription>{error.message}</AlertDescription>
+              <div className="max-w-3xl mx-auto">
+                <Alert variant={"destructive"}>
+                  <TriangleAlertIcon className="size-4 " />
+                  <AlertTitle className="">Error</AlertTitle>
+                  <AlertDescription>{error.message}</AlertDescription>
 
-                <AlertDescription className="my-4 ">
-                  <p className="text-muted-foreground ">
-                    Please close the voice chat and try again.
-                  </p>
-                </AlertDescription>
-              </Alert>
+                  <AlertDescription className="my-4 ">
+                    <p className="text-muted-foreground ">
+                      Please close the voice chat and try again.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              </div>
             ) : null}
             {isLoading ? (
               <div className="flex-1">loading</div>
             ) : (
-              <div className="flex-1 w-full overflow-y-auto">
+              <div className="h-full w-full">
                 <Messages messages={messages} />
               </div>
             )}
           </div>
           <div className="w-full p-6 flex items-center justify-center gap-4">
-            <Button
-              variant={"secondary"}
-              size={"icon"}
-              onClick={() => {
-                stop();
-              }}
-            >
-              stop
-            </Button>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -275,18 +278,20 @@ export function VoiceChatBot({
                   }}
                   className={cn(
                     "rounded-full p-6",
-                    isActive &&
-                      !isLoading &&
-                      !isListening &&
-                      "bg-destructive/20 text-destructive",
-                    (isLoading || !isActive) &&
-                      "bg-accent-foreground text-accent hover:bg-accent-foreground/80",
+
+                    isLoading
+                      ? "bg-accent-foreground text-accent animate-pulse"
+                      : !isActive
+                        ? "bg-green-500/10 text-green-500 hover:bg-green-500/30"
+                        : !isListening
+                          ? "bg-destructive/30 text-destructive hover:bg-destructive/10"
+                          : "",
                   )}
                 >
                   {isLoading || isClosing ? (
                     <Loader className="size-6 animate-spin" />
                   ) : !isActive ? (
-                    <AudioWaveformIcon className="size-6" />
+                    <PhoneIcon className="size-6 fill-green-500 stroke-none" />
                   ) : isListening ? (
                     <MicIcon className="size-6" />
                   ) : (
@@ -326,59 +331,71 @@ export function VoiceChatBot({
 }
 
 function Messages({ messages }: { messages: UIMessageWithCompleted[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.scrollTo({
+        top: ref.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [messages.length]);
   return (
-    <div className="flex flex-col px-6 gap-6 w-full text-sm">
-      {messages.map((message) => (
-        <div
-          key={message.id}
-          className={cn(
-            "flex px-4 py-3",
-            message.role == "user" &&
-              "ml-auto max-w-2xl bg-accent-foreground text-accent rounded-2xl w-fit",
-          )}
-        >
-          {!message.completed ? (
-            <MessageLoading
-              className={
-                message.role == "user"
-                  ? "text-accent"
-                  : "text-accent-foreground"
-              }
-            />
-          ) : (
-            message.parts.map((part, index) => {
-              if (part.type === "text") {
-                return !part.text ? (
-                  <MessageLoading
-                    className={
-                      message.role == "user"
-                        ? "text-accent"
-                        : "text-accent-foreground"
-                    }
-                    key={index}
-                  />
-                ) : message.role == "user" ? (
-                  <p key={index} className="whitespace-pre-wrap">
-                    {part.text}
-                  </p>
-                ) : (
-                  <FlipWords words={[part.text]} key={index} />
-                );
-              } else if (part.type === "tool-invocation") {
-                return (
-                  <ToolMessagePart
-                    key={index}
-                    part={part}
-                    message={message}
-                    isLast={part.toolInvocation.state != "result"}
-                  />
-                );
-              }
-              return <p key={index}>{part.type} unknown part</p>;
-            })
-          )}
-        </div>
-      ))}
+    <div className="w-full text-sm overflow-y-auto h-full" ref={ref}>
+      <div className="max-w-3xl mx-auto flex flex-col px-6 gap-6 pb-44">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={cn(
+              "flex px-4 py-3",
+              message.role == "user" &&
+                "ml-auto max-w-2xl bg-accent-foreground text-accent rounded-2xl w-fit",
+            )}
+          >
+            {!message.completed ? (
+              <MessageLoading
+                className={
+                  message.role == "user"
+                    ? "text-accent"
+                    : "text-accent-foreground"
+                }
+              />
+            ) : (
+              message.parts.map((part, index) => {
+                if (part.type === "text") {
+                  return !part.text ? (
+                    <MessageLoading
+                      className={
+                        message.role == "user"
+                          ? "text-accent"
+                          : "text-accent-foreground"
+                      }
+                      key={index}
+                    />
+                  ) : message.role == "user" ? (
+                    <p key={index} className="whitespace-pre-wrap">
+                      {part.text}
+                    </p>
+                  ) : (
+                    <FlipWords words={[part.text]} key={index} />
+                  );
+                } else if (part.type === "tool-invocation") {
+                  return (
+                    <ToolMessagePart
+                      key={index}
+                      part={part}
+                      message={message}
+                      isLast={part.toolInvocation.state != "result"}
+                    />
+                  );
+                }
+                return <p key={index}>{part.type} unknown part</p>;
+              })
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -268,6 +268,8 @@ export function useOpenAIVoiceChat(
         };
       });
       dataChannel.current?.send(JSON.stringify(event));
+
+      dataChannel.current?.send(JSON.stringify({ type: "response.create" }));
       dataChannel.current?.send(JSON.stringify({ type: "response.create" }));
     },
     [updateUIMessage],
@@ -417,6 +419,23 @@ export function useOpenAIVoiceChat(
         setIsActive(true);
         setIsListening(true);
         setIsLoading(false);
+
+        dataChannel.current?.send(
+          JSON.stringify({
+            type: "conversation.item.create",
+            item: {
+              type: "message",
+              role: "system",
+              content: [
+                {
+                  type: "input_text",
+                  text: "Start the conversation by greeting the user in their language.",
+                },
+              ],
+            },
+          }),
+        );
+        dataChannel.current?.send(JSON.stringify({ type: "response.create" }));
       });
       dc.addEventListener("close", () => {
         setIsActive(false);
