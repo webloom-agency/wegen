@@ -15,8 +15,6 @@ export async function POST(
   const { threadId } = await params;
   const { messages, model, projectId } = await request.json();
 
-  console.dir({ messages, model, projectId, threadId }, { depth: null });
-
   let thread = await chatRepository.selectThread(threadId);
   if (!thread) {
     const title = await generateTitleFromUserMessageAction({
