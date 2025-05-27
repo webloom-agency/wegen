@@ -1375,25 +1375,25 @@
     --card-foreground: 340 10% 10%;
     --popover: 340 100% 98%;
     --popover-foreground: 340 10% 10%;
-    --primary: 340 80% 65%; /* A vibrant pink */
+    --primary: 340 80% 65%; 
     --primary-foreground: 0 0% 98%;
-    --secondary: 310 70% 85%; /* A lighter, complementary pink/purple */
+    --secondary: 310 70% 85%; 
     --secondary-foreground: 310 10% 10%;
     --muted: 340 20% 90%;
     --muted-foreground: 340 10% 40%;
-    --accent: 30 90% 80%; /* A warm accent like a peach/orange */
+    --accent:  210 40% 96.1%; 
     --accent-foreground: 30 10% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 340 60% 90%;
     --input: 340 60% 90%;
     --ring: 340 80% 65%;
-    --radius: 0.75rem; /* Slightly rounded corners */
+    --radius: 0.75rem; 
     --chart-1: 340 80% 65%;
     --chart-2: 310 70% 85%;
     --chart-3: 30 90% 80%;
-    --chart-4: 260 80% 70%; /* A cooler purple for variety */
-    --chart-5: 180 60% 75%; /* A light teal for contrast */
+    --chart-4: 260 80% 70%; 
+    --chart-5: 180 60% 75%; 
     --sidebar: 340 80% 95%;
     --sidebar-foreground: 340 10% 10%;
     --sidebar-primary: 340 80% 65%;
@@ -1412,13 +1412,13 @@
     --card-foreground: 340 10% 95%;
     --popover: 340 50% 10%;
     --popover-foreground: 340 10% 95%;
-    --primary: 340 80% 75%; /* A brighter pink for contrast */
+    --primary: 340 80% 75%; 
     --primary-foreground: 340 10% 15%;
-    --secondary: 310 70% 45%; /* A slightly darker complementary pink/purple */
+    --secondary: 310 70% 45%; 
     --secondary-foreground: 310 10% 95%;
     --muted: 340 30% 18%;
     --muted-foreground: 340 10% 70%;
-    --accent: 30 90% 45%; /* A darker warm accent */
+    --accent: 217.2 32.6% 17.5%; 
     --accent-foreground: 30 10% 95%;
     --destructive: 0 72.2% 50.6%;
     --destructive-foreground: 0 0% 98%;
