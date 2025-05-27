@@ -6,6 +6,9 @@ export default () => {
     devIndicators: {
       position: "bottom-right",
     },
+    experimental: {
+      useCache: true,
+    },
     env: {
       NO_HTTPS: process.env.NO_HTTPS,
     },

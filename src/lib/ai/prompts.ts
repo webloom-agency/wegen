@@ -1,7 +1,8 @@
 import { MCPToolInfo } from "app-types/mcp";
-import { Session } from "next-auth";
+
 import { UserPreferences } from "app-types/user";
 import { Project } from "app-types/chat";
+import { User } from "better-auth";
 
 export const CREATE_THREAD_TITLE_PROMPT = `\n
       - you will generate a short title based on the first message a user begins a conversation with
@@ -10,15 +11,15 @@ export const CREATE_THREAD_TITLE_PROMPT = `\n
       - do not use quotes or colons`;
 
 export const buildUserSystemPrompt = (
-  session?: Session,
+  user?: User,
   userPreferences?: UserPreferences,
 ) => {
   let prompt = `
 ### User Context ###
 <user_information>
 - **System time:** ${new Date().toLocaleString()}
-${session?.user?.name ? `- **User Name:** ${session?.user?.name}` : ""}
-${session?.user?.email ? `- **User Email:** ${session?.user?.email}` : ""}
+${user?.name ? `- **User Name:** ${user?.name}` : ""}
+${user?.email ? `- **User Email:** ${user?.email}` : ""}
 ${userPreferences?.profession ? `- **User Profession:** ${userPreferences?.profession}` : ""}
 </user_information>`.trim();
 
@@ -27,7 +28,7 @@ ${userPreferences?.profession ? `- **User Profession:** ${userPreferences?.profe
     prompt += `
 ### Addressing Preferences ###
 <addressing>
-  * Use the following name: ${userPreferences.displayName || session?.user?.name}
+  * Use the following name: ${userPreferences.displayName || user?.name}
   * Use their name at appropriate moments to personalize the interaction
 </addressing>`.trim();
   }

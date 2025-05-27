@@ -31,7 +31,7 @@ import { useRouter } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import { handleErrorWithToast } from "ui/shared-toast";
 import { useEffect } from "react";
-import { signOut } from "next-auth/react";
+import { authClient } from "lib/auth/client";
 
 export function AppSidebarThreads() {
   const mounted = useMounted();
@@ -63,9 +63,7 @@ export function AppSidebarThreads() {
   };
   useEffect(() => {
     if (error) {
-      signOut({
-        redirectTo: "/login",
-      });
+      authClient.signOut();
     }
   }, [error]);
 

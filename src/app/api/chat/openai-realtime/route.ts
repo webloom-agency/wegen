@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { auth } from "../../auth/auth";
+import { getSession } from "lib/auth";
 import { AllowedMCPServer } from "app-types/mcp";
 import { chatRepository } from "lib/db/repository";
 import { filterToolsByAllowedMCPServers, mergeSystemPrompt } from "../helper";
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const session = await auth();
+    const session = await getSession();
 
     if (!session?.user.id) {
       return new Response("Unauthorized", { status: 401 });
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       await chatRepository.selectThreadInstructions(session.user.id, threadId);
 
     const systemPrompt = mergeSystemPrompt(
-      buildUserSystemPrompt(session, userPreferences),
+      buildUserSystemPrompt(session.user, userPreferences),
       buildProjectInstructionsSystemPrompt(instructions),
     );
 

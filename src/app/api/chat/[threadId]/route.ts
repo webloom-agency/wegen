@@ -1,14 +1,15 @@
 import { chatRepository } from "lib/db/repository";
 import { NextRequest } from "next/server";
 import { generateTitleFromUserMessageAction } from "../actions";
-import { auth } from "../../auth/auth";
+
 import { customModelProvider } from "lib/ai/models";
+import { getSession } from "lib/auth";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ threadId: string }> },
 ) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) {
     return new Response("Unauthorized", { status: 401 });
   }

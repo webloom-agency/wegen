@@ -40,9 +40,7 @@ export const pgUserRepository: UserRepository = {
       .where(eq(UserSchema.email, email));
     return result.length > 0;
   },
-  selectByEmail: async (
-    email: string,
-  ): Promise<(User & { password: string }) | null> => {
+  selectByEmail: async (email: string): Promise<User | null> => {
     const [result] = await db
       .select()
       .from(UserSchema)

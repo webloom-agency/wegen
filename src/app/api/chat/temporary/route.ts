@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth } from "../../auth/auth";
+import { getSession } from "lib/auth";
 import { Message, smoothStream, streamText } from "ai";
 import { customModelProvider } from "lib/ai/models";
 import logger from "logger";
@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   try {
     const json = await request.json();
 
-    const session = await auth();
+    const session = await getSession();
 
     if (!session?.user.id) {
       return redirect("/login");
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
     return streamText({
       model,
-      system: buildUserSystemPrompt(session, userPreferences),
+      system: buildUserSystemPrompt(session.user, userPreferences),
       messages,
       maxSteps: 10,
       experimental_continueSteps: true,

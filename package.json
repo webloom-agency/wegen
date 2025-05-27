@@ -80,7 +80,6 @@
     "mermaid": "^11.6.0",
     "nanoid": "^5.1.5",
     "next": "15.3.2",
-    "next-auth": "5.0.0-beta.28",
     "next-themes": "^0.4.6",
     "ollama-ai-provider": "^1.2.0",
     "pg": "^8.16.0",

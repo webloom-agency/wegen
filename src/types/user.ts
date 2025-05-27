@@ -19,9 +19,7 @@ export type UserRepository = {
     user: Omit<User, "id"> & { plainPassword: string },
   ) => Promise<User>;
   existsByEmail: (email: string) => Promise<boolean>;
-  selectByEmail: (
-    email: string,
-  ) => Promise<(User & { password: string }) | null>;
+  selectByEmail: (email: string) => Promise<User | null>;
   updateUser: (id: string, user: Pick<User, "name" | "image">) => Promise<User>;
   updatePreferences: (
     userId: string,

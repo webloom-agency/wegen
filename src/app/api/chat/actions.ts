@@ -21,12 +21,12 @@ import { toAny } from "lib/utils";
 import { MCPToolInfo } from "app-types/mcp";
 import { serverCache } from "lib/cache";
 import { CacheKeys } from "lib/cache/cache-keys";
-import { auth } from "../auth/auth";
+import { getSession } from "lib/auth";
 import logger from "logger";
 import { redirect } from "next/navigation";
 
 export async function getUserId() {
-  const session = await auth();
+  const session = await getSession();
   const userId = session?.user?.id;
   if (!userId) {
     throw new Error("User not found");

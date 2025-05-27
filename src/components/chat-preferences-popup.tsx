@@ -8,8 +8,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "ui/dialog";
-import {} from "react";
-import { useSession } from "next-auth/react";
 import { useObjectState } from "@/hooks/use-object-state";
 import { UserPreferences } from "app-types/user";
 import { safe } from "ts-safe";
@@ -22,6 +20,7 @@ import { ExamplePlaceholder } from "ui/example-placeholder";
 import { Textarea } from "ui/textarea";
 import { Button } from "ui/button";
 import { Loader } from "lucide-react";
+import { authClient } from "lib/auth/client";
 const responseStyleExamples = [
   "eg. keep explanations brief and to the point",
   "eg. when learning new concepts, I find analogies particularly helpful",
@@ -47,7 +46,7 @@ export function ChatPreferencesPopup({
   onOpenChange,
   children,
 }: PropsWithChildren<ChatPreferencesPopupProps>) {
-  const { data: session } = useSession();
+  const { data: session } = authClient.useSession();
   const [preferences, setPreferences] = useObjectState<UserPreferences>({
     displayName: session?.user.name || "",
     responseStyleExample: "",

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/layouts/theme-provider";
-import { SessionProvider } from "next-auth/react";
 import { Toaster } from "ui/sonner";
 import { BASE_THEMES } from "lib/const";
 
@@ -40,10 +39,8 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <div id="root">
-            <SessionProvider>
-              {children}
-              <Toaster richColors />
-            </SessionProvider>
+            {children}
+            <Toaster richColors />
           </div>
         </ThemeProvider>
       </body>

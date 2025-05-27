@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useSession } from "next-auth/react";
+import { authClient } from "lib/auth/client";
 import { useMemo } from "react";
 import { FlipWords } from "ui/flip-words";
 function getGreetingByTime() {
@@ -24,7 +24,7 @@ const createWords = (name: string) => {
 };
 
 export const Greeting = () => {
-  const { data: session } = useSession();
+  const { data: session } = authClient.useSession();
 
   const user = session?.user;
 

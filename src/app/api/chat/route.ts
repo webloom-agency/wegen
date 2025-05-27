@@ -26,8 +26,6 @@ import {
 
 import { errorIf, safe } from "ts-safe";
 
-import { auth } from "../auth/auth";
-
 import {
   appendAnnotations,
   excludeToolExecution,
@@ -43,12 +41,13 @@ import {
   filterToolsByAllowedMCPServers,
 } from "./helper";
 import { generateTitleFromUserMessageAction } from "./actions";
+import { getSession } from "lib/auth";
 
 export async function POST(request: Request) {
   try {
     const json = await request.json();
 
-    const session = await auth();
+    const session = await getSession();
 
     if (!session?.user.id) {
       return new Response("Unauthorized", { status: 401 });
@@ -156,7 +155,7 @@ export async function POST(request: Request) {
         const userPreferences = thread?.userPreferences || undefined;
 
         const systemPrompt = mergeSystemPrompt(
-          buildUserSystemPrompt(session, userPreferences),
+          buildUserSystemPrompt(session.user, userPreferences),
           buildProjectInstructionsSystemPrompt(thread?.instructions),
         );
 

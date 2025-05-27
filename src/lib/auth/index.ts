@@ -9,6 +9,8 @@ import {
   UserSchema,
   VerificationSchema,
 } from "lib/db/pg/schema.pg";
+import { headers } from "next/headers";
+import { toast } from "sonner";
 export const auth = betterAuth({
   plugins: [nextCookies()],
   database: drizzleAdapter(pgDb, {
@@ -27,7 +29,7 @@ export const auth = betterAuth({
       : `http://localhost:${process.env.PORT ?? 3000}`),
   emailAndPassword: {
     enabled: true,
-    // requireEmailVerification: false,
+
     disableSignUp: process.env.DISABLE_REGISTRATION ? true : false,
   },
   session: {
@@ -52,6 +54,13 @@ export const auth = betterAuth({
       trustedProviders: ["google", "github"],
     },
   },
+  fetchOptions: {
+    onError(e) {
+      if (e.error.status === 429) {
+        toast.error("Too many requests. Please try again later.");
+      }
+    },
+  },
   // socialProviders: {
   //   github: {
   //     clientId: process.env.GITHUB_CLIENT_ID || "",
@@ -63,3 +72,11 @@ export const auth = betterAuth({
   //   },
   // },
 });
+
+export const getSession = async () => {
+  "use server";
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  return session;
+};

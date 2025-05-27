@@ -22,15 +22,15 @@ import {
   Settings2,
   Palette,
 } from "lucide-react";
-import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { useMounted } from "@/hooks/use-mounted";
 import { appStore } from "@/app/store";
 import { BASE_THEMES } from "lib/const";
 import { capitalizeFirstLetter } from "lib/utils";
+import { authClient } from "lib/auth/client";
 
 export function AppSidebarUser() {
-  const { data: session } = useSession();
+  const { data: session } = authClient.useSession();
   const user = session?.user;
   const appStoreMutate = appStore((state) => state.mutate);
 
@@ -44,9 +44,7 @@ export function AppSidebarUser() {
   };
 
   const logout = () => {
-    signOut({
-      redirectTo: "/login",
-    });
+    authClient.signOut();
   };
 
   if (!user) {

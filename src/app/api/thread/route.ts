@@ -1,5 +1,5 @@
 import { chatRepository } from "lib/db/repository";
-import { auth } from "../auth/auth";
+import { getSession } from "lib/auth";
 import { redirect } from "next/navigation";
 import { generateUUID } from "lib/utils";
 import { generateTitleFromUserMessageAction } from "../chat/actions";
@@ -7,7 +7,7 @@ import { generateTitleFromUserMessageAction } from "../chat/actions";
 export async function POST(request: Request) {
   const { id, projectId, message, model } = await request.json();
 
-  const session = await auth();
+  const session = await getSession();
 
   if (!session?.user.id) {
     return redirect("/login");
