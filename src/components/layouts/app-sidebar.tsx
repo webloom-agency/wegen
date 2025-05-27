@@ -20,40 +20,7 @@ import { AppSidebarUser } from "./app-sidebar-user";
 import { MCPIcon } from "ui/mcp-icon";
 import { isShortcutEvent, Shortcuts } from "lib/keyboard-shortcuts";
 
-import { useMounted } from "@/hooks/use-mounted";
-import { useTheme } from "next-themes";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "ui/select";
-
-
 const browserSidebarStorage = getStorageManager<boolean>("sidebar_state");
-
-// list only your base themes here
-const BASE_THEMES = [
-  "zinc",
-  "slate",
-  "stone",
-  "gray",
-  "blue",
-  "orange",
-  "pink",
-  "bubblegum-pop",
-  "cyberpunk-neon",
-  "retro-arcade",
-  "tropical-paradise",
-  "steampunk-cogs",
-  "neon-synthwave",
-  "pastel-kawaii",
-  "space-odyssey",
-  "vintage-vinyl",
-  "misty-harbor",
-  "zen-garden",
-];
 
 export function AppSidebar() {
   const { open, toggleSidebar } = useSidebar();
@@ -80,16 +47,6 @@ export function AppSidebar() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [router, toggleSidebar]);
 
-  // theme logic
-  const isMounted = useMounted();
-  const { theme = "slate", resolvedTheme, setTheme } = useTheme();
-  const base = theme.replace(/-dark$/, "");
-  const isDark = theme.endsWith("-dark") || resolvedTheme === "dark";
-
-  const onThemeSelect = (value: string) => {
-    setTheme(isDark ? `${value}-dark` : value);
-  };
-
   return (
     <Sidebar collapsible="offcanvas">
       <SidebarHeader>
@@ -112,26 +69,6 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="flex flex-col items-stretch space-y-2">
-        {isMounted && (
-          <div className="px-4">
-            <div className="flex items-center space-x-2">
-              <Select value={base} onValueChange={onThemeSelect}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Theme…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {BASE_THEMES.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {t.charAt(0).toUpperCase() + t.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-           
-            </div>
-          </div>
-        )}
-
         <AppSidebarUser />
       </SidebarFooter>
     </Sidebar>
