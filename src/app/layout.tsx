@@ -32,9 +32,29 @@ export default function RootLayout({
       >
         <div id="root">
           <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem
+            attribute="data-theme"
+            defaultTheme="zinc-dark"
+            themes={[
+              ...[
+                "zinc",
+                "slate",
+                "stone",
+                "gray",
+                "blue",
+                "orange",
+                "bubblegum-pop",
+                "cyberpunk-neon",
+                "retro-arcade",
+                "tropical-paradise",
+                "steampunk-cogs",
+                "neon-synthwave",
+                "pastel-kawaii",
+                "space-odyssey",
+                "vintage-vinyl",
+                "misty-harbor",
+                "zen-garden",
+              ].flatMap((t) => [t, `${t}-dark`]),
+            ]}
             disableTransitionOnChange
           >
             <SessionProvider>

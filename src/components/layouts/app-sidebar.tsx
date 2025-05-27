@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Sidebar,
   SidebarContent,
@@ -12,44 +11,87 @@ import {
 } from "ui/sidebar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
 import { useEffect } from "react";
 import { getStorageManager } from "lib/browser-stroage";
-
 import { AppSidebarMenus } from "./app-sidebar-menus";
+import { AppSidebarProjects } from "./app-sidebar-projects";
 import { AppSidebarThreads } from "./app-sidebar-threads";
 import { AppSidebarUser } from "./app-sidebar-user";
 import { MCPIcon } from "ui/mcp-icon";
-import { AppSidebarProjects } from "./app-sidebar-projects";
 import { isShortcutEvent, Shortcuts } from "lib/keyboard-shortcuts";
+
+import { useMounted } from "@/hooks/use-mounted";
+import { useTheme } from "next-themes";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "ui/select";
+import { Button } from "ui/button";
+import { MoonStar, Sun } from "lucide-react";
 
 const browserSidebarStorage = getStorageManager<boolean>("sidebar_state");
 
+// list only your base themes here
+const BASE_THEMES = [
+  "zinc",
+  "slate",
+  "stone",
+  "gray",
+  "blue",
+  "orange",
+  "bubblegum-pop",
+  "cyberpunk-neon",
+  "retro-arcade",
+  "tropical-paradise",
+  "steampunk-cogs",
+  "neon-synthwave",
+  "pastel-kawaii",
+  "space-odyssey",
+  "vintage-vinyl",
+  "misty-harbor",
+  "zen-garden",
+];
+
 export function AppSidebar() {
   const { open, toggleSidebar } = useSidebar();
-
   const router = useRouter();
 
+  // persist sidebar state
   useEffect(() => {
     browserSidebarStorage.set(open);
   }, [open]);
 
+  // global shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isShortcutEvent(e, Shortcuts.openNewChat)) {
         e.preventDefault();
-        e.stopPropagation();
         router.push("/");
       }
       if (isShortcutEvent(e, Shortcuts.toggleSidebar)) {
         e.preventDefault();
-        e.stopPropagation();
         toggleSidebar();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [router, toggleSidebar]);
+
+  // theme logic
+  const isMounted = useMounted();
+  const { theme = "slate", resolvedTheme, setTheme } = useTheme();
+  const base = theme.replace(/-dark$/, "");
+  const isDark = theme.endsWith("-dark") || resolvedTheme === "dark";
+
+  const onThemeSelect = (value: string) => {
+    setTheme(isDark ? `${value}-dark` : value);
+  };
+  const toggleDark = () => {
+    setTheme(isDark ? base : `${base}-dark`);
+  };
 
   return (
     <Sidebar collapsible="offcanvas">
@@ -65,12 +107,45 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
       <SidebarContent className="mt-6">
         <AppSidebarMenus isOpen={open} />
         <AppSidebarProjects />
         <AppSidebarThreads />
       </SidebarContent>
-      <SidebarFooter>
+
+      <SidebarFooter className="flex flex-col items-stretch space-y-2">
+        {isMounted && (
+          <div className="px-4">
+            <div className="flex items-center space-x-2">
+              <Select value={base} onValueChange={onThemeSelect}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Theme…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BASE_THEMES.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t.charAt(0).toUpperCase() + t.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={toggleDark}
+                aria-label="Toggle dark/light"
+              >
+                {isDark ? (
+                  <Sun className="w-5 h-5" />
+                ) : (
+                  <MoonStar className="w-5 h-5" />
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
         <AppSidebarUser />
       </SidebarFooter>
     </Sidebar>

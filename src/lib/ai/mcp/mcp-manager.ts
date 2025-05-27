@@ -12,10 +12,9 @@ declare global {
 
 if (!globalThis.__mcpClientsManager__) {
   // Choose the appropriate storage implementation based on environment
-  const storage =
-    FILE_BASED_MCP_CONFIG
-      ? createFileBasedMCPConfigsStorage()
-      : createDbBasedMCPConfigsStorage();
+  const storage = FILE_BASED_MCP_CONFIG
+    ? createFileBasedMCPConfigsStorage()
+    : createDbBasedMCPConfigsStorage();
   globalThis.__mcpClientsManager__ = createMCPClientsManager(storage);
 }
 
