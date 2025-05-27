@@ -87,7 +87,7 @@ export function PieChart(props: PieChartProps) {
   }, [data]);
 
   return (
-    <Card className="flex flex-col bg-background">
+    <Card className="flex flex-col bg-card">
       <CardHeader className="items-center pb-0 flex flex-col gap-2 relative">
         <CardTitle className="flex items-center">
           Pie Chart - {title}

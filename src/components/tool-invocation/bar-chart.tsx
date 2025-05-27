@@ -94,7 +94,7 @@ export function BarChart(props: BarChartProps) {
   }, [data]);
 
   return (
-    <Card className="bg-background">
+    <Card className="bg-card">
       <CardHeader className="flex flex-col gap-2 relative">
         <CardTitle className="flex items-center">
           Bar Chart - {title}
