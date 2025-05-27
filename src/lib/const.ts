@@ -10,4 +10,26 @@ export const IS_VERCEL_ENV = process.env.VERCEL === "1";
 export const IS_DOCKER_ENV = process.env.DOCKER_BUILD === "1";
 
 export const IS_MCP_SERVER_SSE_ONLY = IS_VERCEL_ENV;
-export const FILE_BASED_MCP_CONFIG = process.env.FILE_BASED_MCP_CONFIG === "true";
+export const FILE_BASED_MCP_CONFIG =
+  process.env.FILE_BASED_MCP_CONFIG === "true";
+
+export const BASE_THEMES = [
+  "zinc",
+  "slate",
+  "stone",
+  "gray",
+  "blue",
+  "orange",
+  "pink",
+  "bubblegum-pop",
+  "cyberpunk-neon",
+  "retro-arcade",
+  "tropical-paradise",
+  "steampunk-cogs",
+  "neon-synthwave",
+  "pastel-kawaii",
+  "space-odyssey",
+  "vintage-vinyl",
+  "misty-harbor",
+  "zen-garden",
+];

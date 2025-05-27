@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/layouts/theme-provider";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "ui/sonner";
+import { BASE_THEMES } from "lib/const";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,6 +21,8 @@ export const metadata: Metadata = {
     "MCP Chat is a chatbot that uses the MCP Tools to answer questions.",
 };
 
+const themes = BASE_THEMES.flatMap((t) => [t, `${t}-dark`]);
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,9 +35,9 @@ export default function RootLayout({
       >
         <div id="root">
           <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem
+            attribute="data-theme"
+            defaultTheme="zinc-dark"
+            themes={themes}
             disableTransitionOnChange
           >
             <SessionProvider>
