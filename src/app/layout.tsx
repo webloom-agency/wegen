@@ -7,11 +7,11 @@ import { Toaster } from "ui/sonner";
 import { BASE_THEMES } from "lib/const";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+  variable: "--font-mono",
   subsets: ["latin"],
 });
 
@@ -33,19 +33,19 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div id="root">
-          <ThemeProvider
-            attribute="data-theme"
-            defaultTheme="zinc-dark"
-            themes={themes}
-            disableTransitionOnChange
-          >
+        <ThemeProvider
+          attribute="data-theme"
+          defaultTheme="default-dark"
+          themes={themes}
+          disableTransitionOnChange
+        >
+          <div id="root">
             <SessionProvider>
               {children}
               <Toaster richColors />
             </SessionProvider>
-          </ThemeProvider>
-        </div>
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

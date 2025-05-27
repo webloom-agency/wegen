@@ -14,6 +14,7 @@ export const FILE_BASED_MCP_CONFIG =
   process.env.FILE_BASED_MCP_CONFIG === "true";
 
 export const BASE_THEMES = [
+  "default",
   "zinc",
   "slate",
   "stone",
