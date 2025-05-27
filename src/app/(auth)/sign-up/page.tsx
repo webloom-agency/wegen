@@ -16,16 +16,14 @@ import { useObjectState } from "@/hooks/use-object-state";
 import { cn } from "lib/utils";
 import { ChevronLeft, Loader } from "lucide-react";
 import { toast } from "sonner";
-import { safe, watchError } from "ts-safe";
+import { safe } from "ts-safe";
 import { UserZodSchema } from "app-types/user";
-import { existsByEmailAction, registerAction } from "@/app/api/auth/actions";
-import { handleErrorWithToast } from "ui/shared-toast";
-import { useRouter } from "next/navigation";
+import { existsByEmailAction } from "@/app/api/auth/actions";
+import { authClient } from "lib/auth/client";
 
 export default function SignUpPage() {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
   const [formData, setFormData] = useObjectState({
     email: "",
     name: "",
@@ -80,19 +78,21 @@ export default function SignUpPage() {
       toast.error("Password must be at least 8 characters long");
       return;
     }
-    const user = await safeProcessWithLoading(() =>
-      registerAction({
-        ...formData,
-        image: null,
-        plainPassword: formData.password,
-      }),
-    )
-      .watch(watchError(handleErrorWithToast))
-      .unwrap();
-    if (user) {
-      toast.success("Account created successfully");
-      router.push("/login");
-    }
+    await safeProcessWithLoading(() =>
+      authClient.signUp.email(
+        {
+          email: formData.email,
+          password: formData.password,
+          name: formData.name,
+          callbackURL: "/",
+        },
+        {
+          onError(ctx) {
+            toast.error(ctx.error.message || ctx.error.statusText);
+          },
+        },
+      ),
+    ).unwrap();
   };
 
   return (

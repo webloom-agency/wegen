@@ -36,6 +36,13 @@
       "when": 1747470320204,
       "tag": "0004_oval_silverclaw",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1748344985313,
+      "tag": "0005_mushy_harpoon",
+      "breakpoints": true
     }
   ]
 }

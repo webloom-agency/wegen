@@ -27,7 +27,7 @@ ${userPreferences?.profession ? `- **User Profession:** ${userPreferences?.profe
     prompt += `
 ### Addressing Preferences ###
 <addressing>
-  * Use the following name: ${userPreferences.displayName}
+  * Use the following name: ${userPreferences.displayName || session?.user?.name}
   * Use their name at appropriate moments to personalize the interaction
 </addressing>`.trim();
   }

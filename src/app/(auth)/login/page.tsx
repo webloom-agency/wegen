@@ -13,13 +13,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useObjectState } from "@/hooks/use-object-state";
-import { loginAction } from "@/app/api/auth/actions";
-import { useSession } from "next-auth/react";
 
 import { Loader } from "lucide-react";
-import { safe, watchError } from "ts-safe";
-import { handleErrorWithToast } from "ui/shared-toast";
-import { useRouter } from "next/navigation";
+import { safe } from "ts-safe";
+import { authClient } from "lib/auth/client";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -29,18 +27,23 @@ export default function LoginPage() {
     password: "",
   });
 
-  const { update } = useSession();
-  const router = useRouter();
-
   const login = () => {
     setLoading(true);
-    safe(() => loginAction(formData))
-      .watch(watchError(handleErrorWithToast))
+    safe(() =>
+      authClient.signIn.email(
+        {
+          email: formData.email,
+          password: formData.password,
+        },
+        {
+          redirectTo: "/",
+          onError(ctx) {
+            toast.error(ctx.error.message || ctx.error.statusText);
+          },
+        },
+      ),
+    )
       .watch(() => setLoading(false))
-      .ifOk(() => update())
-      .ifOk(() => {
-        router.push("/");
-      })
       .unwrap();
   };
 
