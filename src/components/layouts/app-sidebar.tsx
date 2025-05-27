@@ -29,8 +29,7 @@ import {
   SelectContent,
   SelectItem,
 } from "ui/select";
-import { Button } from "ui/button";
-import { MoonStar, Sun } from "lucide-react";
+
 
 const browserSidebarStorage = getStorageManager<boolean>("sidebar_state");
 
@@ -89,9 +88,6 @@ export function AppSidebar() {
   const onThemeSelect = (value: string) => {
     setTheme(isDark ? `${value}-dark` : value);
   };
-  const toggleDark = () => {
-    setTheme(isDark ? base : `${base}-dark`);
-  };
 
   return (
     <Sidebar collapsible="offcanvas">
@@ -130,18 +126,7 @@ export function AppSidebar() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={toggleDark}
-                aria-label="Toggle dark/light"
-              >
-                {isDark ? (
-                  <Sun className="w-5 h-5" />
-                ) : (
-                  <MoonStar className="w-5 h-5" />
-                )}
-              </Button>
+           
             </div>
           </div>
         )}
