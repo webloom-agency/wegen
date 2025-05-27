@@ -27,7 +27,7 @@ import { useMounted } from "@/hooks/use-mounted";
 import { appStore } from "@/app/store";
 import { BASE_THEMES } from "lib/const";
 import { capitalizeFirstLetter } from "lib/utils";
-import { authClient } from "lib/auth/client";
+import { authClient } from "lib/auth/auth-client";
 
 export function AppSidebarUser() {
   const { data: session } = authClient.useSession();

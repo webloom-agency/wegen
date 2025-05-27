@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { authClient } from "lib/auth/client";
+import { authClient } from "lib/auth/auth-client";
 import { useMemo } from "react";
 import { FlipWords } from "ui/flip-words";
 function getGreetingByTime() {

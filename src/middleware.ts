@@ -12,10 +12,10 @@ export async function middleware(request: NextRequest) {
     return new Response("pong", { status: 200 });
   }
   const sessionCookie = getSessionCookie(request);
-
-  if (!sessionCookie) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
+  console.log("sessionCookie", sessionCookie);
+  // if (!sessionCookie) {
+  //   return NextResponse.redirect(new URL("/", request.url));
+  // }
 
   return NextResponse.next();
 }

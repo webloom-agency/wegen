@@ -31,7 +31,7 @@ import { useRouter } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import { handleErrorWithToast } from "ui/shared-toast";
 import { useEffect } from "react";
-import { authClient } from "lib/auth/client";
+import { authClient } from "lib/auth/auth-client";
 
 export function AppSidebarThreads() {
   const mounted = useMounted();

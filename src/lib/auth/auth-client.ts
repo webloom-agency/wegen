@@ -14,5 +14,5 @@ export const authClient = createAuthClient({
 });
 
 authClient.$store.listen("$sessionSignal", async (ctx) => {
-  console.log(ctx);
+  console.log({ ctx });
 });
