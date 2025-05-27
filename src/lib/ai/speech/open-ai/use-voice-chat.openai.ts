@@ -119,7 +119,7 @@ export function useOpenAIVoiceChat(
   const dataChannel = useRef<RTCDataChannel | null>(null);
   const audioElement = useRef<HTMLAudioElement | null>(null);
   const audioStream = useRef<MediaStream | null>(null);
-  const { setTheme } = useTheme();
+  const { setTheme, theme } = useTheme();
 
   const tracks = useRef<RTCRtpSender[]>([]);
 
@@ -229,7 +229,8 @@ export function useOpenAIVoiceChat(
       if (DEFAULT_VOICE_TOOLS.some((t) => t.name === toolName)) {
         switch (toolName) {
           case "changeBrowserTheme":
-            setTheme(toolArgs?.theme || "dark");
+            const base = theme?.replace(/-dark$/, "");
+            setTheme(`${base}${toolArgs?.theme === "dark" ? "-dark" : ""}`);
             break;
         }
       } else {

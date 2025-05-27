@@ -85,7 +85,7 @@ function ThreadDropdownComponent() {
 
 export function AppHeader() {
   const { toggleSidebar } = useSidebar();
-  const { theme, setTheme } = useTheme();
+  const { theme = "zinc", resolvedTheme, setTheme } = useTheme();
   const currentPaths = usePathname();
 
   const componentByPage = useMemo(() => {
@@ -95,10 +95,14 @@ export function AppHeader() {
   }, [currentPaths]);
 
   const isMounted = useMounted();
+  const base = theme.replace(/-dark$/, "");
+  // decide dark vs light
+  const isDark = theme.endsWith("-dark") || resolvedTheme === "dark";
 
-  const icon = useMemo(() => {
-    return theme === "dark" ? <Sun /> : <MoonStar />;
-  }, [theme]);
+  const toggleTheme = () => {
+    setTheme(isDark ? base : `${base}-dark`);
+  };
+  const ThemeIcon = isDark ? Sun : MoonStar;
 
   return (
     <header className="sticky top-0 z-50 flex items-center px-2 py-2">
@@ -133,12 +137,8 @@ export function AppHeader() {
           </Button>
         </Link>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        >
-          {isMounted && icon}
+        <Button variant="ghost" size="icon" onClick={toggleTheme}>
+          {isMounted && <ThemeIcon className="w-5 h-5" />}
         </Button>
       </div>
     </header>

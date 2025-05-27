@@ -46,11 +46,11 @@ export interface BarChartProps {
 
 // Color variable names (chart-1 ~ chart-5)
 const chartColors = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
 ];
 
 export function BarChart(props: BarChartProps) {
@@ -94,7 +94,7 @@ export function BarChart(props: BarChartProps) {
   }, [data]);
 
   return (
-    <Card className="bg-background">
+    <Card className="bg-card">
       <CardHeader className="flex flex-col gap-2 relative">
         <CardTitle className="flex items-center">
           Bar Chart - {title}

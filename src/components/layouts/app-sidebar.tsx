@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Sidebar,
   SidebarContent,
@@ -12,38 +11,35 @@ import {
 } from "ui/sidebar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
 import { useEffect } from "react";
 import { getStorageManager } from "lib/browser-stroage";
-
 import { AppSidebarMenus } from "./app-sidebar-menus";
+import { AppSidebarProjects } from "./app-sidebar-projects";
 import { AppSidebarThreads } from "./app-sidebar-threads";
 import { AppSidebarUser } from "./app-sidebar-user";
 import { MCPIcon } from "ui/mcp-icon";
-import { AppSidebarProjects } from "./app-sidebar-projects";
 import { isShortcutEvent, Shortcuts } from "lib/keyboard-shortcuts";
 
 const browserSidebarStorage = getStorageManager<boolean>("sidebar_state");
 
 export function AppSidebar() {
   const { open, toggleSidebar } = useSidebar();
-
   const router = useRouter();
 
+  // persist sidebar state
   useEffect(() => {
     browserSidebarStorage.set(open);
   }, [open]);
 
+  // global shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isShortcutEvent(e, Shortcuts.openNewChat)) {
         e.preventDefault();
-        e.stopPropagation();
         router.push("/");
       }
       if (isShortcutEvent(e, Shortcuts.toggleSidebar)) {
         e.preventDefault();
-        e.stopPropagation();
         toggleSidebar();
       }
     };
@@ -65,12 +61,14 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
       <SidebarContent className="mt-6">
         <AppSidebarMenus isOpen={open} />
         <AppSidebarProjects />
         <AppSidebarThreads />
       </SidebarContent>
-      <SidebarFooter>
+
+      <SidebarFooter className="flex flex-col items-stretch space-y-2">
         <AppSidebarUser />
       </SidebarFooter>
     </Sidebar>

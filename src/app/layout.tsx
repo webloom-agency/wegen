@@ -4,13 +4,14 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/layouts/theme-provider";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "ui/sonner";
+import { BASE_THEMES } from "lib/const";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+  variable: "--font-mono",
   subsets: ["latin"],
 });
 
@@ -19,6 +20,8 @@ export const metadata: Metadata = {
   description:
     "MCP Chat is a chatbot that uses the MCP Tools to answer questions.",
 };
+
+const themes = BASE_THEMES.flatMap((t) => [t, `${t}-dark`]);
 
 export default function RootLayout({
   children,
@@ -30,19 +33,19 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div id="root">
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem
-            disableTransitionOnChange
-          >
+        <ThemeProvider
+          attribute="data-theme"
+          defaultTheme="default-dark"
+          themes={themes}
+          disableTransitionOnChange
+        >
+          <div id="root">
             <SessionProvider>
               {children}
               <Toaster richColors />
             </SessionProvider>
-          </ThemeProvider>
-        </div>
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );
