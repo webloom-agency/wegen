@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-/* Individual theme variants - themes https://github.com/rawestmoreland/theme-generator/blob/main/src/app/globals.css */
+/* Individual theme variants - themes from  https://github.com/rawestmoreland/theme-generator/blob/main/src/app/globals.css */
 @variant zinc (&[data-theme="zinc"] *);
 @variant zinc-dark (&[data-theme="zinc-dark"] *);
 @variant slate (&[data-theme="slate"] *);
@@ -35,6 +35,8 @@
 @variant zen-garden-dark (&[data-theme="zen-garden-dark"] *);
 @variant misty-harbor (&[data-theme="misty-harbor"] *);
 @variant misty-harbor-dark (&[data-theme="misty-harbor-dark"] *);
+@variant pink (&[data-theme="pink"] *);
+@variant pink-dark (&[data-theme="pink-dark"] *);
 
 @theme inline {
   --color-background: hsl(var(--background));
@@ -1365,6 +1367,79 @@
     --sidebar-ring: 200 20% 55%;
   }
 
+  /* Pink Light */
+  [data-theme="pink"] {
+    --background: 340 100% 99%;
+    --foreground: 340 10% 10%;
+    --card: 340 100% 98%;
+    --card-foreground: 340 10% 10%;
+    --popover: 340 100% 98%;
+    --popover-foreground: 340 10% 10%;
+    --primary: 340 80% 65%; /* A vibrant pink */
+    --primary-foreground: 0 0% 98%;
+    --secondary: 310 70% 85%; /* A lighter, complementary pink/purple */
+    --secondary-foreground: 310 10% 10%;
+    --muted: 340 20% 90%;
+    --muted-foreground: 340 10% 40%;
+    --accent: 30 90% 80%; /* A warm accent like a peach/orange */
+    --accent-foreground: 30 10% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 340 60% 90%;
+    --input: 340 60% 90%;
+    --ring: 340 80% 65%;
+    --radius: 0.75rem; /* Slightly rounded corners */
+    --chart-1: 340 80% 65%;
+    --chart-2: 310 70% 85%;
+    --chart-3: 30 90% 80%;
+    --chart-4: 260 80% 70%; /* A cooler purple for variety */
+    --chart-5: 180 60% 75%; /* A light teal for contrast */
+    --sidebar: 340 80% 95%;
+    --sidebar-foreground: 340 10% 10%;
+    --sidebar-primary: 340 80% 65%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 310 70% 85%;
+    --sidebar-accent-foreground: 310 10% 10%;
+    --sidebar-border: 340 60% 85%;
+    --sidebar-ring: 340 80% 65%;
+  }
+
+  /* Pink Dark */
+  [data-theme="pink-dark"] {
+    --background: 340 50% 8%;
+    --foreground: 340 10% 95%;
+    --card: 340 50% 10%;
+    --card-foreground: 340 10% 95%;
+    --popover: 340 50% 10%;
+    --popover-foreground: 340 10% 95%;
+    --primary: 340 80% 75%; /* A brighter pink for contrast */
+    --primary-foreground: 340 10% 15%;
+    --secondary: 310 70% 45%; /* A slightly darker complementary pink/purple */
+    --secondary-foreground: 310 10% 95%;
+    --muted: 340 30% 18%;
+    --muted-foreground: 340 10% 70%;
+    --accent: 30 90% 45%; /* A darker warm accent */
+    --accent-foreground: 30 10% 95%;
+    --destructive: 0 72.2% 50.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 340 60% 20%;
+    --input: 340 60% 20%;
+    --ring: 340 80% 75%;
+    --radius: 0.75rem;
+    --chart-1: 340 80% 75%;
+    --chart-2: 310 70% 45%;
+    --chart-3: 30 90% 45%;
+    --chart-4: 260 80% 50%;
+    --chart-5: 180 60% 40%;
+    --sidebar: 340 50% 12%;
+    --sidebar-foreground: 340 10% 95%;
+    --sidebar-primary: 340 80% 75%;
+    --sidebar-primary-foreground: 340 10% 15%;
+    --sidebar-accent: 310 70% 45%;
+    --sidebar-accent-foreground: 310 10% 95%;
+    --sidebar-border: 340 60% 25%;
+    --sidebar-ring: 340 80% 75%;
+  }
 
 @layer base {
   * {

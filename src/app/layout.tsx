@@ -42,6 +42,7 @@ export default function RootLayout({
                 "gray",
                 "blue",
                 "orange",
+                "pink",
                 "bubblegum-pop",
                 "cyberpunk-neon",
                 "retro-arcade",
