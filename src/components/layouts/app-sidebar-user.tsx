@@ -11,6 +11,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuPortal,
   DropdownMenuSubContent,
+  DropdownMenuCheckboxItem,
 } from "ui/dropdown-menu";
 import { AvatarFallback, AvatarImage, Avatar } from "ui/avatar";
 import { SidebarMenuButton, SidebarMenuItem, SidebarMenu } from "ui/sidebar";
@@ -24,36 +25,9 @@ import {
 import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { useMounted } from "@/hooks/use-mounted";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "ui/select";
 import { appStore } from "@/app/store";
-
-// list only your base themes here
-const BASE_THEMES = [
-  "zinc",
-  "slate",
-  "stone",
-  "gray",
-  "blue",
-  "orange",
-  "pink",
-  "bubblegum-pop",
-  "cyberpunk-neon",
-  "retro-arcade",
-  "tropical-paradise",
-  "steampunk-cogs",
-  "neon-synthwave",
-  "pastel-kawaii",
-  "space-odyssey",
-  "vintage-vinyl",
-  "misty-harbor",
-  "zen-garden",
-];
+import { BASE_THEMES } from "lib/const";
+import { capitalizeFirstLetter } from "lib/utils";
 
 export function AppSidebarUser() {
   const { data: session } = useSession();
@@ -148,18 +122,16 @@ export function AppSidebarUser() {
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent className="w-48">
-                    <Select value={base} onValueChange={onThemeSelect}>
-                      <SelectTrigger className="w-full border-0 focus:ring-0">
-                        <SelectValue placeholder="Select theme…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {BASE_THEMES.map((t) => (
-                          <SelectItem key={t} value={t}>
-                            {t.charAt(0).toUpperCase() + t.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {BASE_THEMES.map((t) => (
+                      <DropdownMenuCheckboxItem
+                        key={t}
+                        checked={base === t}
+                        onCheckedChange={() => onThemeSelect(t)}
+                        className="text-sm"
+                      >
+                        {capitalizeFirstLetter(t)}
+                      </DropdownMenuCheckboxItem>
+                    ))}
                   </DropdownMenuSubContent>
                 </DropdownMenuPortal>
               </DropdownMenuSub>
