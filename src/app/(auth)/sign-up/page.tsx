@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { safe } from "ts-safe";
 import { UserZodSchema } from "app-types/user";
 import { existsByEmailAction } from "@/app/api/auth/actions";
-import { authClient } from "lib/auth/auth-client";
+import { authClient } from "auth/client";
 import { useRouter } from "next/navigation";
 
 export default function SignUpPage() {

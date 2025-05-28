@@ -16,7 +16,7 @@ import { useObjectState } from "@/hooks/use-object-state";
 
 import { Loader } from "lucide-react";
 import { safe } from "ts-safe";
-import { authClient } from "lib/auth/auth-client";
+import { authClient } from "auth/client";
 import { toast } from "sonner";
 
 export default function LoginPage() {

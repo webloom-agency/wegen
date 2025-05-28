@@ -41,7 +41,7 @@ import {
   filterToolsByAllowedMCPServers,
 } from "./helper";
 import { generateTitleFromUserMessageAction } from "./actions";
-import { getSession } from "lib/auth";
+import { getSession } from "auth/server";
 
 export async function POST(request: Request) {
   try {

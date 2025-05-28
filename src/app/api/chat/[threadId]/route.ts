@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { generateTitleFromUserMessageAction } from "../actions";
 
 import { customModelProvider } from "lib/ai/models";
-import { getSession } from "lib/auth";
+import { getSession } from "auth/server";
 
 export async function POST(
   request: NextRequest,

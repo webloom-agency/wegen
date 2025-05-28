@@ -1,5 +1,5 @@
 import { chatRepository } from "lib/db/repository";
-import { getSession } from "lib/auth";
+import { getSession } from "auth/server";
 import { redirect } from "next/navigation";
 import { generateUUID } from "lib/utils";
 import { generateTitleFromUserMessageAction } from "../chat/actions";

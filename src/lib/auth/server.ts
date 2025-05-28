@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import { IS_VERCEL_ENV } from "lib/const";
+import { IS_DEV, IS_VERCEL_ENV } from "lib/const";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { pgDb } from "lib/db/pg/db.pg";
@@ -21,6 +21,13 @@ export const auth = betterAuth({
       account: AccountSchema,
       verification: VerificationSchema,
     },
+    debugLogs: {
+      create: true,
+      findMany: true,
+      findOne: true,
+      update: true,
+      logCondition: () => IS_DEV,
+    },
   }),
   baseURL:
     process.env.BETTER_AUTH_URL ??
@@ -29,14 +36,15 @@ export const auth = betterAuth({
       : `http://localhost:${process.env.PORT ?? 3000}`),
   emailAndPassword: {
     enabled: true,
-
-    disableSignUp: process.env.DISABLE_REGISTRATION ? true : false,
+    disableSignUp: process.env.DISABLE_SIGN_UP == "true" ? true : false,
   },
   session: {
     cookieCache: {
       enabled: true,
       maxAge: 10 * 60,
     },
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24, // 1 day (every 1 day the session expiration is updated)
   },
   advanced: {
     useSecureCookies:

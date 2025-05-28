@@ -1,4 +1,4 @@
-import { getSession } from "lib/auth";
+import { getSession } from "auth/server";
 import { UserPreferencesZodSchema } from "app-types/user";
 import { userRepository } from "lib/db/repository";
 import { NextResponse } from "next/server";

@@ -21,7 +21,7 @@ import { toAny } from "lib/utils";
 import { MCPToolInfo } from "app-types/mcp";
 import { serverCache } from "lib/cache";
 import { CacheKeys } from "lib/cache/cache-keys";
-import { getSession } from "lib/auth";
+import { getSession } from "auth/server";
 import logger from "logger";
 import { redirect } from "next/navigation";
 

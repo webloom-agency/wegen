@@ -10,7 +10,7 @@ import { useShallow } from "zustand/shallow";
 import { useEffect } from "react";
 import { isShortcutEvent, Shortcuts } from "@/lib/keyboard-shortcuts";
 import { VoiceChatBot } from "@/components/voice-chat-bot";
-import { authClient } from "lib/auth/auth-client";
+import { authClient } from "auth/client";
 
 export default function ChatLayout({
   children,

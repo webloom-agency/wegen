@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSession } from "lib/auth";
+import { getSession } from "auth/server";
 import { Message, smoothStream, streamText } from "ai";
 import { customModelProvider } from "lib/ai/models";
 import logger from "logger";

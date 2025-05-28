@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getSession } from "lib/auth";
+import { getSession } from "auth/server";
 import { AllowedMCPServer } from "app-types/mcp";
 import { chatRepository } from "lib/db/repository";
 import { filterToolsByAllowedMCPServers, mergeSystemPrompt } from "../helper";

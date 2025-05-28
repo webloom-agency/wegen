@@ -20,7 +20,7 @@ import { ExamplePlaceholder } from "ui/example-placeholder";
 import { Textarea } from "ui/textarea";
 import { Button } from "ui/button";
 import { Loader } from "lucide-react";
-import { authClient } from "lib/auth/auth-client";
+import { authClient } from "auth/client";
 const responseStyleExamples = [
   "eg. keep explanations brief and to the point",
   "eg. when learning new concepts, I find analogies particularly helpful",
