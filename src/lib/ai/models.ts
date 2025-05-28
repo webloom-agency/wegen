@@ -3,8 +3,7 @@ import { openai } from "@ai-sdk/openai";
 import { google } from "@ai-sdk/google";
 import { anthropic } from "@ai-sdk/anthropic";
 import { xai } from "@ai-sdk/xai";
-import { LanguageModel, wrapLanguageModel } from "ai";
-import { gemmaToolMiddleware } from "@ai-sdk-tool/parser";
+import { LanguageModel } from "ai";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 
 const ollama = createOllama({
@@ -36,16 +35,8 @@ export const allModels = {
   },
   ollama: {
     "gemma3:1b": ollama("gemma3:1b"),
-    "gemma3:4b": wrapLanguageModel({
-      model: ollama("gemma3:4b", {
-        simulateStreaming: true,
-      }),
-      middleware: gemmaToolMiddleware,
-    }),
-    "gemma3:12b": wrapLanguageModel({
-      model: ollama("gemma3:12b"),
-      middleware: gemmaToolMiddleware,
-    }),
+    "gemma3:4b": ollama("gemma3:4b"),
+    "gemma3:12b": ollama("gemma3:12b"),
   },
   openRouter: {
     "qwen3-8b:free": openrouter("qwen/qwen3-8b:free"),
@@ -61,6 +52,8 @@ export const isToolCallUnsupportedModel = (model: LanguageModel) => {
     allModels.xai["grok-3-mini"],
     allModels.google["gemini-2.0-thinking"],
     allModels.ollama["gemma3:1b"],
+    allModels.ollama["gemma3:4b"],
+    allModels.ollama["gemma3:12b"],
     allModels.openRouter["qwen3-8b:free"],
     allModels.openRouter["qwen3-14b:free"],
   ].includes(model);
