@@ -63,7 +63,9 @@ export function AppSidebarThreads() {
   };
   useEffect(() => {
     if (error) {
-      authClient.signOut();
+      authClient.signOut().finally(() => {
+        window.location.reload();
+      });
     }
   }, [error]);
 

@@ -11,12 +11,13 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/ping")) {
     return new Response("pong", { status: 200 });
   }
-  const sessionCookie = getSessionCookie(request);
-  console.log("sessionCookie", sessionCookie);
-  // if (!sessionCookie) {
-  //   return NextResponse.redirect(new URL("/", request.url));
-  // }
+  const sessionCookie = getSessionCookie(request, {
+    cookiePrefix: "mcc",
+  });
 
+  if (!sessionCookie) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
   return NextResponse.next();
 }
 

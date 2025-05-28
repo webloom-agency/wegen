@@ -34,9 +34,9 @@ export default function LoginPage() {
         {
           email: formData.email,
           password: formData.password,
+          callbackURL: "/",
         },
         {
-          redirectTo: "/",
           onError(ctx) {
             toast.error(ctx.error.message || ctx.error.statusText);
           },

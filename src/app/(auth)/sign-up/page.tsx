@@ -20,9 +20,11 @@ import { safe } from "ts-safe";
 import { UserZodSchema } from "app-types/user";
 import { existsByEmailAction } from "@/app/api/auth/actions";
 import { authClient } from "lib/auth/auth-client";
+import { useRouter } from "next/navigation";
 
 export default function SignUpPage() {
   const [step, setStep] = useState(1);
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useObjectState({
     email: "",
@@ -84,11 +86,13 @@ export default function SignUpPage() {
           email: formData.email,
           password: formData.password,
           name: formData.name,
-          callbackURL: "/",
         },
         {
           onError(ctx) {
             toast.error(ctx.error.message || ctx.error.statusText);
+          },
+          onSuccess() {
+            router.push("/");
           },
         },
       ),

@@ -30,9 +30,9 @@ import { capitalizeFirstLetter } from "lib/utils";
 import { authClient } from "lib/auth/auth-client";
 
 export function AppSidebarUser() {
-  const { data: session } = authClient.useSession();
-  const user = session?.user;
   const appStoreMutate = appStore((state) => state.mutate);
+  const { data } = authClient.useSession();
+  const user = data?.user;
 
   const isMounted = useMounted();
   const { theme = "slate", resolvedTheme, setTheme } = useTheme();
@@ -44,12 +44,10 @@ export function AppSidebarUser() {
   };
 
   const logout = () => {
-    authClient.signOut();
+    authClient.signOut().finally(() => {
+      window.location.reload();
+    });
   };
-
-  if (!user) {
-    return null;
-  }
 
   return (
     <SidebarMenu>
@@ -63,12 +61,12 @@ export function AppSidebarUser() {
               <Avatar className="rounded-full size-7 grayscale">
                 <AvatarImage
                   className="object-cover"
-                  src={user.image || "/pf.png"}
-                  alt={user.name || ""}
+                  src={user?.image || "/pf.png"}
+                  alt={user?.name || ""}
                 />
-                <AvatarFallback>{user.name?.slice(0, 1) || ""}</AvatarFallback>
+                <AvatarFallback>{user?.name?.slice(0, 1) || ""}</AvatarFallback>
               </Avatar>
-              {user.email}
+              {user?.email}
               <ChevronsUpDown className="ml-auto" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
@@ -81,15 +79,15 @@ export function AppSidebarUser() {
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-full">
                   <AvatarImage
-                    src={user.image || "/pf.png"}
-                    alt={user.name || ""}
+                    src={user?.image || "/pf.png"}
+                    alt={user?.name || ""}
                   />
                   <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
+                  <span className="truncate font-medium">{user?.name}</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {user.email}
+                    {user?.email}
                   </span>
                 </div>
               </div>

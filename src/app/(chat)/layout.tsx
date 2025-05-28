@@ -1,4 +1,5 @@
 "use client";
+
 import { SidebarProvider } from "ui/sidebar";
 import { AppSidebar } from "@/components/layouts/app-sidebar";
 import { AppHeader } from "@/components/layouts/app-header";
@@ -9,9 +10,12 @@ import { useShallow } from "zustand/shallow";
 import { useEffect } from "react";
 import { isShortcutEvent, Shortcuts } from "@/lib/keyboard-shortcuts";
 import { VoiceChatBot } from "@/components/voice-chat-bot";
+import { authClient } from "lib/auth/auth-client";
+
 export default function ChatLayout({
   children,
 }: { children: React.ReactNode }) {
+  const { isPending, data } = authClient.useSession();
   const [openChatPreferences, openShortcutsPopup, appStoreMutate] = appStore(
     useShallow((state) => [
       state.openChatPreferences,
@@ -43,6 +47,10 @@ export default function ChatLayout({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  if (isPending || !data) {
+    return null;
+  }
 
   return (
     <SidebarProvider>
