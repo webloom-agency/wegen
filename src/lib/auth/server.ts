@@ -3,30 +3,25 @@ import { IS_DEV, IS_VERCEL_ENV } from "lib/const";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { pgDb } from "lib/db/pg/db.pg";
+import { headers } from "next/headers";
+import { toast } from "sonner";
 import {
   AccountSchema,
   SessionSchema,
   UserSchema,
   VerificationSchema,
 } from "lib/db/pg/schema.pg";
-import { headers } from "next/headers";
-import { toast } from "sonner";
+import { v1_4_0_user_migrate_middleware } from "./v1.4.0_user-migrate-middleware";
 export const auth = betterAuth({
   plugins: [nextCookies()],
   database: drizzleAdapter(pgDb, {
     provider: "pg",
+    debugLogs: IS_DEV,
     schema: {
       user: UserSchema,
       session: SessionSchema,
       account: AccountSchema,
       verification: VerificationSchema,
-    },
-    debugLogs: {
-      create: true,
-      findMany: true,
-      findOne: true,
-      update: true,
-      logCondition: () => IS_DEV,
     },
   }),
   baseURL:
@@ -46,6 +41,7 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day (every 1 day the session expiration is updated)
   },
+
   advanced: {
     useSecureCookies:
       process.env.NO_HTTPS == "1"
@@ -55,7 +51,6 @@ export const auth = betterAuth({
       generateId: false,
     },
   },
-
   account: {
     accountLinking: {
       trustedProviders: ["google", "github"],
@@ -78,6 +73,11 @@ export const auth = betterAuth({
   //     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
   //   },
   // },
+  hooks: {
+    async before(inputContext) {
+      return v1_4_0_user_migrate_middleware(inputContext);
+    },
+  },
 });
 
 export const getSession = async () => {
