@@ -79,6 +79,7 @@
 }
 
 [data-theme='default-dark'] {
+  color-scheme: dark;
   --background: oklch(0.21 0.004 285.885);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.006 285.885);
@@ -146,6 +147,7 @@
 
 /* Zinc Dark */
 [data-theme='zinc-dark'] {
+  color-scheme: dark;
   --background: hsl(240 10% 3.9%);
   --foreground: hsl(0 0% 98%);
   --card: hsl(240 10% 3.9%);
@@ -219,6 +221,7 @@
 
 /* Slate Dark */
 [data-theme='slate-dark'] {
+  color-scheme: dark;
   --background: hsl(222.2 84% 4.9%);
   --foreground: hsl(210 40% 98%);
   --card: hsl(222.2 84% 4.9%);
@@ -292,6 +295,7 @@
 
 /* Stone Dark */
 [data-theme='stone-dark'] {
+  color-scheme: dark;
   --background: hsl(20 14.3% 4.1%);
   --foreground: hsl(60 9.1% 97.8%);
   --card: hsl(20 14.3% 4.1%);
@@ -365,6 +369,7 @@
 
 /* Gray Dark */
 [data-theme='gray-dark'] {
+  color-scheme: dark;
   --background: hsl(224 71.4% 4.1%);
   --foreground: hsl(210 20% 98%);
   --card: hsl(224 71.4% 4.1%);
@@ -438,6 +443,7 @@
 
 /* Blue Dark */
 [data-theme='blue-dark'] {
+  color-scheme: dark;
   --background: hsl(222.2 84% 4.9%);
   --foreground: hsl(210 40% 98%);
   --card: hsl(222.2 84% 4.9%);
@@ -511,6 +517,7 @@
 
 /* Orange Dark */
 [data-theme='orange-dark'] {
+  color-scheme: dark;
   --background: hsl(20 14.3% 4.1%);
   --foreground: hsl(60 9.1% 97.8%);
   --card: hsl(20 14.3% 4.1%);
@@ -584,6 +591,7 @@
 
 /* Bubblegum Pop Dark */
 [data-theme='bubblegum-pop-dark'] {
+  color-scheme: dark;
   --background: hsl(330 50% 10%);
   --foreground: hsl(330 10% 95%);
   --card: hsl(330 50% 12%);
@@ -658,6 +666,7 @@
 
 /* Cyberpunk Neon Dark */
 [data-theme='cyberpunk-neon-dark'] {
+  color-scheme: dark;
   --background: hsl(220 80% 5%);
   --foreground: hsl(220 20% 98%);
   --card: hsl(220 80% 7%);
@@ -732,6 +741,7 @@
 
 /* Retro Arcade Dark */
 [data-theme='retro-arcade-dark'] {
+  color-scheme: dark;
   --background: hsl(240 10% 5%);
   --foreground: hsl(60 10% 95%);
   --card: hsl(240 10% 7%);
@@ -805,6 +815,7 @@
 }
 /* Tropical Paradise Dark */
 [data-theme='tropical-paradise-dark'] {
+  color-scheme: dark;
   --background: hsl(200 70% 10%);
   --foreground: hsl(180 50% 97%);
   --card: hsl(200 70% 12%);
@@ -879,6 +890,7 @@
 
 /* Steampunk Cogs Dark */
 [data-theme='steampunk-cogs-dark'] {
+  color-scheme: dark;
   --background: hsl(30 30% 10%);
   --foreground: hsl(30 20% 95%);
   --card: hsl(30 30% 12%);
@@ -953,6 +965,7 @@
 
 /* Neon Synthwave Dark */
 [data-theme='neon-synthwave-dark'] {
+  color-scheme: dark;
   --background: hsl(280 50% 5%);
   --foreground: hsl(280 30% 95%);
   --card: hsl(280 50% 7%);
@@ -1027,6 +1040,7 @@
 
 /* Pastel Kawaii Dark */
 [data-theme='pastel-kawaii-dark'] {
+  color-scheme: dark;
   --background: hsl(270 30% 10%);
   --foreground: hsl(60 30% 97%);
   --card: hsl(270 30% 12%);
@@ -1101,6 +1115,7 @@
 
 /* Space Odyssey Dark */
 [data-theme='space-odyssey-dark'] {
+  color-scheme: dark;
   --background: hsl(230 50% 3%);
   --foreground: hsl(220 20% 97%);
   --card: hsl(230 50% 5%);
@@ -1175,6 +1190,7 @@
 
 /* Vintage Vinyl Dark */
 [data-theme='vintage-vinyl-dark'] {
+  color-scheme: dark;
   --background: hsl(30 15% 10%);
   --foreground: hsl(30 10% 98%);
   --card: hsl(30 15% 12%);
@@ -1249,6 +1265,7 @@
 
 /* Zen Garden Dark */
 [data-theme='zen-garden-dark'] {
+  color-scheme: dark;
   --background: hsl(90 15% 10%);
   --foreground: hsl(90 10% 98%);
   --card: hsl(90 15% 12%);
@@ -1323,6 +1340,7 @@
 
 /* Misty Harbor Dark */
 [data-theme='misty-harbor-dark'] {
+  color-scheme: dark;
   --background: hsl(210 20% 10%);
   --foreground: hsl(210 15% 98%);
   --card: hsl(210 20% 12%);
@@ -1397,6 +1415,7 @@
 
 /* Pink Dark */
 [data-theme='pink-dark'] {
+  color-scheme: dark;
   --background: hsl(340 50% 8%);
   --foreground: hsl(340 10% 95%);
   --card: hsl(340 50% 10%);
