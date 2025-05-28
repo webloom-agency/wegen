@@ -11,9 +11,7 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/ping")) {
     return new Response("pong", { status: 200 });
   }
-  const sessionCookie = getSessionCookie(request, {
-    cookiePrefix: "mcc",
-  });
+  const sessionCookie = getSessionCookie(request);
 
   if (!sessionCookie) {
     return NextResponse.redirect(new URL("/login", request.url));

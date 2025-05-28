@@ -46,7 +46,6 @@ export const auth = betterAuth({
     database: {
       generateId: false,
     },
-    cookiePrefix: "mcc",
   },
 
   account: {
