@@ -5,7 +5,7 @@
 [![MCP Supported](https://img.shields.io/badge/MCP-Supported-00c853)](https://modelcontextprotocol.io/introduction)
 [![Discord](https://img.shields.io/discord/gCRu69Upnp?label=Discord\&logo=discord\&color=5865F2)](https://discord.gg/gCRu69Upnp)
 
-[![Vercel로 배포하기](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/cgoinglove/mcp-client-chatbot&env=OPENAI_API_KEY&env=AUTH_SECRET&envDescription=Learn+more+about+how+to+get+the+API+Keys+for+the+application&envLink=https://github.com/cgoinglove/mcp-client-chatbot/blob/main/.env.example&demo-title=MCP+Client+Chatbot&demo-description=An+Open-Source+MCP+Chatbot+Template+Built+With+Next.js+and+the+AI+SDK+by+Vercel.&products=[{%22type%22:%22integration%22,%22protocol%22:%22storage%22,%22productSlug%22:%22neon%22,%22integrationSlug%22:%22neon%22}])
+[![Vercel로 배포하기](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/cgoinglove/mcp-client-chatbot&env=OPENAI_API_KEY&env=BETTER_AUTH_SECRET&envDescription=Learn+more+about+how+to+get+the+API+Keys+for+the+application&envLink=https://github.com/cgoinglove/mcp-client-chatbot/blob/main/.env.example&demo-title=MCP+Client+Chatbot&demo-description=An+Open-Source+MCP+Chatbot+Template+Built+With+Next.js+and+the+AI+SDK+by+Vercel.&products=[{%22type%22:%22integration%22,%22protocol%22:%22storage%22,%22productSlug%22:%22neon%22,%22integrationSlug%22:%22neon%22}])
 
 **MCP Client Chatbot**은 [OpenAI](https://openai.com/), [Anthropic](https://www.anthropic.com/), [Google](https://ai.google.dev/), [Ollama](https://ollama.com/) 등 다양한 AI 모델 제공자를 지원하는 다용도의 챗 인터페이스입니다.
 **복잡한 설정 없이 100% 로컬 환경에서 즉시 실행이 가능**하여, 사용자는 개인 컴퓨터나 서버에서 컴퓨팅 자원을 완전히 제어할 수 있습니다.
@@ -178,11 +178,11 @@ pnpm docker-compose:up
 GOOGLE_GENERATIVE_AI_API_KEY=****
 OPENAI_API_KEY=****
 ANTHROPIC_API_KEY=****
-AUTH_SECRET=
+BETTER_AUTH_SECRET=
 POSTGRES_URL=
 ```
 
-`AUTH_SECRET`은 `pnpx auth secret` 명령으로 생성하세요.
+`BETTER_AUTH_SECRET`은 `pnpx auth secret` 명령으로 생성하세요.
 
 ---
 

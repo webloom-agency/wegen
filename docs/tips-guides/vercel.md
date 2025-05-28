@@ -2,7 +2,7 @@
 
 1. **Click this button** to start the deployment process:
 
-   [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/cgoinglove/mcp-client-chatbot&env=OPENAI_API_KEY&env=AUTH_SECRET&envDescription=Learn+more+about+how+to+get+the+API+Keys+for+the+application&envLink=https://github.com/cgoinglove/mcp-client-chatbot/blob/main/.env.example&demo-title=MCP+Client+Chatbot&demo-description=An+Open-Source+MCP+Chatbot+Template+Built+With+Next.js+and+the+AI+SDK+by+Vercel.&products=[{"type":"integration","protocol":"storage","productSlug":"neon","integrationSlug":"neon"}])
+   [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/cgoinglove/mcp-client-chatbot&env=OPENAI_API_KEY&env=BETTER_AUTH_SECRET&envDescription=Learn+more+about+how+to+get+the+API+Keys+for+the+application&envLink=https://github.com/cgoinglove/mcp-client-chatbot/blob/main/.env.example&demo-title=MCP+Client+Chatbot&demo-description=An+Open-Source+MCP+Chatbot+Template+Built+With+Next.js+and+the+AI+SDK+by+Vercel.&products=[{"type":"integration","protocol":"storage","productSlug":"neon","integrationSlug":"neon"}])
 
 2. **Click the "Create" button** on Vercel to begin setting up your project.
 
@@ -16,9 +16,9 @@
 
 
 4. **Add Environment Variables.**
-   You can enter placeholder values for the environment variables at this stage, or use the actual values if you have them ready. If you prefer, you can enter temporary values now and update them later in the project's settings after deployment is complete. However, **AUTH_SECRET** must be set at this stage.
+   You can enter placeholder values for the environment variables at this stage, or use the actual values if you have them ready. If you prefer, you can enter temporary values now and update them later in the project's settings after deployment is complete. However, **BETTER_AUTH_SECRET** must be set at this stage.
 
-   - You can generate an AUTH_SECRET [here](https://auth-secret-gen.vercel.app/).
+   - You can generate an BETTER_AUTH_SECRET [here](https://auth-secret-gen.vercel.app/).
 
     <img width="1469" alt="step4" src="https://github.com/user-attachments/assets/a0ca9aab-e32a-42ff-8714-707cda387c2a" />
 

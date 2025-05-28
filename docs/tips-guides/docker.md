@@ -22,7 +22,7 @@ Docker provides a streamlined and efficient method for managing containerized ap
     Run `pnpm initial:env` to generate the `.env` file.  
     Then, enter the API keys only for the LLM providers you plan to use.
 
-    You can generate an authentication secret (`AUTH_SECRET`) with the command:  
+    You can generate an authentication secret (`BETTER_AUTH_SECRET`) with the command:  
     `pnpx auth secret`
 
     For the database, Docker will handle all necessary configuration automatically,  
