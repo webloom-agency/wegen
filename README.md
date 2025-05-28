@@ -184,7 +184,10 @@ OLLAMA_BASE_URL=http://localhost:11434/api
 AUTH_SECRET=
 POSTGRES_URL=
 FILE_BASED_MCP_CONFIG=false
+DISABLE_SIGN_UP=false
 ```
+
+- `DISABLE_SIGN_UP`: Set to "true" to disable user registration. Default is "false" (user registration enabled).
 
 for auth secret run `pnpx auth secret`
 

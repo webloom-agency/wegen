@@ -180,9 +180,12 @@ OPENAI_API_KEY=****
 ANTHROPIC_API_KEY=****
 BETTER_AUTH_SECRET=
 POSTGRES_URL=
+DISABLE_SIGN_UP=false
 ```
 
 `BETTER_AUTH_SECRET`은 `pnpx auth secret` 명령으로 생성하세요.
+
+- `DISABLE_SIGN_UP`: "true"로 설정하면 사용자 등록이 비활성화됩니다. 기본값은 "false"(사용자 등록 활성화)입니다.
 
 ---
 
