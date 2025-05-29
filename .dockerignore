@@ -55,4 +55,4 @@ local-data
 .cursor
 *.ignore
 .mcp-config.json
-
+.next
