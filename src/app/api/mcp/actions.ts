@@ -57,6 +57,9 @@ export async function insertMcpClientAction(
   name: string,
   config: MCPServerConfig,
 ) {
+  if (process.env.NOT_ALLOW_ADD_MCP_SERVERS) {
+    throw new Error("Not allowed to add MCP servers");
+  }
   // Validate name to ensure it only contains alphanumeric characters and hyphens
   const nameSchema = z.string().regex(/^[a-zA-Z0-9\-]+$/, {
     message:

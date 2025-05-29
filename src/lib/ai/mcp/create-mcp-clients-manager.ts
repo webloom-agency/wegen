@@ -64,9 +64,6 @@ export class MCPClientsManager {
    * Adds a new client with the given name and configuration
    */
   async addClient(name: string, serverConfig: MCPServerConfig) {
-    if (process.env.NOT_ALLOW_ADD_MCP_SERVERS) {
-      throw new Error("Not allowed to add MCP servers");
-    }
     if (this.storage) {
       if (!(await this.storage.has(name))) {
         await this.storage.save(name, serverConfig);
