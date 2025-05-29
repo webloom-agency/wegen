@@ -137,7 +137,7 @@ export default function SignInPage() {
             </span>
             <div className="flex-1 h-px bg-accent"></div>
           </div>
-          <div className="flex gap-4 w-full">
+          <div className="flex gap-2 w-full">
             <Button variant="outline" onClick={googleSignIn} className="flex-1">
               <GoogleIcon className="size-4 fill-foreground" />
               Google
