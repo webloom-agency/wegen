@@ -102,7 +102,7 @@ export default function SignUpPage() {
           <Button variant="ghost">Login</Button>
         </Link>
       </div>
-      <Card className="w-full md:max-w-md bg-background border-none mx-auto gap-0">
+      <Card className="w-full md:max-w-md bg-background border-none mx-auto gap-0 shadow-none">
         <CardHeader>
           <CardTitle className="text-2xl text-center ">
             Create an account
