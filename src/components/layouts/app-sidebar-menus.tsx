@@ -1,3 +1,4 @@
+"use client";
 import { TooltipContent } from "ui/tooltip";
 import { SidebarMenuButton } from "ui/sidebar";
 import { Tooltip, TooltipTrigger } from "ui/tooltip";
@@ -9,8 +10,11 @@ import { TooltipProvider } from "ui/tooltip";
 import Link from "next/link";
 import { Library, MessageCircleDashed } from "lucide-react";
 import { getShortcutKeyList, Shortcuts } from "lib/keyboard-shortcuts";
+import { useRouter } from "next/navigation";
 
 export function AppSidebarMenus({ isOpen }: { isOpen: boolean }) {
+  const router = useRouter();
+
   return (
     <SidebarGroup className={cn(isOpen && "px-4")}>
       <SidebarGroupContent>
@@ -18,7 +22,14 @@ export function AppSidebarMenus({ isOpen }: { isOpen: boolean }) {
           <TooltipProvider>
             <Tooltip>
               <SidebarMenuItem>
-                <Link href="/">
+                <Link
+                  href="/"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    router.push(`/`);
+                    router.refresh();
+                  }}
+                >
                   <TooltipTrigger asChild>
                     <SidebarMenuButton
                       className={cn(
