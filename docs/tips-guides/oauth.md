@@ -12,7 +12,7 @@ To use Google as a social provider, you need to get your Google credentials. You
 - If you change the base path of your authentication routes, update the redirect URL accordingly.
 - After creation, copy your **Client ID** and **Client Secret** and add them to your `.env` file:
   ```
-  NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_client_id
+  GOOGLE_CLIENT_ID=your_client_id
   GOOGLE_CLIENT_SECRET=your_client_secret
   ```
 
@@ -27,7 +27,7 @@ To use GitHub sign in, you need a client ID and client secret. You can get them 
 - **Important:** You MUST include the `user:email` scope in your GitHub app to ensure the application can access the user's email address.
 - Add your credentials to your `.env` file:
   ```
-  NEXT_PUBLIC_GITHUB_CLIENT_ID=your_client_id
+  GITHUB_CLIENT_ID=your_client_id
   GITHUB_CLIENT_SECRET=your_client_secret
   ```
 
@@ -36,9 +36,9 @@ To use GitHub sign in, you need a client ID and client secret. You can get them 
 Make sure your `.env` file contains the following variables:
 
 ```
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
-NEXT_PUBLIC_GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
 ```
 

@@ -72,12 +72,12 @@ export const auth = betterAuth({
   },
   socialProviders: {
     github: {
-      clientId: process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || "",
+      clientId: process.env.GITHUB_CLIENT_ID || "",
       clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
     },
     google: {
       prompt: "select_account",
-      clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     },
   },
@@ -113,7 +113,6 @@ async function v1_4_0_user_migrate_middleware(
 ) {
   const isSignIn = request.path?.startsWith("/sign-in/email");
   if (!isSignIn) return request;
-  console.log({ isSignIn });
   const { email, password: plainPassword } = (request.body ?? {}) as {
     email: string;
     password: string;

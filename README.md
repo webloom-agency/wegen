@@ -208,9 +208,9 @@ FILE_BASED_MCP_CONFIG=false
 
 # === OAuth Settings (Optional) ===
 # Fill in these values only if you want to enable Google/GitHub login
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
-NEXT_PUBLIC_GITHUB_CLIENT_ID=
+GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
 ```
 ---

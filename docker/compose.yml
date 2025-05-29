@@ -8,8 +8,8 @@ services:
     environment:
       - NO_HTTPS=1
     env_file:
-      - ../.env # root .env
-      - .env # docker .env
+      - .env.docker # docker .env
+      - .env
     dns:
       - 8.8.8.8 # Google's public DNS server
       - 8.8.4.4 # Google's public DNS server
@@ -22,7 +22,8 @@ services:
   postgres:
     image: postgres:17
     env_file:
-      - .env # docker .env
+      - .env.docker # docker .env
+      - .env
     networks:
       - mcp_client_network
     volumes:

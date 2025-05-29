@@ -4,7 +4,7 @@ import path from "path";
 // Get current directory path
 const ROOT = process.cwd();
 
-const DOCKER_ENV_PATH = path.join(ROOT, "docker", ".env");
+const DOCKER_ENV_PATH = path.join(ROOT, "docker", ".env.docker");
 
 const DOCKER_ENV_CONTENT =
   [
