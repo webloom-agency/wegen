@@ -45,7 +45,7 @@ export const Greeting = () => {
     >
       <div className="rounded-xl p-6 flex flex-col gap-2 leading-relaxed text-center">
         <h1 className="text-4xl font-semibold">
-          {word ? <FlipWords words={[word]} /> : ""}
+          {word ? <FlipWords words={[word]} className="text-primary" /> : ""}
         </h1>
         <div className="text-4xl"></div>
       </div>

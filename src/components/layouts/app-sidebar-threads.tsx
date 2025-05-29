@@ -53,7 +53,6 @@ export function AppSidebarThreads() {
     await toast.promise(deleteThreadsAction(), {
       loading: "Deleting all threads...",
       success: () => {
-        storeMutate({ threadList: [] });
         mutate("threads");
         router.push("/");
         return "All threads deleted";
