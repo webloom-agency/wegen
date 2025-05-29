@@ -6,11 +6,21 @@
 [![MCP Supported](https://img.shields.io/badge/MCP-Supported-00c853)](https://modelcontextprotocol.io/introduction)
 [![Discord](https://img.shields.io/discord/1374047276074537103?label=Discord&logo=discord&color=5865F2)](https://discord.gg/gCRu69Upnp)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/cgoinglove/mcp-client-chatbot&env=OPENAI_API_KEY&env=AUTH_SECRET&envDescription=Learn+more+about+how+to+get+the+API+Keys+for+the+application&envLink=https://github.com/cgoinglove/mcp-client-chatbot/blob/main/.env.example&demo-title=MCP+Client+Chatbot&demo-description=An+Open-Source+MCP+Chatbot+Template+Built+With+Next.js+and+the+AI+SDK+by+Vercel.&products=[{"type":"integration","protocol":"storage","productSlug":"neon","integrationSlug":"neon"}])
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/cgoinglove/mcp-client-chatbot&env=BETTER_AUTH_SECRET&env=OPENAI_API_KEY&env=GOOGLE_GENERATIVE_AI_API_KEY&env=ANTHROPIC_API_KEY&envDescription=Learn+more+about+how+to+get+the+API+Keys+for+the+application&envLink=https://github.com/cgoinglove/mcp-client-chatbot/blob/main/.env.example&demo-title=MCP+Client+Chatbot&demo-description=An+Open-Source+MCP+Chatbot+Template+Built+With+Next.js+and+the+AI+SDK+by+Vercel.&products=[{"type":"integration","protocol":"storage","productSlug":"neon","integrationSlug":"neon"}])
 
-**MCP Client Chatbot** is a versatile chat interface that supports various AI model providers like [OpenAI](https://openai.com/), [Anthropic](https://www.anthropic.com/), [Google](https://ai.google.dev/), and [Ollama](https://ollama.com/). **It is designed for instant execution in 100% local environments without complex configuration**, enabling users to fully control computing resources on their personal computer or server.
+**MCP Client Chatbot** is a versatile chat interface that supports various AI model providers like [OpenAI](https://openai.com/), [Anthropic](https://www.anthropic.com/), [Gemini](https://gemini.google.com/), and [Ollama](https://ollama.com/). 
+
+It is also the first known speech-based chatbot with integrated MCP Server support, enabling real-time multimodal interactions.
+
+Our mission is to build the **most powerful tool-using chatbot**, combining the best of language models and tool orchestration.  
+
+We aim to create diverse UX and features that allow LLMs to actively use tools — such as `@tool` mentions for direct invocation,  
+enabling **speech-based chat to access and use MCP server tools**, quick tool presets for fast selection,  
+and the upcoming **workflow with tools** feature for multi-step automation.
+
 
 > Built with [Vercel AI SDK](https://sdk.vercel.ai) and [Next.js](https://nextjs.org/), this app adopts modern patterns for building AI chat interfaces. Leverage the power of [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) to seamlessly integrate external tools into your chat experience.
+
 
 **🌟 Open Source Project**
 MCP Client Chatbot is a 100% community-driven open source project.
@@ -31,12 +41,11 @@ MCP Client Chatbot is a 100% community-driven open source project.
     - [Environment Variables](#environment-variables)
     - [MCP Server Setup](#mcp-server-setup)
   - [💡 Tips \& Guides](#-tips--guides)
-    - [Project Feature with MCP Server:](#project-feature-with-mcp-server)
     - [Docker Hosting Guide:](#docker-hosting-guide)
     - [Vercel Hosting Guide:](#vercel-hosting-guide)
+    - [Project Feature with MCP Server:](#project-feature-with-mcp-server)
   - [🗺️ Roadmap: Next Features](#️-roadmap-next-features)
     - [🚀 Deployment \& Hosting ✅](#-deployment--hosting-)
-    - [🗣️ Audio \& Real-Time Chat](#️-audio--real-time-chat)
     - [📎 File \& Image](#-file--image)
     - [🔄 MCP Workflow](#-mcp-workflow)
     - [🛠️ Built-in Tools \& UX](#️-built-in-tools--ux)
@@ -112,6 +121,7 @@ Visualize chatbot responses as pie, bar, or line charts using the built-in tool 
 
 - **💻 100% Local Execution:** Run directly on your PC or server without complex deployment, fully utilizing and controlling your computing resources.
 - **🤖 Multiple AI Model Support:** Flexibly switch between providers like OpenAI, Anthropic, Google AI, and Ollama.
+- **🗣️ Real-time voice chat powered by MCP Server:** Currently supports **OpenAI** provider (Gemini support coming soon)
 - **🛠️ Powerful MCP Integration:** Seamlessly connect external tools (browser automation, database operations, etc.) into chat via Model Context Protocol.
 - **🚀 Standalone Tool Tester:** Test and debug MCP tools separately from the main chat interface.
 - **💬 Intuitive Mentions + Tool Control:** Trigger tools with `@`, and control when they're used via `Auto` / `Manual` / `None` modes.
@@ -173,24 +183,35 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to get start
 
 ### Environment Variables
 
-The `pnpm i` command generates a `.env` file. Add your API keys there
-You only need to enter the keys for the providers you plan to use:
+The `pnpm i` command generates a `.env` file. Add your API keys there.
+
 ```dotenv
+# === LLM Provider API Keys ===
+# You only need to enter the keys for the providers you plan to use
 GOOGLE_GENERATIVE_AI_API_KEY=****
 OPENAI_API_KEY=****
+XAI_API_KEY=****
 ANTHROPIC_API_KEY=****
 OPENROUTER_API_KEY=****
 OLLAMA_BASE_URL=http://localhost:11434/api
-AUTH_SECRET=
-POSTGRES_URL=
+
+# Secret for Better Auth (generate with: npx @better-auth/cli@latest secret)
+BETTER_AUTH_SECRET=****
+
+# === Database ===
+# If you don't have PostgreSQL running locally, start it with: pnpm docker:pg
+POSTGRES_URL=postgres://your_username:your_password@localhost:5432/your_database_name
+
+# Whether to use file-based MCP config (default: false)
 FILE_BASED_MCP_CONFIG=false
-DISABLE_SIGN_UP=false
+
+# === OAuth Settings (Optional) ===
+# Fill in these values only if you want to enable Google/GitHub login
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
 ```
-
-- `DISABLE_SIGN_UP`: Set to "true" to disable user registration. Default is "false" (user registration enabled).
-
-for auth secret run `pnpx auth secret`
-
 ---
 
 ### MCP Server Setup
@@ -207,7 +228,6 @@ You can connect MCP tools via:
       "command": "npx",
       "args": ["@playwright/mcp@latest"]
     },
-    ...
 }
 ```
 
@@ -216,14 +236,15 @@ You can connect MCP tools via:
 
 Here are some practical tips and guides for using MCP Client Chatbot:
 
-### [Project Feature with MCP Server](./docs/tips-guides/project_with_mcp.md): 
-Learn how to integrate system instructions and structures with MCP servers to build an agent that assists with GitHub-based project management.
-
 ### [Docker Hosting Guide](./docs/tips-guides/docker.md):
 Learn how to set up docker.
 
 ### [Vercel Hosting Guide](./docs/tips-guides/vercel.md):
 Learn how to set up vercel.
+
+### [Project Feature with MCP Server](./docs/tips-guides/project_with_mcp.md): 
+Learn how to integrate system instructions and structures with MCP servers to build an agent that assists with GitHub-based project management.
+
 
 
 
@@ -236,12 +257,6 @@ MCP Client Chatbot is evolving with these upcoming features:
 - **Self Hosting:** ✅
   - Easy deployment with Docker Compose ✅
   - Vercel deployment support (MCP Server: SSE only)✅
-
-### 🗣️ Audio & Real-Time Chat
-
-- **Open Audio Real-Time Chat:** ✅
-  - Real-time voice chat with MCP Server integration
-  - Currently supports **OpenAI** provider (Gemini support coming soon)
 
 ### 📎 File & Image
 
