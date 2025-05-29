@@ -38,6 +38,7 @@ MCP 클라이언트 챗봇은 100% 커뮤니티 주도 오픈소스 프로젝트
   - [💡 팁 \& 가이드](#-팁--가이드)
     - [Docker 호스팅 가이드:](#docker-호스팅-가이드)
     - [Vercel 호스팅 가이드:](#vercel-호스팅-가이드)
+    - [OAuth Setup Guide (Google \& GitHub):](#oauth-setup-guide-google--github)
     - [MCP 서버와 함께하는 프로젝트 기능:](#mcp-서버와-함께하는-프로젝트-기능)
   - [🗺️ 로드맵: 다음 기능들](#️-로드맵-다음-기능들)
     - [🚀 배포 \& 호스팅 ✅](#-배포--호스팅-)
@@ -199,9 +200,9 @@ FILE_BASED_MCP_CONFIG=false
 
 # === OAuth 설정 (선택사항) ===
 # Google/GitHub 로그인을 활성화하려는 경우에만 이 값들을 입력하세요
-GOOGLE_CLIENT_ID=
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
-GITHUB_CLIENT_ID=
+NEXT_PUBLIC_GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
 ```
 
@@ -234,6 +235,10 @@ Docker 설정 방법을 배워보세요.
 
 ### [Vercel 호스팅 가이드](./tips-guides/vercel.md):
 Vercel 설정 방법을 배워보세요.
+
+
+### [OAuth Setup Guide (Google & GitHub)](./tips-guides/oauth.md):
+Learn how to configure Google and GitHub OAuth for login functionality.
 
 ### [MCP 서버와 함께하는 프로젝트 기능](./tips-guides/project_with_mcp.md):
 시스템 지시사항과 구조를 MCP 서버와 통합하여 GitHub 기반 프로젝트 관리를 도와주는 에이전트를 구축하는 방법을 배워보세요.

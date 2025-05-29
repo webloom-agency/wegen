@@ -43,6 +43,7 @@ MCP Client Chatbot is a 100% community-driven open source project.
   - [💡 Tips \& Guides](#-tips--guides)
     - [Docker Hosting Guide:](#docker-hosting-guide)
     - [Vercel Hosting Guide:](#vercel-hosting-guide)
+    - [OAuth Setup Guide (Google \& GitHub):](#oauth-setup-guide-google--github)
     - [Project Feature with MCP Server:](#project-feature-with-mcp-server)
   - [🗺️ Roadmap: Next Features](#️-roadmap-next-features)
     - [🚀 Deployment \& Hosting ✅](#-deployment--hosting-)
@@ -207,9 +208,9 @@ FILE_BASED_MCP_CONFIG=false
 
 # === OAuth Settings (Optional) ===
 # Fill in these values only if you want to enable Google/GitHub login
-GOOGLE_CLIENT_ID=
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
-GITHUB_CLIENT_ID=
+NEXT_PUBLIC_GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
 ```
 ---
@@ -241,6 +242,9 @@ Learn how to set up docker.
 
 ### [Vercel Hosting Guide](./docs/tips-guides/vercel.md):
 Learn how to set up vercel.
+
+### [OAuth Setup Guide (Google & GitHub)](./docs/tips-guides/oauth.md):
+Learn how to configure Google and GitHub OAuth for login functionality.
 
 ### [Project Feature with MCP Server](./docs/tips-guides/project_with_mcp.md): 
 Learn how to integrate system instructions and structures with MCP servers to build an agent that assists with GitHub-based project management.
