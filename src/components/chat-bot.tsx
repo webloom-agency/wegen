@@ -60,6 +60,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     toolChoice,
     allowedAppDefaultToolkit,
     allowedMcpServers,
+    threadList,
   ] = appStore(
     useShallow((state) => [
       state.mutate,
@@ -67,6 +68,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
       state.toolChoice,
       state.allowedAppDefaultToolkit,
       state.allowedMcpServers,
+      state.threadList,
     ]),
   );
 
@@ -103,7 +105,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     generateId: generateUUID,
     experimental_throttle: 100,
     onFinish() {
-      if (window.location.pathname !== `/chat/${threadId}`) {
+      if (threadList[0].id !== threadId) {
         mutate("threads");
       }
     },
