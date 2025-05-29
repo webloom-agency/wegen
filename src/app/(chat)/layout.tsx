@@ -11,11 +11,13 @@ import { useEffect } from "react";
 import { isShortcutEvent, Shortcuts } from "@/lib/keyboard-shortcuts";
 import { VoiceChatBot } from "@/components/voice-chat-bot";
 import { authClient } from "auth/client";
+import { useLatest } from "@/hooks/use-latest";
 
 export default function ChatLayout({
   children,
 }: { children: React.ReactNode }) {
-  const { isPending, data } = authClient.useSession();
+  const { data, refetch } = authClient.useSession();
+  const latestSessionApi = useLatest({ data, refetch });
   const [openChatPreferences, openShortcutsPopup, appStoreMutate] = appStore(
     useShallow((state) => [
       state.openChatPreferences,
@@ -48,7 +50,15 @@ export default function ChatLayout({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  if (isPending || !data) {
+  useEffect(() => {
+    setTimeout(() => {
+      if (!latestSessionApi.current.data?.session) {
+        latestSessionApi.current.refetch();
+      }
+    }, 5000);
+  }, []);
+
+  if (!data) {
     return null;
   }
 
