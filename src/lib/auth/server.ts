@@ -1,4 +1,8 @@
-import { betterAuth } from "better-auth";
+import {
+  betterAuth,
+  MiddlewareInputContext,
+  MiddlewareOptions,
+} from "better-auth";
 import { IS_DEV, IS_VERCEL_ENV } from "lib/const";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
@@ -11,7 +15,11 @@ import {
   UserSchema,
   VerificationSchema,
 } from "lib/db/pg/schema.pg";
-import { v1_4_0_user_migrate_middleware } from "./v1.4.0_user-migrate-middleware";
+import { safe } from "ts-safe";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
+import { compare } from "bcrypt-ts";
+import { toAny } from "lib/utils";
+
 export const auth = betterAuth({
   plugins: [nextCookies()],
   database: drizzleAdapter(pgDb, {
@@ -87,3 +95,103 @@ export const getSession = async () => {
   });
   return session;
 };
+
+/**
+ * Temporary middleware function to support migration from next-auth to better-auth.
+ *
+ * This middleware ensures existing users are properly migrated by moving user passwords
+ * from the user table to the account table. This allows seamless authentication for
+ * users who registered before the migration.
+ *
+ * Note: This middleware will be removed in release version v1.6.0 once the migration
+ * period is complete.
+ */
+async function v1_4_0_user_migrate_middleware(
+  request: MiddlewareInputContext<MiddlewareOptions> & {
+    path?: string;
+  },
+) {
+  const isSignIn = request.path?.startsWith("/sign-in/email");
+  if (!isSignIn) return request;
+  const { email, password: plainPassword } = (request.body ?? {}) as {
+    email: string;
+    password: string;
+  };
+  const oldVersionUserId = await v1_4_0_user_migrate_checkOldVersionUser(
+    email,
+    plainPassword,
+  );
+
+  if (oldVersionUserId) {
+    const newPassword = await auth.$context.then(({ password: { hash } }) => {
+      return hash(plainPassword);
+    });
+
+    await v1_4_0_user_migrate_migrateOldVersionUser(
+      oldVersionUserId,
+      newPassword,
+    );
+
+    request.body = toAny({
+      ...(request.body ?? {}),
+      password: newPassword,
+    });
+  }
+
+  return request;
+}
+
+async function v1_4_0_user_migrate_checkOldVersionUser(
+  email: string,
+  password: string,
+): Promise<string | null> {
+  return safe(async () => {
+    const [user] = await pgDb
+      .select({
+        id: UserSchema.id,
+        email: UserSchema.email,
+        oldPassword: UserSchema.password,
+      })
+      .from(UserSchema)
+      .leftJoin(
+        AccountSchema,
+        and(
+          eq(UserSchema.id, AccountSchema.userId),
+          eq(AccountSchema.providerId, "credential"),
+        ),
+      )
+      .where(
+        and(
+          isNotNull(UserSchema.password),
+          eq(UserSchema.email, email),
+          isNull(AccountSchema.id),
+        ),
+      );
+    if (!user) return null;
+    //
+    const passwordsMatch = await compare(password, user.oldPassword!);
+    return passwordsMatch ? user.id : null;
+  }).orElse(null);
+}
+async function v1_4_0_user_migrate_migrateOldVersionUser(
+  userId: string,
+  newPassword: string,
+): Promise<void> {
+  return pgDb.transaction(async (tx) => {
+    await tx
+      .update(UserSchema)
+      .set({
+        password: null,
+      })
+      .where(eq(UserSchema.id, userId));
+
+    await tx.insert(AccountSchema).values({
+      userId,
+      providerId: "credential",
+      password: newPassword,
+      accountId: userId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  });
+}
