@@ -3,7 +3,7 @@ import {
   MiddlewareInputContext,
   MiddlewareOptions,
 } from "better-auth";
-import { IS_DEV, IS_VERCEL_ENV } from "lib/const";
+import { IS_VERCEL_ENV } from "lib/const";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { pgDb } from "lib/db/pg/db.pg";
@@ -24,7 +24,6 @@ export const auth = betterAuth({
   plugins: [nextCookies()],
   database: drizzleAdapter(pgDb, {
     provider: "pg",
-    // debugLogs: IS_DEV,
     schema: {
       user: UserSchema,
       session: SessionSchema,
@@ -71,16 +70,17 @@ export const auth = betterAuth({
       }
     },
   },
-  // socialProviders: {
-  //   github: {
-  //     clientId: process.env.GITHUB_CLIENT_ID || "",
-  //     clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
-  //   },
-  //   google: {
-  //     clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
-  //     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-  //   },
-  // },
+  socialProviders: {
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID || "",
+      clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
+    },
+    google: {
+      prompt: "select_account",
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+    },
+  },
   hooks: {
     async before(inputContext) {
       return v1_4_0_user_migrate_middleware(inputContext);

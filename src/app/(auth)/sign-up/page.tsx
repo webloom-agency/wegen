@@ -102,8 +102,8 @@ export default function SignUpPage() {
   return (
     <div className="w-full h-full flex flex-col p-4 md:p-8 justify-center relative">
       <div className="w-full flex justify-end absolute top-0 right-0">
-        <Link href="/login">
-          <Button variant="ghost">Login</Button>
+        <Link href="/sign-in">
+          <Button variant="ghost">Sign in</Button>
         </Link>
       </div>
       <Card className="w-full md:max-w-md bg-background border-none mx-auto gap-0 shadow-none">

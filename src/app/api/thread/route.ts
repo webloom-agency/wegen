@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   const session = await getSession();
 
   if (!session?.user.id) {
-    return redirect("/login");
+    return redirect("/sign-in");
   }
 
   const title = await generateTitleFromUserMessageAction({

@@ -18,8 +18,10 @@ import { Loader } from "lucide-react";
 import { safe } from "ts-safe";
 import { authClient } from "auth/client";
 import { toast } from "sonner";
+import { GithubIcon } from "ui/github-icon";
+import { GoogleIcon } from "ui/google-icon";
 
-export default function LoginPage() {
+export default function SignInPage() {
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useObjectState({
@@ -27,7 +29,7 @@ export default function LoginPage() {
     password: "",
   });
 
-  const login = () => {
+  const emailAndPasswordSignIn = () => {
     setLoading(true);
     safe(() =>
       authClient.signIn.email(
@@ -47,16 +49,42 @@ export default function LoginPage() {
       .unwrap();
   };
 
+  const googleSignIn = () => {
+    if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID)
+      return toast.warning("Google client ID is not set");
+    authClient.signIn
+      .social({
+        provider: "google",
+      })
+      .catch((e) => {
+        toast.error(e.error);
+      });
+  };
+
+  const githubSignIn = () => {
+    if (!process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID)
+      return toast.warning("GitHub client ID is not set");
+    authClient.signIn
+      .social({
+        provider: "github",
+      })
+      .catch((e) => {
+        toast.error(e.error);
+      });
+  };
+
   return (
     <div className="w-full h-full flex flex-col p-4 md:p-8 justify-center">
       <Card className="w-full md:max-w-md bg-background border-none mx-auto shadow-none">
         <CardHeader className="my-4">
-          <CardTitle className="text-2xl text-center my-1">Login</CardTitle>
+          <CardTitle className="text-2xl text-center my-1">
+            Welcome Back
+          </CardTitle>
           <CardDescription className="text-center">
-            Enter your email below to login to your account
+            Sign in to continue to your account
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col">
           <div className="flex flex-col gap-6">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
@@ -82,7 +110,7 @@ export default function LoginPage() {
                 placeholder="********"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
-                    login();
+                    emailAndPasswordSignIn();
                   }
                 }}
                 onChange={(e) => setFormData({ password: e.target.value })}
@@ -90,17 +118,39 @@ export default function LoginPage() {
                 required
               />
             </div>
-            <Button className="w-full" onClick={login} disabled={loading}>
+            <Button
+              className="w-full"
+              onClick={emailAndPasswordSignIn}
+              disabled={loading}
+            >
               {loading ? (
                 <Loader className="size-4 animate-spin ml-1" />
               ) : (
-                "Login"
+                "Sign in"
               )}
             </Button>
           </div>
-          <div className="my-8 text-center text-sm">
+          <div className="flex items-center my-4">
+            <div className="flex-1 h-px bg-accent"></div>
+            <span className="px-4 text-sm text-muted-foreground">
+              OR CONTINUE WITH
+            </span>
+            <div className="flex-1 h-px bg-accent"></div>
+          </div>
+          <div className="flex gap-4 w-full">
+            <Button variant="outline" onClick={googleSignIn} className="flex-1">
+              <GoogleIcon className="size-4 fill-foreground" />
+              Google
+            </Button>
+            <Button variant="outline" onClick={githubSignIn} className="flex-1">
+              <GithubIcon className="size-4 fill-foreground" />
+              GitHub
+            </Button>
+          </div>
+
+          <div className="my-8 text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link href="/sign-up" className="underline underline-offset-4">
+            <Link href="/sign-up" className="underline-offset-4 text-primary">
               Sign up
             </Link>
           </div>

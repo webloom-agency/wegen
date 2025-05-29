@@ -58,7 +58,7 @@ export function AppSidebarUser() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               size={"lg"}
             >
-              <Avatar className="rounded-full size-7 grayscale">
+              <Avatar className="rounded-full size-7 border">
                 <AvatarImage
                   className="object-cover"
                   src={user?.image || "/pf.png"}
@@ -66,7 +66,7 @@ export function AppSidebarUser() {
                 />
                 <AvatarFallback>{user?.name?.slice(0, 1) || ""}</AvatarFallback>
               </Avatar>
-              {user?.email}
+              <span className="truncate">{user?.email}</span>
               <ChevronsUpDown className="ml-auto" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
