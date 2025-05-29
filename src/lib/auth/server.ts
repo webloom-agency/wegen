@@ -24,7 +24,7 @@ export const auth = betterAuth({
   plugins: [nextCookies()],
   database: drizzleAdapter(pgDb, {
     provider: "pg",
-    debugLogs: IS_DEV,
+    // debugLogs: IS_DEV,
     schema: {
       user: UserSchema,
       session: SessionSchema,
@@ -113,6 +113,7 @@ async function v1_4_0_user_migrate_middleware(
 ) {
   const isSignIn = request.path?.startsWith("/sign-in/email");
   if (!isSignIn) return request;
+  console.log({ isSignIn });
   const { email, password: plainPassword } = (request.body ?? {}) as {
     email: string;
     password: string;
