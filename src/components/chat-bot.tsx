@@ -86,6 +86,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     api: "/api/chat",
     initialMessages,
     experimental_prepareRequestBody: ({ messages }) => {
+      window.history.replaceState({}, "", `/chat/${threadId}`);
       const lastMessage = messages.at(-1)!;
       vercelAISdkV4ToolInvocationIssueCatcher(lastMessage);
       const request: ChatApiSchemaRequestBody = {
@@ -102,9 +103,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     generateId: generateUUID,
     experimental_throttle: 100,
     onFinish() {
-      const chatPath = `/chat/${threadId}`;
-      if (window.location.pathname !== chatPath) {
-        window.history.replaceState({}, "", chatPath);
+      if (window.location.pathname !== `/chat/${threadId}`) {
         mutate("threads");
       }
     },

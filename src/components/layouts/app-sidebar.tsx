@@ -37,6 +37,7 @@ export function AppSidebar() {
       if (isShortcutEvent(e, Shortcuts.openNewChat)) {
         e.preventDefault();
         router.push("/");
+        router.refresh();
       }
       if (isShortcutEvent(e, Shortcuts.toggleSidebar)) {
         e.preventDefault();
@@ -53,7 +54,14 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-0.5">
             <SidebarMenuButton asChild>
-              <Link href="/">
+              <Link
+                href={`/`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  router.push("/");
+                  router.refresh();
+                }}
+              >
                 <MCPIcon className="size-4 fill-foreground" />
                 <h4 className="font-bold">mcp/chat-bot</h4>
               </Link>
