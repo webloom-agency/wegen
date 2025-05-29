@@ -23,7 +23,7 @@ import {
 } from "lib/ai/mcp/is-mcp-config";
 import { updateMcpClientAction } from "@/app/api/mcp/actions";
 import { insertMcpClientAction } from "@/app/api/mcp/actions";
-import equal from "fast-deep-equal";
+
 import { Alert, AlertDescription, AlertTitle } from "ui/alert";
 import { z } from "zod";
 
