@@ -58,7 +58,6 @@ export default function MCPEditor({
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
 
-  const convertDebounce = useMemo(() => createDebounce(), []);
   const errorDebounce = useMemo(() => createDebounce(), []);
 
   // State for form fields
@@ -147,15 +146,8 @@ export default function MCPEditor({
     const result = safeJSONParse(data);
     errorDebounce.clear();
     if (result.success) {
-      const isDiff = !equal(result.value, config);
       setConfig(result.value as MCPServerConfig);
       setJsonError(null);
-      if (isDiff) {
-        convertDebounce(
-          () => setJsonString(JSON.stringify(result.value, null, 2)),
-          5000,
-        );
-      }
     } else if (data.trim() !== "") {
       errorDebounce(() => {
         setJsonError(
