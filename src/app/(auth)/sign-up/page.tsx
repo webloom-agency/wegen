@@ -21,8 +21,10 @@ import { UserZodSchema } from "app-types/user";
 import { existsByEmailAction } from "@/app/api/auth/actions";
 import { authClient } from "auth/client";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 export default function SignUpPage() {
+  const t = useTranslations("Auth.SignUp");
   const [step, setStep] = useState(1);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -32,11 +34,7 @@ export default function SignUpPage() {
     password: "",
   });
 
-  const steps = [
-    "Start your journey with us by entering your email address",
-    "I'll use this name when we chat",
-    "Create a strong password to secure your account",
-  ];
+  const steps = [t("step1"), t("step2"), t("step3")];
 
   const safeProcessWithLoading = function <T>(fn: () => Promise<T>) {
     setIsLoading(true);
@@ -50,14 +48,14 @@ export default function SignUpPage() {
   const successEmailStep = async () => {
     const { success } = UserZodSchema.shape.email.safeParse(formData.email);
     if (!success) {
-      toast.error("Invalid email address");
+      toast.error(t("invalidEmail"));
       return;
     }
     const exists = await safeProcessWithLoading(() =>
       existsByEmailAction(formData.email),
     ).orElse(false);
     if (exists) {
-      toast.error("Email already exists");
+      toast.error(t("emailAlreadyExists"));
       return;
     }
     setStep(2);
@@ -66,7 +64,7 @@ export default function SignUpPage() {
   const successNameStep = () => {
     const { success } = UserZodSchema.shape.name.safeParse(formData.name);
     if (!success) {
-      toast.error("Name is required");
+      toast.error(t("nameRequired"));
       return;
     }
     setStep(3);
@@ -77,7 +75,7 @@ export default function SignUpPage() {
       formData.password,
     );
     if (!success) {
-      toast.error("Password must be at least 8 characters long");
+      toast.error(t("passwordRequired"));
       return;
     }
     await safeProcessWithLoading(() =>
@@ -103,14 +101,12 @@ export default function SignUpPage() {
     <div className="w-full h-full flex flex-col p-4 md:p-8 justify-center relative">
       <div className="w-full flex justify-end absolute top-0 right-0">
         <Link href="/sign-in">
-          <Button variant="ghost">Sign in</Button>
+          <Button variant="ghost">{t("signIn")}</Button>
         </Link>
       </div>
       <Card className="w-full md:max-w-md bg-background border-none mx-auto gap-0 shadow-none">
         <CardHeader>
-          <CardTitle className="text-2xl text-center ">
-            Create an account
-          </CardTitle>
+          <CardTitle className="text-2xl text-center ">{t("title")}</CardTitle>
           <CardDescription className="py-12">
             <div className="flex flex-col gap-2">
               <p className="text-xs text-muted-foreground text-right">
@@ -211,7 +207,7 @@ export default function SignUpPage() {
                 onClick={backStep}
               >
                 <ChevronLeft className="size-4" />
-                Back
+                {t("back")}
               </Button>
               <Button
                 disabled={isLoading}
@@ -222,7 +218,7 @@ export default function SignUpPage() {
                   if (step === 3) successPasswordStep();
                 }}
               >
-                {step === 3 ? "Create account" : "Next"}
+                {step === 3 ? t("createAccount") : t("next")}
                 {isLoading && <Loader className="size-4 ml-2" />}
               </Button>
             </div>

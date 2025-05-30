@@ -37,3 +37,14 @@ export const BASE_THEMES = [
   "misty-harbor",
   "zen-garden",
 ];
+
+export const SUPPORTED_LOCALES = [
+  {
+    code: "en",
+    name: "English",
+  },
+  {
+    code: "ko",
+    name: "Korean",
+  },
+];

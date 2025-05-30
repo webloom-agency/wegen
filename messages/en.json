@@ -10,21 +10,23 @@
       "orContinueWith": "OR CONTINUE WITH"
     },
     "SignUp": {
-      "title": "Sign Up",
+      "title": "Create an account",
+      "signIn": "Sign in",
       "description": "Sign up to your account",
-      "email": "Email",
-      "password": "Password",
-      "signUp": "Sign Up"
+      "step1": "Start your journey with us by entering your email address",
+      "step2": "I'll use this name when we chat",
+      "step3": "Create a strong password to secure your account",
+      "signUp": "Sign Up",
+      "invalidEmail": "Invalid email address",
+      "emailAlreadyExists": "Email already exists",
+      "nameRequired": "Name is required",
+      "passwordRequired": "Password is required",
+      "back": "Back",
+      "createAccount": "Create account",
+      "next": "Next"
     },
     "Intro": {
       "description": "Welcome to MCP Chat Bot. Sign in to experience our AI-powered conversational tools."
     }
-  },
-
-  "Chat": {
-    "title": "Chat",
-    "description": "Chat with the AI",
-    "send": "Send",
-    "messages": "Messages"
   }
 }

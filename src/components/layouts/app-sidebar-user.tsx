@@ -28,10 +28,12 @@ import { appStore } from "@/app/store";
 import { BASE_THEMES } from "lib/const";
 import { capitalizeFirstLetter } from "lib/utils";
 import { authClient } from "auth/client";
+import { SelectLanguage } from "../select-language";
 
 export function AppSidebarUser() {
   const appStoreMutate = appStore((state) => state.mutate);
   const { data } = authClient.useSession();
+
   const user = data?.user;
 
   const isMounted = useMounted();
@@ -132,7 +134,7 @@ export function AppSidebarUser() {
                 </DropdownMenuPortal>
               </DropdownMenuSub>
             )}
-
+            <SelectLanguage />
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout} className="cursor-pointer">
               <LogOutIcon className="size-4 text-foreground" />
