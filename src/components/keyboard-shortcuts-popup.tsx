@@ -1,30 +1,49 @@
-import { getShortcutKeyList, Shortcuts } from "lib/keyboard-shortcuts";
-import { PropsWithChildren } from "react";
+"use client";
+
+import {
+  getShortcutKeyList,
+  isShortcutEvent,
+  Shortcuts,
+} from "lib/keyboard-shortcuts";
 
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
-  DialogTrigger,
 } from "ui/dialog";
 import { useTranslations } from "next-intl";
+import { useShallow } from "zustand/shallow";
+import { appStore } from "@/app/store";
+import { useEffect } from "react";
 
-interface KeyboardShortcutsPopupProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-export function KeyboardShortcutsPopup({
-  open,
-  onOpenChange,
-  children,
-}: PropsWithChildren<KeyboardShortcutsPopupProps>) {
+export function KeyboardShortcutsPopup({}) {
+  const [openShortcutsPopup, appStoreMutate] = appStore(
+    useShallow((state) => [state.openShortcutsPopup, state.mutate]),
+  );
   const t = useTranslations("KeyboardShortcuts");
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isShortcutEvent(e, Shortcuts.openShortcutsPopup)) {
+        e.preventDefault();
+        e.stopPropagation();
+        appStoreMutate((prev) => ({
+          openShortcutsPopup: !prev.openShortcutsPopup,
+        }));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  return (
+    <Dialog
+      open={openShortcutsPopup}
+      onOpenChange={() =>
+        appStoreMutate({ openShortcutsPopup: !openShortcutsPopup })
+      }
+    >
       <DialogContent className="md:max-w-3xl">
         <DialogTitle>{t("title")}</DialogTitle>
         <DialogDescription />

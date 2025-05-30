@@ -15,10 +15,13 @@ export interface AppState {
   allowedMcpServers?: Record<string, AllowedMCPServer>;
   allowedAppDefaultToolkit?: AppDefaultToolkit[];
   model: string;
-  temporaryModel: string;
-  openTemporaryChat: boolean;
   openShortcutsPopup: boolean;
   openChatPreferences: boolean;
+  temporaryChat: {
+    isOpen: boolean;
+    instructions: string;
+    model: string;
+  };
   voiceChat: {
     isOpen: boolean;
     options: {
@@ -42,10 +45,13 @@ const initialState: AppState = {
   allowedMcpServers: undefined,
   allowedAppDefaultToolkit: [],
   model: DEFAULT_MODEL,
-  temporaryModel: DEFAULT_MODEL,
-  openTemporaryChat: false,
   openShortcutsPopup: false,
   openChatPreferences: false,
+  temporaryChat: {
+    isOpen: false,
+    instructions: "",
+    model: DEFAULT_MODEL,
+  },
   voiceChat: {
     isOpen: false,
     options: {
@@ -73,7 +79,11 @@ export const appStore = create<AppState & AppDispatch>()(
         allowedAppDefaultToolkit:
           state.allowedAppDefaultToolkit ||
           initialState.allowedAppDefaultToolkit,
-        temporaryModel: state.temporaryModel || initialState.temporaryModel,
+        temporaryChat: {
+          ...initialState.temporaryChat,
+          ...state.temporaryChat,
+          isOpen: false,
+        },
         voiceChat: {
           ...initialState.voiceChat,
           ...state.voiceChat,

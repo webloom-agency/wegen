@@ -143,7 +143,7 @@ function ToolPresets() {
     );
   const [open, setOpen] = useState(false);
   const [presetName, setPresetName] = useState("");
-  const t = useTranslations("Chat.Tool");
+  const t = useTranslations();
   const [presets, setPresets] = useStateWithBrowserStorage<Preset[]>(
     PRESET_KEY,
     [],
@@ -159,11 +159,11 @@ function ToolPresets() {
   const addPreset = useCallback(
     (name: string) => {
       if (name.trim() === "") {
-        toast.error(t("presetNameCannotBeEmpty"));
+        toast.error(t("Chat.Tool.presetNameCannotBeEmpty"));
         return;
       }
       if (presets.find((p) => p.name === name)) {
-        toast.error(t("presetNameAlreadyExists"));
+        toast.error(t("Chat.Tool.presetNameAlreadyExists"));
         return;
       }
       setPresets((prev) => [
@@ -172,7 +172,7 @@ function ToolPresets() {
       ]);
       setPresetName("");
       setOpen(false);
-      toast.success(t("presetSaved"));
+      toast.success(t("Chat.Tool.presetSaved"));
     },
     [allowedMcpServers, allowedAppDefaultToolkit, presets],
   );
@@ -193,26 +193,26 @@ function ToolPresets() {
       <DropdownMenuSub>
         <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 font-semibold cursor-pointer">
           <Package className="size-3.5 " />
-          {t("preset")}
+          {t("Chat.Tool.preset")}
         </DropdownMenuSubTrigger>
         <DropdownMenuPortal>
           <DropdownMenuSubContent className="w-80 max-h-96 overflow-y-auto">
             <DropdownMenuLabel className="flex items-center text-muted-foreground gap-2">
-              {t("toolPresets")}
+              {t("Chat.Tool.toolPresets")}
               <div className="flex-1" />
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
                   <Button variant={"secondary"} size={"sm"} className="border">
-                    {t("saveAsPreset")}
+                    {t("Chat.Tool.saveAsPreset")}
                     <Plus className="size-3.5" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>{t("saveAsPreset")}</DialogTitle>
+                    <DialogTitle>{t("Chat.Tool.saveAsPreset")}</DialogTitle>
                   </DialogHeader>
                   <DialogDescription>
-                    {t("saveAsPresetDescription")}
+                    {t("Chat.Tool.saveAsPresetDescription")}
                   </DialogDescription>
                   <Input
                     placeholder="Preset Name"
@@ -232,7 +232,7 @@ function ToolPresets() {
                       addPreset(presetName);
                     }}
                   >
-                    {t("save")}
+                    {t("Common.save")}
                   </Button>
                 </DialogContent>
               </Dialog>
@@ -240,9 +240,9 @@ function ToolPresets() {
             <DropdownMenuSeparator />
             {presets.length === 0 ? (
               <div className="text-sm text-muted-foreground w-full h-full flex flex-col items-center justify-center gap-2 py-6">
-                <p>{t("noPresetsAvailableYet")}</p>
+                <p>{t("Chat.Tool.noPresetsAvailableYet")}</p>
                 <p className="text-xs px-4">
-                  {t("clickSaveAsPresetToGetStarted")}
+                  {t("Chat.Tool.clickSaveAsPresetToGetStarted")}
                 </p>
               </div>
             ) : (

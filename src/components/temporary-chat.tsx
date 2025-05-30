@@ -4,7 +4,7 @@ import { appStore } from "@/app/store";
 import { useChat, UseChatHelpers } from "@ai-sdk/react";
 import { cn } from "lib/utils";
 
-import { PropsWithChildren, useEffect, useMemo, useRef } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "ui/button";
 import {
   Drawer,
@@ -12,33 +12,46 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
-  DrawerTrigger,
 } from "ui/drawer";
-import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
+
 import PromptInput from "./prompt-input";
 import { ErrorMessage, PreviewMessage } from "./message";
-import { MessageCircleDashed, X } from "lucide-react";
+import { Settings2, X } from "lucide-react";
 import { Separator } from "ui/separator";
 import { UIMessage } from "ai";
 import { useShallow } from "zustand/shallow";
-import {
-  getShortcutKeyList,
-  isShortcutEvent,
-  Shortcuts,
-} from "lib/keyboard-shortcuts";
+import { isShortcutEvent, Shortcuts } from "lib/keyboard-shortcuts";
 import { useTranslations } from "next-intl";
-export default function TemporaryChat({ children }: PropsWithChildren) {
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTrigger,
+} from "ui/dialog";
+import { DialogTitle } from "@radix-ui/react-dialog";
+import { Textarea } from "ui/textarea";
+
+export default function TemporaryChat() {
   const t = useTranslations("Chat.TemporaryChat");
-  const [temporaryModel, open, appStoreMutate] = appStore(
+
+  const [temporaryChat, appStoreMutate] = appStore(
     useShallow((state) => [
-      state.temporaryModel,
-      state.openTemporaryChat,
+      state.temporaryChat,
+
       state.mutate,
     ]),
   );
+  const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
 
   const setOpen = (bool: boolean) => {
-    appStoreMutate({ openTemporaryChat: bool });
+    appStoreMutate({
+      temporaryChat: {
+        ...temporaryChat,
+        isOpen: bool,
+      },
+    });
   };
 
   const {
@@ -55,7 +68,8 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
     api: "/api/chat/temporary",
     experimental_throttle: 100,
     body: {
-      model: temporaryModel,
+      model: temporaryChat.model,
+      instructions: temporaryChat.instructions,
     },
     onError: () => {
       setMessages((prev) => prev.slice(0, -1));
@@ -72,8 +86,14 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
       if (isShortcutEvent(e, Shortcuts.toggleTemporaryChat)) {
         e.preventDefault();
         e.stopPropagation();
-        setOpen(!open);
+        appStoreMutate((prev) => ({
+          temporaryChat: {
+            ...prev.temporaryChat,
+            isOpen: !prev.temporaryChat.isOpen,
+          },
+        }));
       } else if (
+        temporaryChat.isOpen &&
         isShortcutEvent(e, {
           shortcut: {
             command: true,
@@ -84,41 +104,32 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
         e.preventDefault();
         e.stopPropagation();
         setMessages([]);
+      } else if (
+        temporaryChat.isOpen &&
+        isShortcutEvent(e, {
+          shortcut: {
+            command: true,
+            key: "i",
+          },
+        })
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsInstructionsOpen((prev) => !prev);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open]);
+  }, [temporaryChat.isOpen]);
 
   return (
-    <Drawer handleOnly direction="right" open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>
-        {children ?? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={() => {
-                  setOpen(!open);
-                }}
-                variant={"ghost"}
-              >
-                <MessageCircleDashed />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent align="end" side="bottom">
-              <p className="text-xs flex items-center gap-2">
-                {t("toggleTemporaryChat")}
-                <span className="text-xs text-muted-foreground">
-                  {getShortcutKeyList(Shortcuts.toggleTemporaryChat).join(
-                    " + ",
-                  )}
-                </span>
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </DrawerTrigger>
+    <Drawer
+      handleOnly
+      direction="right"
+      open={temporaryChat.isOpen}
+      onOpenChange={setOpen}
+    >
       <DrawerContent
         style={{
           userSelect: "text",
@@ -130,6 +141,7 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
             <p>{t("temporaryChat")}</p>
 
             <div className="flex-1" />
+
             <Button
               variant={"secondary"}
               className="rounded-full"
@@ -140,6 +152,22 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
               <Separator orientation="vertical" />
               <span className="text-xs text-muted-foreground ml-1">⌘E</span>
             </Button>
+            <TemporaryChatInstructions
+              isOpen={isInstructionsOpen}
+              setIsOpen={setIsInstructionsOpen}
+              instructions={temporaryChat.instructions ?? ""}
+              onSave={(instructions) => {
+                appStoreMutate({
+                  temporaryChat: { ...temporaryChat, instructions },
+                });
+              }}
+            >
+              <Button variant={"secondary"} className="rounded-full">
+                <Settings2 />
+                <Separator orientation="vertical" />
+                <span className="text-xs text-muted-foreground ml-1">⌘I</span>
+              </Button>
+            </TemporaryChatInstructions>
             <DrawerClose asChild>
               <Button
                 variant={"secondary"}
@@ -196,8 +224,8 @@ function DrawerTemporaryContent({
   const t = useTranslations("Chat");
   const autoScrollRef = useRef(false);
 
-  const [temporaryModel, appStoreMutate] = appStore(
-    useShallow((state) => [state.temporaryModel, state.mutate]),
+  const [temporaryChat, appStoreMutate] = appStore(
+    useShallow((state) => [state.temporaryChat, state.mutate]),
   );
 
   useEffect(() => {
@@ -274,9 +302,14 @@ function DrawerTemporaryContent({
         <PromptInput
           input={input}
           append={append}
-          model={temporaryModel}
+          model={temporaryChat.model}
           setModel={(model) => {
-            appStoreMutate({ temporaryModel: model });
+            appStoreMutate({
+              temporaryChat: {
+                ...temporaryChat,
+                model,
+              },
+            });
           }}
           toolDisabled
           placeholder={t("TemporaryChat.feelFreeToAskAnythingTemporarily")}
@@ -287,5 +320,63 @@ function DrawerTemporaryContent({
         />
       </div>
     </div>
+  );
+}
+
+function TemporaryChatInstructions({
+  instructions,
+  onSave,
+  children,
+  isOpen,
+  setIsOpen,
+}: {
+  instructions: string;
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
+  onSave: (instructions: string) => void;
+  children: ReactNode;
+}) {
+  const [input, setInput] = useState(instructions);
+  const t = useTranslations();
+  useEffect(() => {
+    if (isOpen) {
+      setInput(instructions);
+    }
+  }, [isOpen]);
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {t("Chat.TemporaryChat.temporaryChatInstructions")}
+          </DialogTitle>
+          <DialogDescription>
+            {t("Chat.TemporaryChat.temporaryChatInstructionsDescription")}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogDescription>
+          <Textarea
+            autoFocus
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            className="resize-none h-40"
+            placeholder={t(
+              "Chat.TemporaryChat.temporaryChatInstructionsPlaceholder",
+            )}
+          />
+        </DialogDescription>
+        <DialogFooter>
+          <Button
+            onClick={() => {
+              onSave(input);
+              setIsOpen(false);
+            }}
+          >
+            {t("Common.save")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

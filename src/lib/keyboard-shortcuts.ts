@@ -111,7 +111,7 @@ export const getShortcutKeyList = ({ shortcut }: Shortcut): string[] => {
     keys.push("⌘");
   }
   if (shortcut.shift) {
-    keys.push("Shift");
+    keys.push("⇧");
   }
   if (shortcut.key) {
     keys.push(shortcut.key);

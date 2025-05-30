@@ -16,9 +16,14 @@ export async function POST(request: Request) {
       return redirect("/sign-in");
     }
 
-    const { messages, model: modelName } = json as {
+    const {
+      messages,
+      model: modelName,
+      instructions,
+    } = json as {
       messages: Message[];
       model: string;
+      instructions?: string;
     };
 
     const model = customModelProvider.getModel(modelName);
@@ -28,7 +33,9 @@ export async function POST(request: Request) {
 
     return streamText({
       model,
-      system: buildUserSystemPrompt(session.user, userPreferences),
+      system: `${buildUserSystemPrompt(session.user, userPreferences)} ${
+        instructions ? `\n\n${instructions}` : ""
+      }`.trim(),
       messages,
       maxSteps: 10,
       experimental_continueSteps: true,

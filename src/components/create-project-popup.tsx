@@ -79,10 +79,8 @@ export function CreateProjectPopup({ children }: PropsWithChildren) {
             </div>
           </DialogDescription>
         </DialogHeader>
-        <div className="flex items-center gap-2">
-          <Label htmlFor="name" className="text-right">
-            {t("Chat.Project.projectName")}
-          </Label>
+        <div className="flex items-center gap-2 w-full">
+          <Label htmlFor="name">{t("Chat.Project.projectName")}</Label>
           <Input
             autoFocus
             id="name"
