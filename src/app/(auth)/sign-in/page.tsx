@@ -20,8 +20,11 @@ import { authClient } from "auth/client";
 import { toast } from "sonner";
 import { GithubIcon } from "ui/github-icon";
 import { GoogleIcon } from "ui/google-icon";
+import { useTranslations } from "next-intl";
 
 export default function SignInPage() {
+  const t = useTranslations("Auth.SignIn");
+
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useObjectState({
@@ -51,7 +54,7 @@ export default function SignInPage() {
 
   const googleSignIn = () => {
     if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID)
-      return toast.warning("Google client ID is not set");
+      return toast.warning(t("oauthClientIdNotSet", { provider: "Google" }));
     authClient.signIn
       .social({
         provider: "google",
@@ -63,7 +66,7 @@ export default function SignInPage() {
 
   const githubSignIn = () => {
     if (!process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID)
-      return toast.warning("GitHub client ID is not set");
+      return toast.warning(t("oauthClientIdNotSet", { provider: "GitHub" }));
     authClient.signIn
       .social({
         provider: "github",
@@ -78,10 +81,10 @@ export default function SignInPage() {
       <Card className="w-full md:max-w-md bg-background border-none mx-auto shadow-none">
         <CardHeader className="my-4">
           <CardTitle className="text-2xl text-center my-1">
-            Welcome Back
+            {t("title")}
           </CardTitle>
           <CardDescription className="text-center">
-            Sign in to continue to your account
+            {t("description")}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col">
@@ -149,9 +152,9 @@ export default function SignInPage() {
           </div>
 
           <div className="my-8 text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
+            {t("noAccount")}
             <Link href="/sign-up" className="underline-offset-4 text-primary">
-              Sign up
+              {t("signUp")}
             </Link>
           </div>
         </CardContent>

@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { ShortcutsProvider } from "@/components/shortcuts-provider";
 import { getSession } from "auth/server";
 import { redirect } from "next/navigation";
+import { COOKIE_KEY_SIDEBAR_STATE } from "lib/const";
 
 export default async function ChatLayout({
   children,
@@ -13,7 +14,8 @@ export default async function ChatLayout({
   if (!session) {
     return redirect("/sign-in");
   }
-  const isCollapsed = cookieStore.get("sidebar:state")?.value !== "true";
+  const isCollapsed =
+    cookieStore.get(COOKIE_KEY_SIDEBAR_STATE)?.value !== "true";
   return (
     <SidebarProvider defaultOpen={!isCollapsed}>
       <ShortcutsProvider />

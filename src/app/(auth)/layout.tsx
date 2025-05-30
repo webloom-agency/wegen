@@ -1,8 +1,11 @@
 import { Think } from "ui/think";
+import { getTranslations } from "next-intl/server";
+import { FlipWords } from "ui/flip-words";
 
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: { children: React.ReactNode }) {
+  const t = await getTranslations("Auth.Intro");
   return (
     <main className="relative w-full flex flex-col h-screen">
       <div className="flex-1">
@@ -14,12 +17,10 @@ export default function AuthLayout({
               <span>Chat Bot</span>
             </h1>
             <div className="flex-1" />
-            <p className=" mb-4 text-muted-foreground">
-              Welcome to MCP Chat Bot. Sign in to experience our
-              <span className="text-foreground ml-1">
-                AI-powered conversational tools.
-              </span>
-            </p>
+            <FlipWords
+              words={[t("description")]}
+              className=" mb-4 text-muted-foreground"
+            />
           </div>
 
           <div className="w-full lg:w-1/2 p-6">{children}</div>

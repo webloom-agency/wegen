@@ -1,0 +1,28 @@
+{
+  "Auth": {
+    "SignIn": {
+      "title": "Welcome Back",
+      "description": "Sign in to continue to your account",
+      "oauthClientIdNotSet": "{provider} client ID is not set",
+      "noAccount": "Don't have an account? ",
+      "signUp": "Sign up"
+    },
+    "SignUp": {
+      "title": "Sign Up",
+      "description": "Sign up to your account",
+      "email": "Email",
+      "password": "Password",
+      "signUp": "Sign Up"
+    },
+    "Intro": {
+      "description": "Welcome to MCP Chat Bot. Sign in to experience our AI-powered conversational tools."
+    }
+  },
+
+  "Chat": {
+    "title": "Chat",
+    "description": "Chat with the AI",
+    "send": "Send",
+    "messages": "Messages"
+  }
+}

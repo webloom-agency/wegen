@@ -13,6 +13,9 @@ export const IS_MCP_SERVER_SSE_ONLY = IS_VERCEL_ENV;
 export const FILE_BASED_MCP_CONFIG =
   process.env.FILE_BASED_MCP_CONFIG === "true";
 
+export const COOKIE_KEY_SIDEBAR_STATE = "sidebar:state";
+export const COOKIE_KEY_LOCALE = "i18n:locale";
+
 export const BASE_THEMES = [
   "default",
   "zinc",

@@ -4,7 +4,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/layouts/theme-provider";
 import { Toaster } from "ui/sonner";
 import { BASE_THEMES } from "lib/const";
-
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -22,13 +23,14 @@ export const metadata: Metadata = {
 
 const themes = BASE_THEMES.flatMap((t) => [t, `${t}-dark`]);
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
@@ -38,10 +40,12 @@ export default function RootLayout({
           themes={themes}
           disableTransitionOnChange
         >
-          <div id="root">
-            {children}
-            <Toaster richColors />
-          </div>
+          <NextIntlClientProvider>
+            <div id="root">
+              {children}
+              <Toaster richColors />
+            </div>
+          </NextIntlClientProvider>
         </ThemeProvider>
       </body>
     </html>
