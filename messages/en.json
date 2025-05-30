@@ -1,4 +1,13 @@
 {
+  "Common": {
+    "cancel": "Cancel",
+    "update": "Update",
+    "continue": "Continue",
+    "delete": "Delete",
+    "save": "Save",
+    "back": "Back",
+    "next": "Next"
+  },
   "Auth": {
     "SignIn": {
       "title": "Welcome Back",
@@ -21,9 +30,7 @@
       "emailAlreadyExists": "Email already exists",
       "nameRequired": "Name is required",
       "passwordRequired": "Password is required",
-      "back": "Back",
-      "createAccount": "Create account",
-      "next": "Next"
+      "createAccount": "Create account"
     },
     "Intro": {
       "description": "Welcome to MCP Chat Bot. Sign in to experience our AI-powered conversational tools."
@@ -59,7 +66,6 @@
       "toolPresets": "Tool Presets",
       "saveAsPreset": "Save As Preset",
       "saveAsPresetDescription": "Save the current tool configuration as a preset.",
-      "save": "Save",
       "noPresetsAvailableYet": "No presets available yet",
       "presetNameCannotBeEmpty": "Preset name cannot be empty",
       "presetNameAlreadyExists": "Preset name already exists",
@@ -77,6 +83,60 @@
       "openMic": "Open Mic",
       "endConversation": "End conversation",
       "toggleVoiceChat": "Toggle Voice Chat"
+    },
+    "Thread": {
+      "chat": "Chat",
+      "summarizeAsProject": "Summarize as Project",
+      "renameChat": "Re Name",
+      "deleteChat": "Delete Chat",
+      "failedToDeleteThread": "Failed to delete thread",
+      "threadDeleted": "Thread deleted",
+      "failedToUpdateThread": "Failed to update thread",
+      "titleRequired": "Title is required",
+      "threadUpdated": "Thread updated"
+    },
+    "Project": {
+      "project": "Project",
+      "renameProject": "Rename Project",
+      "deleteProject": "Delete Project",
+      "placeholder": "e.g. You are a Korean travel guide ChatBot. Respond only in Korean, include precise times for every itinerary item, and present transportation, budget, and dining recommendations succinctly in a table format.",
+      "generateWithAI": "Generate With AI",
+      "instructions": "Instructions",
+      "projectName": "Project Name",
+      "enterNameForNewProject": "Enter a name for your new project",
+      "provideCustomInstructionsForYourProjectAssistant": "Provide custom instructions for your project assistant",
+      "createProject": "Create Project",
+      "whatIsAProject": "What is a project?",
+      "aProjectAllowsYouToOrganizeYourFilesAndCustomInstructionsInOneConvenientPlace": "A project allows you to organize your files and custom instructions in one convenient place.",
+      "failedToUpdateProject": "Failed to update project",
+      "projectUpdated": "Project updated",
+      "failedToDeleteProject": "Failed to delete project",
+      "projectDeleted": "Project deleted",
+      "projectCreated": "Project created"
     }
+  },
+  "Layout": {
+    "toggleSidebar": "Toggle Sidebar",
+    "newChat": "New Chat",
+    "mcpConfiguration": "MCP Configuration",
+    "projects": "Projects",
+    "newProject": "New Project",
+    "createProject": "Create a project",
+    "toOrganizeIdeas": "To organize your ideas",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "lastWeek": "Last 7 days",
+    "older": "Older",
+    "recentChats": "Recent Chats",
+    "deleteAllChats": "Delete All Chats",
+    "noConversationsYet": "No conversations yet",
+    "deletingAllChats": "Deleting all threads...",
+    "allChatsDeleted": "All threads deleted",
+    "failedToDeleteAllChats": "Failed to delete all threads",
+    "chatPreferences": "Chat Preferences",
+    "keyboardShortcuts": "Keyboard Shortcuts",
+    "theme": "Theme",
+    "signOut": "Sign out",
+    "language": "Language"
   }
 }

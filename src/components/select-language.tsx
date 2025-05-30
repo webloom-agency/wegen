@@ -5,6 +5,7 @@ import { COOKIE_KEY_LOCALE, SUPPORTED_LOCALES } from "lib/const";
 import { Languages } from "lucide-react";
 import { useCallback } from "react";
 import useSWR from "swr";
+import { useTranslations } from "next-intl";
 
 import {
   DropdownMenuCheckboxItem,
@@ -15,6 +16,7 @@ import {
 } from "ui/dropdown-menu";
 
 export function SelectLanguage() {
+  const t = useTranslations("Layout");
   const { data: currentLocale } = useSWR(COOKIE_KEY_LOCALE, getLocaleAction, {
     fallbackData: SUPPORTED_LOCALES[0].code,
     revalidateOnFocus: false,
@@ -28,7 +30,7 @@ export function SelectLanguage() {
     <DropdownMenuSub>
       <DropdownMenuSubTrigger>
         <Languages className="mr-2 size-4" />
-        <span>Language</span>
+        <span>{t("language")}</span>
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>
         <DropdownMenuSubContent>

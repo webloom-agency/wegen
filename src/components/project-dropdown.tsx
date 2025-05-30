@@ -32,6 +32,7 @@ import {
 
 import { Input } from "ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "ui/popover";
+import { useTranslations } from "next-intl";
 
 type Props = PropsWithChildren<{
   project: Pick<Project, "id" | "name">;
@@ -41,7 +42,7 @@ type Props = PropsWithChildren<{
 
 export function ProjectDropdown({ project, children, side, align }: Props) {
   const router = useRouter();
-
+  const t = useTranslations("Chat.Project");
   const currentProjectId = appStore((state) => state.currentProjectId);
 
   const [open, setOpen] = useState(false);
@@ -56,9 +57,9 @@ export function ProjectDropdown({ project, children, side, align }: Props) {
       .watch(() => setIsDeleting(false))
       .watch(({ isOk, error }) => {
         if (isOk) {
-          toast.success("Project deleted");
+          toast.success(t("projectDeleted"));
         } else {
-          toast.error(error.message || "Failed to delete project");
+          toast.error(error.message || t("failedToDeleteProject"));
         }
       })
       .ifOk(() => {
@@ -77,7 +78,7 @@ export function ProjectDropdown({ project, children, side, align }: Props) {
       <PopoverContent className="p-0 w-[220px]" side={side} align={align}>
         <Command>
           <div className="flex items-center gap-2 px-2 py-1 text-sm pt-2 font-semibold">
-            Project
+            {t("project")}
           </div>
           <CommandSeparator />
           <CommandList>
@@ -90,7 +91,7 @@ export function ProjectDropdown({ project, children, side, align }: Props) {
                 >
                   <div className="flex items-center gap-2 w-full px-2 py-1 rounded">
                     <PencilLine className="text-foreground" />
-                    Rename Project
+                    {t("renameProject")}
                   </div>
                 </UpdateProjectNameDialog>
               </CommandItem>
@@ -100,7 +101,7 @@ export function ProjectDropdown({ project, children, side, align }: Props) {
                   onClick={handleDelete}
                 >
                   <Trash className="text-destructive" />
-                  <span className="text-destructive">Delete Project</span>
+                  <span className="text-destructive">{t("deleteProject")}</span>
                   {isDeleting && (
                     <Loader className="ml-auto h-4 w-4 animate-spin" />
                   )}
@@ -124,6 +125,7 @@ function UpdateProjectNameDialog({
   onUpdated: (name: string) => void;
   projectId: string;
 }>) {
+  const t = useTranslations();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState(initialName);
@@ -140,9 +142,9 @@ function UpdateProjectNameDialog({
           onUpdated(name);
           mutate("projects");
           mutate(`/projects/${projectId}`);
-          toast.success("Project updated");
+          toast.success(t("Chat.Project.projectUpdated"));
         } else {
-          toast.error(error.message || "Failed to update project");
+          toast.error(error.message || t("Chat.Project.failedToUpdateProject"));
         }
       })
       .unwrap();
@@ -153,7 +155,7 @@ function UpdateProjectNameDialog({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent hideClose>
         <DialogHeader>
-          <DialogTitle>Rename Project</DialogTitle>
+          <DialogTitle>{t("Chat.Project.renameProject")}</DialogTitle>
         </DialogHeader>
         <DialogDescription>
           <Input
@@ -164,14 +166,14 @@ function UpdateProjectNameDialog({
         </DialogDescription>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="secondary">Cancel</Button>
+            <Button variant="secondary">{t("Common.cancel")}</Button>
           </DialogClose>
 
           <Button variant="outline" onClick={handleUpdate}>
             {isUpdating ? (
               <Loader className="h-4 w-4 animate-spin" />
             ) : (
-              "Update"
+              t("Common.update")
             )}
           </Button>
         </DialogFooter>

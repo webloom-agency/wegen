@@ -19,10 +19,11 @@ import { selectProjectListByUserIdAction } from "@/app/api/chat/actions";
 import { handleErrorWithToast } from "ui/shared-toast";
 import { CreateProjectPopup } from "../create-project-popup";
 import { ProjectDropdown } from "../project-dropdown";
+import { useTranslations } from "next-intl";
 
 export function AppSidebarProjects() {
   const mounted = useMounted();
-
+  const t = useTranslations("Layout");
   const [storeMutate, currentProjectId] = appStore(
     useShallow((state) => [state.mutate, state.currentProjectId]),
   );
@@ -44,7 +45,7 @@ export function AppSidebarProjects() {
           <SidebarMenuItem>
             <SidebarGroupLabel className="">
               <h4 className="text-xs text-muted-foreground flex items-center gap-1">
-                Projects
+                {t("projects")}
               </h4>
               <div className="flex-1" />
 
@@ -61,7 +62,7 @@ export function AppSidebarProjects() {
                   </CreateProjectPopup>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  <p>New Project</p>
+                  <p>{t("newProject")}</p>
                 </TooltipContent>
               </Tooltip>
             </SidebarGroupLabel>
@@ -75,9 +76,9 @@ export function AppSidebarProjects() {
                 <CreateProjectPopup>
                   <div className="py-4 px-4 hover:bg-accent rounded-2xl cursor-pointer flex justify-between items-center">
                     <div className="gap-1">
-                      <p className="font-semibold mb-1">Create a project </p>
+                      <p className="font-semibold mb-1">{t("createProject")}</p>
                       <p className="text-muted-foreground">
-                        To organize your ideas
+                        {t("toOrganizeIdeas")}
                       </p>
                     </div>
                     <FolderOpen className="size-4" />

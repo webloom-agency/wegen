@@ -34,6 +34,7 @@ import { handleErrorWithToast } from "ui/shared-toast";
 import { toast } from "sonner";
 import { mutate } from "swr";
 import { insertProjectAction } from "@/app/api/chat/actions";
+import { useTranslations } from "next-intl";
 
 interface CreateProjectWithThreadPopupProps {
   threadId: string;
@@ -49,6 +50,7 @@ function ProjectNameStep({
   setName: (name: string) => void;
   nextStep: () => void;
 }) {
+  const t = useTranslations("Common");
   return (
     <div className="flex flex-col h-full">
       <div className="flex flex-col gap-2">
@@ -70,11 +72,11 @@ function ProjectNameStep({
       <div className="pt-4 flex justify-end mt-auto">
         <DialogClose asChild>
           <Button variant="ghost" className="mr-2">
-            Cancel
+            {t("cancel")}
           </Button>
         </DialogClose>
         <Button onClick={nextStep} disabled={!name.trim()} className="gap-1">
-          Continue
+          {t("continue")}
           <ArrowRight className="size-4" />
         </Button>
       </div>
@@ -95,6 +97,7 @@ function InstructionsStep({
   prevStep: () => void;
   onSave: () => void;
 }) {
+  const t = useTranslations();
   const [isLoading, setIsLoading] = useState(false);
   const currentModelName = appStore((state) => state.model);
   const [model, setModel] = useState(currentModelName);
@@ -137,7 +140,7 @@ function InstructionsStep({
           ) : (
             <WandSparkles className="size-3.5" />
           )}
-          Generate With AI
+          {t("Chat.Project.generateWithAI")}
         </Button>
         <SelectModel
           model={model}
@@ -154,7 +157,7 @@ function InstructionsStep({
 
       <div className="flex justify-between items-center mb-2 mt-6">
         <Label htmlFor="instructions" className="text-sm">
-          Instructions
+          {t("Chat.Project.instructions")}
         </Label>
       </div>
       <Textarea
@@ -162,7 +165,7 @@ function InstructionsStep({
         value={systemPrompt}
         disabled={isLoading}
         onChange={(e) => setSystemPrompt(e.target.value)}
-        placeholder="e.g. You are a Korean travel guide ChatBot. Respond only in Korean, include precise times for every itinerary item, and present transportation, budget, and dining recommendations succinctly in a table format."
+        placeholder={t("Chat.Project.placeholder")}
         className="resize-none flex-1 overflow-y-auto w-full"
       />
 
@@ -174,12 +177,12 @@ function InstructionsStep({
           className="gap-1"
         >
           <ArrowLeft className="size-4" />
-          Back
+          {t("Common.back")}
         </Button>
 
         <div className="flex gap-2">
           <DialogClose asChild>
-            <Button variant="ghost">Cancel</Button>
+            <Button variant="ghost">{t("Common.cancel")}</Button>
           </DialogClose>
           <Button
             variant="secondary"
@@ -188,7 +191,7 @@ function InstructionsStep({
             className="gap-1"
           >
             {isLoading && <Loader className="size-4 animate-spin" />}
-            Create
+            {t("Common.save")}
           </Button>
         </div>
       </div>
@@ -201,6 +204,7 @@ export function CreateProjectWithThreadPopup({
   children,
   onClose,
 }: PropsWithChildren<CreateProjectWithThreadPopupProps>) {
+  const t = useTranslations();
   const [isOpen, setIsOpen] = useState(false);
 
   const [projectOption, setProjectOption] = useObjectState({
@@ -238,7 +242,7 @@ export function CreateProjectWithThreadPopup({
         }),
       )
       .ifOk(() => setIsOpen(false))
-      .ifOk(() => toast.success("Project created"))
+      .ifOk(() => toast.success(t("Chat.Project.projectCreated")))
       .ifOk(() => mutate("projects"))
       .ifOk(() => onClose?.())
       .ifOk((project) => router.push(`/project/${project.id}`))
@@ -249,13 +253,15 @@ export function CreateProjectWithThreadPopup({
     () => [
       {
         id: 1,
-        title: "Project Name",
-        description: "Enter a name for your new project",
+        title: t("Chat.Project.projectName"),
+        description: t("Chat.Project.enterNameForNewProject"),
       },
       {
         id: 2,
-        title: "Instructions",
-        description: "Provide custom instructions for your project assistant",
+        title: t("Chat.Project.instructions"),
+        description: t(
+          "Chat.Project.provideCustomInstructionsForYourProjectAssistant",
+        ),
       },
     ],
     [],
@@ -287,11 +293,15 @@ export function CreateProjectWithThreadPopup({
     >
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[800px] p-0 bg-card overflow-hidden">
-        <DialogTitle className="p-0 m-0 hidden">Create Project</DialogTitle>
+        <DialogTitle className="p-0 m-0 hidden">
+          {t("Chat.Project.createProject")}
+        </DialogTitle>
 
         <div className="flex h-[60vh]">
           <div className="w-1/3 bg-muted p-6 flex flex-col">
-            <div className="text-xl font-bold mb-6">Create Project</div>
+            <div className="text-xl font-bold mb-6">
+              {t("Chat.Project.createProject")}
+            </div>
 
             <div className="flex-1">
               {steps.map((step) => (
@@ -348,10 +358,11 @@ export function CreateProjectWithThreadPopup({
                   <Lightbulb className="size-4 text-accent-foreground mt-1 mr-2 flex-shrink-0" />
                   <div className="text-xs text-muted-foreground">
                     <p className="font-semibold text-accent-foreground mb-1">
-                      What is a project?
+                      {t("Chat.Project.whatIsAProject")}
                     </p>
-                    A project allows you to organize your files and custom
-                    instructions in one convenient place.
+                    {t(
+                      "Chat.Project.aProjectAllowsYouToOrganizeYourFilesAndCustomInstructionsInOneConvenientPlace",
+                    )}
                   </div>
                 </div>
               </div>

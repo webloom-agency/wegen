@@ -32,6 +32,7 @@ import useSWR, { mutate } from "swr";
 import { handleErrorWithToast } from "ui/shared-toast";
 import { useEffect, useMemo } from "react";
 import { authClient } from "auth/client";
+import { useTranslations } from "next-intl";
 
 type ThreadGroup = {
   label: string;
@@ -41,6 +42,7 @@ type ThreadGroup = {
 export function AppSidebarThreads() {
   const mounted = useMounted();
   const router = useRouter();
+  const t = useTranslations("Layout");
   const [storeMutate, currentThreadId] = appStore(
     useShallow((state) => [state.mutate, state.currentThreadId]),
   );
@@ -70,10 +72,10 @@ export function AppSidebarThreads() {
     lastWeek.setDate(lastWeek.getDate() - 7);
 
     const groups: ThreadGroup[] = [
-      { label: "Today", threads: [] },
-      { label: "Yesterday", threads: [] },
-      { label: "Last 7 days", threads: [] },
-      { label: "Older", threads: [] },
+      { label: t("today"), threads: [] },
+      { label: t("yesterday"), threads: [] },
+      { label: t("lastWeek"), threads: [] },
+      { label: t("older"), threads: [] },
     ];
 
     threadList.forEach((thread) => {
@@ -93,17 +95,17 @@ export function AppSidebarThreads() {
 
     // Filter out empty groups
     return groups.filter((group) => group.threads.length > 0);
-  }, [threadList]);
+  }, [threadList, t]);
 
   const handleDeleteAllThreads = async () => {
     await toast.promise(deleteThreadsAction(), {
-      loading: "Deleting all threads...",
+      loading: t("deletingAllChats"),
       success: () => {
         mutate("threads");
         router.push("/");
-        return "All threads deleted";
+        return t("allChatsDeleted");
       },
-      error: "Failed to delete all threads",
+      error: t("failedToDeleteAllChats"),
     });
   };
 
@@ -122,7 +124,9 @@ export function AppSidebarThreads() {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarGroupLabel className="">
-                <h4 className="text-xs text-muted-foreground">Recent Chats</h4>
+                <h4 className="text-xs text-muted-foreground">
+                  {t("recentChats")}
+                </h4>
                 <div className="flex-1" />
 
                 <DropdownMenu>
@@ -141,7 +145,7 @@ export function AppSidebarThreads() {
                       onClick={handleDeleteAllThreads}
                     >
                       <Trash />
-                      Delete All Chats
+                      {t("deleteAllChats")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -154,7 +158,7 @@ export function AppSidebarThreads() {
               ) : (
                 <div className="px-2 py-4 text-center">
                   <p className="text-sm text-muted-foreground">
-                    No conversations yet
+                    {t("noConversationsYet")}
                   </p>
                 </div>
               )}
@@ -191,7 +195,7 @@ export function AppSidebarThreads() {
                         onClick={handleDeleteAllThreads}
                       >
                         <Trash />
-                        Delete All Chats
+                        {t("deleteAllChats")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

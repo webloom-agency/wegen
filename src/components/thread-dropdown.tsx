@@ -29,6 +29,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "ui/command";
+import { useTranslations } from "next-intl";
 
 type Props = PropsWithChildren<{
   threadId: string;
@@ -47,7 +48,7 @@ export function ThreadDropdown({
   align,
 }: Props) {
   const router = useRouter();
-
+  const t = useTranslations("Chat.Thread");
   const push = useLatest(router.push);
 
   const currentThreadId = appStore((state) => state.currentThreadId);
@@ -60,16 +61,16 @@ export function ThreadDropdown({
     safe()
       .ifOk(() => {
         if (!title) {
-          throw new Error("Title is required");
+          throw new Error(t("titleRequired"));
         }
       })
       .ifOk(() => updateThreadAction(threadId, { title }))
       .ifOk(() => mutate("threads"))
       .watch(({ isOk, error }) => {
         if (isOk) {
-          toast.success("Thread updated");
+          toast.success(t("threadUpdated"));
         } else {
-          toast.error(error.message || "Failed to update thread");
+          toast.error(error.message || t("failedToUpdateThread"));
         }
       });
   };
@@ -82,9 +83,9 @@ export function ThreadDropdown({
       .watch(() => setOpen(false))
       .watch(({ isOk, error }) => {
         if (isOk) {
-          toast.success("Thread deleted");
+          toast.success(t("threadDeleted"));
         } else {
-          toast.error(error.message || "Failed to delete thread");
+          toast.error(error.message || t("failedToDeleteThread"));
         }
       })
       .ifOk(() => onDeleted?.())
@@ -103,7 +104,7 @@ export function ThreadDropdown({
       <PopoverContent className=" p-0 w-[220px]" side={side} align={align}>
         <Command>
           <div className="flex items-center gap-2 px-2 py-1 text-sm pt-2 font-semibold">
-            Chat
+            {t("chat")}
           </div>
           <CommandSeparator />
           <CommandList>
@@ -115,7 +116,7 @@ export function ThreadDropdown({
                 >
                   <div className="flex items-center gap-2 w-full">
                     <WandSparkles className="text-foreground" />
-                    <span className="mr-4">Summarize as Project</span>
+                    <span className="mr-4">{t("summarizeAsProject")}</span>
                   </div>
                 </CreateProjectWithThreadPopup>
               </CommandItem>
@@ -126,7 +127,7 @@ export function ThreadDropdown({
                 >
                   <div className="flex items-center gap-2 w-full px-2 py-1 rounded">
                     <PencilLine className="text-foreground" />
-                    <span className="mr-4">Re Name</span>
+                    <span className="mr-4">{t("renameChat")}</span>
                   </div>
                 </UpdateThreadNameDialog>
               </CommandItem>
@@ -139,7 +140,7 @@ export function ThreadDropdown({
                   onClick={handleDelete}
                 >
                   <Trash className="text-destructive" />
-                  <span className="text-destructive">Delete Chat</span>
+                  <span className="text-destructive">{t("deleteChat")}</span>
                   {isDeleting && (
                     <Loader className="ml-auto h-4 w-4 animate-spin" />
                   )}
@@ -162,13 +163,13 @@ function UpdateThreadNameDialog({
   onUpdated: (title: string) => void;
 }>) {
   const [title, setTitle] = useState(initialTitle);
-
+  const t = useTranslations();
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent hideClose>
         <DialogHeader>
-          <DialogTitle>Rename Chat</DialogTitle>
+          <DialogTitle>{t("Chat.Thread.renameChat")}</DialogTitle>
         </DialogHeader>
         <DialogDescription>
           <Input
@@ -186,11 +187,11 @@ function UpdateThreadNameDialog({
         </DialogDescription>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="secondary">Cancel</Button>
+            <Button variant="secondary">{t("Common.cancel")}</Button>
           </DialogClose>
           <DialogClose asChild>
             <Button variant="outline" onClick={() => onUpdated(title)}>
-              Update
+              {t("Common.update")}
             </Button>
           </DialogClose>
         </DialogFooter>

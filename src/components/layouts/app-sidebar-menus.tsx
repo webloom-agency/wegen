@@ -11,10 +11,11 @@ import Link from "next/link";
 import { Library, MessageCircleDashed } from "lucide-react";
 import { getShortcutKeyList, Shortcuts } from "lib/keyboard-shortcuts";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 export function AppSidebarMenus({ isOpen }: { isOpen: boolean }) {
   const router = useRouter();
-
+  const t = useTranslations("Layout");
   return (
     <SidebarGroup className={cn(isOpen && "px-4")}>
       <SidebarGroupContent>
@@ -38,12 +39,12 @@ export function AppSidebarMenus({ isOpen }: { isOpen: boolean }) {
                       )}
                     >
                       <MessageCircleDashed />
-                      New Chat
+                      {t("newChat")}
                     </SidebarMenuButton>
                   </TooltipTrigger>
                   <TooltipContent side="right">
                     <p>
-                      New Chat{" "}
+                      {t("newChat")}
                       <span className="text-xs text-muted-foreground ml-2">
                         {getShortcutKeyList(Shortcuts.openNewChat).join(" + ")}
                       </span>
@@ -68,11 +69,11 @@ export function AppSidebarMenus({ isOpen }: { isOpen: boolean }) {
                       )}
                     >
                       {!isOpen && <Library />}
-                      MCP Configuration
+                      {t("mcpConfiguration")}
                     </SidebarMenuButton>
                   </TooltipTrigger>
                   <TooltipContent side="right">
-                    <p>MCP Configuration</p>
+                    <p>{t("mcpConfiguration")}</p>
                   </TooltipContent>
                 </Link>
               </SidebarMenuItem>

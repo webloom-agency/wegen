@@ -29,10 +29,12 @@ import { BASE_THEMES } from "lib/const";
 import { capitalizeFirstLetter } from "lib/utils";
 import { authClient } from "auth/client";
 import { SelectLanguage } from "../select-language";
+import { useTranslations } from "next-intl";
 
 export function AppSidebarUser() {
   const appStoreMutate = appStore((state) => state.mutate);
   const { data } = authClient.useSession();
+  const t = useTranslations("Layout");
 
   const user = data?.user;
 
@@ -101,7 +103,7 @@ export function AppSidebarUser() {
               onClick={() => appStoreMutate({ openChatPreferences: true })}
             >
               <Settings2 className="size-4 text-foreground" />
-              <span>Chat Preferences </span>
+              <span>{t("chatPreferences")}</span>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -109,14 +111,14 @@ export function AppSidebarUser() {
               onClick={() => appStoreMutate({ openShortcutsPopup: true })}
             >
               <Command className="size-4 text-foreground" />
-              <span>Keyboard Shortcuts</span>
+              <span>{t("keyboardShortcuts")}</span>
             </DropdownMenuItem>
 
             {isMounted && (
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
                   <Palette className="mr-2 size-4" />
-                  <span>Theme</span>
+                  <span>{t("theme")}</span>
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent className="w-48">
@@ -138,7 +140,7 @@ export function AppSidebarUser() {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout} className="cursor-pointer">
               <LogOutIcon className="size-4 text-foreground" />
-              <span>Sign out</span>
+              <span>{t("signOut")}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
