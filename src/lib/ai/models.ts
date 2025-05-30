@@ -27,6 +27,7 @@ export const allModels = {
   anthropic: {
     "claude-3-5-sonnet": anthropic("claude-3-5-sonnet-latest"),
     "claude-3-7-sonnet": anthropic("claude-3-7-sonnet-latest"),
+    "claude-4-sonnet": anthropic("claude-sonnet-4-20250514"),
   },
   xai: {
     "grok-2": xai("grok-2-1212"),
