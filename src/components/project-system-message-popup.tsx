@@ -18,6 +18,7 @@ import { safe } from "ts-safe";
 import { updateProjectAction } from "@/app/api/chat/actions";
 import { toast } from "sonner";
 import { handleErrorWithToast } from "ui/shared-toast";
+import { useTranslations } from "next-intl";
 
 interface ProjectSystemMessagePopupProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ export function ProjectSystemMessagePopup({
   projectId,
   beforeSystemMessage,
 }: ProjectSystemMessagePopupProps) {
+  const t = useTranslations();
   const [systemPrompt, setSystemPrompt] = useState(beforeSystemMessage || "");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -44,7 +46,7 @@ export function ProjectSystemMessagePopup({
       )
       .watch(() => setIsLoading(false))
       .ifOk(() => onSave(systemPrompt))
-      .ifOk(() => toast.success("Project instructions updated"))
+      .ifOk(() => toast.success(t("Chat.Project.projectInstructionsUpdated")))
       .ifOk(() => onOpenChange(false))
       .ifFail(handleErrorWithToast);
   };
@@ -58,14 +60,15 @@ export function ProjectSystemMessagePopup({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="bg-card w-full sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Project Instructions</DialogTitle>
+          <DialogTitle>{t("Chat.Project.projectInstructions")}</DialogTitle>
           <DialogDescription asChild>
             <div className="py-4">
               <p className="font-semibold mb-2">
-                How can the ChatBot best help you with this project?
+                {t("Chat.Project.howCanTheChatBotBestHelpYouWithThisProject")}
               </p>
-              You can ask the ChatBot to focus on a specific topic or to respond
-              in a particular tone or format.
+              {t(
+                "Chat.Project.youCanAskTheChatBotToFocusOnASpecificTopicOrToRespondInAParticularToneOrFormat",
+              )}
             </div>
           </DialogDescription>
         </DialogHeader>
@@ -81,7 +84,7 @@ export function ProjectSystemMessagePopup({
         </div>
         <DialogFooter>
           <DialogClose asChild disabled={isLoading}>
-            <Button variant="ghost">Cancel</Button>
+            <Button variant="ghost">{t("Common.cancel")}</Button>
           </DialogClose>
           <Button
             type="submit"
@@ -90,7 +93,7 @@ export function ProjectSystemMessagePopup({
             variant={"secondary"}
           >
             {isLoading && <Loader className="size-4 animate-spin" />}
-            Save
+            {t("Common.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -11,7 +11,7 @@ export type Shortcut = {
 };
 
 const openNewChatShortcut: Shortcut = {
-  description: "New Chat",
+  description: "newChat",
   shortcut: {
     key: "O",
     shift: true,
@@ -20,7 +20,7 @@ const openNewChatShortcut: Shortcut = {
 };
 
 const toggleTemporaryChatShortcut: Shortcut = {
-  description: "Toggle Temporary Chat",
+  description: "toggleTemporaryChat",
   shortcut: {
     key: "K",
     command: true,
@@ -28,7 +28,7 @@ const toggleTemporaryChatShortcut: Shortcut = {
 };
 
 const toggleSidebarShortcut: Shortcut = {
-  description: "Toggle Sidebar",
+  description: "toggleSidebar",
   shortcut: {
     key: "S",
     command: true,
@@ -37,7 +37,7 @@ const toggleSidebarShortcut: Shortcut = {
 };
 
 const toolModeShortcut: Shortcut = {
-  description: "Tool Mode",
+  description: "toolMode",
   shortcut: {
     key: "P",
     command: true,
@@ -45,7 +45,7 @@ const toolModeShortcut: Shortcut = {
 };
 
 const lastMessageCopyShortcut: Shortcut = {
-  description: "Copy Last Message",
+  description: "lastMessageCopy",
   shortcut: {
     key: "C",
     command: true,
@@ -54,7 +54,7 @@ const lastMessageCopyShortcut: Shortcut = {
 };
 
 const openChatPreferencesShortcut: Shortcut = {
-  description: "Customize Chat Preferences",
+  description: "openChatPreferences",
   shortcut: {
     key: "I",
     command: true,
@@ -63,7 +63,7 @@ const openChatPreferencesShortcut: Shortcut = {
 };
 
 const deleteThreadShortcut: Shortcut = {
-  description: "Delete Chat",
+  description: "deleteThread",
   shortcut: {
     backspace: true,
     shift: true,
@@ -71,7 +71,7 @@ const deleteThreadShortcut: Shortcut = {
 };
 
 const openShortcutsPopupShortcut: Shortcut = {
-  description: "Open Shortcuts Popup",
+  description: "openShortcutsPopup",
   shortcut: {
     key: "/",
     command: true,

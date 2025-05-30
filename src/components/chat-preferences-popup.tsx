@@ -1,4 +1,4 @@
-import { useEffect, useState, type PropsWithChildren } from "react";
+import { useEffect, useMemo, useState, type PropsWithChildren } from "react";
 import {
   Dialog,
   DialogClose,
@@ -21,20 +21,7 @@ import { Textarea } from "ui/textarea";
 import { Button } from "ui/button";
 import { Loader } from "lucide-react";
 import { authClient } from "auth/client";
-const responseStyleExamples = [
-  "eg. keep explanations brief and to the point",
-  "eg. when learning new concepts, I find analogies particularly helpful",
-  "eg. ask clarifying questions before giving detailed answers",
-  "eg. remember I primarily code in Python (not a coding beginner)",
-];
-
-const professionExamples = [
-  "eg. software engineer",
-  "eg. product manager",
-  "eg. marketing manager",
-  "eg. sales manager",
-  "eg. business analyst",
-];
+import { useTranslations } from "next-intl";
 
 interface ChatPreferencesPopupProps {
   open: boolean;
@@ -46,6 +33,29 @@ export function ChatPreferencesPopup({
   onOpenChange,
   children,
 }: PropsWithChildren<ChatPreferencesPopupProps>) {
+  const t = useTranslations();
+
+  const responseStyleExamples = useMemo(
+    () => [
+      t("Chat.ChatPreferences.responseStyleExample1"),
+      t("Chat.ChatPreferences.responseStyleExample2"),
+      t("Chat.ChatPreferences.responseStyleExample3"),
+      t("Chat.ChatPreferences.responseStyleExample4"),
+    ],
+    [],
+  );
+
+  const professionExamples = useMemo(
+    () => [
+      t("Chat.ChatPreferences.professionExample1"),
+      t("Chat.ChatPreferences.professionExample2"),
+      t("Chat.ChatPreferences.professionExample3"),
+      t("Chat.ChatPreferences.professionExample4"),
+      t("Chat.ChatPreferences.professionExample5"),
+    ],
+    [],
+  );
+
   const { data: session } = authClient.useSession();
   const [preferences, setPreferences] = useObjectState<UserPreferences>({
     displayName: session?.user.name || "",
@@ -64,8 +74,9 @@ export function ChatPreferencesPopup({
         }),
       )
       .watch((result) => {
-        if (result.isOk) toast.success("Preferences saved");
-        else toast.error("Failed to save preferences");
+        if (result.isOk)
+          toast.success(t("Chat.ChatPreferences.preferencesSaved"));
+        else toast.error(t("Chat.ChatPreferences.failedToSavePreferences"));
       })
       .watch(() => setIsSaving(false))
       .ifOk(() => onOpenChange(false));
@@ -96,13 +107,13 @@ export function ChatPreferencesPopup({
       <DialogTrigger asChild>{children}</DialogTrigger>
 
       <DialogContent hideClose className="md:max-w-2xl">
-        <DialogTitle>Chat Preferences</DialogTitle>
+        <DialogTitle>{t("Chat.ChatPreferences.title")}</DialogTitle>
         <DialogDescription>
           {/* Introduce yourself to receive more personalized responses. */}
         </DialogDescription>
         <div className="flex flex-col gap-6 w-full">
           <div className="flex flex-col gap-2">
-            <Label>What should we call you?</Label>
+            <Label>{t("Chat.ChatPreferences.whatShouldWeCallYou")}</Label>
             <Input
               value={preferences.displayName}
               onChange={(e) => {
@@ -114,7 +125,7 @@ export function ChatPreferencesPopup({
           </div>
 
           <div className="flex flex-col gap-2 text-foreground flex-1">
-            <Label>What best describes your work?</Label>
+            <Label>{t("Chat.ChatPreferences.whatBestDescribesYourWork")}</Label>
             <div className="relative w-full">
               <Input
                 value={preferences.profession}
@@ -133,8 +144,9 @@ export function ChatPreferencesPopup({
           </div>
           <div className="flex flex-col gap-2 text-foreground">
             <Label>
-              What personal preferences should be taken into account in
-              responses?
+              {t(
+                "Chat.ChatPreferences.whatPersonalPreferencesShouldBeTakenIntoAccountInResponses",
+              )}
             </Label>
             <span className="text-xs text-muted-foreground"></span>
             <div className="relative w-full">
@@ -157,10 +169,10 @@ export function ChatPreferencesPopup({
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="ghost">Cancel</Button>
+            <Button variant="ghost">{t("Common.cancel")}</Button>
           </DialogClose>
           <Button disabled={isSaving} onClick={savePreferences}>
-            Save
+            {t("Common.save")}
             {isSaving && <Loader className="size-4 ml-2 animate-spin" />}
           </Button>
         </DialogFooter>

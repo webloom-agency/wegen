@@ -17,6 +17,7 @@ import {
   Pencil,
   MessagesSquare,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -57,7 +58,7 @@ function FeatureCard({ title, description, icon, onClick }: FeatureCardProps) {
 
 export default function ProjectPage() {
   const { id } = useParams();
-
+  const t = useTranslations("Chat.Project");
   const {
     data: project,
     isLoading,
@@ -166,7 +167,7 @@ export default function ProjectPage() {
         {isCreatingThread && (
           <div className="pb-6 flex flex-col justify-center fade-in animate-in">
             <div className="w-fit rounded-2xl px-6 py-4 flex items-center gap-2">
-              <h1 className="font-semibold truncate">Creating Chat...</h1>
+              <h1 className="font-semibold truncate">{t("creatingChat")}</h1>
               <Loader className="animate-spin" size={16} />
             </div>
           </div>
@@ -183,14 +184,16 @@ export default function ProjectPage() {
           <FeatureCard
             title="Add Files"
             onClick={notImplementedToast}
-            description="Chat in this project can access file contents."
+            description={t("chatInThisProjectCanAccessFileContents")}
             icon={<FileUp size={18} className="text-muted-foreground" />}
           />
           <FeatureCard
             title="Add Instructions"
             description={
               project?.instructions?.systemPrompt ||
-              "Write how the chatbot should respond to this project or what information it needs."
+              t(
+                "writeHowTheChatbotShouldRespondToThisProjectOrWhatInformationItNeeds",
+              )
             }
             icon={<Pencil size={18} className="text-muted-foreground" />}
             onClick={() => {
@@ -202,7 +205,7 @@ export default function ProjectPage() {
         {project?.threads && project.threads.length > 0 ? (
           <div className="mt-6 mb-4">
             <h3 className="text-lg font-medium px-4 mb-3 flex items-center gap-2 text-muted-foreground">
-              <span>Conversation List</span>
+              <span>{t("conversationList")}</span>
             </h3>
             <div className="flex flex-col gap-2 px-2">
               {project.threads.map((thread) => (
@@ -243,9 +246,11 @@ export default function ProjectPage() {
         ) : (
           !isLoading && (
             <div className="flex flex-col items-center justify-center text-center text-muted-foreground p-8">
-              <h3 className="text-lg font-medium mb-1">No conversations yet</h3>
+              <h3 className="text-lg font-medium mb-1">
+                {t("noConversationsYet")}
+              </h3>
               <p className="text-sm">
-                Enter a new prompt to start your first conversation
+                {t("enterNewPromptToStartYourFirstConversation")}
               </p>
             </div>
           )

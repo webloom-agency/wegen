@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "ui/dialog";
+import { useTranslations } from "next-intl";
 
 interface KeyboardShortcutsPopupProps {
   open: boolean;
@@ -19,12 +20,13 @@ export function KeyboardShortcutsPopup({
   onOpenChange,
   children,
 }: PropsWithChildren<KeyboardShortcutsPopupProps>) {
+  const t = useTranslations("KeyboardShortcuts");
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
 
       <DialogContent className="md:max-w-3xl">
-        <DialogTitle>Keyboard Shortcuts</DialogTitle>
+        <DialogTitle>{t("title")}</DialogTitle>
         <DialogDescription />
         <div className="grid grid-cols-2 gap-5">
           {Object.entries(Shortcuts).map(([key, shortcut]) => (
@@ -32,7 +34,7 @@ export function KeyboardShortcutsPopup({
               key={key}
               className="flex items-center gap-2 w-full text-sm px-2"
             >
-              <p>{shortcut.description}</p>
+              <p>{t(shortcut.description ?? "")}</p>
               <div className="flex-1" />
               {getShortcutKeyList(shortcut).map((key) => {
                 return (

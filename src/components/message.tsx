@@ -16,6 +16,7 @@ import {
 import { Think } from "ui/think";
 import { Terminal, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "ui/button";
+import { useTranslations } from "next-intl";
 
 interface Props {
   message: UIMessage;
@@ -161,12 +162,12 @@ export const ErrorMessage = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const maxLength = 200;
-
+  const t = useTranslations();
   return (
     <div className="w-full mx-auto max-w-3xl px-6 animate-in fade-in mt-4">
       <Alert variant="destructive" className="border-destructive">
         <Terminal className="h-4 w-4" />
-        <AlertTitle className="mb-2">Chat Error</AlertTitle>
+        <AlertTitle className="mb-2">{t("Chat.Error")}</AlertTitle>
         <AlertDescription className="text-sm">
           <div className="whitespace-pre-wrap">
             {isExpanded
@@ -183,12 +184,12 @@ export const ErrorMessage = ({
               {isExpanded ? (
                 <>
                   <ChevronUp className="h-3 w-3" />
-                  Show less
+                  {t("Common.showLess")}
                 </>
               ) : (
                 <>
                   <ChevronDown className="h-3 w-3" />
-                  Show more
+                  {t("Common.showMore")}
                 </>
               )}
             </Button>
@@ -196,7 +197,7 @@ export const ErrorMessage = ({
         </AlertDescription>
         <AlertDescription>
           <p className="text-sm text-muted-foreground my-2">
-            This message was not saved. Please try the chat again.
+            {t("Chat.Error.thisMessageWasNotSavedPleaseTryTheChatAgain")}
           </p>
         </AlertDescription>
       </Alert>

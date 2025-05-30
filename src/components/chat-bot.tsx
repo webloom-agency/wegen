@@ -41,6 +41,7 @@ import {
   DialogTitle,
 } from "ui/dialog";
 import { authClient } from "auth/client";
+import { useTranslations } from "next-intl";
 
 type Props = {
   threadId: string;
@@ -324,6 +325,7 @@ function DeleteThreadPopup({
   onClose,
   open,
 }: { threadId: string; onClose: () => void; open: boolean }) {
+  const t = useTranslations();
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
   const handleDelete = useCallback(() => {
@@ -331,27 +333,27 @@ function DeleteThreadPopup({
     safe(() => deleteThreadAction(threadId))
       .watch(() => setIsDeleting(false))
       .ifOk(() => {
-        toast.success("Thread deleted successfully");
+        toast.success(t("Chat.Thread.threadDeleted"));
         router.push("/");
       })
-      .ifFail(() => toast.error("Failed to delete thread"))
+      .ifFail(() => toast.error(t("Chat.Thread.failedToDeleteThread")))
       .watch(() => onClose());
   }, [threadId, router]);
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete Chat</DialogTitle>
+          <DialogTitle>{t("Chat.Thread.deleteChat")}</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this Chat thread?
+            {t("Chat.Thread.areYouSureYouWantToDeleteThisChatThread")}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
-            Cancel
+            {t("Common.cancel")}
           </Button>
           <Button variant="destructive" onClick={handleDelete} autoFocus>
-            Delete
+            {t("Common.delete")}
             {isDeleting && <Loader className="size-3.5 ml-2 animate-spin" />}
           </Button>
         </DialogFooter>

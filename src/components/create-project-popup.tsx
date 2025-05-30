@@ -25,8 +25,10 @@ import {
 import { Input } from "ui/input";
 import { Label } from "ui/label";
 import { handleErrorWithToast } from "ui/shared-toast";
+import { useTranslations } from "next-intl";
 
 export function CreateProjectPopup({ children }: PropsWithChildren) {
+  const t = useTranslations();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState("");
@@ -37,7 +39,7 @@ export function CreateProjectPopup({ children }: PropsWithChildren) {
       .map(() => insertProjectAction({ name }))
       .watch(() => setIsLoading(false))
       .ifOk(() => setIsOpen(false))
-      .ifOk(() => toast.success("Project created"))
+      .ifOk(() => toast.success(t("Chat.Project.projectCreated")))
       .ifOk(() => mutate("projects"))
       .ifOk((project) => router.push(`/project/${project.id}`))
       .ifFail(handleErrorWithToast);
@@ -60,7 +62,7 @@ export function CreateProjectPopup({ children }: PropsWithChildren) {
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[500px] bg-card">
         <DialogHeader>
-          <DialogTitle>Project</DialogTitle>
+          <DialogTitle>{t("Chat.Project.project")}</DialogTitle>
           <DialogDescription asChild>
             <div className="my-2 p-4 flex bg-muted rounded-lg gap-2">
               <div className="px-2">
@@ -68,18 +70,18 @@ export function CreateProjectPopup({ children }: PropsWithChildren) {
               </div>
               <div className="">
                 <p className="font-semibold text-accent-foreground mb-1">
-                  What is a project?{" "}
+                  {t("Chat.Project.whatIsAProject")}
                 </p>
-                A project is a place where you can keep your files and custom
-                instructions all in one spot. It’s great for ongoing work or for
-                keeping things organized.
+                {t(
+                  "Chat.Project.aProjectAllowsYouToOrganizeYourFilesAndCustomInstructionsInOneConvenientPlace",
+                )}
               </div>
             </div>
           </DialogDescription>
         </DialogHeader>
         <div className="flex items-center gap-2">
           <Label htmlFor="name" className="text-right">
-            Name
+            {t("Chat.Project.projectName")}
           </Label>
           <Input
             autoFocus
@@ -87,13 +89,13 @@ export function CreateProjectPopup({ children }: PropsWithChildren) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={handleEnterKey}
-            placeholder="eg. Korea Trip Plan"
+            placeholder={t("Chat.Project.enterNameForNewProject")}
             className="w-full bg-card"
           />
         </div>
         <DialogFooter>
           <DialogClose asChild disabled={isLoading}>
-            <Button variant="ghost">Cancel</Button>
+            <Button variant="ghost">{t("Common.cancel")}</Button>
           </DialogClose>
           <Button
             type="submit"
@@ -102,7 +104,7 @@ export function CreateProjectPopup({ children }: PropsWithChildren) {
             variant={"secondary"}
           >
             {isLoading && <Loader className="size-4 animate-spin" />}
-            Create
+            {t("Common.create")}
           </Button>
         </DialogFooter>
       </DialogContent>

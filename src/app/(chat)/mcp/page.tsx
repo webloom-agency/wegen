@@ -11,10 +11,11 @@ import { Skeleton } from "ui/skeleton";
 import { handleErrorWithToast } from "ui/shared-toast";
 import { Plus } from "lucide-react";
 import { ScrollArea } from "ui/scroll-area";
+import { useTranslations } from "next-intl";
 
 export default function Page() {
   const appStoreMutate = appStore((state) => state.mutate);
-
+  const t = useTranslations("MCP");
   const { data: mcpList, isLoading } = useSWR(
     "mcp-list",
     selectMcpClientsAction,
@@ -36,7 +37,7 @@ export default function Page() {
           <div className="flex gap-2">
             <Link href="https://smithery.ai/" target="_blank">
               <Button className="font-semibold" variant={"ghost"}>
-                Server Market
+                {t("marketplace")}
               </Button>
             </Link>
             <Link href="/mcp/create">
@@ -45,7 +46,7 @@ export default function Page() {
                 variant="outline"
               >
                 <Plus className="stroke-2" />
-                Add MCP Server
+                {t("addMcpServer")}
               </Button>
             </Link>
           </div>

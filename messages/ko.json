@@ -6,7 +6,10 @@
     "delete": "삭제",
     "save": "저장",
     "back": "뒤로",
-    "next": "다음"
+    "next": "다음",
+    "create": "생성",
+    "showLess": "적게 보기",
+    "showMore": "더 보기"
   },
   "Auth": {
     "SignIn": {
@@ -37,6 +40,8 @@
     }
   },
   "Chat": {
+    "Error": "채팅 오류",
+    "thisMessageWasNotSavedPleaseTryTheChatAgain": "이 메시지는 저장되지 않았습니다. 다시 시도해주세요.",
     "Greeting": {
       "goodMorning": "{name}님 좋은 아침입니다",
       "goodAfternoon": "{name}님 좋은 오후입니다",
@@ -93,7 +98,8 @@
       "threadDeleted": "채팅이 삭제되었습니다",
       "failedToUpdateThread": "채팅 업데이트 실패",
       "titleRequired": "제목이 필요합니다",
-      "threadUpdated": "채팅이 업데이트되었습니다"
+      "threadUpdated": "채팅이 업데이트되었습니다",
+      "areYouSureYouWantToDeleteThisChatThread": "이 채팅을 삭제하시겠습니까?"
     },
     "Project": {
       "instructions": "지시사항",
@@ -102,7 +108,7 @@
       "renameProject": "프로젝트 이름 변경",
       "deleteProject": "프로젝트 삭제",
       "placeholder": "예) 한국 여행 가이드 챗봇입니다. 한국어로만 답변하고, 모든 일정에 대한 정확한 시간을 포함하며, 교통, 예산, 식사 추천을 간결한 표 형식으로 제시하세요.",
-      "projectName": "프로젝트 이름",
+      "projectName": "이름",
       "enterNameForNewProject": "새 프로젝트의 이름을 입력하세요",
       "provideCustomInstructionsForYourProjectAssistant": "프로젝트 어시스턴트에 대한 사용자 지정 지시사항을 제공하세요",
       "createProject": "프로젝트 생성",
@@ -112,7 +118,34 @@
       "projectUpdated": "프로젝트가 업데이트되었습니다",
       "failedToDeleteProject": "프로젝트 삭제 실패",
       "projectDeleted": "프로젝트가 삭제되었습니다",
-      "projectCreated": "프로젝트가 생성되었습니다"
+      "projectCreated": "프로젝트가 생성되었습니다",
+      "creatingChat": "채팅을 생성하는 중...",
+      "chatInThisProjectCanAccessFileContents": "이 프로젝트의 채팅은 파일 내용에 접근할 수 있습니다.",
+      "writeHowTheChatbotShouldRespondToThisProjectOrWhatInformationItNeeds": "채팅 봇이 이 프로젝트에 대해 어떻게 응답해야 하는지 또는 어떤 정보가 필요한지 설명하세요.",
+      "conversationList": "대화 목록",
+      "enterNewPromptToStartYourFirstConversation": "새로운 프롬프트를 입력하여 첫 번째 대화를 시작하세요.",
+      "noConversationsYet": "아직 대화가 없습니다",
+      "projectInstructions": "프로젝트 지시사항",
+      "projectInstructionsUpdated": "프로젝트 지시사항이 업데이트되었습니다",
+      "howCanTheChatBotBestHelpYouWithThisProject": "채팅 봇이 이 프로젝트에 대해 어떻게 도움을 줄 수 있나요?",
+      "youCanAskTheChatBotToFocusOnASpecificTopicOrToRespondInAParticularToneOrFormat": "채팅 봇에게 특정 주제에 집중하도록 요청하거나 특정 어휘나 형식으로 응답하도록 지시할 수 있습니다."
+    },
+    "ChatPreferences": {
+      "title": "채팅 환경설정",
+      "whatShouldWeCallYou": "뭐라고 불러드릴까요?",
+      "whatBestDescribesYourWork": "어떤 직업을 갖고 계신가요?",
+      "whatPersonalPreferencesShouldBeTakenIntoAccountInResponses": "원하시는 응답 스타일을 말씀해주세요",
+      "responseStyleExample1": "예) 설명을 간결하게 유지하고 중요한 점만 강조하세요",
+      "responseStyleExample2": "예) 새로운 개념을 배울 때, 비유가 특히 도움이 됩니다",
+      "responseStyleExample3": "예) 자세한 답변을 제시하기 전에 질문을 통해 명확하게 하세요",
+      "responseStyleExample4": "예) 나는 주로 Python으로 코딩하며 (코딩 초보가 아님을) 기억하세요",
+      "professionExample1": "예) 소프트웨어 엔지니어",
+      "professionExample2": "예) 제품 매니저",
+      "professionExample3": "예) 마케팅 매니저",
+      "professionExample4": "예) 판매 매니저",
+      "professionExample5": "예) 비즈니스 분석가",
+      "preferencesSaved": "환경설정이 저장되었습니다",
+      "failedToSavePreferences": "환경설정 저장 실패"
     }
   },
   "Layout": {
@@ -138,5 +171,34 @@
     "theme": "테마",
     "signOut": "로그아웃",
     "language": "언어"
+  },
+  "KeyboardShortcuts": {
+    "title": "키보드 단축키",
+    "newChat": "새 채팅",
+    "toggleTemporaryChat": "임시 채팅 토글",
+    "toggleSidebar": "사이드바 토글",
+    "toolMode": "도구 사용 모드",
+    "lastMessageCopy": "마지막 메시지 복사",
+    "openChatPreferences": "채팅 환경설정 열기",
+    "deleteThread": "채팅 삭제",
+    "openShortcutsPopup": "단축키 팝업 열기"
+  },
+  "MCP": {
+    "marketplace": "마켓플레이스",
+    "addMcpServer": "MCP 서버 추가",
+    "configureYourMcpServerConnectionSettings": "MCP 서버 연결 설정을 구성하세요",
+    "mcpConfiguration": "MCP 설정",
+    "nameMustContainOnlyAlphanumericCharactersAndHyphens": "서버 이름은 영문자와 숫자, 하이픈(-)만 포함할 수 있습니다",
+    "nameIsRequired": "이름이 필요합니다",
+    "configurationSavedSuccessfully": "설정이 저장되었습니다",
+    "enterMcpServerName": "MCP 서버 이름을 입력하세요",
+    "saveConfiguration": "설정 저장",
+    "toolsTest": "도구 테스트",
+    "refresh": "새로고침",
+    "delete": "삭제",
+    "edit": "수정",
+    "configuration": "설정",
+    "availableTools": "사용 가능한 도구",
+    "noToolsAvailable": "사용 가능한 도구가 없습니다"
   }
 }

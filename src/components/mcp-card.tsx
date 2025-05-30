@@ -31,6 +31,7 @@ import type { MCPServerInfo, MCPToolInfo } from "app-types/mcp";
 import { Switch } from "ui/switch";
 import { Label } from "ui/label";
 import { ToolDetailPopup } from "./tool-detail-popup";
+import { useTranslations } from "next-intl";
 
 // Tools list component
 const ToolsList = memo(({ tools }: { tools: MCPToolInfo[] }) => (
@@ -76,6 +77,7 @@ export const MCPCard = memo(function MCPCard({
   toolInfo,
 }: MCPServerInfo) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const t = useTranslations("MCP");
 
   const isLoading = useMemo(() => {
     return isProcessing || status === "loading";
@@ -153,7 +155,7 @@ export const MCPCard = memo(function MCPCard({
             </Link>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Tools Test</p>
+            <p>{t("toolsTest")}</p>
           </TooltipContent>
         </Tooltip>
         <Tooltip>
@@ -163,7 +165,7 @@ export const MCPCard = memo(function MCPCard({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Refresh</p>
+            <p>{t("refresh")}</p>
           </TooltipContent>
         </Tooltip>
         <Tooltip>
@@ -173,7 +175,7 @@ export const MCPCard = memo(function MCPCard({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Delete</p>
+            <p>{t("delete")}</p>
           </TooltipContent>
         </Tooltip>
         <Tooltip>
@@ -188,7 +190,7 @@ export const MCPCard = memo(function MCPCard({
             </Link>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Edit</p>
+            <p>{t("edit")}</p>
           </TooltipContent>
         </Tooltip>
       </CardHeader>
@@ -201,7 +203,7 @@ export const MCPCard = memo(function MCPCard({
             <div className="flex items-center gap-2 mb-2 pt-2 pb-1 z-10">
               <Settings size={14} className="text-muted-foreground" />
               <h5 className="text-muted-foreground text-sm font-medium">
-                Configuration
+                {t("configuration")}
               </h5>
             </div>
             <JsonView data={config} />
@@ -211,7 +213,7 @@ export const MCPCard = memo(function MCPCard({
             <div className="flex items-center gap-2 mb-4 pt-2 pb-1 z-10">
               <Wrench size={14} className="text-muted-foreground" />
               <h5 className="text-muted-foreground text-sm font-medium">
-                Available Tools
+                {t("availableTools")}
               </h5>
             </div>
 
@@ -220,7 +222,7 @@ export const MCPCard = memo(function MCPCard({
             ) : (
               <div className="bg-secondary/30 rounded-md p-3 text-center">
                 <p className="text-sm text-muted-foreground">
-                  No tools available
+                  {t("noToolsAvailable")}
                 </p>
               </div>
             )}

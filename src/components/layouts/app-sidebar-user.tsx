@@ -121,7 +121,7 @@ export function AppSidebarUser() {
                   <span>{t("theme")}</span>
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="w-48">
+                  <DropdownMenuSubContent className="w-48 max-h-96 overflow-y-auto">
                     {BASE_THEMES.map((t) => (
                       <DropdownMenuCheckboxItem
                         key={t}
