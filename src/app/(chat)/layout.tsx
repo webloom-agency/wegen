@@ -2,10 +2,11 @@ import { SidebarProvider } from "ui/sidebar";
 import { AppSidebar } from "@/components/layouts/app-sidebar";
 import { AppHeader } from "@/components/layouts/app-header";
 import { cookies } from "next/headers";
-import { ShortcutsProvider } from "@/components/shortcuts-provider";
+
 import { getSession } from "auth/server";
 import { redirect } from "next/navigation";
 import { COOKIE_KEY_SIDEBAR_STATE } from "lib/const";
+import { AppPopupProvider } from "@/components/layouts/app-popup-provider";
 
 export default async function ChatLayout({
   children,
@@ -18,7 +19,7 @@ export default async function ChatLayout({
     cookieStore.get(COOKIE_KEY_SIDEBAR_STATE)?.value !== "true";
   return (
     <SidebarProvider defaultOpen={!isCollapsed}>
-      <ShortcutsProvider />
+      <AppPopupProvider />
       <AppSidebar />
       <main className="relative w-full flex flex-col h-screen">
         <AppHeader />

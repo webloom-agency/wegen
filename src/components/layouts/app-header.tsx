@@ -43,7 +43,7 @@ function ThreadDropdownComponent() {
   if (!currentThread) return null;
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="items-center gap-1 hidden md:flex">
       <div className="w-1 h-4">
         <Separator orientation="vertical" />
       </div>
@@ -64,12 +64,14 @@ function ThreadDropdownComponent() {
         threadId={currentThread.id}
         beforeTitle={currentThread.title}
       >
-        <div className="text-sm hover:text-foreground cursor-pointer flex gap-1 items-center px-2 py-1 rounded-md hover:bg-accent">
-          <span className="truncate whitespace-nowrap overflow-hidden max-w-60 lg:max-w-80">
-            {currentThread.title}
-          </span>
+        <Button
+          variant="ghost"
+          className="hover:text-foreground cursor-pointer flex gap-1 items-center px-2 py-1 rounded-md hover:bg-accent"
+        >
+          <p className="truncate max-w-60 min-w-0">{currentThread.title}</p>
+
           <ChevronDown size={14} />
-        </div>
+        </Button>
       </ThreadDropdown>
     </div>
   );
@@ -96,12 +98,19 @@ export function AppHeader() {
             </Toggle>
           </TooltipTrigger>
           <TooltipContent align="start" side="bottom">
-            <p>
+            <div className="flex items-center gap-2">
               {t("toggleSidebar")}
-              <span className="text-xs text-muted-foreground ml-2">
-                {getShortcutKeyList(Shortcuts.toggleSidebar).join(" + ")}
-              </span>
-            </p>
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                {getShortcutKeyList(Shortcuts.toggleSidebar).map((key) => (
+                  <span
+                    key={key}
+                    className="w-5 h-5 flex items-center justify-center bg-muted rounded "
+                  >
+                    {key}
+                  </span>
+                ))}
+              </div>
+            </div>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

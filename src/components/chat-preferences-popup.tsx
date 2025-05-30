@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState, type PropsWithChildren } from "react";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogClose,
@@ -6,7 +8,6 @@ import {
   DialogDescription,
   DialogFooter,
   DialogTitle,
-  DialogTrigger,
 } from "ui/dialog";
 import { useObjectState } from "@/hooks/use-object-state";
 import { UserPreferences } from "app-types/user";
@@ -22,18 +23,15 @@ import { Button } from "ui/button";
 import { Loader } from "lucide-react";
 import { authClient } from "auth/client";
 import { useTranslations } from "next-intl";
+import { appStore } from "@/app/store";
+import { useShallow } from "zustand/shallow";
+import { isShortcutEvent, Shortcuts } from "lib/keyboard-shortcuts";
 
-interface ChatPreferencesPopupProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-export function ChatPreferencesPopup({
-  open,
-  onOpenChange,
-  children,
-}: PropsWithChildren<ChatPreferencesPopupProps>) {
+export function ChatPreferencesPopup() {
   const t = useTranslations();
+  const [openChatPreferences, appStoreMutate] = appStore(
+    useShallow((state) => [state.openChatPreferences, state.mutate]),
+  );
 
   const responseStyleExamples = useMemo(
     () => [
@@ -79,7 +77,7 @@ export function ChatPreferencesPopup({
         else toast.error(t("Chat.ChatPreferences.failedToSavePreferences"));
       })
       .watch(() => setIsSaving(false))
-      .ifOk(() => onOpenChange(false));
+      .ifOk(() => appStoreMutate({ openChatPreferences: false }));
   };
   const { mutate: fetchPreferences } = useSWR<UserPreferences>(
     "/api/user/preferences",
@@ -93,7 +91,7 @@ export function ChatPreferencesPopup({
   );
 
   useEffect(() => {
-    if (open) {
+    if (openChatPreferences) {
       setPreferences({
         displayName: session?.user.name || "",
         responseStyleExample: "",
@@ -101,11 +99,32 @@ export function ChatPreferencesPopup({
       });
       fetchPreferences();
     }
-  }, [open]);
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+  }, [openChatPreferences]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isChatPreferencesEvent = isShortcutEvent(
+        e,
+        Shortcuts.openChatPreferences,
+      );
+      if (isChatPreferencesEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+        appStoreMutate((prev) => ({
+          openChatPreferences: !prev.openChatPreferences,
+        }));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+  return (
+    <Dialog
+      open={openChatPreferences}
+      onOpenChange={() =>
+        appStoreMutate({ openChatPreferences: !openChatPreferences })
+      }
+    >
       <DialogContent hideClose className="md:max-w-2xl">
         <DialogTitle>{t("Chat.ChatPreferences.title")}</DialogTitle>
         <DialogDescription>

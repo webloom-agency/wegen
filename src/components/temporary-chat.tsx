@@ -29,16 +29,21 @@ import {
 import { useTranslations } from "next-intl";
 export default function TemporaryChat({ children }: PropsWithChildren) {
   const t = useTranslations("Chat.TemporaryChat");
-  const [temporaryModel, open, appStoreMutate] = appStore(
+  const [temporaryChat, appStoreMutate] = appStore(
     useShallow((state) => [
-      state.temporaryModel,
-      state.openTemporaryChat,
+      state.temporaryChat,
+
       state.mutate,
     ]),
   );
 
   const setOpen = (bool: boolean) => {
-    appStoreMutate({ openTemporaryChat: bool });
+    appStoreMutate({
+      temporaryChat: {
+        ...temporaryChat,
+        isOpen: bool,
+      },
+    });
   };
 
   const {
@@ -55,7 +60,8 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
     api: "/api/chat/temporary",
     experimental_throttle: 100,
     body: {
-      model: temporaryModel,
+      model: temporaryChat.model,
+      instructions: temporaryChat.instructions,
     },
     onError: () => {
       setMessages((prev) => prev.slice(0, -1));
@@ -72,7 +78,7 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
       if (isShortcutEvent(e, Shortcuts.toggleTemporaryChat)) {
         e.preventDefault();
         e.stopPropagation();
-        setOpen(!open);
+        setOpen(!temporaryChat.isOpen);
       } else if (
         isShortcutEvent(e, {
           shortcut: {
@@ -89,10 +95,15 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open]);
+  }, [temporaryChat.isOpen]);
 
   return (
-    <Drawer handleOnly direction="right" open={open} onOpenChange={setOpen}>
+    <Drawer
+      handleOnly
+      direction="right"
+      open={temporaryChat.isOpen}
+      onOpenChange={setOpen}
+    >
       <DrawerTrigger asChild>
         {children ?? (
           <Tooltip>
@@ -204,8 +215,8 @@ function DrawerTemporaryContent({
   const t = useTranslations("Chat");
   const autoScrollRef = useRef(false);
 
-  const [temporaryModel, appStoreMutate] = appStore(
-    useShallow((state) => [state.temporaryModel, state.mutate]),
+  const [temporaryChat, appStoreMutate] = appStore(
+    useShallow((state) => [state.temporaryChat, state.mutate]),
   );
 
   useEffect(() => {
@@ -282,9 +293,14 @@ function DrawerTemporaryContent({
         <PromptInput
           input={input}
           append={append}
-          model={temporaryModel}
+          model={temporaryChat.model}
           setModel={(model) => {
-            appStoreMutate({ temporaryModel: model });
+            appStoreMutate({
+              temporaryChat: {
+                ...temporaryChat,
+                model,
+              },
+            });
           }}
           toolDisabled
           placeholder={t("TemporaryChat.feelFreeToAskAnythingTemporarily")}
