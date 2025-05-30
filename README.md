@@ -132,6 +132,7 @@ Visualize chatbot responses as pie, bar, or line charts using the built-in tool 
 - **📊 Built-in Chart Tools:** Generate pie, bar, and line charts directly in chat with natural prompts.
 - **🛫Easy Deployment:** with vercel support baked in it makes an easily accesible chatbot.
 - **🏃Run anywhere:** Easily launch with Docker Compose—just build the image and run.
+- **🏃i8n suppport:** We have korean and English languages making the chatbot accessible to all.
 
 > This project uses [pnpm](https://pnpm.io/) as the recommended package manager.
 
