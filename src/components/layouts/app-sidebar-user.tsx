@@ -21,15 +21,22 @@ import {
   LogOutIcon,
   Settings2,
   Palette,
+  Languages,
+  Sun,
+  MoonStar,
+  ChevronRight,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useMounted } from "@/hooks/use-mounted";
 import { appStore } from "@/app/store";
-import { BASE_THEMES } from "lib/const";
-import { capitalizeFirstLetter } from "lib/utils";
+import { BASE_THEMES, COOKIE_KEY_LOCALE, SUPPORTED_LOCALES } from "lib/const";
+import { capitalizeFirstLetter, cn } from "lib/utils";
 import { authClient } from "auth/client";
-import { SelectLanguage } from "../select-language";
 import { useTranslations } from "next-intl";
+import useSWR from "swr";
+import { getLocaleAction } from "@/i18n/get-locale";
+import { useCallback } from "react";
+import { GithubIcon } from "ui/github-icon";
+import { DiscordIcon } from "ui/discord-icon";
 
 export function AppSidebarUser() {
   const appStoreMutate = appStore((state) => state.mutate);
@@ -37,15 +44,6 @@ export function AppSidebarUser() {
   const t = useTranslations("Layout");
 
   const user = data?.user;
-
-  const isMounted = useMounted();
-  const { theme = "slate", resolvedTheme, setTheme } = useTheme();
-  const base = theme.replace(/-dark$/, "");
-  const isDark = theme.endsWith("-dark") || resolvedTheme === "dark";
-
-  const onThemeSelect = (value: string) => {
-    setTheme(isDark ? `${value}-dark` : value);
-  };
 
   const logout = () => {
     authClient.signOut().finally(() => {
@@ -86,7 +84,9 @@ export function AppSidebarUser() {
                     src={user?.image || "/pf.png"}
                     alt={user?.name || ""}
                   />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">
+                    {user?.name?.slice(0, 1) || ""}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user?.name}</span>
@@ -114,29 +114,17 @@ export function AppSidebarUser() {
               <span>{t("keyboardShortcuts")}</span>
             </DropdownMenuItem>
 
-            {isMounted && (
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <Palette className="mr-2 size-4" />
-                  <span>{t("theme")}</span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent className="w-48 max-h-96 overflow-y-auto">
-                    {BASE_THEMES.map((t) => (
-                      <DropdownMenuCheckboxItem
-                        key={t}
-                        checked={base === t}
-                        onCheckedChange={() => onThemeSelect(t)}
-                        className="text-sm"
-                      >
-                        {capitalizeFirstLetter(t)}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-            )}
+            <SelectTheme />
             <SelectLanguage />
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <GithubIcon className="size-4 fill-foreground" />
+              <span>{t("reportAnIssue")}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <DiscordIcon className="size-4 fill-foreground" />
+              <span>{t("joinCommunity")}</span>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout} className="cursor-pointer">
               <LogOutIcon className="size-4 text-foreground" />
@@ -146,5 +134,129 @@ export function AppSidebarUser() {
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
+  );
+}
+
+function SelectTheme() {
+  const t = useTranslations("Layout");
+
+  const { theme = "slate", resolvedTheme, setTheme } = useTheme();
+  const base = theme.replace(/-dark$/, "");
+  const isDark = theme.endsWith("-dark") || resolvedTheme === "dark";
+
+  const onThemeSelect = (value: string) => {
+    setTheme(isDark ? `${value}-dark` : value);
+  };
+
+  const toggleDarkMode = () => {
+    setTheme(isDark ? base : `${base}-dark`);
+  };
+
+  return (
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger
+        icon={
+          <div className="flex items-center gap-1 justify-end w-full">
+            <span className="text-muted-foreground text-xs">
+              {`${capitalizeFirstLetter(base)} ${capitalizeFirstLetter(
+                isDark ? "dark" : "light",
+              )}`}
+            </span>
+            <ChevronRight className="size-4" />
+          </div>
+        }
+      >
+        <Palette className="mr-2 size-4" />
+        <div className="flex w-8">{t("theme")}</div>
+      </DropdownMenuSubTrigger>
+      <DropdownMenuPortal>
+        <DropdownMenuSubContent className="w-48">
+          <DropdownMenuLabel className="text-muted-foreground w-full flex items-center">
+            <span className="text-muted-foreground text-xs mr-2 select-none">
+              {capitalizeFirstLetter(isDark ? "dark" : "light")}
+            </span>
+            <div className="flex-1" />
+
+            <div
+              onClick={toggleDarkMode}
+              className="cursor-pointer border rounded-full flex items-center"
+            >
+              <div
+                className={cn(
+                  isDark &&
+                    "bg-accent ring ring-muted-foreground/40 text-foreground",
+                  "p-1 rounded-full",
+                )}
+              >
+                <MoonStar className="size-3" />
+              </div>
+              <div
+                className={cn(
+                  !isDark &&
+                    "bg-accent ring ring-muted-foreground/40 text-foreground",
+                  "p-1 rounded-full",
+                )}
+              >
+                <Sun className="size-3" />
+              </div>
+            </div>
+          </DropdownMenuLabel>
+          <div className="max-h-96 overflow-y-auto">
+            {BASE_THEMES.map((t) => (
+              <DropdownMenuCheckboxItem
+                key={t}
+                checked={base === t}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onThemeSelect(t);
+                }}
+                className="text-sm"
+              >
+                {capitalizeFirstLetter(t)}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </div>
+        </DropdownMenuSubContent>
+      </DropdownMenuPortal>
+    </DropdownMenuSub>
+  );
+}
+
+function SelectLanguage() {
+  const t = useTranslations("Layout");
+  const { data: currentLocale } = useSWR(COOKIE_KEY_LOCALE, getLocaleAction, {
+    fallbackData: SUPPORTED_LOCALES[0].code,
+    revalidateOnFocus: false,
+  });
+  const handleOnChange = useCallback((locale: string) => {
+    document.cookie = `${COOKIE_KEY_LOCALE}=${locale}; path=/;`;
+    window.location.reload();
+  }, []);
+
+  return (
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger>
+        <Languages className="mr-2 size-4" />
+        <span>{t("language")}</span>
+      </DropdownMenuSubTrigger>
+      <DropdownMenuPortal>
+        <DropdownMenuSubContent className="w-48 max-h-96 overflow-y-auto">
+          <DropdownMenuLabel className="text-muted-foreground">
+            {t("language")}
+          </DropdownMenuLabel>
+          {SUPPORTED_LOCALES.map((locale) => (
+            <DropdownMenuCheckboxItem
+              key={locale.code}
+              checked={locale.code === currentLocale}
+              onCheckedChange={() =>
+                locale.code !== currentLocale && handleOnChange(locale.code)
+              }
+            >
+              {locale.name}
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuSubContent>
+      </DropdownMenuPortal>
+    </DropdownMenuSub>
   );
 }

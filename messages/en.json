@@ -174,7 +174,9 @@
     "showMoreProjects": "Show {count} more",
     "showLessProjects": "Show less",
     "showAllChats": "View All Chats",
-    "showLessChats": "Show less"
+    "showLessChats": "Show less",
+    "reportAnIssue": "Report an issue",
+    "joinCommunity": "Join Community"
   },
   "KeyboardShortcuts": {
     "title": "Keyboard Shortcuts",

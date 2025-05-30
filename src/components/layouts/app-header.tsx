@@ -8,19 +8,11 @@ import {
   TooltipTrigger,
 } from "ui/tooltip";
 import { Toggle } from "ui/toggle";
-import {
-  ChevronDown,
-  ChevronRight,
-  MoonStar,
-  PanelLeft,
-  Sun,
-} from "lucide-react";
-import { useTheme } from "next-themes";
+import { ChevronDown, ChevronRight, PanelLeft } from "lucide-react";
 import { Button } from "ui/button";
 import { Separator } from "ui/separator";
 
 import { useMemo } from "react";
-import { useMounted } from "@/hooks/use-mounted";
 import { ThreadDropdown } from "../thread-dropdown";
 import { appStore } from "@/app/store";
 import { usePathname } from "next/navigation";
@@ -87,7 +79,6 @@ function ThreadDropdownComponent() {
 export function AppHeader() {
   const t = useTranslations("Layout");
   const { toggleSidebar } = useSidebar();
-  const { theme = "zinc", resolvedTheme, setTheme } = useTheme();
   const currentPaths = usePathname();
 
   const componentByPage = useMemo(() => {
@@ -95,16 +86,6 @@ export function AppHeader() {
       return <ThreadDropdownComponent />;
     }
   }, [currentPaths]);
-
-  const isMounted = useMounted();
-  const base = theme.replace(/-dark$/, "");
-  // decide dark vs light
-  const isDark = theme.endsWith("-dark") || resolvedTheme === "dark";
-
-  const toggleTheme = () => {
-    setTheme(isDark ? base : `${base}-dark`);
-  };
-  const ThemeIcon = isDark ? Sun : MoonStar;
 
   return (
     <header className="sticky top-0 z-50 flex items-center px-2 py-2">
@@ -138,10 +119,6 @@ export function AppHeader() {
             <GithubIcon className="w-4 h-4 fill-foreground" />
           </Button>
         </Link>
-
-        <Button variant="ghost" size="icon" onClick={toggleTheme}>
-          {isMounted && <ThemeIcon className="w-5 h-5" />}
-        </Button>
       </div>
     </header>
   );

@@ -174,7 +174,9 @@
     "showMoreProjects": "{count}개 더 보기",
     "showLessProjects": "간략히 보기",
     "showAllChats": "모든 채팅",
-    "showLessChats": "간략히 보기"
+    "showLessChats": "간략히 보기",
+    "reportAnIssue": "도움 받기",
+    "joinCommunity": "커뮤니티 가입"
   },
   "KeyboardShortcuts": {
     "title": "키보드 단축키",

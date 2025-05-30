@@ -156,6 +156,9 @@ export function VoiceChatBot() {
       const saveMessages = messages.filter(
         (v) => v.completed && isNotEmptyUIMessage(v),
       );
+      if (saveMessages.length === 0) {
+        return;
+      }
       return fetch(`/api/chat/${currentThreadId}`, {
         method: "POST",
         body: JSON.stringify({
