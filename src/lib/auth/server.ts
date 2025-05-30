@@ -19,6 +19,15 @@ import { safe } from "ts-safe";
 import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { compare } from "bcrypt-ts";
 import { toAny } from "lib/utils";
+import logger from "logger";
+
+const baseURL =
+  process.env.BETTER_AUTH_URL ??
+  (IS_VERCEL_ENV
+    ? `https://${process.env.VERCEL_URL}`
+    : `http://localhost:${process.env.PORT ?? 3000}`);
+
+logger.info("APP BASE URL", baseURL);
 
 export const auth = betterAuth({
   plugins: [nextCookies()],
@@ -31,11 +40,7 @@ export const auth = betterAuth({
       verification: VerificationSchema,
     },
   }),
-  baseURL:
-    process.env.BETTER_AUTH_URL ??
-    (IS_VERCEL_ENV
-      ? `https://${process.env.VERCEL_URL}`
-      : `http://localhost:${process.env.PORT ?? 3000}`),
+  baseURL,
   emailAndPassword: {
     enabled: true,
     disableSignUp: process.env.DISABLE_SIGN_UP == "true" ? true : false,
@@ -86,6 +91,7 @@ export const auth = betterAuth({
       return v1_4_0_user_migrate_middleware(inputContext);
     },
   },
+  trustedOrigins: [baseURL],
 });
 
 export const getSession = async () => {
