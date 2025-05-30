@@ -12,7 +12,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { getStorageManager } from "lib/browser-stroage";
+
 import { AppSidebarMenus } from "./app-sidebar-menus";
 import { AppSidebarProjects } from "./app-sidebar-projects";
 import { AppSidebarThreads } from "./app-sidebar-threads";
@@ -20,16 +20,9 @@ import { AppSidebarUser } from "./app-sidebar-user";
 import { MCPIcon } from "ui/mcp-icon";
 import { isShortcutEvent, Shortcuts } from "lib/keyboard-shortcuts";
 
-const browserSidebarStorage = getStorageManager<boolean>("sidebar_state");
-
 export function AppSidebar() {
   const { open, toggleSidebar } = useSidebar();
   const router = useRouter();
-
-  // persist sidebar state
-  useEffect(() => {
-    browserSidebarStorage.set(open);
-  }, [open]);
 
   // global shortcuts
   useEffect(() => {

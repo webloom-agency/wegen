@@ -40,6 +40,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "ui/dialog";
+import { authClient } from "auth/client";
 
 type Props = {
   threadId: string;
@@ -110,6 +111,11 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
       }
     },
     onError: (error) => {
+      if (error.message.includes("Unauthorized")) {
+        authClient.signOut().finally(() => {
+          window.location.reload();
+        });
+      }
       toast.error(
         truncateString(error.message, 100) ||
           "An error occured, please try again!",
