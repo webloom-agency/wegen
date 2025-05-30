@@ -314,9 +314,10 @@ export const pgChatRepository: ChatRepository = {
         createdAt: ProjectSchema.createdAt,
         updatedAt: ProjectSchema.updatedAt,
         userId: ProjectSchema.userId,
-        lastThreadAt: sql<string>`MAX(${ChatThreadSchema.createdAt})`.as(
-          "last_thread_at",
-        ),
+        lastThreadAt:
+          sql<string>`COALESCE(MAX(${ChatThreadSchema.createdAt}), '1970-01-01')`.as(
+            `last_thread_at`,
+          ),
       })
       .from(ProjectSchema)
       .leftJoin(
@@ -325,7 +326,7 @@ export const pgChatRepository: ChatRepository = {
       )
       .where(eq(ProjectSchema.userId, userId))
       .groupBy(ProjectSchema.id)
-      .orderBy(desc(sql`last_thread_at`));
+      .orderBy(desc(sql`last_thread_at`), desc(ProjectSchema.createdAt));
     return result;
   },
 
