@@ -8,7 +8,12 @@ import {
   TooltipTrigger,
 } from "ui/tooltip";
 import { Toggle } from "ui/toggle";
-import { ChevronDown, ChevronRight, PanelLeft } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  MessageCircleDashed,
+  PanelLeft,
+} from "lucide-react";
 import { Button } from "ui/button";
 import { Separator } from "ui/separator";
 
@@ -18,7 +23,6 @@ import { appStore } from "@/app/store";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useShallow } from "zustand/shallow";
-import TemporaryChat from "../temporary-chat";
 import { getShortcutKeyList, Shortcuts } from "lib/keyboard-shortcuts";
 import { useTranslations } from "next-intl";
 
@@ -78,7 +82,8 @@ function ThreadDropdownComponent() {
 }
 
 export function AppHeader() {
-  const t = useTranslations("Layout");
+  const t = useTranslations();
+  const [appStoreMutate] = appStore(useShallow((state) => [state.mutate]));
   const { toggleSidebar } = useSidebar();
   const currentPaths = usePathname();
 
@@ -99,7 +104,7 @@ export function AppHeader() {
           </TooltipTrigger>
           <TooltipContent align="start" side="bottom">
             <div className="flex items-center gap-2">
-              {t("toggleSidebar")}
+              {t("KeyboardShortcuts.toggleSidebar")}
               <div className="text-xs text-muted-foreground flex items-center gap-1">
                 {getShortcutKeyList(Shortcuts.toggleSidebar).map((key) => (
                   <span
@@ -118,7 +123,39 @@ export function AppHeader() {
       <div className="flex-1" />
 
       <div className="flex items-center gap-1">
-        <TemporaryChat />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Toggle
+              onClick={() => {
+                appStoreMutate((state) => ({
+                  temporaryChat: {
+                    ...state.temporaryChat,
+                    isOpen: !state.temporaryChat.isOpen,
+                  },
+                }));
+              }}
+            >
+              <MessageCircleDashed className="size-5" />
+            </Toggle>
+          </TooltipTrigger>
+          <TooltipContent align="end" side="bottom">
+            <div className="text-xs flex items-center gap-2">
+              {t("KeyboardShortcuts.toggleTemporaryChat")}
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                {getShortcutKeyList(Shortcuts.toggleTemporaryChat).map(
+                  (key) => (
+                    <span
+                      className="w-5 h-5 flex items-center justify-center bg-muted rounded "
+                      key={key}
+                    >
+                      {key}
+                    </span>
+                  ),
+                )}
+              </div>
+            </div>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </header>
   );

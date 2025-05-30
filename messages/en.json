@@ -58,7 +58,10 @@
       "temporaryChat": "Temporary Chat",
       "resetChat": "Reset Chat",
       "thisChatWontBeSaved": "This chat won't be saved.",
-      "feelFreeToAskAnythingTemporarily": "Feel free to ask anything temporarily"
+      "feelFreeToAskAnythingTemporarily": "Feel free to ask anything temporarily",
+      "temporaryChatInstructions": "Temporary Chat Instructions",
+      "temporaryChatInstructionsPlaceholder": "Enter your instructions here",
+      "temporaryChatInstructionsDescription": "You can set instructions for the temporary chat. This will be used as a system prompt for the temporary chat."
     },
     "placeholder": "What do you want to know?",
     "Tool": {

@@ -58,7 +58,10 @@
       "temporaryChat": "임시 채팅",
       "resetChat": "채팅 초기화",
       "thisChatWontBeSaved": "이 채팅은 저장되지 않습니다.",
-      "feelFreeToAskAnythingTemporarily": "임시로 무엇이든 물어보세요"
+      "feelFreeToAskAnythingTemporarily": "임시로 무엇이든 물어보세요",
+      "temporaryChatInstructions": "임시 채팅 지침",
+      "temporaryChatInstructionsPlaceholder": "지침을 입력하세요",
+      "temporaryChatInstructionsDescription": "임시 채팅에 대한 지침을 설정할 수 있습니다. 이것은 임시 채팅에 대한 시스템 프롬프트로 사용됩니다."
     },
     "placeholder": "무엇이든 물어보세요",
     "Tool": {
