@@ -144,11 +144,7 @@ export const pgChatRepository: ChatRepository = {
         eq(ChatThreadSchema.id, ChatMessageSchema.threadId),
       )
       .where(eq(ChatThreadSchema.userId, userId))
-      .groupBy(
-        ChatThreadSchema.id,
-        ChatThreadSchema.title,
-        ChatThreadSchema.createdAt,
-      )
+      .groupBy(ChatThreadSchema.id)
       .orderBy(desc(sql`last_message_at`));
 
     return threadWithLatestMessage.map((row) => {
@@ -318,9 +314,18 @@ export const pgChatRepository: ChatRepository = {
         createdAt: ProjectSchema.createdAt,
         updatedAt: ProjectSchema.updatedAt,
         userId: ProjectSchema.userId,
+        lastThreadAt: sql<string>`MAX(${ChatThreadSchema.createdAt})`.as(
+          "last_thread_at",
+        ),
       })
       .from(ProjectSchema)
-      .where(eq(ProjectSchema.userId, userId));
+      .leftJoin(
+        ChatThreadSchema,
+        eq(ProjectSchema.id, ChatThreadSchema.projectId),
+      )
+      .where(eq(ProjectSchema.userId, userId))
+      .groupBy(ProjectSchema.id)
+      .orderBy(desc(sql`last_thread_at`));
     return result;
   },
 

@@ -16,12 +16,12 @@ import { useEffect } from "react";
 import { AppSidebarMenus } from "./app-sidebar-menus";
 import { AppSidebarProjects } from "./app-sidebar-projects";
 import { AppSidebarThreads } from "./app-sidebar-threads";
-import { AppSidebarUser } from "./app-sidebar-user";
-import { MCPIcon } from "ui/mcp-icon";
+
 import { isShortcutEvent, Shortcuts } from "lib/keyboard-shortcuts";
+import { AppSidebarUser } from "./app-sidebar-user";
 
 export function AppSidebar() {
-  const { open, toggleSidebar } = useSidebar();
+  const { toggleSidebar } = useSidebar();
   const router = useRouter();
 
   // global shortcuts
@@ -42,7 +42,7 @@ export function AppSidebar() {
   }, [router, toggleSidebar]);
 
   return (
-    <Sidebar collapsible="offcanvas">
+    <Sidebar collapsible="offcanvas" className="border-r">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-0.5">
@@ -55,7 +55,6 @@ export function AppSidebar() {
                   router.refresh();
                 }}
               >
-                <MCPIcon className="size-4 fill-foreground" />
                 <h4 className="font-bold">mcp/chat-bot</h4>
               </Link>
             </SidebarMenuButton>
@@ -63,14 +62,13 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="mt-6 overflow-hidden">
-        <AppSidebarMenus isOpen={open} />
-        <div className="overflow-y-auto">
+      <SidebarContent className="mt-2 overflow-hidden relative">
+        <div className="flex flex-col gap-2 overflow-y-auto">
+          <AppSidebarMenus />
           <AppSidebarProjects />
           <AppSidebarThreads />
         </div>
       </SidebarContent>
-
       <SidebarFooter className="flex flex-col items-stretch space-y-2">
         <AppSidebarUser />
       </SidebarFooter>

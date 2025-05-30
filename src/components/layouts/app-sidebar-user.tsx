@@ -59,10 +59,10 @@ export function AppSidebarUser() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground bg-input/30 border"
               size={"lg"}
             >
-              <Avatar className="rounded-full size-7 border">
+              <Avatar className="rounded-full size-8 border">
                 <AvatarImage
                   className="object-cover"
                   src={user?.image || "/pf.png"}

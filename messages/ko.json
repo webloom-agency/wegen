@@ -170,7 +170,11 @@
     "keyboardShortcuts": "키보드 단축키",
     "theme": "테마",
     "signOut": "로그아웃",
-    "language": "언어"
+    "language": "언어",
+    "showMoreProjects": "{count}개 더 보기",
+    "showLessProjects": "간략히 보기",
+    "showAllChats": "모든 채팅",
+    "showLessChats": "간략히 보기"
   },
   "KeyboardShortcuts": {
     "title": "키보드 단축키",

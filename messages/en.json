@@ -170,7 +170,11 @@
     "keyboardShortcuts": "Keyboard Shortcuts",
     "theme": "Theme",
     "signOut": "Sign out",
-    "language": "Language"
+    "language": "Language",
+    "showMoreProjects": "Show {count} more",
+    "showLessProjects": "Show less",
+    "showAllChats": "View All Chats",
+    "showLessChats": "Show less"
   },
   "KeyboardShortcuts": {
     "title": "Keyboard Shortcuts",

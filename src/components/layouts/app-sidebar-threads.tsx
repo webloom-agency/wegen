@@ -11,7 +11,7 @@ import {
 import { SidebarGroupContent, SidebarMenu, SidebarMenuItem } from "ui/sidebar";
 import { SidebarGroup } from "ui/sidebar";
 import { ThreadDropdown } from "../thread-dropdown";
-import { MoreHorizontal, Trash } from "lucide-react";
+import { ChevronDown, ChevronUp, MoreHorizontal, Trash } from "lucide-react";
 import { useMounted } from "@/hooks/use-mounted";
 import { appStore } from "@/app/store";
 import { Button } from "ui/button";
@@ -30,7 +30,7 @@ import { useShallow } from "zustand/shallow";
 import { useRouter } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import { handleErrorWithToast } from "ui/shared-toast";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { authClient } from "auth/client";
 import { useTranslations } from "next-intl";
 
@@ -39,6 +39,8 @@ type ThreadGroup = {
   threads: any[];
 };
 
+const MAX_THREADS_COUNT = 40;
+
 export function AppSidebarThreads() {
   const mounted = useMounted();
   const router = useRouter();
@@ -46,6 +48,8 @@ export function AppSidebarThreads() {
   const [storeMutate, currentThreadId] = appStore(
     useShallow((state) => [state.mutate, state.currentThreadId]),
   );
+  // State to track if expanded view is active
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const {
     data: threadList,
@@ -57,8 +61,19 @@ export function AppSidebarThreads() {
     onSuccess: (data) => storeMutate({ threadList: data }),
   });
 
+  // Check if we have 40 or more threads to display "View All" button
+  const hasExcessThreads = threadList && threadList.length >= MAX_THREADS_COUNT;
+
+  // Use either limited or full thread list based on expanded state
+  const displayThreadList = useMemo(() => {
+    if (!threadList) return [];
+    return !isExpanded && hasExcessThreads
+      ? threadList.slice(0, MAX_THREADS_COUNT)
+      : threadList;
+  }, [threadList, hasExcessThreads, isExpanded]);
+
   const threadGroupByDate = useMemo(() => {
-    if (!threadList || threadList.length === 0) {
+    if (!displayThreadList || displayThreadList.length === 0) {
       return [];
     }
 
@@ -78,7 +93,7 @@ export function AppSidebarThreads() {
       { label: t("older"), threads: [] },
     ];
 
-    threadList.forEach((thread) => {
+    displayThreadList.forEach((thread) => {
       const threadDate = new Date(thread.lastMessageAt);
       threadDate.setHours(0, 0, 0, 0);
 
@@ -95,7 +110,7 @@ export function AppSidebarThreads() {
 
     // Filter out empty groups
     return groups.filter((group) => group.threads.length > 0);
-  }, [threadList, t]);
+  }, [displayThreadList]);
 
   const handleDeleteAllThreads = async () => {
     await toast.promise(deleteThreadsAction(), {
@@ -168,70 +183,99 @@ export function AppSidebarThreads() {
       </SidebarGroup>
     );
 
-  return threadGroupByDate.map((group, index) => {
-    const isFirst = index === 0;
-    return (
-      <SidebarGroup key={group.label}>
-        <SidebarGroupContent className="group-data-[collapsible=icon]:hidden group/threads">
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarGroupLabel className="">
-                <h4 className="text-xs text-muted-foreground">{group.label}</h4>
-                <div className="flex-1" />
-                {isFirst && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="opacity-0 group-hover/threads:opacity-100 transition-opacity"
-                      >
-                        <MoreHorizontal />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={handleDeleteAllThreads}
-                      >
-                        <Trash />
-                        {t("deleteAllChats")}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </SidebarGroupLabel>
+  return (
+    <>
+      {threadGroupByDate.map((group, index) => {
+        const isFirst = index === 0;
+        return (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupContent className="group-data-[collapsible=icon]:hidden group/threads">
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarGroupLabel className="">
+                    <h4 className="text-xs text-muted-foreground group-hover/threads:text-foreground transition-colors">
+                      {group.label}
+                    </h4>
+                    <div className="flex-1" />
+                    {isFirst && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="opacity-0 group-hover/threads:opacity-100 transition-opacity"
+                          >
+                            <MoreHorizontal />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={handleDeleteAllThreads}
+                          >
+                            <Trash />
+                            {t("deleteAllChats")}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </SidebarGroupLabel>
 
-              {group.threads.map((thread) => (
-                <SidebarMenuSub key={thread.id} className={"group/thread mr-0"}>
-                  <SidebarMenuSubItem>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={currentThreadId === thread.id}
+                  {group.threads.map((thread) => (
+                    <SidebarMenuSub
+                      key={thread.id}
+                      className={"group/thread mr-0"}
                     >
-                      <Link
-                        href={`/chat/${thread.id}`}
-                        className="flex items-center"
-                      >
-                        <p className="truncate ">{thread.title}</p>
-                      </Link>
-                    </SidebarMenuButton>
-                    <SidebarMenuAction className="opacity-0 group-hover/thread:opacity-100">
-                      <ThreadDropdown
-                        side="right"
-                        threadId={thread.id}
-                        beforeTitle={thread.title}
-                      >
-                        <MoreHorizontal />
-                      </ThreadDropdown>
-                    </SidebarMenuAction>
-                  </SidebarMenuSubItem>
-                </SidebarMenuSub>
-              ))}
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-    );
-  });
+                      <SidebarMenuSubItem>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={currentThreadId === thread.id}
+                        >
+                          <Link
+                            href={`/chat/${thread.id}`}
+                            className="flex items-center"
+                          >
+                            <p className="truncate ">{thread.title}</p>
+                          </Link>
+                        </SidebarMenuButton>
+                        <SidebarMenuAction className="opacity-0 group-hover/thread:opacity-100">
+                          <ThreadDropdown
+                            side="right"
+                            threadId={thread.id}
+                            beforeTitle={thread.title}
+                          >
+                            <MoreHorizontal />
+                          </ThreadDropdown>
+                        </SidebarMenuAction>
+                      </SidebarMenuSubItem>
+                    </SidebarMenuSub>
+                  ))}
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        );
+      })}
+
+      {hasExcessThreads && (
+        <SidebarMenu>
+          <SidebarMenuItem>
+            {/* TODO: Later implement a dedicated search/all chats page instead of this expand functionality */}
+            <div className="w-full flex px-4">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="w-full hover:bg-input! justify-start"
+                onClick={() => setIsExpanded(!isExpanded)}
+              >
+                <MoreHorizontal className="mr-2" />
+                {isExpanded ? t("showLessChats") : t("showAllChats")}
+                {isExpanded ? <ChevronUp /> : <ChevronDown />}
+              </Button>
+            </div>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      )}
+    </>
+  );
 }
