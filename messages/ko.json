@@ -1,0 +1,21 @@
+{
+  "Auth": {
+    "SignIn": {
+      "title": "환영합니다",
+      "description": "계정에 로그인하여 계속합니다",
+      "oauthClientIdNotSet": "{provider} client ID가 설정되지 않았습니다",
+      "noAccount": "계정이 없습니까? ",
+      "signUp": "회원가입"
+    },
+    "SignUp": {
+      "title": "회원가입",
+      "description": "계정에 회원가입하여 계속합니다",
+      "email": "이메일",
+      "password": "비밀번호",
+      "signUp": "회원가입"
+    },
+    "Intro": {
+      "description": "MCP Chat Bot에 오신 것을 환영합니다. 우리의 AI 기반 대화 도구를 경험하세요."
+    }
+  }
+}

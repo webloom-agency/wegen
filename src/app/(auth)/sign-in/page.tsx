@@ -129,14 +129,14 @@ export default function SignInPage() {
               {loading ? (
                 <Loader className="size-4 animate-spin ml-1" />
               ) : (
-                "Sign in"
+                t("signIn")
               )}
             </Button>
           </div>
           <div className="flex items-center my-4">
             <div className="flex-1 h-px bg-accent"></div>
             <span className="px-4 text-sm text-muted-foreground">
-              OR CONTINUE WITH
+              {t("orContinueWith")}
             </span>
             <div className="flex-1 h-px bg-accent"></div>
           </div>

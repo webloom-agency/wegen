@@ -5,7 +5,9 @@
       "description": "Sign in to continue to your account",
       "oauthClientIdNotSet": "{provider} client ID is not set",
       "noAccount": "Don't have an account? ",
-      "signUp": "Sign up"
+      "signUp": "Sign up",
+      "signIn": "Sign in",
+      "orContinueWith": "OR CONTINUE WITH"
     },
     "SignUp": {
       "title": "Sign Up",
