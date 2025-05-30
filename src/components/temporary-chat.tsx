@@ -26,7 +26,9 @@ import {
   isShortcutEvent,
   Shortcuts,
 } from "lib/keyboard-shortcuts";
+import { useTranslations } from "next-intl";
 export default function TemporaryChat({ children }: PropsWithChildren) {
+  const t = useTranslations("Chat.TemporaryChat");
   const [temporaryModel, open, appStoreMutate] = appStore(
     useShallow((state) => [
       state.temporaryModel,
@@ -106,7 +108,7 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
             </TooltipTrigger>
             <TooltipContent align="end" side="bottom">
               <p className="text-xs flex items-center gap-2">
-                Toggle Temporary Chat
+                {t("toggleTemporaryChat")}
                 <span className="text-xs text-muted-foreground">
                   {getShortcutKeyList(Shortcuts.toggleTemporaryChat).join(
                     " + ",
@@ -125,7 +127,7 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
       >
         <DrawerHeader>
           <DrawerTitle className="flex items-center gap-2">
-            <p>Temporary Chat</p>
+            <p>{t("temporaryChat")}</p>
 
             <div className="flex-1" />
             <Button
@@ -134,7 +136,7 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
               onClick={() => setMessages([])}
               disabled={isLoading}
             >
-              Reset Chat
+              {t("resetChat")}
               <Separator orientation="vertical" />
               <span className="text-xs text-muted-foreground ml-1">⌘E</span>
             </Button>
@@ -191,7 +193,7 @@ function DrawerTemporaryContent({
   stop: UseChatHelpers["stop"];
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-
+  const t = useTranslations("Chat");
   const autoScrollRef = useRef(false);
 
   const [temporaryModel, appStoreMutate] = appStore(
@@ -240,7 +242,7 @@ function DrawerTemporaryContent({
             {" "}
             <div className="rounded-xl p-6 flex flex-col gap-2 leading-relaxed text-center">
               <h1 className="text-4xl font-semibold ">
-                This chat won&apos;t be saved.
+                {t("TemporaryChat.thisChatWontBeSaved")}
               </h1>
             </div>
           </div>
@@ -277,7 +279,7 @@ function DrawerTemporaryContent({
             appStoreMutate({ temporaryModel: model });
           }}
           toolDisabled
-          placeholder="Feel free to ask anything temporarily"
+          placeholder={t("TemporaryChat.feelFreeToAskAnythingTemporarily")}
           setInput={setInput}
           voiceDisabled
           isLoading={isLoading}

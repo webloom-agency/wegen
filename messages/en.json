@@ -28,5 +28,55 @@
     "Intro": {
       "description": "Welcome to MCP Chat Bot. Sign in to experience our AI-powered conversational tools."
     }
+  },
+  "Chat": {
+    "Greeting": {
+      "goodMorning": "Good morning, {name}",
+      "goodAfternoon": "Good afternoon, {name}",
+      "goodEvening": "Good evening, {name}",
+      "niceToSeeYouAgain": "Nice to see you again, {name}",
+      "whatAreYouWorkingOnToday": "What are you working on today? {name}",
+      "letMeKnowWhenYoureReadyToBegin": "Let me know when you're ready to begin.",
+      "whatAreYourThoughtsToday": "What are your thoughts today?",
+      "whereWouldYouLikeToStart": "Where would you like to start?",
+      "whatAreYouThinking": "What are you thinking? {name}"
+    },
+    "TemporaryChat": {
+      "toggleTemporaryChat": "Toggle Temporary Chat",
+      "temporaryChat": "Temporary Chat",
+      "resetChat": "Reset Chat",
+      "thisChatWontBeSaved": "This chat won't be saved.",
+      "feelFreeToAskAnythingTemporarily": "Feel free to ask anything temporarily"
+    },
+    "placeholder": "What do you want to know?",
+    "Tool": {
+      "selectToolMode": "Select a tool mode",
+      "autoToolModeDescription": "Decides when to use tools without asking you",
+      "manualToolModeDescription": "Asks your permission before using any tools",
+      "noneToolModeDescription": "Do not use tools",
+      "toolsSetup": "Tools Setup",
+      "preset": "Preset",
+      "toolPresets": "Tool Presets",
+      "saveAsPreset": "Save As Preset",
+      "saveAsPresetDescription": "Save the current tool configuration as a preset.",
+      "save": "Save",
+      "noPresetsAvailableYet": "No presets available yet",
+      "presetNameCannotBeEmpty": "Preset name cannot be empty",
+      "presetNameAlreadyExists": "Preset name already exists",
+      "presetSaved": "Preset saved",
+      "chartTools": "Chart Tools",
+      "clickSaveAsPresetToGetStarted": "Click Save As Preset to get started."
+    },
+    "VoiceChat": {
+      "title": "Voice Chat Mode",
+      "compactDisplayMode": "Compact display mode",
+      "conversationDisplayMode": "Conversation display mode",
+      "pleaseCloseTheVoiceChatAndTryAgain": "Please close the voice chat and try again.",
+      "startConversation": "Start conversation",
+      "closeMic": "Close Mic",
+      "openMic": "Open Mic",
+      "endConversation": "End conversation",
+      "toggleVoiceChat": "Toggle Voice Chat"
+    }
   }
 }

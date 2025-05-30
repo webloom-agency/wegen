@@ -28,5 +28,56 @@
     "Intro": {
       "description": "MCP Chat Bot에 오신 것을 환영합니다. 우리의 AI 기반 대화 도구를 경험하세요."
     }
+  },
+  "Chat": {
+    "Greeting": {
+      "goodMorning": "{name}님 좋은 아침입니다",
+      "goodAfternoon": "{name}님 좋은 오후입니다",
+      "goodEvening": "{name}님 좋은 저녁입니다",
+      "niceToSeeYouAgain": "{name}님 다시 만나서 반가워요",
+      "whatAreYouWorkingOnToday": "{name}! 오늘 무엇을 하고 있어요?",
+      "letMeKnowWhenYoureReadyToBegin": "준비가 되면 알려주세요.",
+      "whatAreYourThoughtsToday": "오늘 좋은 아이디어가 있나요?",
+      "whereWouldYouLikeToStart": "어디서부터 시작할까요?",
+      "whatAreYouThinking": "{name}님, 무엇을 생각하고 있어요?"
+    },
+    "TemporaryChat": {
+      "toggleTemporaryChat": "임시 채팅 토글",
+      "temporaryChat": "임시 채팅",
+      "resetChat": "채팅 초기화",
+      "thisChatWontBeSaved": "이 채팅은 저장되지 않습니다.",
+      "feelFreeToAskAnythingTemporarily": "임시로 무엇이든 물어보세요"
+    },
+    "placeholder": "무엇이든 물어보세요",
+
+    "Tool": {
+      "selectToolMode": "도구 사용 모드",
+      "autoToolModeDescription": "도구 사용 여부를 자동으로 결정합니다",
+      "manualToolModeDescription": "도구 사용 여부를 물어봅니다",
+      "noneToolModeDescription": "도구를 사용하지 않습니다",
+      "toolsSetup": "도구 설정",
+      "preset": "프리셋",
+      "toolPresets": "도구 프리셋",
+      "saveAsPreset": "프리셋으로 저장",
+      "saveAsPresetDescription": "현재 도구 설정을 프리셋으로 저장합니다.",
+      "save": "저장",
+      "noPresetsAvailableYet": "프리셋이 없습니다",
+      "presetNameCannotBeEmpty": "프리셋 이름을 입력해주세요",
+      "presetNameAlreadyExists": "이미 존재하는 프리셋 이름입니다",
+      "presetSaved": "프리셋이 저장되었습니다",
+      "chartTools": "차트 도구",
+      "clickSaveAsPresetToGetStarted": "프리셋으로 저장하여 시작합니다."
+    },
+    "VoiceChat": {
+      "title": "음성 채팅 모드",
+      "compactDisplayMode": "간략한 모드",
+      "conversationDisplayMode": "대화 모드",
+      "pleaseCloseTheVoiceChatAndTryAgain": "음성 채팅을 닫고 다시 시도해주세요.",
+      "endConversation": "대화 종료",
+      "toggleVoiceChat": "음성 채팅 토글",
+      "startConversation": "대화 시작",
+      "closeMic": "마이크 닫기",
+      "openMic": "마이크 열기"
+    }
   }
 }

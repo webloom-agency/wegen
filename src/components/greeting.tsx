@@ -4,33 +4,33 @@ import { motion } from "framer-motion";
 import { authClient } from "auth/client";
 import { useMemo } from "react";
 import { FlipWords } from "ui/flip-words";
+import { useTranslations } from "next-intl";
+
 function getGreetingByTime() {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
+  if (hour < 12) return "goodMorning";
+  if (hour < 18) return "goodAfternoon";
+  return "goodEvening";
 }
-
-const createWords = (name: string) => {
-  return [
-    `${getGreetingByTime()}, ${name}`,
-    `Nice to see you again, ${name}.`,
-    `Welcome, ${name}. Are you ready to get started?`,
-    `What are you working on today?`,
-    `Let me know when you're ready to begin.`,
-    `What are your thoughts today?`,
-    `Where would you like to start?`,
-  ];
-};
 
 export const Greeting = () => {
   const { data: session } = authClient.useSession();
+
+  const t = useTranslations("Chat.Greeting");
 
   const user = session?.user;
 
   const word = useMemo(() => {
     if (!user?.name) return "";
-    const words = createWords(user.name);
+    const words = [
+      t(getGreetingByTime(), { name: user.name }),
+      t("niceToSeeYouAgain", { name: user.name }),
+      t("whatAreYouWorkingOnToday", { name: user.name }),
+      t("letMeKnowWhenYoureReadyToBegin"),
+      t("whatAreYourThoughtsToday"),
+      t("whereWouldYouLikeToStart"),
+      t("whatAreYouThinking", { name: user.name }),
+    ];
     return words[Math.floor(Math.random() * words.length)];
   }, [user?.name]);
 

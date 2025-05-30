@@ -78,12 +78,12 @@ export default function SignInPage() {
 
   return (
     <div className="w-full h-full flex flex-col p-4 md:p-8 justify-center">
-      <Card className="w-full md:max-w-md bg-background border-none mx-auto shadow-none">
+      <Card className="w-full md:max-w-md bg-background border-none mx-auto shadow-none animate-in fade-in duration-1000">
         <CardHeader className="my-4">
           <CardTitle className="text-2xl text-center my-1">
             {t("title")}
           </CardTitle>
-          <CardDescription className="text-center">
+          <CardDescription className="text-center text-muted-foreground">
             {t("description")}
           </CardDescription>
         </CardHeader>

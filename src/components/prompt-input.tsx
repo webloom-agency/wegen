@@ -23,6 +23,7 @@ import { ToolChoiceDropDown } from "./tool-choice-dropdown";
 import { PROMPT_PASTE_MAX_LENGTH } from "lib/const";
 import { ToolSelector } from "./tool-selector";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
+import { useTranslations } from "next-intl";
 
 interface PromptInputProps {
   placeholder?: string;
@@ -45,7 +46,7 @@ const MentionInput = dynamic(() => import("./mention-input"), {
 });
 
 export default function PromptInput({
-  placeholder = "What do you want to know?",
+  placeholder,
   append,
   model,
   setModel,
@@ -56,6 +57,8 @@ export default function PromptInput({
   toolDisabled,
   voiceDisabled,
 }: PromptInputProps) {
+  const t = useTranslations("Chat");
+
   const [mcpList, globalModel, appStoreMutate] = appStore(
     useShallow((state) => [state.mcpList, state.model, state.mutate]),
   );
@@ -163,7 +166,7 @@ export default function PromptInput({
                   onChange={setInput}
                   onChangeMention={setToolMentionItems}
                   onEnter={submit}
-                  placeholder={placeholder}
+                  placeholder={placeholder ?? t("placeholder")}
                   onPaste={handlePaste}
                   items={toolList}
                 />
@@ -201,7 +204,6 @@ export default function PromptInput({
                 {!toolDisabled && (
                   <>
                     <ToolChoiceDropDown />
-
                     <ToolSelector align="start" side="top" />
                   </>
                 )}
@@ -234,7 +236,7 @@ export default function PromptInput({
                         <AudioWaveformIcon size={16} />
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent>Voice Chat Mode</TooltipContent>
+                    <TooltipContent>{t("VoiceChat.title")}</TooltipContent>
                   </Tooltip>
                 ) : (
                   <div

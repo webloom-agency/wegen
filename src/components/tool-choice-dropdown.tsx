@@ -10,6 +10,7 @@ import { capitalizeFirstLetter, cn } from "lib/utils";
 import { Check, ClipboardCheck, Infinity, PenOff } from "lucide-react";
 import { useEffect } from "react";
 import { Button } from "ui/button";
+import { useTranslations } from "next-intl";
 
 import {
   DropdownMenu,
@@ -25,6 +26,7 @@ import { Separator } from "ui/separator";
 import { useShallow } from "zustand/shallow";
 
 export const ToolChoiceDropDown = ({ disabled }: { disabled?: boolean }) => {
+  const t = useTranslations("Chat.Tool");
   const [toolChoice, appStoreMutate] = appStore(
     useShallow((state) => [state.toolChoice, state.mutate]),
   );
@@ -67,7 +69,7 @@ export const ToolChoiceDropDown = ({ disabled }: { disabled?: boolean }) => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         <DropdownMenuLabel className="text-muted-foreground flex items-center gap-2">
-          Tool Choice
+          {t("selectToolMode")}
           <DropdownMenuShortcut>
             <span className="text-xs text-muted-foreground bg-muted rounded-md px-2 py-0.5">
               {getShortcutKeyList(Shortcuts.toolMode).join("")}
@@ -86,7 +88,7 @@ export const ToolChoiceDropDown = ({ disabled }: { disabled?: boolean }) => {
                 {toolChoice == "auto" && <Check className="ml-auto" />}
               </div>
               <p className="text-xs text-muted-foreground">
-                Decides when to use tools without asking you
+                {t("autoToolModeDescription")}
               </p>
             </div>
           </DropdownMenuItem>
@@ -103,7 +105,7 @@ export const ToolChoiceDropDown = ({ disabled }: { disabled?: boolean }) => {
                 {toolChoice == "manual" && <Check className="ml-auto" />}
               </div>
               <p className="text-xs text-muted-foreground">
-                Asks your permission before using any tools
+                {t("manualToolModeDescription")}
               </p>
             </div>
           </DropdownMenuItem>
@@ -120,7 +122,9 @@ export const ToolChoiceDropDown = ({ disabled }: { disabled?: boolean }) => {
                 {toolChoice == "none" && <Check className="ml-auto" />}
               </div>
 
-              <p className="text-xs text-muted-foreground">Do not use tools</p>
+              <p className="text-xs text-muted-foreground">
+                {t("noneToolModeDescription")}
+              </p>
             </div>
           </DropdownMenuItem>
         </DropdownMenuGroup>

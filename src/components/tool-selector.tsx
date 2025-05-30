@@ -45,6 +45,7 @@ import { Input } from "ui/input";
 import { MCPIcon } from "ui/mcp-icon";
 
 import { handleErrorWithToast } from "ui/shared-toast";
+import { useTranslations } from "next-intl";
 
 import { Switch } from "ui/switch";
 import { useShallow } from "zustand/shallow";
@@ -75,6 +76,7 @@ export function ToolSelector({
   const [appStoreMutate, toolChoice] = appStore(
     useShallow((state) => [state.mutate, state.toolChoice]),
   );
+  const t = useTranslations("Chat.Tool");
   const { isLoading } = useSWR("mcp-list", selectMcpClientsAction, {
     refreshInterval: 1000 * 60 * 1,
     fallbackData: [],
@@ -104,7 +106,7 @@ export function ToolSelector({
         )}
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-72" align={align} side={side}>
-        <DropdownMenuLabel>Tools Setup</DropdownMenuLabel>
+        <DropdownMenuLabel>{t("toolsSetup")}</DropdownMenuLabel>
         <div className="py-2">
           <ToolPresets />
           <div className="px-2 py-1">
@@ -141,7 +143,7 @@ function ToolPresets() {
     );
   const [open, setOpen] = useState(false);
   const [presetName, setPresetName] = useState("");
-
+  const t = useTranslations("Chat.Tool");
   const [presets, setPresets] = useStateWithBrowserStorage<Preset[]>(
     PRESET_KEY,
     [],
@@ -157,11 +159,11 @@ function ToolPresets() {
   const addPreset = useCallback(
     (name: string) => {
       if (name.trim() === "") {
-        toast.error("Preset name cannot be empty");
+        toast.error(t("presetNameCannotBeEmpty"));
         return;
       }
       if (presets.find((p) => p.name === name)) {
-        toast.error("Preset name already exists");
+        toast.error(t("presetNameAlreadyExists"));
         return;
       }
       setPresets((prev) => [
@@ -170,7 +172,7 @@ function ToolPresets() {
       ]);
       setPresetName("");
       setOpen(false);
-      toast.success("Preset saved");
+      toast.success(t("presetSaved"));
     },
     [allowedMcpServers, allowedAppDefaultToolkit, presets],
   );
@@ -191,26 +193,26 @@ function ToolPresets() {
       <DropdownMenuSub>
         <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 font-semibold cursor-pointer">
           <Package className="size-3.5 " />
-          Preset
+          {t("preset")}
         </DropdownMenuSubTrigger>
         <DropdownMenuPortal>
           <DropdownMenuSubContent className="w-80 max-h-96 overflow-y-auto">
             <DropdownMenuLabel className="flex items-center text-muted-foreground gap-2">
-              Tool Presets
+              {t("toolPresets")}
               <div className="flex-1" />
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
                   <Button variant={"secondary"} size={"sm"} className="border">
-                    Save As Preset
+                    {t("saveAsPreset")}
                     <Plus className="size-3.5" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Save As Preset</DialogTitle>
+                    <DialogTitle>{t("saveAsPreset")}</DialogTitle>
                   </DialogHeader>
                   <DialogDescription>
-                    Save the current tool configuration as a preset.
+                    {t("saveAsPresetDescription")}
                   </DialogDescription>
                   <Input
                     placeholder="Preset Name"
@@ -230,7 +232,7 @@ function ToolPresets() {
                       addPreset(presetName);
                     }}
                   >
-                    Save
+                    {t("save")}
                   </Button>
                 </DialogContent>
               </Dialog>
@@ -238,13 +240,9 @@ function ToolPresets() {
             <DropdownMenuSeparator />
             {presets.length === 0 ? (
               <div className="text-sm text-muted-foreground w-full h-full flex flex-col items-center justify-center gap-2 py-6">
-                <p>No presets available yet</p>
+                <p>{t("noPresetsAvailableYet")}</p>
                 <p className="text-xs px-4">
-                  Click{" "}
-                  <span className="px-1 py-0.5 rounded bg-secondary">
-                    Save As Preset
-                  </span>{" "}
-                  to get started.
+                  {t("clickSaveAsPresetToGetStarted")}
                 </p>
               </div>
             ) : (
@@ -477,7 +475,7 @@ function AppDefaultToolKitSelector() {
   const [appStoreMutate, allowedAppDefaultToolkit] = appStore(
     useShallow((state) => [state.mutate, state.allowedAppDefaultToolkit]),
   );
-
+  const t = useTranslations("Chat.Tool");
   const toggleAppDefaultToolkit = useCallback((toolkit: AppDefaultToolkit) => {
     appStoreMutate((prev) => {
       const newAllowedAppDefaultToolkit = [
@@ -505,7 +503,7 @@ function AppDefaultToolKitSelector() {
         }}
       >
         <ChartColumn className="size-3.5 text-blue-500 stroke-3" />
-        Chart Tools
+        {t("chartTools")}
         <Switch
           className="ml-auto"
           checked={allowedAppDefaultToolkit?.includes(

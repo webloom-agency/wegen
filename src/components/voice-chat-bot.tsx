@@ -60,6 +60,7 @@ import { ToolInvocationUIPart } from "app-types/chat";
 import { appStore } from "@/app/store";
 import { useShallow } from "zustand/shallow";
 import { mutate } from "swr";
+import { useTranslations } from "next-intl";
 
 const isNotEmptyUIMessage = (message: UIMessage) => {
   return message.parts.some((v) => {
@@ -101,6 +102,7 @@ const prependTools = [
 ];
 
 export function VoiceChatBot() {
+  const t = useTranslations("Chat");
   const [appStoreMutate, voiceChat, model, currentThreadId, currentProjectId] =
     appStore(
       useShallow((state) => [
@@ -231,8 +233,8 @@ export function VoiceChatBot() {
                   </TooltipTrigger>
                   <TooltipContent>
                     {useCompactView
-                      ? "Compact display mode"
-                      : "Conversation display mode"}
+                      ? t("VoiceChat.compactDisplayMode")
+                      : t("VoiceChat.conversationDisplayMode")}
                   </TooltipContent>
                 </Tooltip>
               </div>
@@ -331,7 +333,7 @@ export function VoiceChatBot() {
 
                     <AlertDescription className="my-4 ">
                       <p className="text-muted-foreground ">
-                        Please close the voice chat and try again.
+                        {t("VoiceChat.pleaseCloseTheVoiceChatAndTryAgain")}
                       </p>
                     </AlertDescription>
                   </Alert>
@@ -390,10 +392,10 @@ export function VoiceChatBot() {
                 </TooltipTrigger>
                 <TooltipContent>
                   {!isActive
-                    ? "Start Conversation"
+                    ? t("VoiceChat.startConversation")
                     : isListening
-                      ? "Close Mic"
-                      : "Open Mic"}
+                      ? t("VoiceChat.closeMic")
+                      : t("VoiceChat.openMic")}
                 </TooltipContent>
               </Tooltip>
               <Tooltip>
@@ -409,7 +411,7 @@ export function VoiceChatBot() {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>End conversation</p>
+                  <p>{t("VoiceChat.endConversation")}</p>
                 </TooltipContent>
               </Tooltip>
             </div>
