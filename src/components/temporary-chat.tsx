@@ -102,19 +102,27 @@ export default function TemporaryChat({ children }: PropsWithChildren) {
                   setOpen(!open);
                 }}
                 variant={"ghost"}
+                size={"icon"}
               >
-                <MessageCircleDashed />
+                <MessageCircleDashed className="size-5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent align="end" side="bottom">
-              <p className="text-xs flex items-center gap-2">
+              <div className="text-xs flex items-center gap-2">
                 {t("toggleTemporaryChat")}
-                <span className="text-xs text-muted-foreground">
-                  {getShortcutKeyList(Shortcuts.toggleTemporaryChat).join(
-                    " + ",
+                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                  {getShortcutKeyList(Shortcuts.toggleTemporaryChat).map(
+                    (key) => (
+                      <span
+                        className="w-5 h-5 flex items-center justify-center bg-muted rounded "
+                        key={key}
+                      >
+                        {key}
+                      </span>
+                    ),
                   )}
-                </span>
-              </p>
+                </div>
+              </div>
             </TooltipContent>
           </Tooltip>
         )}

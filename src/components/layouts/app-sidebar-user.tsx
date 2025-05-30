@@ -117,11 +117,22 @@ export function AppSidebarUser() {
             <SelectTheme />
             <SelectLanguage />
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                window.open(
+                  "https://github.com/cgoinglove/mcp-client-chatbot/issues/new",
+                  "_blank",
+                );
+              }}
+            >
               <GithubIcon className="size-4 fill-foreground" />
               <span>{t("reportAnIssue")}</span>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                window.open("https://discord.gg/gCRu69Upnp", "_blank");
+              }}
+            >
               <DiscordIcon className="size-4 fill-foreground" />
               <span>{t("joinCommunity")}</span>
             </DropdownMenuItem>

@@ -17,7 +17,6 @@ import { ThreadDropdown } from "../thread-dropdown";
 import { appStore } from "@/app/store";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { GithubIcon } from "ui/github-icon";
 import { useShallow } from "zustand/shallow";
 import TemporaryChat from "../temporary-chat";
 import { getShortcutKeyList, Shortcuts } from "lib/keyboard-shortcuts";
@@ -111,14 +110,6 @@ export function AppHeader() {
 
       <div className="flex items-center gap-1">
         <TemporaryChat />
-        <Link
-          href="https://github.com/cgoinglove/mcp-client-chatbot"
-          target="_blank"
-        >
-          <Button variant="ghost" size="icon">
-            <GithubIcon className="w-4 h-4 fill-foreground" />
-          </Button>
-        </Link>
       </div>
     </header>
   );
