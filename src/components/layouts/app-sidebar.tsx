@@ -63,10 +63,12 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="mt-6">
+      <SidebarContent className="mt-6 overflow-hidden">
         <AppSidebarMenus isOpen={open} />
-        <AppSidebarProjects />
-        <AppSidebarThreads />
+        <div className="overflow-y-auto">
+          <AppSidebarProjects />
+          <AppSidebarThreads />
+        </div>
       </SidebarContent>
 
       <SidebarFooter className="flex flex-col items-stretch space-y-2">

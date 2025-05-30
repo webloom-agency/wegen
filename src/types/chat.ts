@@ -91,7 +91,11 @@ export type ChatRepository = {
 
   selectMessagesByThreadId(threadId: string): Promise<ChatMessage[]>;
 
-  selectThreadsByUserId(userId: string): Promise<ChatThread[]>;
+  selectThreadsByUserId(userId: string): Promise<
+    (ChatThread & {
+      lastMessageAt: number;
+    })[]
+  >;
 
   updateThread(
     id: string,

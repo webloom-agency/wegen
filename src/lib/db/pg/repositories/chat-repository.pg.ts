@@ -120,7 +120,13 @@ export const pgChatRepository: ChatRepository = {
     return result as ChatMessage[];
   },
 
-  selectThreadsByUserId: async (userId: string): Promise<ChatThread[]> => {
+  selectThreadsByUserId: async (
+    userId: string,
+  ): Promise<
+    (ChatThread & {
+      lastMessageAt: number;
+    })[]
+  > => {
     const threadWithLatestMessage = await db
       .select({
         threadId: ChatThreadSchema.id,
@@ -152,6 +158,9 @@ export const pgChatRepository: ChatRepository = {
         userId: row.userId,
         projectId: row.projectId,
         createdAt: row.createdAt,
+        lastMessageAt: row.lastMessageAt
+          ? new Date(row.lastMessageAt).getTime()
+          : 0,
       };
     });
   },

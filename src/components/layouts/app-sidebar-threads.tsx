@@ -30,8 +30,13 @@ import { useShallow } from "zustand/shallow";
 import { useRouter } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import { handleErrorWithToast } from "ui/shared-toast";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { authClient } from "auth/client";
+
+type ThreadGroup = {
+  label: string;
+  threads: any[];
+};
 
 export function AppSidebarThreads() {
   const mounted = useMounted();
@@ -49,6 +54,47 @@ export function AppSidebarThreads() {
     fallbackData: [],
     onSuccess: (data) => storeMutate({ threadList: data }),
   });
+
+  const threadGroupByDate = useMemo(() => {
+    if (!threadList || threadList.length === 0) {
+      return [];
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const lastWeek = new Date(today);
+    lastWeek.setDate(lastWeek.getDate() - 7);
+
+    const groups: ThreadGroup[] = [
+      { label: "Today", threads: [] },
+      { label: "Yesterday", threads: [] },
+      { label: "Last 7 days", threads: [] },
+      { label: "Older", threads: [] },
+    ];
+
+    threadList.forEach((thread) => {
+      const threadDate = new Date(thread.lastMessageAt);
+      threadDate.setHours(0, 0, 0, 0);
+
+      if (threadDate.getTime() === today.getTime()) {
+        groups[0].threads.push(thread);
+      } else if (threadDate.getTime() === yesterday.getTime()) {
+        groups[1].threads.push(thread);
+      } else if (threadDate.getTime() >= lastWeek.getTime()) {
+        groups[2].threads.push(thread);
+      } else {
+        groups[3].threads.push(thread);
+      }
+    });
+
+    // Filter out empty groups
+    return groups.filter((group) => group.threads.length > 0);
+  }, [threadList]);
+
   const handleDeleteAllThreads = async () => {
     await toast.promise(deleteThreadsAction(), {
       loading: "Deleting all threads...",
@@ -60,6 +106,7 @@ export function AppSidebarThreads() {
       error: "Failed to delete all threads",
     });
   };
+
   useEffect(() => {
     if (error) {
       authClient.signOut().finally(() => {
@@ -68,49 +115,90 @@ export function AppSidebarThreads() {
     }
   }, [error]);
 
-  return (
-    <SidebarGroup>
-      <SidebarGroupContent className="group-data-[collapsible=icon]:hidden group/threads">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarGroupLabel className="">
-              <h4 className="text-xs text-muted-foreground">Recent Chats</h4>
-              <div className="flex-1" />
+  if (isLoading || threadList?.length === 0)
+    return (
+      <SidebarGroup>
+        <SidebarGroupContent className="group-data-[collapsible=icon]:hidden group/threads">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarGroupLabel className="">
+                <h4 className="text-xs text-muted-foreground">Recent Chats</h4>
+                <div className="flex-1" />
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="opacity-0 group-hover/threads:opacity-100 transition-opacity"
-                  >
-                    <MoreHorizontal />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onClick={handleDeleteAllThreads}
-                  >
-                    <Trash />
-                    Delete All Chats
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </SidebarGroupLabel>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="opacity-0 group-hover/threads:opacity-100 transition-opacity"
+                    >
+                      <MoreHorizontal />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={handleDeleteAllThreads}
+                    >
+                      <Trash />
+                      Delete All Chats
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </SidebarGroupLabel>
 
-            {isLoading ? (
-              Array.from({ length: 12 }).map(
-                (_, index) => mounted && <SidebarMenuSkeleton key={index} />,
-              )
-            ) : threadList?.length === 0 ? (
-              <div className="px-2 py-4 text-center">
-                <p className="text-sm text-muted-foreground">
-                  No conversations yet
-                </p>
-              </div>
-            ) : (
-              threadList?.map((thread) => (
+              {isLoading ? (
+                Array.from({ length: 12 }).map(
+                  (_, index) => mounted && <SidebarMenuSkeleton key={index} />,
+                )
+              ) : (
+                <div className="px-2 py-4 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    No conversations yet
+                  </p>
+                </div>
+              )}
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    );
+
+  return threadGroupByDate.map((group, index) => {
+    const isFirst = index === 0;
+    return (
+      <SidebarGroup key={group.label}>
+        <SidebarGroupContent className="group-data-[collapsible=icon]:hidden group/threads">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarGroupLabel className="">
+                <h4 className="text-xs text-muted-foreground">{group.label}</h4>
+                <div className="flex-1" />
+                {isFirst && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover/threads:opacity-100 transition-opacity"
+                      >
+                        <MoreHorizontal />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onClick={handleDeleteAllThreads}
+                      >
+                        <Trash />
+                        Delete All Chats
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </SidebarGroupLabel>
+
+              {group.threads.map((thread) => (
                 <SidebarMenuSub key={thread.id} className={"group/thread mr-0"}>
                   <SidebarMenuSubItem>
                     <SidebarMenuButton
@@ -135,11 +223,11 @@ export function AppSidebarThreads() {
                     </SidebarMenuAction>
                   </SidebarMenuSubItem>
                 </SidebarMenuSub>
-              ))
-            )}
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
-  );
+              ))}
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    );
+  });
 }
