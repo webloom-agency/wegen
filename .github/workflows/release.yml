@@ -20,6 +20,9 @@ jobs:
         with:
           node-version: 20
 
+      - name: Install Dependencies
+        run: pnpm i -D @changesets/cli
+
       - name: Create Release Pull Request
         uses: changesets/action@v1
         env:
