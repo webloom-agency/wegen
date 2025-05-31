@@ -1,6 +1,6 @@
 "use client";
 
-import { SidebarGroupLabel, SidebarMenuSub, useSidebar } from "ui/sidebar";
+import { SidebarGroupLabel, SidebarMenuSub } from "ui/sidebar";
 import Link from "next/link";
 import {
   SidebarMenuAction,
