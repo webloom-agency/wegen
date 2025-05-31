@@ -26,61 +26,6 @@ import { useShallow } from "zustand/shallow";
 import { getShortcutKeyList, Shortcuts } from "lib/keyboard-shortcuts";
 import { useTranslations } from "next-intl";
 
-function ThreadDropdownComponent() {
-  const [threadList, currentThreadId, projectList] = appStore(
-    useShallow((state) => [
-      state.threadList,
-      state.currentThreadId,
-      state.projectList,
-    ]),
-  );
-  const currentThread = useMemo(() => {
-    return threadList.find((thread) => thread.id === currentThreadId);
-  }, [threadList, currentThreadId]);
-
-  const currentProject = useMemo(() => {
-    return projectList.find(
-      (project) => project.id === currentThread?.projectId,
-    );
-  }, [currentThread, projectList]);
-
-  if (!currentThread) return null;
-
-  return (
-    <div className="items-center gap-1 hidden md:flex">
-      <div className="w-1 h-4">
-        <Separator orientation="vertical" />
-      </div>
-      {currentProject && (
-        <>
-          <Link href={`/project/${currentProject.id}`}>
-            <Button variant="ghost" className="flex items-center gap-1">
-              <p className="text-muted-foreground max-w-32 truncate">
-                {currentProject.name}
-              </p>
-            </Button>
-          </Link>
-          <ChevronRight size={14} className="text-muted-foreground" />
-        </>
-      )}
-
-      <ThreadDropdown
-        threadId={currentThread.id}
-        beforeTitle={currentThread.title}
-      >
-        <Button
-          variant="ghost"
-          className="hover:text-foreground cursor-pointer flex gap-1 items-center px-2 py-1 rounded-md hover:bg-accent"
-        >
-          <p className="truncate max-w-60 min-w-0">{currentThread.title}</p>
-
-          <ChevronDown size={14} />
-        </Button>
-      </ThreadDropdown>
-    </div>
-  );
-}
-
 export function AppHeader() {
   const t = useTranslations();
   const [appStoreMutate] = appStore(useShallow((state) => [state.mutate]));
@@ -94,7 +39,7 @@ export function AppHeader() {
   }, [currentPaths]);
 
   return (
-    <header className="sticky top-0 z-50 flex items-center px-2 py-2">
+    <header className="sticky top-0 z-50 flex items-center px-3 py-2">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -158,5 +103,60 @@ export function AppHeader() {
         </Tooltip>
       </div>
     </header>
+  );
+}
+
+function ThreadDropdownComponent() {
+  const [threadList, currentThreadId, projectList] = appStore(
+    useShallow((state) => [
+      state.threadList,
+      state.currentThreadId,
+      state.projectList,
+    ]),
+  );
+  const currentThread = useMemo(() => {
+    return threadList.find((thread) => thread.id === currentThreadId);
+  }, [threadList, currentThreadId]);
+
+  const currentProject = useMemo(() => {
+    return projectList.find(
+      (project) => project.id === currentThread?.projectId,
+    );
+  }, [currentThread, projectList]);
+
+  if (!currentThread) return null;
+
+  return (
+    <div className="items-center gap-1 hidden md:flex">
+      <div className="w-1 h-4">
+        <Separator orientation="vertical" />
+      </div>
+      {currentProject && (
+        <>
+          <Link href={`/project/${currentProject.id}`}>
+            <Button variant="ghost" className="flex items-center gap-1">
+              <p className="text-muted-foreground max-w-32 truncate">
+                {currentProject.name}
+              </p>
+            </Button>
+          </Link>
+          <ChevronRight size={14} className="text-muted-foreground" />
+        </>
+      )}
+
+      <ThreadDropdown
+        threadId={currentThread.id}
+        beforeTitle={currentThread.title}
+      >
+        <Button
+          variant="ghost"
+          className="hover:text-foreground cursor-pointer flex gap-1 items-center px-2 py-1 rounded-md hover:bg-accent"
+        >
+          <p className="truncate max-w-60 min-w-0">{currentThread.title}</p>
+
+          <ChevronDown size={14} />
+        </Button>
+      </ThreadDropdown>
+    </div>
   );
 }
