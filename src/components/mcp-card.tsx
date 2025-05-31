@@ -125,7 +125,7 @@ export const MCPCard = memo(function MCPCard({
       <CardHeader className="flex items-center gap-1 mb-2">
         {isLoading && <Loader className="size-4 z-20 animate-spin mr-1" />}
 
-        <h4 className="font-bold text-lg ">{name}</h4>
+        <h4 className="font-bold text-xs sm:text-lg">{name}</h4>
         <div className="flex-1" />
 
         <Label
@@ -138,16 +138,16 @@ export const MCPCard = memo(function MCPCard({
           id={`mcp-card-switch-${name}`}
           checked={status === "connected"}
           onCheckedChange={handleToggleConnection}
-          className="mr-2"
+          className="mr-2 hidden sm:block"
         />
-        <div className="h-4">
+        <div className="h-4 hidden sm:block">
           <Separator orientation="vertical" />
         </div>
         <Tooltip>
           <TooltipTrigger asChild>
             <Link
               href={`/mcp/test/${encodeURIComponent(name)}`}
-              className="cursor-pointer"
+              className="cursor-pointer hidden sm:block"
             >
               <Button variant="ghost" size="icon">
                 <FlaskConical className="size-3.5" />
@@ -197,7 +197,7 @@ export const MCPCard = memo(function MCPCard({
 
       {errorMessage && <ErrorAlert error={errorMessage} />}
 
-      <div className="relative">
+      <div className="relative hidden sm:flex">
         <CardContent className="flex min-w-0 h-full flex-row gap-4 text-sm max-h-[240px] overflow-y-auto">
           <div className="w-1/2 min-w-0 flex flex-col h-full pr-2 border-r">
             <div className="flex items-center gap-2 mb-2 pt-2 pb-1 z-10">

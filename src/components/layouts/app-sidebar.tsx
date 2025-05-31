@@ -10,7 +10,7 @@ import {
   useSidebar,
 } from "ui/sidebar";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { AppSidebarMenus } from "./app-sidebar-menus";
@@ -19,10 +19,15 @@ import { AppSidebarThreads } from "./app-sidebar-threads";
 
 import { isShortcutEvent, Shortcuts } from "lib/keyboard-shortcuts";
 import { AppSidebarUser } from "./app-sidebar-user";
+import { PanelLeft } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function AppSidebar() {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar,setOpenMobile } = useSidebar();
   const router = useRouter();
+  const isMobile = useIsMobile();
+
+  const currentPath = usePathname();
 
   // global shortcuts
   useEffect(() => {
@@ -41,12 +46,18 @@ export function AppSidebar() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [router, toggleSidebar]);
 
+  useEffect(() => {
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }, [currentPath, isMobile]);
+
   return (
     <Sidebar collapsible="offcanvas" className="border-r">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-0.5">
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton asChild className="hover:bg-transparent">
               <Link
                 href={`/`}
                 onClick={(e) => {
@@ -56,6 +67,16 @@ export function AppSidebar() {
                 }}
               >
                 <h4 className="font-bold">mcp/chat-bot</h4>
+                <div
+                  className="ml-auto block sm:hidden"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();  
+                    setOpenMobile(false)
+                  }}
+                >
+                  <PanelLeft className="size-4" />
+                </div>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

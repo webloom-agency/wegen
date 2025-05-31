@@ -1,5 +1,5 @@
 "use client";
-import { SidebarMenuButton } from "ui/sidebar";
+import { SidebarMenuButton, useSidebar } from "ui/sidebar";
 import { Tooltip } from "ui/tooltip";
 import { SidebarMenu, SidebarMenuItem } from "ui/sidebar";
 import { SidebarGroupContent } from "ui/sidebar";
@@ -16,6 +16,7 @@ import { WriteIcon } from "ui/write-icon";
 export function AppSidebarMenus() {
   const router = useRouter();
   const t = useTranslations("Layout");
+  const { setOpenMobile } = useSidebar();
   return (
     <SidebarGroup>
       <SidebarGroupContent>
@@ -27,6 +28,7 @@ export function AppSidebarMenus() {
                   href="/"
                   onClick={(e) => {
                     e.preventDefault();
+                    setOpenMobile(false);
                     router.push(`/`);
                     router.refresh();
                   }}

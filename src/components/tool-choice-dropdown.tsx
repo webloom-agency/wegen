@@ -63,8 +63,10 @@ export const ToolChoiceDropDown = ({ disabled }: { disabled?: boolean }) => {
           )}
         >
           <span>{capitalizeFirstLetter(toolChoice)}</span>
-          <Separator orientation="vertical" className="h-4" />
-          <span className="text-xs text-muted-foreground">⌘P</span>
+          <Separator orientation="vertical" className="h-4 hidden sm:block" />
+          <span className="text-xs text-muted-foreground hidden sm:block">
+            ⌘P
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">

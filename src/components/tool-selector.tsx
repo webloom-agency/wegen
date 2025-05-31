@@ -99,13 +99,13 @@ export function ToolSelector({
             {isLoading ? (
               <Loader className="size-3.5 animate-spin" />
             ) : (
-              <Wrench className="size-3.5" />
+              <Wrench className="size-3.5 hidden sm:block" />
             )}
             Tools
           </Button>
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-72" align={align} side={side}>
+      <DropdownMenuContent className="md:w-72" align={align} side={side}>
         <DropdownMenuLabel>{t("toolsSetup")}</DropdownMenuLabel>
         <div className="py-2">
           <ToolPresets />
@@ -192,11 +192,11 @@ function ToolPresets() {
     <DropdownMenuGroup className="cursor-pointer">
       <DropdownMenuSub>
         <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 font-semibold cursor-pointer">
-          <Package className="size-3.5 " />
+          <Package className="size-3.5" />
           {t("Chat.Tool.preset")}
         </DropdownMenuSubTrigger>
         <DropdownMenuPortal>
-          <DropdownMenuSubContent className="w-80 max-h-96 overflow-y-auto">
+          <DropdownMenuSubContent className="md:w-80 md:max-h-96 overflow-y-auto">
             <DropdownMenuLabel className="flex items-center text-muted-foreground gap-2">
               {t("Chat.Tool.toolPresets")}
               <div className="flex-1" />

@@ -183,7 +183,7 @@ export default function MCPEditor({
         </div>
 
         {/* Split view for config editor */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" >
           {/* Left side: Textarea for editing */}
           <div className="space-y-2">
             <Textarea
@@ -196,7 +196,7 @@ export default function MCPEditor({
           </div>
 
           {/* Right side: JSON view */}
-          <div className="space-y-2">
+          <div className="space-y-2 hidden sm:block">
             <div className="border border-input rounded-md p-4 h-[40vh] overflow-auto relative bg-secondary">
               <Label
                 htmlFor="config-view"

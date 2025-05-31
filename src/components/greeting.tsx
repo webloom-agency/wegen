@@ -44,7 +44,7 @@ export const Greeting = () => {
       transition={{ delay: 0.3 }}
     >
       <div className="rounded-xl p-6 flex flex-col gap-2 leading-relaxed text-center">
-        <h1 className="text-4xl font-semibold">
+        <h1 className="text-2xl md:text-4xl font-semibold">
           {word ? <FlipWords words={[word]} className="text-primary" /> : ""}
         </h1>
         <div className="text-4xl"></div>

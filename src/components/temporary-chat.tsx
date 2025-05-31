@@ -138,7 +138,7 @@ export default function TemporaryChat() {
       >
         <DrawerHeader>
           <DrawerTitle className="flex items-center gap-2">
-            <p>{t("temporaryChat")}</p>
+            <p className="hidden sm:flex">{t("temporaryChat")}</p>
 
             <div className="flex-1" />
 
