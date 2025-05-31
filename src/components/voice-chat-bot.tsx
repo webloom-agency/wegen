@@ -9,7 +9,7 @@ import {
 
 import {
   OPENAI_VOICE,
-  useOpenAIVoiceChat,
+  useOpenAIVoiceChat as OpenAIVoiceChat,
 } from "lib/ai/speech/open-ai/use-voice-chat.openai";
 import { cn, nextTick } from "lib/utils";
 import {
@@ -118,12 +118,12 @@ export function VoiceChatBot() {
   const startAudio = useRef<HTMLAudioElement>(null);
   const [useCompactView, setUseCompactView] = useState(false);
 
-  const Hook = useMemo<VoiceChatHook>(() => {
+  const useVoiceChat = useMemo<VoiceChatHook>(() => {
     switch (voiceChat.options.provider) {
       case "openai":
-        return useOpenAIVoiceChat;
+        return OpenAIVoiceChat;
       default:
-        return useOpenAIVoiceChat;
+        return OpenAIVoiceChat;
     }
   }, [voiceChat.options.provider]);
 
@@ -137,7 +137,7 @@ export function VoiceChatBot() {
     startListening,
     stop,
     stopListening,
-  } = Hook(voiceChat.options.providerOptions);
+  } = useVoiceChat(voiceChat.options.providerOptions);
 
   const startWithSound = useCallback(() => {
     if (!startAudio.current) {
