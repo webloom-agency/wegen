@@ -197,7 +197,7 @@ export const ErrorMessage = ({
         </AlertDescription>
         <AlertDescription>
           <p className="text-sm text-muted-foreground my-2">
-            {t("Chat.Error.thisMessageWasNotSavedPleaseTryTheChatAgain")}
+            {t("Chat.thisMessageWasNotSavedPleaseTryTheChatAgain")}
           </p>
         </AlertDescription>
       </Alert>
