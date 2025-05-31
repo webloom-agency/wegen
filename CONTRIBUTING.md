@@ -91,4 +91,8 @@ fix: resolve voice chat audio initialization issue
 **Title format examples:**
 - `fix: description` - Bug fixes
 - `feat: description` - New features
+- `refactor: description` - Code refactoring
 - `chore: description` - Other tasks (documentation, configuration, etc.)
+
+
+Thank you for contributing to MCP Client Chatbot! 🚀
