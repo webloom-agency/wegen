@@ -91,7 +91,6 @@ export const auth = betterAuth({
       return v1_4_0_user_migrate_middleware(inputContext);
     },
   },
-  trustedOrigins: [baseURL],
 });
 
 export const getSession = async () => {
