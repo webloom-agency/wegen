@@ -1,7 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import {
   type MCPServerInfo,
   MCPSseConfigZodSchema,
@@ -98,7 +98,6 @@ export class MCPClient {
         version: "1.0.0",
       });
 
-      let transport: Transport;
       // Create appropriate transport based on server config type
       if (isMaybeStdioConfig(this.serverConfig)) {
         // Skip stdio transport
@@ -107,7 +106,7 @@ export class MCPClient {
         }
 
         const config = MCPStdioConfigZodSchema.parse(this.serverConfig);
-        transport = new StdioClientTransport({
+        const transport = new StdioClientTransport({
           command: config.command,
           args: config.args,
           // Merge process.env with config.env, ensuring PATH is preserved and filtering out undefined values
@@ -122,19 +121,33 @@ export class MCPClient {
           ),
           cwd: process.cwd(),
         });
+
+        await client.connect(transport);
       } else if (isMaybeSseConfig(this.serverConfig)) {
         const config = MCPSseConfigZodSchema.parse(this.serverConfig);
         const url = new URL(config.url);
-        transport = new SSEClientTransport(url, {
-          requestInit: {
-            headers: config.headers,
-          },
-        });
+        try {
+          const transport = new StreamableHTTPClientTransport(url, {
+            requestInit: {
+              headers: config.headers,
+            },
+          });
+          await client.connect(transport);
+        } catch {
+          this.log.info(
+            "Streamable HTTP connection failed, falling back to SSE transport",
+          );
+          const transport = new SSEClientTransport(url, {
+            requestInit: {
+              headers: config.headers,
+            },
+          });
+          await client.connect(transport);
+        }
       } else {
         throw new Error("Invalid server config");
       }
 
-      await client.connect(transport);
       this.log.info(
         `Connected to MCP server in ${((Date.now() - startedAt) / 1000).toFixed(2)}s`,
       );
