@@ -294,6 +294,8 @@ MCP Client Chatbot is evolving with these upcoming features:
 
 We welcome all contributions! Bug reports, feature ideas, code improvements — everything helps us build the best local AI assistant.
 
+**For detailed contribution guidelines**, please see our [Contributing Guide](./CONTRIBUTING.md).
+
 **Language Translations:** Help us make the chatbot accessible to more users by adding new language translations. See [language.md](./messages/language.md) for instructions on how to contribute translations.
 
 Let's build it together 🚀
