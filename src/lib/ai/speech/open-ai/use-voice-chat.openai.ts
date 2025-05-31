@@ -22,13 +22,12 @@ import { useTheme } from "next-themes";
 
 export const OPENAI_VOICE = {
   Alloy: "alloy",
-  Nova: "nova",
+  Ballad: "ballad",
   Sage: "sage",
   Shimmer: "shimmer",
   Verse: "verse",
-  Onyx: "onyx",
+  Echo: "echo",
   Coral: "coral",
-  Fable: "fable",
   Ash: "ash",
 };
 
@@ -455,7 +454,7 @@ export function useOpenAIVoiceChat(
       setIsListening(false);
       setIsLoading(false);
     }
-  }, [isActive, isLoading, createSession, handleServerEvent]);
+  }, [isActive, isLoading, createSession, handleServerEvent, voice]);
 
   const stop = useCallback(async () => {
     try {

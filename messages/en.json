@@ -194,7 +194,7 @@
   },
   "MCP": {
     "marketplace": "Marketplace",
-    "addMcpServer": "Add MCP Server",
+    "addMcpServer": "Add Server",
     "configureYourMcpServerConnectionSettings": "Configure your MCP server connection settings",
     "mcpConfiguration": "MCP Configuration",
     "nameMustContainOnlyAlphanumericCharactersAndHyphens": "Name must contain only alphanumeric characters (A-Z, a-z, 0-9) and hyphens (-)",
@@ -208,6 +208,8 @@
     "edit": "Edit",
     "configuration": "Configuration",
     "availableTools": "Available Tools",
-    "noToolsAvailable": "No tools available"
+    "noToolsAvailable": "No tools available",
+    "overviewTitle": "Connect Your First Server",
+    "overviewDescription": "Add MCP servers to unlock powerful AI integrations"
   }
 }

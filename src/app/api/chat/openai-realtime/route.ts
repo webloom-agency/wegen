@@ -5,7 +5,7 @@ import { chatRepository } from "lib/db/repository";
 import { filterToolsByAllowedMCPServers, mergeSystemPrompt } from "../helper";
 import {
   buildProjectInstructionsSystemPrompt,
-  buildUserSystemPrompt,
+  buildSpeechSystemPrompt,
 } from "lib/ai/prompts";
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 import { errorIf, safe } from "ts-safe";
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       await chatRepository.selectThreadInstructions(session.user.id, threadId);
 
     const systemPrompt = mergeSystemPrompt(
-      buildUserSystemPrompt(session.user, userPreferences),
+      buildSpeechSystemPrompt(session.user, userPreferences),
       buildProjectInstructionsSystemPrompt(instructions),
     );
 

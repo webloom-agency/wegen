@@ -1,46 +1,83 @@
-import { Button } from "./ui/button";
-import { PlusCircle } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { MCPIcon } from "ui/mcp-icon";
 
 export function MCPOverview() {
-  return (
-    <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-12 text-center">
-      <div className="flex flex-col items-center justify-center space-y-4">
-        <div className="rounded-full bg-primary/10 p-3">
-          <PlusCircle className="h-12 w-12 text-primary" />
-        </div>
+  const t = useTranslations("MCP");
 
-        <h3 className="text-xl font-semibold">No MCP Servers Added</h3>
+  return (
+    <Link
+      href="/mcp/create"
+      className="overflow-hidden cursor-pointer p-12 text-center border rounded-lg relative group transition-all duration-300  hover:border-foreground/40"
+    >
+      <GradientBars />
+      <div className="flex flex-col items-center justify-center space-y-4 my-20">
+        <h3 className="text-4xl font-semibold flex items-center gap-3">
+          <MCPIcon className="fill-foreground size-6" />
+          {t("overviewTitle")}
+        </h3>
 
         <p className="text-muted-foreground max-w-md">
-          MCP servers allow you to connect to external AI providers. Add your
-          first MCP server to get started.
+          {t("overviewDescription")}
         </p>
 
-        <div className="bg-muted p-4 rounded-md text-sm max-w-lg">
-          <p className="mb-2 font-medium">Getting Started:</p>
-          <ul className="list-disc pl-5 space-y-1 text-left">
-            <li>Click the (Add MCP Server) button above</li>
-            <li>Configure your server connection (SSE or STDIO)</li>
-            <li>Provide required information like URL or command</li>
-            <li>Save your configuration and start using connected tools</li>
-          </ul>
-          <p className="mt-3 text-xs">
-            Need help? Check our{" "}
-            <a href="#" className="text-primary underline">
-              documentation
-            </a>{" "}
-            for detailed setup instructions.
-          </p>
+        <div className="flex items-center gap-2 text-xl font-bold">
+          {t("addMcpServer")}
+          <ArrowUpRight className="size-6" />
         </div>
+      </div>
+    </Link>
+  );
+}
 
-        <Link href="/mcp/create">
-          <Button className="mt-2">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add MCP Server
-          </Button>
-        </Link>
+const calculateHeight = (index: number, total: number) => {
+  const position = index / (total - 1);
+  const maxHeight = 100;
+  const minHeight = 30;
+
+  const center = 0.5;
+  const distanceFromCenter = Math.abs(position - center);
+  const heightPercentage = Math.pow(distanceFromCenter * 2, 1.2);
+
+  return minHeight + (maxHeight - minHeight) * heightPercentage;
+};
+
+const GradientBars: React.FC = () => {
+  const length = 15;
+  return (
+    <div className="absolute inset-0 z-0 overflow-hidden">
+      <div
+        className="flex h-full group-hover:translate-y-1/2   transition-all duration-300"
+        style={{
+          width: "100%",
+          transform: "translateZ(0)",
+          backfaceVisibility: "hidden",
+          WebkitFontSmoothing: "antialiased",
+        }}
+      >
+        {Array.from({ length }).map((_, index) => {
+          const height = calculateHeight(index, length);
+          return (
+            <div
+              key={index}
+              className="bg-gradient-to-t from-primary/40 to-transparent "
+              style={{
+                flex: "1 0 calc(100% / 15)",
+                maxWidth: "calc(100% / 15)",
+                height: "100%",
+                transform: `scaleY(${height / 100})`,
+                transformOrigin: "bottom",
+                transition: "transform 0.5s ease-in-out",
+                animation: "pulseBar 2s ease-in-out infinite alternate",
+                animationDelay: `${index * 0.1}s`,
+                outline: "1px solid rgba(0, 0, 0, 0)",
+                boxSizing: "border-box",
+              }}
+            />
+          );
+        })}
       </div>
     </div>
   );
-}
+};

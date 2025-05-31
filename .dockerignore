@@ -12,6 +12,7 @@ compose.yml
 !.yarn/releases
 !.yarn/versions
 
+
 # testing
 /coverage
 
@@ -52,3 +53,4 @@ local-data
 *.ignore
 .mcp-config.json
 .next
+.changeset

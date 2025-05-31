@@ -197,7 +197,7 @@ export default function MCPEditor({
 
           {/* Right side: JSON view */}
           <div className="space-y-2">
-            <div className="border border-input rounded-md p-4 h-[40vh] overflow-auto relative">
+            <div className="border border-input rounded-md p-4 h-[40vh] overflow-auto relative bg-secondary">
               <Label
                 htmlFor="config-view"
                 className="text-xs text-muted-foreground mb-2"
