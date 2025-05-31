@@ -1,11 +1,7 @@
 "use client";
 
 import { UIMessage } from "ai";
-import {
-  DEFAULT_VOICE_TOOLS,
-  UIMessageWithCompleted,
-  VoiceChatHook,
-} from "lib/ai/speech";
+import { DEFAULT_VOICE_TOOLS, UIMessageWithCompleted } from "lib/ai/speech";
 
 import {
   OPENAI_VOICE,
@@ -118,14 +114,14 @@ export function VoiceChatBot() {
   const startAudio = useRef<HTMLAudioElement>(null);
   const [useCompactView, setUseCompactView] = useState(false);
 
-  const useVoiceChat = useMemo<VoiceChatHook>(() => {
-    switch (voiceChat.options.provider) {
-      case "openai":
-        return OpenAIVoiceChat;
-      default:
-        return OpenAIVoiceChat;
-    }
-  }, [voiceChat.options.provider]);
+  // const useVoiceChat = useMemo<VoiceChatHook>(() => {
+  //   switch (voiceChat.options.provider) {
+  //     case "openai":
+  //       return OpenAIVoiceChat;
+  //     default:
+  //       return OpenAIVoiceChat;
+  //   }
+  // }, [voiceChat.options.provider]);
 
   const {
     isListening,
@@ -137,7 +133,7 @@ export function VoiceChatBot() {
     startListening,
     stop,
     stopListening,
-  } = useVoiceChat(voiceChat.options.providerOptions);
+  } = OpenAIVoiceChat(voiceChat.options.providerOptions);
 
   const startWithSound = useCallback(() => {
     if (!startAudio.current) {
