@@ -127,7 +127,7 @@ export function AppSidebarThreads() {
   useEffect(() => {
     if (error) {
       authClient.signOut().finally(() => {
-        window.location.reload();
+        window.location.href = "/sign-in";
       });
     }
   }, [error]);
