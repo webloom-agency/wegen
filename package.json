@@ -104,7 +104,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@changesets/cli": "^2.29.4",
     "@tailwindcss/postcss": "^4.1.7",
     "@types/node": "^20.17.50",
     "@types/pg": "^8.15.2",
