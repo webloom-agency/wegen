@@ -19,9 +19,13 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 20
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.2.1
 
       - name: Install Dependencies
-        run: yarn add -D @changesets/cli
+        run: pnpm i -D @changesets/cli
 
       - name: Create Release Pull Request
         uses: changesets/action@v1
