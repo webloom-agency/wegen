@@ -9,9 +9,9 @@ import useSWR from "swr";
 import { Skeleton } from "ui/skeleton";
 
 import { handleErrorWithToast } from "ui/shared-toast";
-import { Plus } from "lucide-react";
 import { ScrollArea } from "ui/scroll-area";
 import { useTranslations } from "next-intl";
+import { MCPIcon } from "ui/mcp-icon";
 
 export default function Page() {
   const appStoreMutate = appStore((state) => state.mutate);
@@ -41,11 +41,8 @@ export default function Page() {
               </Button>
             </Link>
             <Link href="/mcp/create">
-              <Button
-                className="border-dashed border-foreground/20 font-semibold"
-                variant="outline"
-              >
-                <Plus className="stroke-2" />
+              <Button className="font-semibold bg-input/20" variant="outline">
+                <MCPIcon className="fill-foreground size-3.5" />
                 {t("addMcpServer")}
               </Button>
             </Link>

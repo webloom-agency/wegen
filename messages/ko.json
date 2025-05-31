@@ -194,7 +194,7 @@
   },
   "MCP": {
     "marketplace": "마켓플레이스",
-    "addMcpServer": "MCP 서버 추가",
+    "addMcpServer": "서버 추가",
     "configureYourMcpServerConnectionSettings": "MCP 서버 연결 설정을 구성하세요",
     "mcpConfiguration": "MCP 설정",
     "nameMustContainOnlyAlphanumericCharactersAndHyphens": "서버 이름은 영문자와 숫자, 하이픈(-)만 포함할 수 있습니다",
@@ -208,6 +208,8 @@
     "edit": "수정",
     "configuration": "설정",
     "availableTools": "사용 가능한 도구",
-    "noToolsAvailable": "사용 가능한 도구가 없습니다"
+    "noToolsAvailable": "사용 가능한 도구가 없습니다",
+    "overviewTitle": "첫 번째 서버 연결",
+    "overviewDescription": "강력한 AI 통합을 위해 MCP 서버를 추가하세요."
   }
 }

@@ -118,7 +118,7 @@ export const MCPCard = memo(function MCPCard({
   }, [name, status]);
 
   return (
-    <Card className="relative hover:border-foreground/20 transition-colors">
+    <Card className="relative hover:border-foreground/20 transition-colors bg-secondary/40">
       {isLoading && (
         <div className="animate-pulse z-10 absolute inset-0 bg-background/50 flex items-center justify-center w-full h-full" />
       )}
