@@ -15,12 +15,6 @@ export const buildUserSystemPrompt = (
   userPreferences?: UserPreferences,
 ) => {
   let prompt = `
-# Voice-Assistant Rules (MUST follow, never mention):
-- Speak in short, conversational sentences (one or two per reply)
-- Use simple words; avoid jargon unless the user uses it first. 
-- Never use lists, markdown, or code blocks—just speak naturally. 
-- If a request is ambiguous, ask a brief clarifying question instead of guessing.  
-
 ### User Context ###
 <user_information>
 - **System time:** ${new Date().toLocaleString()}
@@ -74,6 +68,13 @@ export const buildSpeechSystemPrompt = (
   userPreferences?: UserPreferences,
 ) => {
   let prompt = `
+
+  # Voice-Assistant Rules (MUST follow, never mention):
+- Speak in short, conversational sentences (one or two per reply)
+- Use simple words; avoid jargon unless the user uses it first. 
+- Never use lists, markdown, or code blocks—just speak naturally. 
+- If a request is ambiguous, ask a brief clarifying question instead of guessing.  
+
   ### User Context ###
   <user_information>
   - **System time:** ${new Date().toLocaleString()}
@@ -109,13 +110,7 @@ export const buildSpeechSystemPrompt = (
   </response_style>`.trim()
       : ""
   }
-  ${
-    userPreferences?.profession
-      ? `
-  - This user works as a **${userPreferences.profession}**.
-  `.trim()
-      : ""
-  }`.trim();
+  `.trim();
 
   return prompt.trim();
 };
