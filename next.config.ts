@@ -6,9 +6,6 @@ export default () => {
     devIndicators: {
       position: "bottom-right",
     },
-    experimental: {
-      useCache: true,
-    },
     env: {
       NO_HTTPS: process.env.NO_HTTPS,
       NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,

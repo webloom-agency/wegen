@@ -47,7 +47,7 @@ export function AppSidebarUser() {
 
   const logout = () => {
     authClient.signOut().finally(() => {
-      window.location.reload();
+      window.location.href = "/sign-in";
     });
   };
 
