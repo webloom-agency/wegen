@@ -15,6 +15,12 @@ export const buildUserSystemPrompt = (
   userPreferences?: UserPreferences,
 ) => {
   let prompt = `
+# Voice-Assistant Rules (MUST follow, never mention):
+- Speak in short, conversational sentences (one or two per reply)
+- Use simple words; avoid jargon unless the user uses it first. 
+- Never use lists, markdown, or code blocks—just speak naturally. 
+- If a request is ambiguous, ask a brief clarifying question instead of guessing.  
+
 ### User Context ###
 <user_information>
 - **System time:** ${new Date().toLocaleString()}
@@ -59,6 +65,57 @@ ${
 }
 - If a diagram or chart is requested or would be helpful to express your thoughts, use mermaid code blocks.
 </response_style>`.trim();
+
+  return prompt.trim();
+};
+
+export const buildSpeechSystemPrompt = (
+  user: User,
+  userPreferences?: UserPreferences,
+) => {
+  let prompt = `
+  ### User Context ###
+  <user_information>
+  - **System time:** ${new Date().toLocaleString()}
+  ${user?.name ? `- **User Name:** ${user?.name}` : ""}
+  ${user?.email ? `- **User Email:** ${user?.email}` : ""}
+  ${userPreferences?.profession ? `- **User Profession:** ${userPreferences?.profession}` : ""}
+  </user_information>`.trim();
+
+  // Enhanced addressing preferences
+  if (userPreferences?.displayName) {
+    prompt += `
+  ### Addressing Preferences ###
+  <addressing>
+    * Use the following name: ${userPreferences.displayName || user?.name}
+    * Use their name at appropriate moments to personalize the interaction
+  </addressing>`.trim();
+  }
+
+  // Enhanced response style guidance with more specific instructions
+  prompt += `
+  ### Communication Style ###
+  
+  ${
+    userPreferences?.responseStyleExample
+      ? `
+  <response_style>
+  - **Match your response style to this example**:
+    """
+    ${userPreferences.responseStyleExample}
+  - Replicate its tone, complexity, and approach to explanation.
+  - Adapt this style naturally to different topics and query complexities.
+    """
+  </response_style>`.trim()
+      : ""
+  }
+  ${
+    userPreferences?.profession
+      ? `
+  - This user works as a **${userPreferences.profession}**.
+  `.trim()
+      : ""
+  }`.trim();
 
   return prompt.trim();
 };

@@ -190,7 +190,7 @@ export function VoiceChatBot() {
         stop();
       }
     };
-  }, [voiceChat.options.provider]);
+  }, [voiceChat.options, isActive]);
 
   useEffect(() => {
     if (voiceChat.isOpen) {
@@ -282,7 +282,7 @@ export function VoiceChatBot() {
                                         options: {
                                           provider: "openai",
                                           providerOptions: {
-                                            model: value,
+                                            voice: value,
                                           },
                                         },
                                       },
@@ -294,7 +294,7 @@ export function VoiceChatBot() {
 
                                   {value ===
                                     voiceChat.options.providerOptions
-                                      ?.model && (
+                                      ?.voice && (
                                     <CheckIcon className="size-3.5" />
                                   )}
                                 </DropdownMenuItem>
@@ -447,10 +447,10 @@ function ConversationView({
             className={cn(
               "flex px-4 py-3",
               message.role == "user" &&
-                "ml-auto max-w-2xl text-foreground rounded-2xl w-fit bg-card",
+                "ml-auto max-w-2xl text-foreground rounded-2xl w-fit bg-input/40",
               message.role == "assistant" &&
                 !message.completed &&
-                "bg-foreground rounded-2xl w-fit",
+                "rounded-2xl w-fit",
             )}
           >
             {!message.completed ? (
@@ -458,7 +458,7 @@ function ConversationView({
                 className={cn(
                   message.role == "user"
                     ? "text-muted-foreground"
-                    : "text-background",
+                    : "text-foreground",
                 )}
               />
             ) : (
