@@ -201,7 +201,7 @@ OLLAMA_BASE_URL=http://localhost:11434/api
 BETTER_AUTH_SECRET=****
 
 # URL for Better Auth (the URL you access the app from)
-BETTER_AUTH_URL=****
+BETTER_AUTH_URL=
 # === Database ===
 # If you don't have PostgreSQL running locally, start it with: pnpm docker:pg
 POSTGRES_URL=postgres://your_username:your_password@localhost:5432/your_database_name
