@@ -2,97 +2,93 @@
 
 Thank you for your interest in contributing to MCP Client Chatbot! We welcome contributions from the community and appreciate your efforts to make this project better.
 
+---
 
 ## Getting Started
 
 1. **Fork the repository** on GitHub
 
 2. **Clone your fork** locally:
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/mcp-client-chatbot.git
    cd mcp-client-chatbot
    ```
 
 3. **Create a new branch** for your changes:
+
    ```bash
    git checkout -b feature/your-feature-name
    # or
    git checkout -b fix/your-bug-fix
    ```
 
-4. **Make your changes** following the existing code style and patterns
+4. **Make your changes** following the existing code style and structure.
 
 5. **Test your changes** thoroughly:
+
    ```bash
    pnpm dev
    pnpm test
-   # Test the functionality manually and write test code if necessary.
+   # Run manual tests and add automated tests if applicable
    ```
 
-## Changesets
+---
 
-We use [Changesets](https://github.com/changesets/changesets) to manage versioning and releases. When you make changes, you need to add a changeset.
+## Releasing and Versioning
 
-### Adding a Changeset
+We use [Release Please](https://github.com/googleapis/release-please) to manage GitHub releases.
 
-Run the following command in the project root:
+### Conventional Commit Message Required
 
-```bash
-pnpm changeset:add
-```
+Your pull request title and commits must follow the [Conventional Commits](https://www.conventionalcommits.org/) format.
 
-This will prompt you to:
+**Examples:**
 
-1. **Select version bump type**:
-   - **Patch** (0.0.1): Bug fixes, small improvements
-   - **Minor** (0.1.0): New features, backward-compatible changes
-   - **Major** (1.0.0): Breaking changes (use sparingly)
+* `fix: resolve voice chat audio initialization issue`
+* `feat: support multi-language UI toggle`
+* `chore: update dependencies`
 
-2. **Write a summary**: **Same as your PR title**
+This helps automate changelog generation and version bumps.
 
-**Important**: The changeset summary and pull request title **must be identical**.
+### Important Notes:
 
-**Guidelines for version selection:**
-- **Use Patch** for most contributions (bug fixes, documentation, small improvements)
-- **Use Minor** only for significant new features
-- **Avoid Major** unless specifically requested by maintainers
+* All PRs should have a **descriptive title** in the correct format
+* **No manual tagging or changelog editing** is needed — this is handled automatically on merge
+* We recommend using **squash merge** to keep the git history clean and changelog predictable
 
-### Example Changeset Summary
-```
-fix: resolve voice chat audio initialization issue
-```
+---
 
 ## Submitting a Pull Request
 
-1. **Add a changeset** (see above)
+1. **Format your code**:
 
-2. **Format your code**:
    ```bash
    pnpm lint:fix
    ```
 
-3. **Commit your changes**:
+2. **Commit your changes** with a proper conventional commit message:
+
    ```bash
    git add .
    git commit -m "fix: resolve voice chat audio initialization issue"
    ```
 
-4. **Push to your fork**:
+3. **Push to your fork**:
+
    ```bash
    git push origin your-branch-name
    ```
 
-5. **Create a Pull Request**:
-   - **Title**: **Exactly the same** as your changeset summary (e.g., `fix: resolve voice chat audio initialization issue`)
-   - **Detailed description**: Explain what you changed and why
-   - **Link to related issues** (if applicable)
-   - **Screenshots or demos** (if relevant)
+4. **Create a Pull Request**:
 
-**Title format examples:**
-- `fix: description` - Bug fixes
-- `feat: description` - New features
-- `refactor: description` - Code refactoring
-- `chore: description` - Other tasks (documentation, configuration, etc.)
+   * **Title**: Must follow Conventional Commits
+   * **Description**: Describe what you changed and why
+   * **Link to related issues**, if any
+   * **Include screenshots/demos** for UI changes
 
+---
 
-Thank you for contributing to MCP Client Chatbot! 🚀
+## Thank You
+
+We truly appreciate your contribution to MCP Client Chatbot! Let's build a powerful, lightweight AI experience together. 🚀
