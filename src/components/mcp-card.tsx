@@ -13,7 +13,6 @@ import { Alert, AlertDescription, AlertTitle } from "ui/alert";
 import { Button } from "ui/button";
 import { Card, CardContent, CardHeader } from "ui/card";
 import JsonView from "ui/json-view";
-import { Separator } from "ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { memo, useCallback, useMemo, useState } from "react";
 import Link from "next/link";
@@ -22,14 +21,11 @@ import { safe } from "ts-safe";
 
 import { handleErrorWithToast } from "ui/shared-toast";
 import {
-  connectMcpClientAction,
-  disconnectMcpClientAction,
   refreshMcpClientAction,
   removeMcpClientAction,
 } from "@/app/api/mcp/actions";
 import type { MCPServerInfo, MCPToolInfo } from "app-types/mcp";
-import { Switch } from "ui/switch";
-import { Label } from "ui/label";
+
 import { ToolDetailPopup } from "./tool-detail-popup";
 import { useTranslations } from "next-intl";
 
@@ -109,14 +105,6 @@ export const MCPCard = memo(function MCPCard({
     await pipeProcessing(() => removeMcpClientAction(name));
   }, [name]);
 
-  const handleToggleConnection = useCallback(async () => {
-    await pipeProcessing(() =>
-      status === "connected"
-        ? disconnectMcpClientAction(name)
-        : connectMcpClientAction(name),
-    );
-  }, [name, status]);
-
   return (
     <Card className="relative hover:border-foreground/20 transition-colors bg-secondary/40">
       {isLoading && (
@@ -127,22 +115,6 @@ export const MCPCard = memo(function MCPCard({
 
         <h4 className="font-bold text-xs sm:text-lg">{name}</h4>
         <div className="flex-1" />
-
-        <Label
-          htmlFor={`mcp-card-switch-${name}`}
-          className="mr-2 text-xs text-muted-foreground"
-        >
-          {status === "connected" ? "enabled" : "disabled"}
-        </Label>
-        <Switch
-          id={`mcp-card-switch-${name}`}
-          checked={status === "connected"}
-          onCheckedChange={handleToggleConnection}
-          className="mr-2 hidden sm:block"
-        />
-        <div className="h-4 hidden sm:block">
-          <Separator orientation="vertical" />
-        </div>
         <Tooltip>
           <TooltipTrigger asChild>
             <Link

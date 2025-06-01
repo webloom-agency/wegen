@@ -1,12 +1,13 @@
 name: PR Title Check
-
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  statuses: write
+  checks: write
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
 
 jobs:
   danger:
@@ -21,10 +22,7 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Danger globally
-        run: npm install -g danger
-
       - name: Run Danger
-        run: danger ci --dangerfile=./.github/.dangerfile.ts
+        run: npx danger ci --dangerfile=./.github/.dangerfile.ts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

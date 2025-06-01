@@ -90,23 +90,21 @@ export default function PromptInput({
 
   const toolList = useMemo(() => {
     return (
-      mcpList
-        ?.filter((mcp) => mcp.status === "connected")
-        .flatMap((mcp) => [
-          {
-            id: mcp.name,
-            label: mcp.name,
-            type: "server",
-          },
-          ...mcp.toolInfo.map((tool) => {
-            const id = createMCPToolId(mcp.name, tool.name);
-            return {
-              id,
-              label: id,
-              type: "tool",
-            };
-          }),
-        ]) ?? []
+      mcpList?.flatMap((mcp) => [
+        {
+          id: mcp.name,
+          label: mcp.name,
+          type: "server",
+        },
+        ...mcp.toolInfo.map((tool) => {
+          const id = createMCPToolId(mcp.name, tool.name);
+          return {
+            id,
+            label: id,
+            type: "tool",
+          };
+        }),
+      ]) ?? []
     );
   }, [mcpList]);
 
