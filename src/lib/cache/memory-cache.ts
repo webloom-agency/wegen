@@ -42,6 +42,22 @@ export class MemoryCache implements Cache {
     this.store.clear();
   }
 
+  async getAll(): Promise<Map<string, unknown>> {
+    const result = new Map<string, unknown>();
+    const now = Date.now();
+
+    for (const [key, entry] of this.store) {
+      if (now <= entry.expiresAt) {
+        result.set(key, entry.value);
+      } else {
+        // Clean up expired entries while we're iterating
+        this.store.delete(key);
+      }
+    }
+
+    return result;
+  }
+
   private sweep() {
     const now = Date.now();
     for (const [k, { expiresAt }] of this.store)

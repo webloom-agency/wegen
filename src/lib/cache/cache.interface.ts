@@ -4,4 +4,5 @@ export interface Cache {
   has(key: string): Promise<boolean>;
   delete(key: string): Promise<void>;
   clear(): Promise<void>;
+  getAll(): Promise<Map<string, unknown>>;
 }
