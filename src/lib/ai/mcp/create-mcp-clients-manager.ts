@@ -3,6 +3,8 @@ import { createMCPClient, type MCPClient } from "./create-mcp-client";
 import equal from "fast-deep-equal";
 import logger from "logger";
 import { createMCPToolId } from "./mcp-tool-id";
+import { Locker } from "lib/utils";
+import { safe } from "ts-safe";
 /**
  * Interface for storage of MCP server configurations.
  * Implementations should handle persistent storage of server configs.
@@ -22,8 +24,7 @@ export interface MCPConfigStorage {
 
 export class MCPClientsManager {
   protected clients = new Map<string, MCPClient>();
-
-  private initialized = false;
+  private initializedLock = new Locker();
 
   // Optional storage for persistent configurations
   constructor(private storage?: MCPConfigStorage) {
@@ -32,16 +33,20 @@ export class MCPClientsManager {
   }
 
   async init() {
-    if (this.initialized) return;
-    if (this.storage) {
-      await this.storage.init(this);
-      const configs = await this.storage.loadAll();
-      await Promise.all(
-        Object.entries(configs).map(([name, serverConfig]) =>
-          this.addClient(name, serverConfig),
-        ),
-      );
-    }
+    return safe(() => this.initializedLock.lock())
+      .ifOk(async () => {
+        if (this.storage) {
+          await this.storage.init(this);
+          const configs = await this.storage.loadAll();
+          await Promise.all(
+            Object.entries(configs).map(([name, serverConfig]) =>
+              this.addClient(name, serverConfig),
+            ),
+          );
+        }
+      })
+      .watch(() => this.initializedLock.unlock())
+      .unwrap();
   }
 
   /**
@@ -69,6 +74,11 @@ export class MCPClientsManager {
         await this.storage.save(name, serverConfig);
       }
     }
+    if (this.clients.has(name)) {
+      const prevClient = this.clients.get(name)!;
+      void prevClient.disconnect();
+    }
+
     const client = createMCPClient(name, serverConfig);
     this.clients.set(name, client);
     return client.connect();
@@ -117,7 +127,8 @@ export class MCPClientsManager {
     return Promise.all(clients.map((client) => client.disconnect()));
   }
 
-  getClients() {
+  async getClients() {
+    await this.initializedLock.wait();
     return Array.from(this.clients.values());
   }
 }

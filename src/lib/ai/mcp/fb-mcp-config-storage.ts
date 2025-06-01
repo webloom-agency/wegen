@@ -7,10 +7,15 @@ import type {
 } from "./create-mcp-clients-manager";
 import chokidar from "chokidar";
 import type { FSWatcher } from "chokidar";
-import { createDebounce } from "lib/utils";
+import { createDebounce, objectFlow } from "lib/utils";
 import equal from "fast-deep-equal";
-import logger from "logger";
+import defaultLogger from "logger";
 import { MCP_CONFIG_PATH } from "lib/ai/mcp/config-path";
+import { colorize } from "consola/utils";
+
+const logger = defaultLogger.withDefaults({
+  message: colorize("gray", `MCP File Config Storage: `),
+});
 
 /**
  * Creates a file-based implementation of MCPServerStorage
@@ -19,47 +24,123 @@ export function createFileBasedMCPConfigsStorage(
   path?: string,
 ): MCPConfigStorage {
   const configPath = path || MCP_CONFIG_PATH;
-  const configs: Map<string, MCPServerConfig> = new Map();
   let watcher: FSWatcher | null = null;
+  let manager: MCPClientsManager;
   const debounce = createDebounce();
 
   /**
-   * Persists the current config map to the file system
+   * Reads config from file
    */
-  async function saveToFile(): Promise<void> {
+  async function readConfigFile(): Promise<Record<string, MCPServerConfig>> {
+    try {
+      const configText = await readFile(configPath, { encoding: "utf-8" });
+      return JSON.parse(configText ?? "{}");
+    } catch (err: any) {
+      if (err.code === "ENOENT") {
+        return {};
+      } else if (err instanceof SyntaxError) {
+        throw new Error(
+          `Config file ${configPath} has invalid JSON: ${err.message}`,
+        );
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  /**
+   * Writes config to file
+   */
+  async function writeConfigFile(
+    config: Record<string, MCPServerConfig>,
+  ): Promise<void> {
     const dir = dirname(configPath);
     await mkdir(dir, { recursive: true });
-    await writeFile(
-      configPath,
-      JSON.stringify(Object.fromEntries(configs), null, 2),
-      "utf-8",
-    );
+    await writeFile(configPath, JSON.stringify(config, null, 2), "utf-8");
   }
+
+  async function checkAndRefreshClients() {
+    try {
+      logger.debug("Checking MCP clients Diff");
+      const fileConfig = await readConfigFile();
+
+      const fileConfigs = Object.entries(fileConfig)
+        .map(([name, config]) => ({ name, config }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      // Get current manager configs
+      const managerConfigs = await manager
+        .getClients()
+        .then((clients) =>
+          clients.map((client) => {
+            const info = client.getInfo();
+            return {
+              name: info.name,
+              config: info.config,
+            };
+          }),
+        )
+        .then((configs) =>
+          configs.sort((a, b) => a.name.localeCompare(b.name)),
+        );
+
+      let shouldRefresh = false;
+      if (fileConfigs.length !== managerConfigs.length) {
+        shouldRefresh = true;
+      } else if (!equal(fileConfigs, managerConfigs)) {
+        shouldRefresh = true;
+      }
+
+      if (shouldRefresh) {
+        const refreshPromises = fileConfigs.map(async ({ name, config }) => {
+          const managerConfig = await manager
+            .getClients()
+            .then((clients) => clients.find((c) => c.getInfo().name === name))
+            .then((c) => c?.getInfo());
+          if (!managerConfig) {
+            logger.debug(`Adding MCP client ${name}`);
+            return manager.addClient(name, config);
+          }
+          if (!equal(managerConfig.config, config)) {
+            logger.debug(`Refreshing MCP client ${name}`);
+            return manager.refreshClient(name, config);
+          }
+        });
+        const deletePromises = managerConfigs
+          .filter((c) => {
+            const fileConfig = fileConfigs.find((c2) => c2.name === c.name);
+            return !fileConfig;
+          })
+          .map((c) => {
+            logger.debug(`Removing MCP client ${c.name}`);
+            return manager.removeClient(c.name);
+          });
+        await Promise.allSettled([...refreshPromises, ...deletePromises]);
+      }
+    } catch (err) {
+      logger.error("Error checking and refreshing clients:", err);
+    }
+  }
+
   /**
    * Initializes storage by reading existing config or creating empty file
    */
-  async function init(manager: MCPClientsManager): Promise<void> {
+  async function init(_manager: MCPClientsManager): Promise<void> {
+    manager = _manager;
+
     // Stop existing watcher if any
     if (watcher) {
       await watcher.close();
       watcher = null;
     }
-    // Read config file
+
+    // Ensure config file exists
     try {
-      const configText = await readFile(configPath, { encoding: "utf-8" });
-      const config = JSON.parse(configText ?? "{}");
-      configs.clear();
-      Object.entries(config).forEach(([name, serverConfig]) => {
-        configs.set(name, serverConfig as MCPServerConfig);
-      });
+      await readConfigFile();
     } catch (err: any) {
       if (err.code === "ENOENT") {
         // Create empty config file if doesn't exist
-        await saveToFile();
-      } else if (err instanceof SyntaxError) {
-        throw new Error(
-          `Config file ${configPath} has invalid JSON: ${err.message}`,
-        );
+        await writeConfigFile({});
       } else {
         throw err;
       }
@@ -72,49 +153,33 @@ export function createFileBasedMCPConfigsStorage(
       ignoreInitial: true,
     });
 
-    watcher.on("change", () =>
-      debounce(async () => {
-        {
-          try {
-            // Read the updated file
-            const configText = await readFile(configPath, {
-              encoding: "utf-8",
-            });
-            if (
-              equal(JSON.parse(configText ?? "{}"), Object.fromEntries(configs))
-            ) {
-              return;
-            }
-
-            await manager.cleanup();
-            await manager.init();
-          } catch (err) {
-            logger.error("Error detecting config file change:", err);
-          }
-        }
-      }, 1000),
-    );
+    watcher.on("change", () => debounce(checkAndRefreshClients, 1000));
   }
 
   return {
     init,
     async loadAll(): Promise<Record<string, MCPServerConfig>> {
-      return Object.fromEntries(configs);
+      return await readConfigFile();
     },
     // Saves a configuration with the given name
     async save(name: string, config: MCPServerConfig): Promise<void> {
-      configs.set(name, config);
-      await saveToFile();
+      const currentConfig = await readConfigFile();
+      currentConfig[name] = config;
+      await writeConfigFile(currentConfig);
     },
     // Deletes a configuration by name
     async delete(name: string): Promise<void> {
-      configs.delete(name);
-      await saveToFile();
+      const currentConfig = await readConfigFile();
+      const newConfig = objectFlow(currentConfig).filter(
+        (_, key) => key !== name,
+      );
+      await writeConfigFile(newConfig);
     },
 
     // Checks if a configuration exists
     async has(name: string): Promise<boolean> {
-      return configs.has(name);
+      const currentConfig = await readConfigFile();
+      return name in currentConfig;
     },
   };
 }
