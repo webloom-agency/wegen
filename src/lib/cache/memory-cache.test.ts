@@ -40,18 +40,18 @@ describe("MemoryCache", () => {
   });
 
   test("should use default TTL when not specified", async () => {
-    const shortTtlCache = new MemoryCache({ defaultTtlMs: 100 });
+    const cache = new MemoryCache();
     vi.useFakeTimers();
 
     try {
-      await shortTtlCache.set("key", "value"); // Uses default TTL
+      await cache.set("key", "value"); // Uses default TTL (Infinity)
 
-      expect(await shortTtlCache.get("key")).toBe("value");
+      expect(await cache.get("key")).toBe("value");
 
-      // Advance time past default TTL
-      vi.advanceTimersByTime(101);
+      // Advance time significantly - should still be there since TTL is Infinity
+      vi.advanceTimersByTime(100000);
 
-      expect(await shortTtlCache.get("key")).toBeUndefined();
+      expect(await cache.get("key")).toBe("value");
     } finally {
       vi.useRealTimers();
     }
@@ -96,6 +96,47 @@ describe("MemoryCache", () => {
     await cache.set("complex", complexValue);
 
     expect(await cache.get("complex")).toEqual(complexValue);
+  });
+
+  test("should get all valid entries", async () => {
+    await cache.set("key1", "value1");
+    await cache.set("key2", "value2");
+    await cache.set("key3", { nested: "value" });
+
+    const allEntries = await cache.getAll();
+
+    expect(allEntries.size).toBe(3);
+    expect(allEntries.get("key1")).toBe("value1");
+    expect(allEntries.get("key2")).toBe("value2");
+    expect(allEntries.get("key3")).toEqual({ nested: "value" });
+  });
+
+  test("should return empty map when cache is empty", async () => {
+    const allEntries = await cache.getAll();
+    expect(allEntries.size).toBe(0);
+  });
+
+  test("should exclude expired entries from getAll", async () => {
+    vi.useFakeTimers();
+    try {
+      await cache.set("valid", "value1");
+      await cache.set("expiring", "value2", 100); // 100ms TTL
+
+      // Before expiration
+      let allEntries = await cache.getAll();
+      expect(allEntries.size).toBe(2);
+      expect(allEntries.get("valid")).toBe("value1");
+      expect(allEntries.get("expiring")).toBe("value2");
+
+      // After expiration
+      vi.advanceTimersByTime(101);
+      allEntries = await cache.getAll();
+      expect(allEntries.size).toBe(1);
+      expect(allEntries.get("valid")).toBe("value1");
+      expect(allEntries.has("expiring")).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test("cleanup interval should remove expired items", async () => {

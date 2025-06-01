@@ -3,6 +3,10 @@ name: PR Title Check
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
   danger:

@@ -8,16 +8,18 @@ import { safe } from "ts-safe";
 import { errorToString } from "lib/utils";
 
 export async function selectMcpClientsAction() {
-  const list = mcpClientsManager.getClients();
+  const list = await mcpClientsManager.getClients();
   return list.map((client) => {
     return client.getInfo();
   });
 }
 
 export async function selectMcpClientAction(name: string) {
-  const client = mcpClientsManager
+  const client = await mcpClientsManager
     .getClients()
-    .find((client) => client.getInfo().name === name);
+    .then((clients) =>
+      clients.find((client) => client.getInfo().name === name),
+    );
   if (!client) {
     throw new Error("Client not found");
   }
@@ -35,11 +37,13 @@ export async function updateMcpConfigByJsonAction(
   json: Record<string, MCPServerConfig>,
 ) {
   Object.values(json).forEach(validateConfig);
-  const prevConfig = Object.fromEntries(
-    mcpClientsManager
-      .getClients()
-      .map((client) => [client.getInfo().name, client.getInfo().config]),
-  );
+  const prevConfig = await mcpClientsManager
+    .getClients()
+    .then((clients) =>
+      clients.map((client) => [client.getInfo().name, client.getInfo().config]),
+    )
+    .then((configs) => Object.fromEntries(configs));
+
   const changes = detectConfigChanges(prevConfig, json);
   for (const change of changes) {
     const value = change.value;
@@ -81,9 +85,11 @@ export async function removeMcpClientAction(name: string) {
 }
 
 export async function connectMcpClientAction(name: string) {
-  const client = mcpClientsManager
+  const client = await mcpClientsManager
     .getClients()
-    .find((client) => client.getInfo().name === name);
+    .then((clients) =>
+      clients.find((client) => client.getInfo().name === name),
+    );
   if (client?.getInfo().status === "connected") {
     return;
   }
@@ -91,9 +97,11 @@ export async function connectMcpClientAction(name: string) {
 }
 
 export async function disconnectMcpClientAction(name: string) {
-  const client = mcpClientsManager
+  const client = await mcpClientsManager
     .getClients()
-    .find((client) => client.getInfo().name === name);
+    .then((clients) =>
+      clients.find((client) => client.getInfo().name === name),
+    );
   if (client?.getInfo().status === "disconnected") {
     return;
   }
@@ -115,10 +123,12 @@ export async function callMcpToolAction(
   toolName: string,
   input?: unknown,
 ) {
-  return safe(() => {
-    const client = mcpClientsManager
+  return safe(async () => {
+    const client = await mcpClientsManager
       .getClients()
-      .find((client) => client.getInfo().name === mcpName);
+      .then((clients) =>
+        clients.find((client) => client.getInfo().name === mcpName),
+      );
     if (!client) {
       throw new Error("Client not found");
     }

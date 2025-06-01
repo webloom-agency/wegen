@@ -1,18 +1,28 @@
 import { MemoryCache } from "./memory-cache";
 import { Cache } from "./cache.interface";
-
-let serverCache: Cache;
+import { IS_DEV, IS_DOCKER_ENV, IS_VERCEL_ENV } from "lib/const";
 
 declare global {
   // eslint-disable-next-line no-var
   var __server__cache__: Cache | undefined;
 }
 
-if (globalThis.__server__cache__) {
-  serverCache = globalThis.__server__cache__;
-} else {
-  globalThis.__server__cache__ = new MemoryCache();
-  serverCache = globalThis.__server__cache__;
+const createCache = () => {
+  if (IS_DEV) {
+    return new MemoryCache();
+  } else if (IS_DOCKER_ENV) {
+    return new MemoryCache();
+  } else if (IS_VERCEL_ENV) {
+    // return new RedisCache();
+    return new MemoryCache();
+  }
+  return new MemoryCache();
+};
+
+const serverCache = globalThis.__server__cache__ || createCache();
+
+if (IS_DEV) {
+  globalThis.__server__cache__ = serverCache;
 }
 
 export { serverCache };
