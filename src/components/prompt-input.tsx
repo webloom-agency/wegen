@@ -214,10 +214,7 @@ export default function PromptInput({
                   providers={modelList}
                   model={chatModel}
                 >
-                  <Button
-                    variant={"ghost"}
-                    className="rounded-full"
-                  >
+                  <Button variant={"ghost"} className="rounded-full">
                     {chatModel}
                     <ChevronDown className="size-3" />
                   </Button>
