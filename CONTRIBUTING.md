@@ -1,12 +1,12 @@
 # Contributing to MCP Client Chatbot
 
-Thank you for your interest in contributing to MCP Client Chatbot! We welcome contributions from the community and appreciate your efforts to make this project better.
+Thank you for your interest in contributing to MCP Client Chatbot! We welcome contributions from the community and truly appreciate your effort to improve the project.
 
 ---
 
 ## Getting Started
 
-1. **Fork the repository** on GitHub
+1. **Fork this repository** on GitHub.
 
 2. **Clone your fork** locally:
 
@@ -23,39 +23,49 @@ Thank you for your interest in contributing to MCP Client Chatbot! We welcome co
    git checkout -b fix/your-bug-fix
    ```
 
-4. **Make your changes** following the existing code style and structure.
+4. **Implement your changes**, following the existing code style and structure.
 
-5. **Test your changes** thoroughly:
+5. **Test your changes thoroughly**:
 
    ```bash
    pnpm dev
    pnpm test
-   # Run manual tests and add automated tests if applicable
    ```
 
 ---
 
-## Releasing and Versioning
+## Releasing and PR Title Rules
 
-We use [Release Please](https://github.com/googleapis/release-please) to manage GitHub releases.
+We use [Release Please](https://github.com/googleapis/release-please) to automate GitHub releases.
+**Only the Pull Request title** needs to follow the [Conventional Commits](https://www.conventionalcommits.org/) format. Commit messages can be written freely.
 
-### Conventional Commit Message Required
+### ✅ PR Title Examples
 
-Your pull request title and commits must follow the [Conventional Commits](https://www.conventionalcommits.org/) format.
-
-**Examples:**
-
-* `fix: resolve voice chat audio initialization issue`
+* `fix: voice chat audio not initializing`
 * `feat: support multi-language UI toggle`
 * `chore: update dependencies`
 
-This helps automate changelog generation and version bumps.
+### ⚠️ Important Notes
 
-### Important Notes:
+* PR **titles must start** with one of the following prefixes:
 
-* All PRs should have a **descriptive title** in the correct format
-* **No manual tagging or changelog editing** is needed — this is handled automatically on merge
-* We recommend using **squash merge** to keep the git history clean and changelog predictable
+  ```
+  feat: ...
+  fix: ...
+  chore: ...
+  docs: ...
+  style: ...
+  refactor: ...
+  test: ...
+  perf: ...
+  build: ...
+  ```
+
+* Only the PR title is used for changelog and versioning
+
+* We use **squash merge** to keep the history clean
+
+* Changelog entries and GitHub Releases are **automatically generated** after merging
 
 ---
 
@@ -67,28 +77,24 @@ This helps automate changelog generation and version bumps.
    pnpm lint:fix
    ```
 
-2. **Commit your changes** with a proper conventional commit message:
+2. **Commit and push**:
 
    ```bash
    git add .
-   git commit -m "fix: resolve voice chat audio initialization issue"
-   ```
-
-3. **Push to your fork**:
-
-   ```bash
+   git commit -m "your internal message"
    git push origin your-branch-name
    ```
 
-4. **Create a Pull Request**:
+3. **Open a Pull Request**:
 
-   * **Title**: Must follow Conventional Commits
-   * **Description**: Describe what you changed and why
-   * **Link to related issues**, if any
-   * **Include screenshots/demos** for UI changes
+   * **Title**: Must follow the Conventional Commit format
+   * **Description**: Explain what you changed and why
+   * Link to related issues, if any
+   * Include **screenshots or demos** for any UI changes
 
 ---
 
 ## Thank You
 
-We truly appreciate your contribution to MCP Client Chatbot! Let's build a powerful, lightweight AI experience together. 🚀
+We sincerely appreciate your contribution to MCP Client Chatbot.
+Let’s build a powerful and lightweight AI experience together! 🚀
