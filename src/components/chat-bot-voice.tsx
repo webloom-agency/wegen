@@ -28,13 +28,7 @@ import { safe } from "ts-safe";
 import { Alert, AlertDescription, AlertTitle } from "ui/alert";
 import { Button } from "ui/button";
 
-import {
-  Drawer,
-  DrawerContent,
-  DrawerOverlay,
-  DrawerPortal,
-  DrawerTitle,
-} from "ui/drawer";
+import { Drawer, DrawerContent, DrawerPortal, DrawerTitle } from "ui/drawer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,7 +46,7 @@ import { OpenAIIcon } from "ui/openai-icon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { ToolMessagePart } from "./message-parts";
 
-import { EnabledMcpTools } from "./enabled-mcp-tools";
+import { EnabledMcpToolsDropdown } from "./enabled-mcp-tools-dropdown";
 import { ToolInvocationUIPart } from "app-types/chat";
 import { appStore } from "@/app/store";
 import { useShallow } from "zustand/shallow";
@@ -60,6 +54,8 @@ import { mutate } from "swr";
 import { useTranslations } from "next-intl";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "ui/dialog";
 import JsonView from "ui/json-view";
+import { useRouter } from "next/navigation";
+import { isShortcutEvent, Shortcuts } from "lib/keyboard-shortcuts";
 
 const isNotEmptyUIMessage = (message: UIMessage) => {
   return message.parts.some((v) => {
@@ -100,7 +96,7 @@ const prependTools = [
   },
 ];
 
-export function VoiceChatBot() {
+export function ChatBotVoice() {
   const t = useTranslations("Chat");
   const [appStoreMutate, voiceChat, model, currentThreadId, currentProjectId] =
     appStore(
@@ -116,6 +112,7 @@ export function VoiceChatBot() {
   const [isClosing, setIsClosing] = useState(false);
   const startAudio = useRef<HTMLAudioElement>(null);
   const [useCompactView, setUseCompactView] = useState(true);
+  const router = useRouter();
 
   // const useVoiceChat = useMemo<VoiceChatHook>(() => {
   //   switch (voiceChat.options.provider) {
@@ -152,15 +149,15 @@ export function VoiceChatBot() {
   const endVoiceChat = useCallback(async () => {
     setIsClosing(true);
     await safe(() => stop());
-    await safe(() => {
-      if (!currentThreadId) return;
+    await safe(async () => {
+      if (!currentThreadId || !voiceChat.autoSaveConversation) return;
       const saveMessages = messages.filter(
         (v) => v.completed && isNotEmptyUIMessage(v),
       );
       if (saveMessages.length === 0) {
         return;
       }
-      return fetch(`/api/chat/${currentThreadId}`, {
+      await fetch(`/api/chat/${currentThreadId}`, {
         method: "POST",
         body: JSON.stringify({
           messages: mergeConsecutiveMessages(saveMessages),
@@ -168,11 +165,15 @@ export function VoiceChatBot() {
           projectId: currentProjectId,
         }),
       });
-    }).ifOk(() => {
-      if (messages.length && currentThreadId) {
+      return true;
+    }).ifOk((isSaved) => {
+      if (isSaved) {
         nextTick().then(() => {
           mutate("threads");
-          window.location.href = `/chat/${currentThreadId}`;
+          router.push(`/chat/${currentThreadId}`);
+          if (window.location.pathname === `/chat/${currentThreadId}`) {
+            router.refresh();
+          }
         });
       }
     });
@@ -183,7 +184,13 @@ export function VoiceChatBot() {
         isOpen: false,
       },
     });
-  }, [messages, currentProjectId, model, currentThreadId]);
+  }, [
+    messages,
+    currentProjectId,
+    model,
+    currentThreadId,
+    voiceChat.autoSaveConversation,
+  ]);
 
   const statusMessage = useMemo(() => {
     if (isLoading) {
@@ -212,7 +219,7 @@ export function VoiceChatBot() {
         </p>
       );
     }
-    if (isUserSpeaking) {
+    if (isUserSpeaking && useCompactView) {
       return <MessageLoading className="text-muted-foreground" />;
     }
     if (!isAssistantSpeaking && !isUserSpeaking) {
@@ -229,6 +236,7 @@ export function VoiceChatBot() {
     isLoading,
     isListening,
     messages.length,
+    useCompactView,
   ]);
 
   useEffect(() => {
@@ -254,19 +262,37 @@ export function VoiceChatBot() {
     }
   }, [error]);
 
+  useEffect(() => {
+    if (voiceChat.isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isVoiceChatEvent = isShortcutEvent(e, Shortcuts.toggleVoiceChat);
+      if (isVoiceChatEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+        appStoreMutate((prev) => ({
+          voiceChat: {
+            ...prev.voiceChat,
+            isOpen: true,
+          },
+        }));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [voiceChat.isOpen]);
+
   return (
     <Drawer dismissible={false} open={voiceChat.isOpen} direction="top">
       <DrawerPortal>
-        <DrawerOverlay />
-        <DrawerContent className="max-h-[100vh]! h-full border-none! rounded-none! flex flex-col">
-          <div className="w-full h-full flex flex-col bg-background">
+        <DrawerContent className="max-h-[100vh]! h-full border-none! rounded-none! flex flex-col bg-card">
+          <div className="w-full h-full flex flex-col ">
             <div
               className="w-full flex p-6 gap-2"
               style={{
                 userSelect: "text",
               }}
             >
-              <div className="flex items-center">
+              <div className="flex items-center ">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -289,7 +315,7 @@ export function VoiceChatBot() {
                 </Tooltip>
               </div>
               <DrawerTitle className="flex items-center gap-2 w-full">
-                <EnabledMcpTools
+                <EnabledMcpToolsDropdown
                   align="start"
                   side="bottom"
                   prependTools={prependTools}
@@ -401,7 +427,6 @@ export function VoiceChatBot() {
                 </div>
               )}
             </div>
-
             <div className="relative w-full p-6 flex items-center justify-center gap-4">
               <div className="text-sm text-muted-foreground absolute -top-5 left-0 w-full justify-center flex items-center">
                 {statusMessage}
@@ -423,7 +448,7 @@ export function VoiceChatBot() {
                       }
                     }}
                     className={cn(
-                      "rounded-full p-6",
+                      "rounded-full p-6 transition-colors duration-300",
 
                       isLoading
                         ? "bg-accent-foreground text-accent animate-pulse"
@@ -431,7 +456,9 @@ export function VoiceChatBot() {
                           ? "bg-green-500/10 text-green-500 hover:bg-green-500/30"
                           : !isListening
                             ? "bg-destructive/30 text-destructive hover:bg-destructive/10"
-                            : "",
+                            : isUserSpeaking
+                              ? "bg-input text-foreground"
+                              : "",
                     )}
                   >
                     {isLoading || isClosing ? (
@@ -439,7 +466,9 @@ export function VoiceChatBot() {
                     ) : !isActive ? (
                       <PhoneIcon className="size-6 fill-green-500 stroke-none" />
                     ) : isListening ? (
-                      <MicIcon className="size-6" />
+                      <MicIcon
+                        className={`size-6 ${isUserSpeaking ? "text-primary" : "text-muted-foreground transition-colors duration-300"}`}
+                      />
                     ) : (
                       <MicOffIcon className="size-6" />
                     )}
@@ -500,9 +529,6 @@ function ConversationView({
               "flex px-4 py-3",
               message.role == "user" &&
                 "ml-auto max-w-2xl text-foreground rounded-2xl w-fit bg-input/40",
-              message.role == "assistant" &&
-                !message.completed &&
-                "rounded-2xl w-fit",
             )}
           >
             {!message.completed ? (
@@ -516,27 +542,31 @@ function ConversationView({
             ) : (
               message.parts.map((part, index) => {
                 if (part.type === "text") {
-                  return !part.text ? (
-                    <MessageLoading
-                      className={
-                        message.role == "user"
-                          ? "text-muted-foreground"
-                          : "text-accent-foreground"
-                      }
-                      key={index}
-                    />
-                  ) : message.role == "user" ? (
-                    <p key={index}>{part.text}</p>
-                  ) : (
-                    <p key={index} className="whitespace-pre-wrap">
-                      {part.text?.split(" ").map((word, wordIndex) => (
-                        <span
-                          key={wordIndex}
-                          className="animate-in fade-in duration-5000"
-                        >
-                          {word}{" "}
-                        </span>
-                      ))}
+                  if (!part.text) {
+                    return (
+                      <MessageLoading
+                        key={index}
+                        className={cn(
+                          message.role == "user"
+                            ? "text-muted-foreground"
+                            : "text-foreground",
+                        )}
+                      />
+                    );
+                  }
+                  return (
+                    <p key={index}>
+                      {(part.text || "...")
+                        ?.trim()
+                        .split(" ")
+                        .map((word, wordIndex) => (
+                          <span
+                            key={wordIndex}
+                            className="animate-in fade-in duration-3000"
+                          >
+                            {word}{" "}
+                          </span>
+                        ))}
                     </p>
                   );
                 } else if (part.type === "tool-invocation") {
