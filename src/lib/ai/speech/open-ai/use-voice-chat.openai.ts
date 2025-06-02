@@ -90,22 +90,22 @@ const createUIMessage = (m: {
 export function useOpenAIVoiceChat(
   props?: UseOpenAIVoiceChatProps,
 ): VoiceChatSession {
-  const {
-    model = "gpt-4o-mini-realtime-preview-2024-12-17",
-    voice = OPENAI_VOICE.Ash,
-  } = props || {};
+  const { model = "gpt-4o-realtime-preview", voice = OPENAI_VOICE.Ash } =
+    props || {};
 
   const [
     currentThreadId,
     allowedAppDefaultToolkit,
     allowedMcpServers,
     toolChoice,
+    currentProjectId,
   ] = appStore(
     useShallow((state) => [
       state.currentThreadId,
       state.allowedAppDefaultToolkit,
       state.allowedMcpServers,
       state.toolChoice,
+      state.currentProjectId,
     ]),
   );
 
@@ -177,6 +177,7 @@ export function useOpenAIVoiceChat(
             allowedMcpServers,
             threadId: currentThreadId,
             toolChoice,
+            projectId: currentProjectId,
           }),
         },
       );
