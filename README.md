@@ -81,7 +81,8 @@ Switch between presets instantly with a click — perfect for organizing tools b
 
 ### 🧭 Tool Choice Mode
 
-![tool-mode](https://github.com/user-attachments/assets/043a37b6-c937-4b94-abb7-939124615368)
+<img width="1161" alt="tool-mode" src="https://github.com/user-attachments/assets/0988f8dd-8a37-4adf-84da-79c083917af9" />
+
 
 Control how tools are used in each chat with **Tool Choice Mode** — switch anytime with `⌘P`.
 
