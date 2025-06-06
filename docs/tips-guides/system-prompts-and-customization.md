@@ -4,7 +4,13 @@
 
 The system intelligently combines multiple prompt layers to create the perfect context for each chat, ensuring the assistant understands exactly how to help you.
 
-![system-prompt-layers](https://github.com/user-attachments/assets/placeholder-system-prompt-diagram)
+```mermaid
+flowchart TD
+    A[Base System Prompt] --> E[Final Context]
+    B[User Preferences] --> E
+    C[Project Instructions] --> E
+    D[MCP Tool Customizations] --> E
+```
 
 <br/>
 

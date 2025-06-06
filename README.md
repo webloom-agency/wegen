@@ -212,7 +212,7 @@ Step-by-step setup guides for running and configuring MCP Client Chatbot.
 #### [▲ Vercel Hosting Guide](./docs/tips-guides/vercel.md)
 
 - Deploy the chatbot to Vercel with simple setup steps for production use.
-- 
+  
 #### [🎯 System Prompts & Chat Customization](./docs/tips-guides/system-prompts-and-customization.md)
 
 - Personalize your chatbot experience with custom system prompts, user preferences, and MCP tool instructions
