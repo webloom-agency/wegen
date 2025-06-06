@@ -42,6 +42,7 @@ export async function generateTitleFromUserMessageAction({
   message,
   model,
 }: { message: Message; model: LanguageModel }) {
+  await getSession();
   const prompt = toAny(message.parts?.at(-1))?.text || "unknown";
 
   const { text: title } = await generateText({
@@ -55,9 +56,14 @@ export async function generateTitleFromUserMessageAction({
 }
 
 export async function selectThreadWithMessagesAction(threadId: string) {
+  const session = await getSession();
   const thread = await chatRepository.selectThread(threadId);
+
   if (!thread) {
     logger.error("Thread not found", threadId);
+    return redirect("/");
+  }
+  if (thread.userId !== session?.user.id) {
     return redirect("/");
   }
   const messages = await chatRepository.selectMessagesByThreadId(threadId);

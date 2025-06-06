@@ -87,6 +87,10 @@ export async function POST(request: Request) {
       thread = await chatRepository.selectThreadDetails(newThread.id);
     }
 
+    if (thread!.userId !== session.user.id) {
+      return new Response("Forbidden", { status: 403 });
+    }
+
     // if is false, it means the last message is manual tool execution
     const isLastMessageUserMessage = isUserMessage(message);
 
