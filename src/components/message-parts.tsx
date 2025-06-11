@@ -176,12 +176,9 @@ export const UserMessagePart = ({
   return (
     <div className="flex flex-col gap-2 items-end my-2">
       <div
-        onClick={() => {
-          ref.current?.scrollIntoView({ behavior: "smooth" });
-        }}
         data-testid="message-content"
         className={cn(
-          "flex flex-col gap-4",
+          "flex flex-col gap-4 max-w-full",
           {
             "bg-accent text-accent-foreground px-4 py-3 rounded-2xl":
               isLast || part.text.length <= PROMPT_PASTE_MAX_LENGTH,
@@ -191,7 +188,7 @@ export const UserMessagePart = ({
         )}
       >
         {isLast || part.text.length <= PROMPT_PASTE_MAX_LENGTH ? (
-          <p className={cn("whitespace-pre-wrap text-sm")}>
+          <p className={cn("whitespace-pre-wrap text-sm break-words")}>
             <HighlightedText text={part.text} mentions={toolMentions} />
           </p>
         ) : (
