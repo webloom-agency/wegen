@@ -37,11 +37,7 @@ export function ChatBotTemporary() {
   const t = useTranslations("Chat.TemporaryChat");
 
   const [temporaryChat, appStoreMutate] = appStore(
-    useShallow((state) => [
-      state.temporaryChat,
-
-      state.mutate,
-    ]),
+    useShallow((state) => [state.temporaryChat, state.mutate]),
   );
   const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
 
@@ -259,6 +255,20 @@ function DrawerTemporaryContent({
       };
     }
   }, [isLoading]);
+
+  useEffect(() => {
+    if (!temporaryChat.chatModel) {
+      appStoreMutate((state) => {
+        if (!state.chatModel) return state;
+        return {
+          temporaryChat: {
+            ...temporaryChat,
+            chatModel: state.chatModel,
+          },
+        };
+      });
+    }
+  }, [Boolean(temporaryChat.chatModel)]);
 
   return (
     <div
