@@ -396,68 +396,112 @@ function McpServerSelector() {
               ) : null}
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
-              <DropdownMenuSubContent className="w-80 max-h-96 overflow-y-auto">
-                <DropdownMenuLabel
-                  className="text-muted-foreground flex items-center gap-2"
-                  onClick={(e) => {
-                    e.preventDefault();
+              <DropdownMenuSubContent className="w-80 relative">
+                <McpServerToolSelector
+                  tools={server.tools}
+                  checked={server.checked}
+                  onClickAllChecked={(checked) => {
                     setMcpServerTool(
                       server.id,
-                      server.checked ? [] : server.tools.map((t) => t.name),
+                      checked ? server.tools.map((t) => t.name) : [],
                     );
                   }}
-                >
-                  {server.serverName}
-                  <div className="flex-1" />
-                  <Switch checked={server.checked} />
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {server.tools.length === 0 ? (
-                  <div className="text-sm text-muted-foreground w-full h-full flex items-center justify-center py-6">
-                    No tools available for this server.
-                  </div>
-                ) : (
-                  server.tools.map((tool) => (
-                    <DropdownMenuItem
-                      key={tool.name}
-                      className="flex items-center gap-2 cursor-pointer mb-1"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (tool.checked) {
-                          setMcpServerTool(
-                            server.id,
-                            server.tools
-                              .filter((t) => t.checked && t.name != tool.name)
-                              .map((t) => t.name),
-                          );
-                        } else {
-                          setMcpServerTool(server.id, [
-                            ...server.tools
-                              .filter((t) => t.checked)
-                              .map((t) => t.name),
-                            tool.name,
-                          ]);
-                        }
-                      }}
-                    >
-                      <div className="mx-1 flex-1 min-w-0">
-                        <p className="font-medium text-xs mb-1 truncate">
-                          {tool.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {tool.description}
-                        </p>
-                      </div>
-                      <Checkbox checked={tool.checked} className="ml-auto" />
-                    </DropdownMenuItem>
-                  ))
-                )}
+                  onToolClick={(toolName, checked) => {
+                    setMcpServerTool(
+                      server.id,
+                      checked
+                        ? [toolName]
+                        : server.tools
+                            .filter((t) => t.name !== toolName)
+                            .map((t) => t.name),
+                    );
+                  }}
+                />
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
           </DropdownMenuSub>
         ))
       )}
     </DropdownMenuGroup>
+  );
+}
+
+interface McpServerToolSelectorProps {
+  tools: {
+    name: string;
+    checked: boolean;
+    description: string;
+  }[];
+  onClickAllChecked: (checked: boolean) => void;
+  checked: boolean;
+  onToolClick: (toolName: string, checked: boolean) => void;
+}
+function McpServerToolSelector({
+  tools,
+  onClickAllChecked,
+  checked,
+  onToolClick,
+}: McpServerToolSelectorProps) {
+  const t = useTranslations("Common");
+  const [search, setSearch] = useState("");
+  const filteredTools = useMemo(() => {
+    return tools.filter((tool) =>
+      tool.name.toLowerCase().includes(search.toLowerCase()),
+    );
+  }, [tools, search]);
+  return (
+    <div>
+      <DropdownMenuLabel
+        className="text-muted-foreground flex items-center gap-2"
+        onClick={(e) => {
+          e.preventDefault();
+          onClickAllChecked(!checked);
+        }}
+      >
+        <input
+          autoFocus
+          placeholder={t("search")}
+          value={search}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+          }}
+          onChange={(e) => setSearch(e.target.value)}
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+          className="placeholder:text-muted-foreground flex w-full text-xs   outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+        />
+        <div className="flex-1" />
+        <Switch checked={checked} />
+      </DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      <div className="max-h-96 overflow-y-auto">
+        {filteredTools.length === 0 ? (
+          <div className="text-sm text-muted-foreground w-full h-full flex items-center justify-center py-6">
+            No tools available for this server.
+          </div>
+        ) : (
+          filteredTools.map((tool) => (
+            <DropdownMenuItem
+              key={tool.name}
+              className="flex items-center gap-2 cursor-pointer mb-1"
+              onClick={(e) => {
+                e.preventDefault();
+                onToolClick(tool.name, !tool.checked);
+              }}
+            >
+              <div className="mx-1 flex-1 min-w-0">
+                <p className="font-medium text-xs mb-1 truncate">{tool.name}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {tool.description}
+                </p>
+              </div>
+              <Checkbox checked={tool.checked} className="ml-auto" />
+            </DropdownMenuItem>
+          ))
+        )}
+      </div>
+    </div>
   );
 }
 
