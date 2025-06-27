@@ -407,13 +407,15 @@ function McpServerSelector() {
                     );
                   }}
                   onToolClick={(toolName, checked) => {
+                    const currentTools = server.tools
+                      .filter((v) => v.checked)
+                      .map((v) => v.name);
+
                     setMcpServerTool(
                       server.id,
                       checked
-                        ? [toolName]
-                        : server.tools
-                            .filter((t) => t.name !== toolName)
-                            .map((t) => t.name),
+                        ? currentTools.concat(toolName)
+                        : currentTools.filter((v) => v !== toolName),
                     );
                   }}
                 />
