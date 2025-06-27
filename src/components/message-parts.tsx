@@ -17,7 +17,6 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { Button } from "ui/button";
 import { Markdown } from "./markdown";
-import { MessagePastesContentCard } from "./message-pasts-content";
 import { cn, safeJSONParse } from "lib/utils";
 import JsonView from "ui/json-view";
 import {
@@ -42,16 +41,21 @@ import {
 
 import { toast } from "sonner";
 import { safe } from "ts-safe";
-import { ChatMessageAnnotation, ChatModel } from "app-types/chat";
+import {
+  ChatMentionSchema,
+  ChatMessageAnnotation,
+  ChatModel,
+} from "app-types/chat";
 import { DefaultToolName } from "lib/ai/tools/app-default-tool-name";
 import { Skeleton } from "ui/skeleton";
 import { PieChart } from "./tool-invocation/pie-chart";
 import { BarChart } from "./tool-invocation/bar-chart";
 import { LineChart } from "./tool-invocation/line-chart";
-import { PROMPT_PASTE_MAX_LENGTH } from "lib/const";
 import { useTranslations } from "next-intl";
 import { extractMCPToolId } from "lib/ai/mcp/mcp-tool-id";
 import { Separator } from "ui/separator";
+import { ChatMentionInputMentionItem } from "./chat-mention-input";
+import { TextShimmer } from "ui/text-shimmer";
 
 type MessagePart = UIMessage["parts"][number];
 
@@ -89,29 +93,6 @@ interface ToolMessagePartProps {
   setMessages?: UseChatHelpers["setMessages"];
 }
 
-interface HighlightedTextProps {
-  text: string;
-  mentions: string[];
-}
-
-const HighlightedText = memo(({ text, mentions }: HighlightedTextProps) => {
-  if (!mentions.length) return text;
-
-  const parts = text.split(/(\s+)/);
-  return parts.map((part, index) => {
-    if (mentions.includes(part.trim())) {
-      return (
-        <span key={index} className="mention">
-          {part}
-        </span>
-      );
-    }
-    return part;
-  });
-});
-
-HighlightedText.displayName = "HighlightedText";
-
 export const UserMessagePart = ({
   part,
   isLast,
@@ -125,18 +106,14 @@ export const UserMessagePart = ({
   const [mode, setMode] = useState<"view" | "edit">("view");
   const [isDeleting, setIsDeleting] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const toolMentions = useMemo(() => {
-    if (!message.annotations?.length) return [];
-    return Array.from(
-      new Set(
-        message.annotations
-          .flatMap((annotation) => {
-            return (annotation as ChatMessageAnnotation).mentions ?? [];
-          })
-          .filter(Boolean)
-          .map((v) => `@${v.name}`),
-      ),
-    );
+  const mentions = useMemo(() => {
+    return (message.annotations ?? [])
+      .flatMap((annotation) => {
+        return (annotation as ChatMessageAnnotation).mentions ?? [];
+      })
+      .filter((mention) => {
+        return ChatMentionSchema.safeParse(mention).success;
+      });
   }, [message.annotations]);
 
   const deleteMessage = useCallback(() => {
@@ -182,79 +159,78 @@ export const UserMessagePart = ({
         className={cn(
           "flex flex-col gap-4 max-w-full",
           {
-            "bg-accent text-accent-foreground px-4 py-3 rounded-2xl":
-              isLast || part.text.length <= PROMPT_PASTE_MAX_LENGTH,
+            "bg-accent text-accent-foreground px-4 py-3 rounded-2xl": isLast,
             "opacity-50": isError,
           },
           isError && "border-destructive border",
         )}
       >
-        {isLast || part.text.length <= PROMPT_PASTE_MAX_LENGTH ? (
-          <p className={cn("whitespace-pre-wrap text-sm break-words")}>
-            <HighlightedText text={part.text} mentions={toolMentions} />
-          </p>
-        ) : (
-          <MessagePastesContentCard initialContent={part.text} readonly />
-        )}
+        <p className={cn("whitespace-pre-wrap text-sm break-words")}>
+          {part.text}
+        </p>
       </div>
+      {isLast && mentions.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {mentions.map((mention, i) => {
+            return (
+              <ChatMentionInputMentionItem
+                key={i}
+                id={JSON.stringify(mention)}
+                className="mx-0"
+              />
+            );
+          })}
+        </div>
+      )}
+      {isLast && (
+        <div className="flex w-full justify-end opacity-0 group-hover/message:opacity-100 transition-opacity duration-300">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                data-testid="message-edit-button"
+                variant="ghost"
+                size="icon"
+                className={cn("size-3! p-4!")}
+                onClick={() => copy(part.text)}
+              >
+                {copied ? <Check /> : <Copy />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Copy</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                data-testid="message-edit-button"
+                variant="ghost"
+                size="icon"
+                className="size-3! p-4!"
+                onClick={() => setMode("edit")}
+              >
+                <Pencil />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Edit</TooltipContent>
+          </Tooltip>
 
-      <div className="flex w-full justify-end">
-        {isLast && (
-          <>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  data-testid="message-edit-button"
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "size-3! p-4! opacity-0 group-hover/message:opacity-100",
-                  )}
-                  onClick={() => copy(part.text)}
-                >
-                  {copied ? <Check /> : <Copy />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Copy</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  data-testid="message-edit-button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-3! p-4! opacity-0 group-hover/message:opacity-100"
-                  onClick={() => setMode("edit")}
-                >
-                  <Pencil />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Edit</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  disabled={isDeleting}
-                  onClick={deleteMessage}
-                  variant="ghost"
-                  size="icon"
-                  className="size-3! p-4! opacity-0 group-hover/message:opacity-100 hover:text-destructive"
-                >
-                  {isDeleting ? (
-                    <Loader className="animate-spin" />
-                  ) : (
-                    <Trash2 />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="text-destructive" side="bottom">
-                Delete Message
-              </TooltipContent>
-            </Tooltip>
-          </>
-        )}
-      </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                disabled={isDeleting}
+                onClick={deleteMessage}
+                variant="ghost"
+                size="icon"
+                className="size-3! p-4! hover:text-destructive"
+              >
+                {isDeleting ? <Loader className="animate-spin" /> : <Trash2 />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="text-destructive" side="bottom">
+              Delete Message
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      )}
       <div ref={ref} className="min-w-0" />
     </div>
   );
@@ -515,7 +491,11 @@ export const ToolMessagePart = memo(
                 )}
               </div>
               <span className="font-bold flex items-center gap-2">
-                {mcpServerName}
+                {isExpanded ? (
+                  <TextShimmer>{mcpServerName}</TextShimmer>
+                ) : (
+                  mcpServerName
+                )}
               </span>
               {mcpToolName && (
                 <>
@@ -539,9 +519,19 @@ export const ToolMessagePart = memo(
                 />
               </div>
               <div className="w-full flex flex-col gap-2">
-                <div className="min-w-0 w-full p-4 rounded-lg bg-card px-4 border text-xs">
+                <div
+                  className={cn(
+                    "min-w-0 w-full p-4 rounded-lg bg-card px-4 border text-xs transition-colors fade-300",
+                    !isExpanded && "hover:bg-secondary cursor-pointer",
+                  )}
+                  onClick={() => {
+                    if (!isExpanded) {
+                      setExpanded(true);
+                    }
+                  }}
+                >
                   <div className="flex items-center">
-                    <h5 className="text-muted-foreground font-medium select-none">
+                    <h5 className="text-muted-foreground font-medium select-none transition-colors">
                       Request
                     </h5>
                     <div className="flex-1" />
@@ -567,7 +557,17 @@ export const ToolMessagePart = memo(
                   )}
                 </div>
                 {result && (
-                  <div className="min-w-0 w-full p-4 rounded-lg bg-card px-4 border text-xs mt-2">
+                  <div
+                    className={cn(
+                      "min-w-0 w-full p-4 rounded-lg bg-card px-4 border text-xs mt-2 transition-colors fade-300",
+                      !isExpanded && "hover:bg-secondary cursor-pointer",
+                    )}
+                    onClick={() => {
+                      if (!isExpanded) {
+                        setExpanded(true);
+                      }
+                    }}
+                  >
                     <div className="flex items-center">
                       <h5 className="text-muted-foreground font-medium select-none">
                         Response
