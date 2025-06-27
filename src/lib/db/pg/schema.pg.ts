@@ -10,7 +10,10 @@ import {
   uuid,
   boolean,
   unique,
+  varchar,
+  index,
 } from "drizzle-orm/pg-core";
+import { DBWorkflow, DBEdge, DBNode } from "app-types/workflow";
 
 export const ChatThreadSchema = pgTable("chat_thread", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
@@ -154,6 +157,64 @@ export const McpServerCustomizationSchema = pgTable(
   },
   (table) => [unique().on(table.userId, table.mcpServerId)],
 );
+
+export const WorkflowSchema = pgTable("workflow", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  version: text("version").notNull().default("0.1.0"),
+  name: text("name").notNull(),
+  icon: json("icon").$type<DBWorkflow["icon"]>(),
+  description: text("description"),
+  isPublished: boolean("is_published").notNull().default(false),
+  visibility: varchar("visibility", {
+    enum: ["public", "private", "readonly"],
+  })
+    .notNull()
+    .default("private"),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => UserSchema.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const WorkflowNodeDataSchema = pgTable(
+  "workflow_node",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    version: text("version").notNull().default("0.1.0"),
+    workflowId: uuid("workflow_id")
+      .notNull()
+      .references(() => WorkflowSchema.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    uiConfig: json("ui_config").$type<DBNode["uiConfig"]>().default({}),
+    nodeConfig: json("node_config").$type<DBNode["nodeConfig"]>().default({}),
+    createdAt: timestamp("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => [index("workflow_node_kind_idx").on(t.kind)],
+);
+
+export const WorkflowEdgeSchema = pgTable("workflow_edge", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  version: text("version").notNull().default("0.1.0"),
+  workflowId: uuid("workflow_id")
+    .notNull()
+    .references(() => WorkflowSchema.id, { onDelete: "cascade" }),
+  source: uuid("source")
+    .notNull()
+    .references(() => WorkflowNodeDataSchema.id, { onDelete: "cascade" }),
+  target: uuid("target")
+    .notNull()
+    .references(() => WorkflowNodeDataSchema.id, { onDelete: "cascade" }),
+  uiConfig: json("ui_config").$type<DBEdge["uiConfig"]>().default({}),
+  createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
 
 export type McpServerEntity = typeof McpServerSchema.$inferSelect;
 export type ChatThreadEntity = typeof ChatThreadSchema.$inferSelect;
