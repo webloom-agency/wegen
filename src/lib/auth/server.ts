@@ -85,7 +85,7 @@ export const getSession = async () => {
     });
   if (!session) {
     logger.error("No session found");
-    redirect("/sign-in");
+    redirect("/");
   }
   return session!;
 };
