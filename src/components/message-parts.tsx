@@ -491,7 +491,7 @@ export const ToolMessagePart = memo(
                 )}
               </div>
               <span className="font-bold flex items-center gap-2">
-                {isExpanded ? (
+                {isExecuting ? (
                   <TextShimmer>{mcpServerName}</TextShimmer>
                 ) : (
                   mcpServerName
