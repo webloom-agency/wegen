@@ -11,7 +11,7 @@ import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import JsonView from "./ui/json-view";
 import { toast } from "sonner";
-import { safe, watchOk } from "ts-safe";
+import { safe } from "ts-safe";
 import { useRouter } from "next/navigation";
 import { createDebounce, isNull, safeJSONParse } from "lib/utils";
 import { handleErrorWithToast } from "ui/shared-toast";
@@ -25,10 +25,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "ui/alert";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
-import {
-  existMcpClientByServerNameAction,
-  saveMcpClientAction,
-} from "@/app/api/mcp/actions";
+import { existMcpClientByServerNameAction } from "@/app/api/mcp/actions";
 
 interface MCPEditorProps {
   initialConfig?: MCPServerConfig;
@@ -143,16 +140,28 @@ export default function MCPEditor({
         }
       })
       .map(() =>
-        saveMcpClientAction({
-          name,
-          config,
-          id,
+        fetch("/api/mcp", {
+          method: "POST",
+          body: JSON.stringify({
+            name,
+            config,
+            id,
+          }),
+        }).then(async (res) => {
+          if (!res.ok) {
+            const error = await res.json();
+            throw error;
+          }
         }),
       )
-      .ifOk(() => toast.success(t("MCP.configurationSavedSuccessfully")))
-      .watch(watchOk(() => mutate("mcp-list")))
-      .ifOk(() => router.push("/mcp"))
-      .ifFail(handleErrorWithToast);
+
+      .ifOk(() => {
+        toast.success(t("MCP.configurationSavedSuccessfully"));
+        mutate("mcp-list");
+        router.push("/mcp");
+      })
+      .ifFail(handleErrorWithToast)
+      .watch(() => setIsLoading(false));
   };
 
   const handleConfigChange = (data: string) => {
