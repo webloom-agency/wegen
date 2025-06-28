@@ -7,7 +7,7 @@ import { Toaster as Sonner, type ToasterProps } from "sonner";
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme } = useTheme();
   const themeBase = useMemo(() => {
-    return theme?.endsWith("-dark") ? "dark" : "default";
+    return theme == "dark" ? "dark" : "default";
   }, [theme]);
   return (
     <Sonner

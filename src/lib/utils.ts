@@ -336,3 +336,21 @@ export function validateSchema(key: string, schema: JSONSchema7) {
   }
   return true;
 }
+
+export const createEmitter = () => {
+  const listeners = new Set<(value: string) => void>();
+  return {
+    on: (listener: (value: string) => void) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    off: (listener: (value: string) => void) => {
+      listeners.delete(listener);
+    },
+    emit: (value: string) => {
+      listeners.forEach((listener) => listener(value));
+    },
+  };
+};

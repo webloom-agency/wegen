@@ -37,6 +37,7 @@ import { getLocaleAction } from "@/i18n/get-locale";
 import { useCallback } from "react";
 import { GithubIcon } from "ui/github-icon";
 import { DiscordIcon } from "ui/discord-icon";
+import { useThemeStyle } from "@/hooks/use-theme-style";
 
 export function AppSidebarUser() {
   const appStoreMutate = appStore((state) => state.mutate);
@@ -149,17 +150,9 @@ export function AppSidebarUser() {
 function SelectTheme() {
   const t = useTranslations("Layout");
 
-  const { theme = "slate", resolvedTheme, setTheme } = useTheme();
-  const base = theme.replace(/-dark$/, "");
-  const isDark = theme.endsWith("-dark") || resolvedTheme === "dark";
+  const { theme = "light", setTheme } = useTheme();
 
-  const onThemeSelect = (value: string) => {
-    setTheme(isDark ? `${value}-dark` : value);
-  };
-
-  const toggleDarkMode = () => {
-    setTheme(isDark ? base : `${base}-dark`);
-  };
+  const { themeStyle = "default", setThemeStyle } = useThemeStyle();
 
   return (
     <DropdownMenuSub>
@@ -168,8 +161,8 @@ function SelectTheme() {
         icon={
           <>
             <span className="text-muted-foreground text-xs min-w-0 truncate">
-              {`${capitalizeFirstLetter(base)} ${capitalizeFirstLetter(
-                isDark ? "dark" : "light",
+              {`${capitalizeFirstLetter(theme)} ${capitalizeFirstLetter(
+                themeStyle,
               )}`}
             </span>
             <ChevronRight className="size-4 ml-2" />
@@ -183,17 +176,17 @@ function SelectTheme() {
         <DropdownMenuSubContent className="w-48">
           <DropdownMenuLabel className="text-muted-foreground w-full flex items-center">
             <span className="text-muted-foreground text-xs mr-2 select-none">
-              {capitalizeFirstLetter(isDark ? "dark" : "light")}
+              {capitalizeFirstLetter(theme)}
             </span>
             <div className="flex-1" />
 
             <div
-              onClick={toggleDarkMode}
+              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
               className="cursor-pointer border rounded-full flex items-center"
             >
               <div
                 className={cn(
-                  isDark &&
+                  theme === "dark" &&
                     "bg-accent ring ring-muted-foreground/40 text-foreground",
                   "p-1 rounded-full",
                 )}
@@ -202,7 +195,7 @@ function SelectTheme() {
               </div>
               <div
                 className={cn(
-                  !isDark &&
+                  theme === "light" &&
                     "bg-accent ring ring-muted-foreground/40 text-foreground",
                   "p-1 rounded-full",
                 )}
@@ -215,10 +208,10 @@ function SelectTheme() {
             {BASE_THEMES.map((t) => (
               <DropdownMenuCheckboxItem
                 key={t}
-                checked={base === t}
+                checked={themeStyle === t}
                 onClick={(e) => {
                   e.preventDefault();
-                  onThemeSelect(t);
+                  setThemeStyle(t);
                 }}
                 className="text-sm"
               >

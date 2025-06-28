@@ -121,7 +121,7 @@ export function useOpenAIVoiceChat(
   const audioElement = useRef<HTMLAudioElement | null>(null);
   const audioStream = useRef<MediaStream | null>(null);
 
-  const { setTheme, theme } = useTheme();
+  const { setTheme } = useTheme();
   const tracks = useRef<RTCRtpSender[]>([]);
 
   const startListening = useCallback(async () => {
@@ -231,8 +231,7 @@ export function useOpenAIVoiceChat(
       if (DEFAULT_VOICE_TOOLS.some((t) => t.name === toolName)) {
         switch (toolName) {
           case "changeBrowserTheme":
-            const base = theme?.replace(/-dark$/, "");
-            setTheme(`${base}${toolArgs?.theme === "dark" ? "-dark" : ""}`);
+            setTheme(toolArgs?.theme == "dark" ? "light" : "dark");
             break;
         }
       } else {

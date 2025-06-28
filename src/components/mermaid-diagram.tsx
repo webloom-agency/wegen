@@ -32,9 +32,6 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const previousChartRef = useRef<string>(chart);
   const debounce = useMemo(() => createDebounce(), []);
-  const themeSystem = useMemo(() => {
-    return theme?.endsWith("-dark") ? "dark" : "default";
-  }, [theme]);
 
   useEffect(() => {
     // Reset states if chart has changed
@@ -56,7 +53,7 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
         // Initialize mermaid with theme
         mermaid.initialize({
           startOnLoad: false,
-          theme: themeSystem,
+          theme: theme == "dark" ? "dark" : "default",
           securityLevel: "loose",
         });
 
@@ -82,7 +79,7 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
     return () => {
       debounce.clear();
     };
-  }, [chart, themeSystem, debounce]);
+  }, [chart, theme, debounce]);
 
   if (state.loading) {
     return (

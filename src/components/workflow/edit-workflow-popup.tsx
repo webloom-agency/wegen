@@ -109,8 +109,6 @@ export function EditWorkflowPopup({
     getInitialConfig(),
   );
 
-  const isDark = theme?.endsWith("-dark");
-
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
@@ -221,7 +219,7 @@ export function EditWorkflowPopup({
                     lazyLoadEmojis
                     open
                     className="fade-300"
-                    theme={isDark ? Theme.DARK : Theme.LIGHT}
+                    theme={theme == "dark" ? Theme.DARK : Theme.LIGHT}
                     onEmojiClick={(emoji) => {
                       setConfig({
                         icon: {

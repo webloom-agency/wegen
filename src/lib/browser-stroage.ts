@@ -2,7 +2,7 @@
 
 import { IS_BROWSER } from "./const";
 
-const PRE_FIX = "MCP-APP";
+const PRE_FIX = "ChATBOT-STOREAGE";
 
 const get = <T>(
   storage: Storage,

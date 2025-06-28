@@ -6,7 +6,7 @@ import {
   codeToHast,
   type BundledLanguage,
 } from "shiki/bundle/web";
-import { Fragment, useLayoutEffect, useMemo, useState } from "react";
+import { Fragment, useLayoutEffect, useState } from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import { safe } from "ts-safe";
@@ -123,9 +123,6 @@ export function PreBlock({ children }: { children: any }) {
       {children}
     </PurePre>,
   );
-  const themeSystem = useMemo(() => {
-    return theme?.endsWith("-dark") ? "dark" : "default";
-  }, [theme]);
 
   useLayoutEffect(() => {
     safe()
@@ -133,12 +130,12 @@ export function PreBlock({ children }: { children: any }) {
         highlight(
           code,
           language,
-          themeSystem === "dark" ? "dark-plus" : "github-light",
+          theme == "dark" ? "dark-plus" : "github-light",
         ),
       )
       .ifOk(setComponent)
       .watch(() => setLoading(false));
-  }, [themeSystem, language, code]);
+  }, [theme, language, code]);
 
   // For other code blocks, render as before
   return (
