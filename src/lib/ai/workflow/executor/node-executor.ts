@@ -7,12 +7,16 @@ import {
   WorkflowNodeData,
   ToolNodeData,
   HttpNodeData,
+  TemplateNodeData,
   OutputSchemaSourceKey,
 } from "../workflow.interface";
 import { WorkflowRuntimeState } from "./graph-store";
-import { generateText, Message } from "ai";
+import { generateObject, generateText, Message } from "ai";
 import { checkConditionBranch } from "../condition";
-import { convertTiptapJsonToAiMessage } from "../shared.workflow";
+import {
+  convertTiptapJsonToAiMessage,
+  convertTiptapJsonToText,
+} from "../shared.workflow";
 import { jsonSchemaToZod } from "lib/json-schema-to-zod";
 import { callMcpToolAction } from "@/app/api/mcp/actions";
 import { toAny } from "lib/utils";
@@ -88,20 +92,40 @@ export const llmNodeExecutor: NodeExecutor<LLMNodeData> = async ({
     }),
   );
 
-  const response = await generateText({
+  const isTextResponse =
+    node.outputSchema.properties?.answer?.type === "string";
+
+  state.setInput(node.id, {
+    chatModel: node.model,
+    messages,
+    responseFormat: isTextResponse ? "text" : "object",
+  });
+
+  if (isTextResponse) {
+    const response = await generateText({
+      model,
+      messages,
+      maxSteps: 1,
+    });
+    return {
+      output: {
+        totalTokens: response.usage.totalTokens,
+        answer: response.text,
+      },
+    };
+  }
+
+  const response = await generateObject({
     model,
     messages,
-    maxSteps: 1,
+    schema: jsonSchemaToZod(node.outputSchema.properties.answer),
+    maxRetries: 3,
   });
 
   return {
-    input: {
-      chatModel: node.model,
-      messages,
-    },
     output: {
       totalTokens: response.usage.totalTokens,
-      answer: response.text,
+      answer: response.object,
     },
   };
 };
@@ -421,4 +445,32 @@ export const httpNodeExecutor: NodeExecutor<HttpNodeData> = async ({
     });
     throw error;
   }
+};
+
+/**
+ * Template Node Executor
+ * Processes text templates with variable substitution using TipTap content.
+ *
+ * Features:
+ * - Variable substitution from previous node outputs
+ * - Support for mentions in template content
+ * - Simple text output for easy consumption by other nodes
+ */
+export const templateNodeExecutor: NodeExecutor<TemplateNodeData> = ({
+  node,
+  state,
+}) => {
+  let text: string = "";
+  // Convert TipTap template content to text with variable substitution
+  if (node.template.type == "tiptap") {
+    text = convertTiptapJsonToText({
+      getOutput: state.getOutput, // Access to previous node outputs for variable substitution
+      json: node.template.tiptap,
+    });
+  }
+  return {
+    output: {
+      template: text,
+    },
+  };
 };

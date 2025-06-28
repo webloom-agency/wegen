@@ -1,6 +1,7 @@
 import { generateUUID } from "lib/utils";
 import { NodeKind, UINode } from "./workflow.interface";
 import { defaultObjectJsonSchema } from "./shared.workflow";
+import { ObjectJsonSchema7 } from "app-types/util";
 
 export function createUINode(
   kind: NodeKind,
@@ -31,14 +32,7 @@ export function createUINode(
   if (node.data.kind === NodeKind.Output) {
     node.data.outputData = [];
   } else if (node.data.kind === NodeKind.LLM) {
-    node.data.outputSchema.properties = {
-      answer: {
-        type: "string",
-      },
-      totalTokens: {
-        type: "number",
-      },
-    };
+    node.data.outputSchema = structuredClone(defaultLLMNodeOutputSchema);
     node.data.messages = [
       {
         role: "user",
@@ -99,7 +93,38 @@ export function createUINode(
     node.data.headers = [];
     node.data.query = [];
     node.data.timeout = 30000; // 30 seconds default
+  } else if (node.data.kind === NodeKind.Template) {
+    node.data.outputSchema = structuredClone(defaultTemplateNodeOutputSchema);
+    // Set default values for Template node
+    node.data.template = {
+      type: "tiptap",
+      tiptap: {
+        type: "doc",
+        content: [],
+      },
+    };
   }
 
   return node;
 }
+
+export const defaultLLMNodeOutputSchema: ObjectJsonSchema7 = {
+  type: "object",
+  properties: {
+    answer: {
+      type: "string",
+    },
+    totalTokens: {
+      type: "number",
+    },
+  },
+};
+
+export const defaultTemplateNodeOutputSchema: ObjectJsonSchema7 = {
+  type: "object",
+  properties: {
+    template: {
+      type: "string",
+    },
+  },
+};
