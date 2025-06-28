@@ -234,7 +234,7 @@ function SchemaItem({
           <VariableIcon className="size-4 text-blue-500" />
           <span
             className={cn(
-              "text-foreground ml-1",
+              "text-foreground ml-1 truncate",
               disabled && "text-muted-foreground",
             )}
           >
@@ -271,7 +271,7 @@ function SchemaItem({
       }}
     >
       <VariableIcon className="size-4 text-blue-500" />
-      <span>{name}</span>
+      <span className="truncate">{name}</span>
       <span className="text-xs text-muted-foreground ml-auto">
         {schema.type}
       </span>

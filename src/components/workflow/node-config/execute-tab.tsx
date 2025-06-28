@@ -294,24 +294,22 @@ ${workflow!.description ? `tool-description: ${workflow!.description}` : ""}`,
                       (h) => h.id === event.nodeExecutionId,
                     );
                     if (!prevHistory) return prev;
-                    return prev.map((n) =>
-                      n == prevHistory
-                        ? ({
-                            ...prevHistory,
-                            endedAt: Date.now(),
-                            status: event.isOk ? "success" : "fail",
-                            error: event.error,
-                            result: {
-                              output:
-                                event.node.output?.outputs?.[
-                                  prevHistory.nodeId
-                                ],
-                              input:
-                                event.node.output?.inputs?.[prevHistory.nodeId],
-                            },
-                          } as NodeRuntimeHistory)
-                        : n,
-                    );
+                    return prev.map((n) => {
+                      if (n != prevHistory) return n;
+                      const source = event.isOk
+                        ? event.node.output
+                        : event.node.input;
+                      return {
+                        ...prevHistory,
+                        endedAt: Date.now(),
+                        status: event.isOk ? "success" : "fail",
+                        error: event.error,
+                        result: {
+                          output: source?.outputs?.[prevHistory.nodeId],
+                          input: source?.inputs?.[prevHistory.nodeId],
+                        },
+                      } as NodeRuntimeHistory;
+                    });
                   });
                 }
               }

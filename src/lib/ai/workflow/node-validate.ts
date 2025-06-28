@@ -9,6 +9,7 @@ import {
   UINode,
   WorkflowNodeData,
   ToolNodeData,
+  HttpNodeData,
 } from "lib/ai/workflow/workflow.interface";
 import { cleanVariableName } from "lib/utils";
 import { safe } from "ts-safe";
@@ -103,6 +104,8 @@ export const nodeValidate: NodeValidate<WorkflowNodeData> = ({
       return conditionNodeValidate({ node, nodes, edges });
     case NodeKind.Tool:
       return toolNodeValidate({ node, nodes, edges });
+    case NodeKind.Http:
+      return httpNodeValidate({ node, nodes, edges });
   }
 };
 
@@ -192,4 +195,62 @@ export const toolNodeValidate: NodeValidate<ToolNodeData> = ({ node }) => {
   if (!node.tool) throw new Error("Tool node must have a tool");
   if (!node.model) throw new Error("Tool node must have a model");
   if (!node.message) throw new Error("Tool node must have a message");
+};
+
+export const httpNodeValidate: NodeValidate<HttpNodeData> = ({ node }) => {
+  // Validate URL is provided (can be empty string, but must be defined)
+  if (node.url === undefined) {
+    throw new Error("HTTP node must have a URL defined");
+  }
+
+  // Validate HTTP method
+  const validMethods = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"];
+  if (!validMethods.includes(node.method)) {
+    throw new Error(`HTTP method must be one of: ${validMethods.join(", ")}`);
+  }
+
+  // Validate timeout if provided
+  if (node.timeout !== undefined) {
+    if (typeof node.timeout !== "number" || node.timeout <= 0) {
+      throw new Error("HTTP timeout must be a positive number");
+    }
+    if (node.timeout > 300000) {
+      // 5 minutes max
+      throw new Error("HTTP timeout cannot exceed 300000ms (5 minutes)");
+    }
+  }
+
+  // Validate headers format
+  if (node.headers) {
+    for (const header of node.headers) {
+      if (!header.key || header.key.trim().length === 0) {
+        throw new Error("Header key cannot be empty");
+      }
+      // Check for duplicate header keys (case insensitive)
+      const lowerKey = header.key.toLowerCase();
+      const duplicates = node.headers.filter(
+        (h) => h.key.toLowerCase() === lowerKey,
+      );
+      if (duplicates.length > 1) {
+        throw new Error(`Duplicate header key: ${header.key}`);
+      }
+    }
+  }
+
+  // Validate query parameters format
+  if (node.query) {
+    for (const queryParam of node.query) {
+      if (!queryParam.key || queryParam.key.trim().length === 0) {
+        throw new Error("Query parameter key cannot be empty");
+      }
+    }
+  }
+
+  // Validate body is only used with appropriate methods
+  if (
+    node.body !== undefined &&
+    !["POST", "PUT", "PATCH"].includes(node.method)
+  ) {
+    throw new Error(`Body is not allowed for ${node.method} requests`);
+  }
 };

@@ -65,28 +65,17 @@ export function OutputSchemaMentionInput({
   const MentionItem = useCallback(
     ({ id, label }: { id: string; label: string }) => {
       const item = JSON.parse(label) as OutputSchemaSourceKey;
-      const labelData = {
-        nodeName: "",
-        path: item.path,
-        notFound: false,
-      };
 
       const nodes = getNodes();
       const edges = getEdges();
 
-      const sourceNode = nodes.find((node) => node.id === item.nodeId);
-      labelData.nodeName = sourceNode?.data.name ?? "ERROR";
-
-      const schema = findAvailableSchemaBySource({
+      const labelData = findAvailableSchemaBySource({
         nodeId: currentNodeId,
         source: item,
         nodes: nodes.map((node) => node.data),
         edges,
       });
 
-      if (!schema) {
-        labelData.notFound = true;
-      }
       const handleRemove = () => onRemove(id);
 
       return (

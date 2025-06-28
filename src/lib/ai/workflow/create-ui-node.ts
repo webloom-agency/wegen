@@ -65,6 +65,40 @@ export function createUINode(
         type: "object",
       },
     };
+  } else if (node.data.kind === NodeKind.Http) {
+    node.data.outputSchema.properties = {
+      response: {
+        type: "object",
+        properties: {
+          status: {
+            type: "number",
+          },
+          statusText: {
+            type: "string",
+          },
+          ok: {
+            type: "boolean",
+          },
+          headers: {
+            type: "object",
+          },
+          body: {
+            type: "string",
+          },
+          duration: {
+            type: "number",
+          },
+          size: {
+            type: "number",
+          },
+        },
+      },
+    };
+    // Set default values for HTTP node
+    node.data.method = "GET";
+    node.data.headers = [];
+    node.data.query = [];
+    node.data.timeout = 30000; // 30 seconds default
   }
 
   return node;

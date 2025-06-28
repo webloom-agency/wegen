@@ -91,6 +91,7 @@
     "noDescriptionAndSchema": "No description and schema",
     "toolDescription": "Provide information needed for LLM to generate tool parameters.\n\nUse '/' to mention data from previous nodes.",
     "generateInputWithAIDescription": "Write a prompt to generate input for the workflow",
+    "selectVariable": "Select Variable",
     "example": {
       "storyGenerator": "Story Generator"
     }

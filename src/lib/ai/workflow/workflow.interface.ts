@@ -20,7 +20,7 @@ export enum NodeKind {
   Tool = "tool", // MCP tool execution node
   Note = "note", // Documentation/annotation node
   Code = "code", // Code execution node (future implementation)
-  Http = "http", // HTTP request node (future implementation)
+  Http = "http", // HTTP request node
   Condition = "condition", // Conditional branching node
 }
 
@@ -140,6 +140,37 @@ export type ConditionNodeData = BaseWorkflowNodeDataData<{
 };
 
 /**
+ * HTTP request method type
+ */
+export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD";
+
+/**
+ * Simple value type that can be a literal string or reference to another node's output
+ */
+export type HttpValue = string | OutputSchemaSourceKey;
+
+/**
+ * HTTP node: Performs HTTP requests to external services
+ * Supports all standard HTTP methods with configurable parameters
+ */
+export type HttpNodeData = BaseWorkflowNodeDataData<{
+  kind: NodeKind.Http;
+}> & {
+  url?: HttpValue; // Request URL (can reference other node outputs)
+  method: HttpMethod; // HTTP method
+  headers: {
+    key: string;
+    value?: HttpValue; // Header value (can reference other node outputs)
+  }[]; // Request headers
+  query: {
+    key: string;
+    value?: HttpValue; // Query parameter value (can reference other node outputs)
+  }[]; // Query parameters
+  body?: HttpValue; // Request body (can reference other node outputs)
+  timeout?: number; // Request timeout in milliseconds (default: 30000)
+};
+
+/**
  * Union type of all possible node data types.
  * When adding a new node type, include it in this union.
  */
@@ -149,7 +180,8 @@ export type WorkflowNodeData =
   | LLMNodeData
   | NoteNodeData
   | ToolNodeData
-  | ConditionNodeData;
+  | ConditionNodeData
+  | HttpNodeData;
 
 /**
  * Runtime fields added during workflow execution

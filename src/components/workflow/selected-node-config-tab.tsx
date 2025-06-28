@@ -19,6 +19,7 @@ import { Label } from "ui/label";
 import { NextNodeInfo } from "./next-node-info";
 import { nextTick } from "lib/utils";
 import { ToolNodeDataConfig } from "./node-config/tool-node-config";
+import { HttpNodeConfig } from "./node-config/http-node-config";
 import { useTranslations } from "next-intl";
 
 export function SelectedNodeConfigTab({ node }: { node: UINode }) {
@@ -93,6 +94,8 @@ export function SelectedNodeConfigTab({ node }: { node: UINode }) {
           <ConditionNodeDataConfig data={node.data} />
         ) : node.data.kind === NodeKind.Tool ? (
           <ToolNodeDataConfig data={node.data} />
+        ) : node.data.kind === NodeKind.Http ? (
+          <HttpNodeConfig node={node} />
         ) : node.data.kind === NodeKind.Note ? (
           <div className="h-full flex flex-col gap-2 px-4">
             <Label

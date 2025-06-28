@@ -126,11 +126,11 @@ export function EditWorkflowPopup({
           return data as DBWorkflow;
         })
         .ifOk((workflow) => {
+          onOpenChange?.(false);
           mutate("/api/workflow");
           if (submitAfterRoute) {
             router.push(`/workflow/${workflow.id}`);
           }
-          onOpenChange?.(false);
         })
         .ifFail(handleErrorWithToast)
         .watch(() => setLoading(false))

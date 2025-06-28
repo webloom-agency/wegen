@@ -6,6 +6,8 @@ import {
   InputNodeData,
   WorkflowNodeData,
   ToolNodeData,
+  HttpNodeData,
+  OutputSchemaSourceKey,
 } from "../workflow.interface";
 import { WorkflowRuntimeState } from "./graph-store";
 import { generateText, Message } from "ai";
@@ -14,6 +16,7 @@ import { convertTiptapJsonToAiMessage } from "../shared.workflow";
 import { jsonSchemaToZod } from "lib/json-schema-to-zod";
 import { callMcpToolAction } from "@/app/api/mcp/actions";
 import { toAny } from "lib/utils";
+import { AppError } from "lib/errors";
 
 /**
  * Interface for node executor functions.
@@ -220,4 +223,202 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
   }
 
   return result;
+};
+
+/**
+ * Resolves HttpValue to actual string value
+ * Handles string literals and references to other node outputs
+ */
+function resolveHttpValue(
+  value: string | OutputSchemaSourceKey | undefined,
+  getOutput: WorkflowRuntimeState["getOutput"],
+): string {
+  if (value === undefined) return "";
+
+  if (typeof value === "string") return value;
+
+  // It's an OutputSchemaSourceKey - resolve from node output
+  const output = getOutput(value);
+  if (output === undefined || output === null) return "";
+
+  if (typeof output === "string" || typeof output === "number") {
+    return output.toString();
+  }
+
+  // For objects/arrays, stringify them
+  return JSON.stringify(output);
+}
+
+/**
+ * HTTP Node Executor
+ * Performs HTTP requests to external services with configurable parameters.
+ *
+ * Features:
+ * - Support for all standard HTTP methods (GET, POST, PUT, DELETE, PATCH, HEAD)
+ * - Dynamic URL, headers, query parameters, and body with variable substitution
+ * - Configurable timeout
+ * - Comprehensive response data including status, headers, and body
+ */
+export const httpNodeExecutor: NodeExecutor<HttpNodeData> = async ({
+  node,
+  state,
+}) => {
+  // Default timeout of 30 seconds
+  const timeout = node.timeout || 30000;
+
+  // Resolve URL with variable substitution
+  const url = resolveHttpValue(node.url, state.getOutput);
+
+  if (!url) {
+    throw new Error("HTTP node requires a URL");
+  }
+
+  // Build query parameters
+  const searchParams = new URLSearchParams();
+  for (const queryParam of node.query || []) {
+    if (queryParam.key && queryParam.value !== undefined) {
+      const value = resolveHttpValue(queryParam.value, state.getOutput);
+      if (value) {
+        searchParams.append(queryParam.key, value);
+      }
+    }
+  }
+
+  // Construct final URL with query parameters
+  const finalUrl = searchParams.toString()
+    ? `${url}${url.includes("?") ? "&" : "?"}${searchParams.toString()}`
+    : url;
+
+  // Build headers
+  const headers: Record<string, string> = {};
+  for (const header of node.headers || []) {
+    if (header.key && header.value !== undefined) {
+      const value = resolveHttpValue(header.value, state.getOutput);
+      if (value) {
+        headers[header.key] = value;
+      }
+    }
+  }
+
+  // Build request body
+  let body: string | undefined;
+  if (node.body && ["POST", "PUT", "PATCH"].includes(node.method)) {
+    body = resolveHttpValue(node.body, state.getOutput);
+
+    // Set default content-type if not specified and body is present
+    if (body && !headers["Content-Type"] && !headers["content-type"]) {
+      // Try to detect JSON format
+      try {
+        JSON.parse(body);
+        headers["Content-Type"] = "application/json";
+      } catch {
+        headers["Content-Type"] = "text/plain";
+      }
+    }
+  }
+
+  const startTime = Date.now();
+
+  try {
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    const response = await fetch(finalUrl, {
+      method: node.method,
+      headers,
+      body,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    // Parse response body as string
+    let responseBody: string;
+    try {
+      responseBody = await response.text();
+    } catch {
+      // If parsing fails, return empty string
+      responseBody = "";
+    }
+
+    // Convert response headers to object
+    const responseHeaders: Record<string, string> = {};
+    response.headers.forEach((value, key) => {
+      responseHeaders[key] = value;
+    });
+
+    const duration = Date.now() - startTime;
+
+    const request = {
+      url: finalUrl,
+      method: node.method,
+      headers,
+      body,
+      timeout,
+    };
+    const responseData = {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      headers: responseHeaders,
+      body: responseBody,
+      duration,
+      size: response.headers.get("content-length")
+        ? parseInt(response.headers.get("content-length")!)
+        : undefined,
+    };
+    if (!response.ok) {
+      state.setInput(node.id, {
+        request,
+        response: responseData,
+      });
+      throw new AppError(response.status.toString(), response.statusText);
+    }
+
+    return {
+      input: {
+        request,
+      },
+      output: {
+        response: responseData,
+      },
+    };
+  } catch (error: any) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+    const duration = Date.now() - startTime;
+
+    // Handle different types of errors
+    let errorMessage = error.message;
+    let errorType = "unknown";
+
+    if (error.name === "AbortError") {
+      errorMessage = `Request timeout after ${timeout}ms`;
+      errorType = "timeout";
+    } else if (error.code === "ENOTFOUND") {
+      errorMessage = `DNS resolution failed for ${finalUrl}`;
+      errorType = "dns";
+    } else if (error.code === "ECONNREFUSED") {
+      errorMessage = `Connection refused to ${finalUrl}`;
+      errorType = "connection";
+    }
+    state.setInput(node.id, {
+      request: { url: finalUrl, method: node.method, headers, body, timeout },
+      response: {
+        status: 0,
+        statusText: errorMessage,
+        ok: false,
+        headers: {},
+        body: "",
+        duration,
+        error: {
+          type: errorType,
+          message: errorMessage,
+        },
+      },
+    });
+    throw error;
+  }
 };

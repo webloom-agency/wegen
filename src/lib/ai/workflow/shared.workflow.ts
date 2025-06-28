@@ -5,7 +5,7 @@ import {
   OutputSchemaSourceKey,
   WorkflowNodeData,
 } from "./workflow.interface";
-import { exclude } from "lib/utils";
+import { exclude, isString } from "lib/utils";
 import { DBEdge, DBNode } from "app-types/workflow";
 import { Edge } from "@xyflow/react";
 import { GraphEvent } from "ts-edge";
@@ -57,6 +57,7 @@ export function findJsonSchemaByPath(
     rest,
   );
 }
+
 export function findAvailableSchemaBySource({
   nodeId,
   source,
@@ -67,15 +68,34 @@ export function findAvailableSchemaBySource({
   source: OutputSchemaSourceKey;
   nodes: WorkflowNodeData[];
   edges: { target: string; source: string }[];
-}): JSONSchema7 | undefined {
+}): {
+  nodeName: string;
+  path: string[];
+  notFound?: boolean;
+  type?: string;
+} {
   const accessibleNodes = findAccessibleNodeIds({
     nodeId,
     nodes,
     edges,
   });
-  if (!accessibleNodes.includes(source.nodeId)) return;
+  const data = {
+    nodeName: "ERROR",
+    path: source.path,
+    notFound: true,
+    type: undefined as undefined | string,
+  };
+  if (!accessibleNodes.includes(source.nodeId)) return data;
+
   const sourceNode = nodes.find((node) => node.id === source.nodeId)!;
-  return findJsonSchemaByPath(sourceNode.outputSchema, source.path);
+  if (!sourceNode) return data;
+  data.nodeName = sourceNode.name;
+  const schema = findJsonSchemaByPath(sourceNode.outputSchema, source.path);
+  if (!schema) return data;
+  data.notFound = false;
+  data.type = isString(schema) ? schema : (schema?.type as string);
+
+  return data;
 }
 
 export function convertUINodeToDBNode(

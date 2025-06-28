@@ -10,7 +10,7 @@ import {
 } from "ui/dropdown-menu";
 import { NodeIcon } from "./node-icon";
 
-const unSupportedKinds: NodeKind[] = [NodeKind.Code, NodeKind.Http];
+const unSupportedKinds: NodeKind[] = [NodeKind.Code];
 
 export function NodeSelect({
   children,
