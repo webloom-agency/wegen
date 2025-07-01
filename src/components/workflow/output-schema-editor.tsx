@@ -214,15 +214,6 @@ Return ONLY the JSON Schema object - no explanations or markdown formatting.`,
         },
         schema: {
           type: "object",
-          properties: {
-            type: {
-              type: "string",
-              enum: ["object"],
-            },
-            properties: {
-              type: "object",
-            },
-          },
         },
       }).then((res) => {
         setAdvancedJson(JSON.stringify(res, null, 2));
@@ -438,7 +429,7 @@ Return ONLY the JSON Schema object - no explanations or markdown formatting.`,
                       </div>
                       <Textarea
                         id="advanced-json"
-                        className="min-h-[300px] font-mono text-sm resize-none max-h-[400px]"
+                        className="min-h-[300px] font-mono text-sm resize-none max-h-[400px] overflow-y-auto"
                         placeholder={placeholderJsonSchema}
                         value={advancedJson}
                         onChange={(e) => setAdvancedJson(e.target.value)}
