@@ -13,6 +13,9 @@ import {
   Trash2,
   ChevronRight,
   TriangleAlert,
+  XIcon,
+  Loader2,
+  AlertTriangleIcon,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { Button } from "ui/button";
@@ -56,6 +59,16 @@ import { extractMCPToolId } from "lib/ai/mcp/mcp-tool-id";
 import { Separator } from "ui/separator";
 import { ChatMentionInputMentionItem } from "./chat-mention-input";
 import { TextShimmer } from "ui/text-shimmer";
+import equal from "lib/equal";
+import {
+  isVercelAIWorkflowTool,
+  VercelAIWorkflowToolStreamingResult,
+} from "app-types/workflow";
+import { NodeIcon } from "./workflow/node-icon";
+import { NodeResultPopup } from "./workflow/node-result-popup";
+
+import { Alert, AlertDescription, AlertTitle } from "ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 
 type MessagePart = UIMessage["parts"][number];
 
@@ -85,7 +98,7 @@ interface AssistMessagePartProps {
 
 interface ToolMessagePartProps {
   part: ToolMessagePart;
-  message: UIMessage;
+  messageId: string;
   showActions: boolean;
   isLast?: boolean;
   onPoxyToolCall?: (answer: boolean) => void;
@@ -93,7 +106,7 @@ interface ToolMessagePartProps {
   setMessages?: UseChatHelpers["setMessages"];
 }
 
-export const UserMessagePart = ({
+export const UserMessagePart = memo(function UserMessagePart({
   part,
   isLast,
   status,
@@ -101,7 +114,7 @@ export const UserMessagePart = ({
   setMessages,
   reload,
   isError,
-}: UserMessagePartProps) => {
+}: UserMessagePartProps) {
   const { copied, copy } = useCopy();
   const [mode, setMode] = useState<"view" | "edit">("view");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -234,9 +247,10 @@ export const UserMessagePart = ({
       <div ref={ref} className="min-w-0" />
     </div>
   );
-};
+});
+UserMessagePart.displayName = "UserMessagePart";
 
-export const AssistMessagePart = ({
+export const AssistMessagePart = memo(function AssistMessagePart({
   part,
   showActions,
   reload,
@@ -244,7 +258,7 @@ export const AssistMessagePart = ({
   setMessages,
   isError,
   threadId,
-}: AssistMessagePartProps) => {
+}: AssistMessagePartProps) {
   const { copied, copy } = useCopy();
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -365,7 +379,8 @@ export const AssistMessagePart = ({
       )}
     </div>
   );
-};
+});
+AssistMessagePart.displayName = "AssistMessagePart";
 
 export const ToolMessagePart = memo(
   ({
@@ -374,7 +389,7 @@ export const ToolMessagePart = memo(
     showActions,
     onPoxyToolCall,
     isError,
-    message,
+    messageId,
     setMessages,
   }: ToolMessagePartProps) => {
     const t = useTranslations("Common");
@@ -384,13 +399,13 @@ export const ToolMessagePart = memo(
     const { copied: copiedInput, copy: copyInput } = useCopy();
     const { copied: copiedOutput, copy: copyOutput } = useCopy();
     const [isDeleting, setIsDeleting] = useState(false);
-    const isExecuting = state !== "result" && (isLast || onPoxyToolCall);
+
     const deleteMessage = useCallback(() => {
       safe(() => setIsDeleting(true))
-        .ifOk(() => deleteMessageAction(message.id))
+        .ifOk(() => deleteMessageAction(messageId))
         .ifOk(() =>
           setMessages?.((messages) => {
-            const index = messages.findIndex((m) => m.id === message.id);
+            const index = messages.findIndex((m) => m.id === messageId);
             if (index !== -1) {
               return messages.filter((_, i) => i !== index);
             }
@@ -400,8 +415,8 @@ export const ToolMessagePart = memo(
         .ifFail((error) => toast.error(error.message))
         .watch(() => setIsDeleting(false))
         .unwrap();
-    }, [message.id, setMessages]);
-    const ToolResultComponent = useMemo(() => {
+    }, [messageId, setMessages]);
+    const ChartResultComponent = useMemo(() => {
       if (state === "result") {
         switch (toolName) {
           case DefaultToolName.CreatePieChart:
@@ -463,18 +478,25 @@ export const ToolMessagePart = memo(
       return null;
     }, [state, toolInvocation]);
 
+    const isWorkflowTool = isVercelAIWorkflowTool(result);
+
     const { serverName: mcpServerName, toolName: mcpToolName } = useMemo(() => {
       return extractMCPToolId(toolName);
     }, [toolName]);
 
     const isExpanded = useMemo(() => {
-      return expanded || result === null;
-    }, [expanded, result]);
+      return expanded || result === null || isWorkflowTool;
+    }, [expanded, result, isWorkflowTool]);
+
+    const isExecuting = useMemo(() => {
+      if (isWorkflowTool) return result?.status == "running";
+      return state !== "result" && (isLast || !!onPoxyToolCall);
+    }, [isWorkflowTool, result, state, isLast, !!onPoxyToolCall]);
 
     return (
       <div key={toolCallId} className="group w-full">
-        {ToolResultComponent ? (
-          ToolResultComponent
+        {ChartResultComponent ? (
+          ChartResultComponent
         ) : (
           <div className="flex flex-col fade-in duration-300 animate-in">
             <div
@@ -486,6 +508,13 @@ export const ToolMessagePart = memo(
                   <Loader className="size-3.5 animate-spin" />
                 ) : isError ? (
                   <TriangleAlert className="size-3.5 text-destructive" />
+                ) : isWorkflowTool ? (
+                  <Avatar className="size-3.5">
+                    <AvatarImage src={result.workflowIcon?.value} />
+                    <AvatarFallback>
+                      {toolName.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                 ) : (
                   <Wrench className="size-3.5" />
                 )}
@@ -556,7 +585,9 @@ export const ToolMessagePart = memo(
                     </div>
                   )}
                 </div>
-                {result && (
+                {!result ? null : isWorkflowTool ? (
+                  <WorkflowToolDetail result={result} />
+                ) : (
                   <div
                     className={cn(
                       "min-w-0 w-full p-4 rounded-lg bg-card px-4 border text-xs mt-2 transition-colors fade-300",
@@ -648,10 +679,20 @@ export const ToolMessagePart = memo(
       </div>
     );
   },
+  (prev, next) => {
+    if (prev.isError !== next.isError) return false;
+    if (prev.isLast !== next.isLast) return false;
+    if (prev.showActions !== next.showActions) return false;
+    if (!!prev.onPoxyToolCall !== !!next.onPoxyToolCall) return false;
+    if (prev.messageId !== next.messageId) return false;
+    if (!equal(prev.part.toolInvocation, next.part.toolInvocation))
+      return false;
+    return true;
+  },
 );
 
 ToolMessagePart.displayName = "ToolMessagePart";
-export function ReasoningPart({
+export const ReasoningPart = memo(function ReasoningPart({
   reasoning,
 }: {
   reasoning: string;
@@ -711,6 +752,92 @@ export function ReasoningPart({
           )}
         </AnimatePresence>
       </div>
+    </div>
+  );
+});
+ReasoningPart.displayName = "ReasoningPart";
+
+export function WorkflowToolDetail({
+  result,
+}: { result: VercelAIWorkflowToolStreamingResult }) {
+  const output = useMemo(() => {
+    if (result.status == "running") return null;
+    if (result.status == "fail")
+      return (
+        <Alert variant={"destructive"} className="border-destructive">
+          <AlertTriangleIcon />
+          <AlertTitle>{result?.error?.name || "ERROR"}</AlertTitle>
+          <AlertDescription>{result.error?.message}</AlertDescription>
+        </Alert>
+      );
+    if (!result.result) return null;
+
+    return (
+      <div className="w-full max-h-96 overflow-y-auto bg-card p-4 border text-xs transition-colors fade-300 rounded-lg ">
+        <JsonView data={result.result} />
+      </div>
+    );
+  }, [result.status, result.error, result.result]);
+
+  return (
+    <div className="w-full flex flex-col gap-1">
+      {result.history.map((item) => {
+        return (
+          <NodeResultPopup
+            key={item.id}
+            disabled={!item.result}
+            history={{
+              name: item.name,
+              status: item.status,
+              startedAt: item.startedAt,
+              endedAt: item.endedAt,
+              error: item.error?.message,
+              result: item.result,
+            }}
+          >
+            <div
+              key={item.id}
+              className={cn(
+                "flex items-center gap-2 text-sm rounded-sm px-2 py-1.5 relative",
+                item.status == "fail" && "text-destructive",
+                item.result && "cursor-pointer hover:bg-secondary",
+              )}
+            >
+              <div className="border rounded overflow-hidden">
+                <NodeIcon
+                  type={item.kind}
+                  iconClassName="size-3"
+                  className="rounded-none"
+                />
+              </div>
+              {item.status == "running" ? (
+                <TextShimmer className="font-semibold">
+                  {`${item.name} Running...`}
+                </TextShimmer>
+              ) : (
+                <span className="font-semibold">{item.name}</span>
+              )}
+              <span
+                className={cn(
+                  "ml-auto text-xs",
+                  item.status != "fail" && "text-muted-foreground",
+                )}
+              >
+                {item.status != "running" &&
+                  ((item.endedAt! - item.startedAt!) / 1000).toFixed(2)}
+              </span>
+              {item.status == "success" ? (
+                <Check className="size-3" />
+              ) : item.status == "fail" ? (
+                <XIcon className="size-3" />
+              ) : (
+                <Loader2 className="size-3 animate-spin" />
+              )}
+            </div>
+          </NodeResultPopup>
+        );
+      })}
+      <div className="px-2 mt-2">{output}</div>
     </div>
   );
 }

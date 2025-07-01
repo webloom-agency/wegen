@@ -1,3 +1,7 @@
+import { Tool } from "ai";
+import { ObjectJsonSchema7 } from "./util";
+import { NodeKind } from "lib/ai/workflow/workflow.interface";
+
 export type WorkflowIcon = {
   type: "emoji";
   value: string;
@@ -63,6 +67,14 @@ export interface WorkflowRepository {
   selectByUserId(userId: string): Promise<DBWorkflow[]>;
   selectAll(userId: string): Promise<WorkflowSummary[]>;
   selectExecuteAbility(userId: string): Promise<WorkflowSummary[]>;
+  selectToolByIds(ids: string[]): Promise<
+    {
+      id: string;
+      name: string;
+      description?: string;
+      schema: ObjectJsonSchema7;
+    }[]
+  >;
   checkAccess(
     workflowId: string,
     userId: string,
@@ -89,11 +101,56 @@ export interface WorkflowRepository {
     deleteEdges?: string[]; // edge id
   }): Promise<void>;
 
-  selectStructureById(id: string): Promise<
+  selectStructureById(
+    id: string,
+    option?: {
+      ignoreNote?: boolean;
+    },
+  ): Promise<
     | null
     | (DBWorkflow & {
         nodes: DBNode[];
         edges: DBEdge[];
       })
   >;
+}
+
+export type VercelAIWorkflowTool = Tool & {
+  __$ref__: "workflow";
+  _workflowId: string;
+  _toolName: string;
+  _originToolName: string;
+};
+
+export type VercelAIWorkflowToolStreaming = {
+  name: string;
+  startedAt: number;
+  kind: NodeKind;
+  endedAt?: number;
+  id: string;
+  status: "running" | "success" | "fail";
+  error?: { name: string; message: string };
+  result?: { input?: any; output?: any };
+};
+
+export type VercelAIWorkflowToolStreamingResult = {
+  toolCallId: string;
+  workflowName: string;
+  workflowIcon?: WorkflowIcon;
+  __$ref__: "workflow";
+  startedAt: number;
+  endedAt: number;
+  history: VercelAIWorkflowToolStreaming[];
+  error?: { name: string; message: string };
+  result?: any;
+  status: "running" | "success" | "fail";
+};
+
+export function isVercelAIWorkflowTool(
+  value?: any,
+): value is VercelAIWorkflowToolStreamingResult {
+  if (!value || typeof value !== "object") return false;
+  return (
+    value.__$ref__ === "workflow" && value.toolCallId && value.workflowName
+  );
 }

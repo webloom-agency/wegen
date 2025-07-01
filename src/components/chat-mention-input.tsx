@@ -1,7 +1,7 @@
 "use client";
-import React, { useCallback, useMemo } from "react";
+import React, { RefObject, useCallback, useMemo } from "react";
 
-import { WrenchIcon } from "lucide-react";
+import { WaypointsIcon, WrenchIcon } from "lucide-react";
 import { MCPIcon } from "ui/mcp-icon";
 
 import { ChatMention } from "app-types/chat";
@@ -20,7 +20,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "ui/popover";
 import { createPortal } from "react-dom";
 import { appStore } from "@/app/store";
-import { cn } from "lib/utils";
+import { capitalizeFirstLetter, cn } from "lib/utils";
+import { useShallow } from "zustand/shallow";
+import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
+import { Editor } from "@tiptap/react";
 
 interface ChatMentionInputProps {
   onChange: (text: string) => void;
@@ -28,6 +31,7 @@ interface ChatMentionInputProps {
   onEnter?: () => void;
   placeholder?: string;
   input: string;
+  ref?: RefObject<Editor | null>;
 }
 
 export default function ChatMentionInput({
@@ -35,6 +39,7 @@ export default function ChatMentionInput({
   onChangeMention,
   onEnter,
   placeholder,
+  ref,
   input,
 }: ChatMentionInputProps) {
   const handleChange = useCallback(
@@ -59,6 +64,7 @@ export default function ChatMentionInput({
       onChange={handleChange}
       MentionItem={ChatMentionInputMentionItem}
       Suggestion={ChatMentionInputSuggestion}
+      editorRef={ref}
     />
   );
 }
@@ -76,14 +82,26 @@ export function ChatMentionInputMentionItem({
     <div
       className={cn(
         "flex items-center text-sm gap-2 mx-1 px-2 py-0.5 font-semibold rounded-lg ring ring-blue-500/20 bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 hover:ring-blue-500 transition-colors",
+        item.type == "workflow" &&
+          "ring-pink-500/20 bg-pink-500/10 text-pink-500 hover:bg-pink-500/20 hover:ring-pink-500",
+        item.type == "mcpServer" &&
+          "ring-indigo-500/20 bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 hover:ring-indigo-500",
         className,
       )}
     >
       {item.type == "mcpServer" ? (
         <MCPIcon className="size-3" />
+      ) : item.type == "workflow" ? (
+        <Avatar className="size-3 ring ring-input rounded-full">
+          <AvatarImage src={item.icon?.value} />
+          <AvatarFallback>{item.name.slice(0, 1)}</AvatarFallback>
+        </Avatar>
       ) : (
         <WrenchIcon className="size-3" />
       )}
+      <span className="ml-auto text-xs opacity-60">
+        {capitalizeFirstLetter(item.type)}
+      </span>
       {item.name}
     </div>
   );
@@ -110,7 +128,9 @@ function ChatMentionInputSuggestion({
   left: number;
 }) {
   const t = useTranslations("Common");
-  const mcpList = appStore((state) => state.mcpList);
+  const [mcpList, workflowList] = appStore(
+    useShallow((state) => [state.mcpList, state.workflowToolList]),
+  );
   const mentionItems = useMemo(() => {
     return (
       (mcpList
@@ -133,8 +153,16 @@ function ChatMentionInputSuggestion({
             };
           }),
         ]) as ChatMention[]) ?? []
+    ).concat(
+      workflowList.map((workflow) => ({
+        type: "workflow",
+        name: workflow.name,
+        workflowId: workflow.id,
+        icon: workflow.icon,
+        description: workflow.description,
+      })),
     );
-  }, [mcpList]);
+  }, [mcpList, workflowList]);
 
   return createPortal(
     <Popover open onOpenChange={(f) => !f && onClose()}>
@@ -164,7 +192,9 @@ function ChatMentionInputSuggestion({
               const key =
                 item.type == "mcpServer"
                   ? item.serverId
-                  : `${item.serverId}-${item.name}`;
+                  : item.type == "workflow"
+                    ? item.workflowId
+                    : `${item.serverId}-${item.name}`;
               return (
                 <CommandItem
                   key={key}
@@ -180,6 +210,10 @@ function ChatMentionInputSuggestion({
                     <div className="p-1 bg-secondary rounded-sm ring ring-input">
                       <MCPIcon className="size-3.5 text-foreground" />
                     </div>
+                  ) : item.type == "workflow" ? (
+                    <div className="p-1 bg-secondary rounded-sm ring ring-input">
+                      <WaypointsIcon className="size-3.5 text-foreground" />
+                    </div>
                   ) : (
                     <div className="p-1">
                       <WrenchIcon className="size-3.5" />
@@ -190,13 +224,11 @@ function ChatMentionInputSuggestion({
                     <span className="ml-auto text-xs text-muted-foreground">
                       {item.toolCount} tools
                     </span>
-                  ) : (
-                    item.type === "tool" && (
-                      <span className="ml-auto text-xs text-muted-foreground">
-                        {item.serverName}
-                      </span>
-                    )
-                  )}
+                  ) : item.type === "tool" ? (
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {item.serverName}
+                    </span>
+                  ) : null}
                 </CommandItem>
               );
             })}
