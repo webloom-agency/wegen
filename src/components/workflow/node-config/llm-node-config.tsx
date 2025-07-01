@@ -25,6 +25,7 @@ import { OutputSchemaEditor } from "../output-schema-editor";
 import { defaultLLMNodeOutputSchema } from "lib/ai/workflow/create-ui-node";
 import { ObjectJsonSchema7 } from "app-types/util";
 import { toAny } from "lib/utils";
+import { notify } from "lib/notify";
 
 export const LLMNodeDataConfig = memo(function ({
   data,
@@ -206,14 +207,23 @@ export const LLMNodeDataConfig = memo(function ({
               </Label>
               <Switch
                 id="structuredOutput"
-                onClick={() => {
+                onClick={async () => {
                   if (isStructuredOutput) {
-                    updateNodeData(data.id, {
-                      outputSchema: structuredClone(defaultLLMNodeOutputSchema),
+                    const ok = await notify.confirm({
+                      description: t("Workflow.structuredOutputSwitchConfirm"),
+                      okText: t("Workflow.structuredOutputSwitchConfirmOk"),
+                      cancelText: t(
+                        "Workflow.structuredOutputSwitchConfirmCancel",
+                      ),
                     });
-                  } else {
-                    setStructuredOutputOpen(true);
+                    if (!ok)
+                      return updateNodeData(data.id, {
+                        outputSchema: structuredClone(
+                          defaultLLMNodeOutputSchema,
+                        ),
+                      });
                   }
+                  setStructuredOutputOpen(true);
                 }}
                 checked={isStructuredOutput}
               />

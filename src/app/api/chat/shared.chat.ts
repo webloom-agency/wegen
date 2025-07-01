@@ -42,12 +42,12 @@ export function filterMCPToolsByMentions(
   tools: Record<string, VercelAIMcpTool>,
   mentions: ChatMention[],
 ) {
+  if (mentions.length === 0) {
+    return tools;
+  }
   const toolMentions = mentions.filter(
     (mention) => mention.type == "tool" || mention.type == "mcpServer",
   );
-  if (toolMentions.length === 0) {
-    return tools;
-  }
 
   const metionsByServer = toolMentions.reduce(
     (acc, mention) => {
@@ -372,9 +372,15 @@ export const workflowToVercelAITools = ({
                 message: errorToString(result.error) || "Unknown Error",
               }
             : undefined;
-          toolResult.result = [...history].sort(
-            (a, b) => (b.endedAt ?? b.startedAt) - (a.endedAt ?? a.startedAt),
-          )[0].result?.output;
+          const outputNodeResults = history
+            .filter((h) => h.kind == NodeKind.Output)
+            .map((v) => v.result?.output)
+            .filter(Boolean);
+
+          toolResult.result =
+            outputNodeResults.length == 1
+              ? outputNodeResults[0]
+              : outputNodeResults;
           return toolResult;
         })
         .ifFail((err) => {

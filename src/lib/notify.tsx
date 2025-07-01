@@ -53,7 +53,7 @@ export const notify = {
       );
     });
   },
-  confirm: (confirm: Alert) => {
+  confirm: (confirm: Alert & { okText?: string; cancelText?: string }) => {
     return new Promise<boolean>((resolve) => {
       const container = createContainer();
       const root = createRoot(container);
@@ -69,24 +69,31 @@ export const notify = {
         resolve(false);
         close();
       };
-      root.render(
-        <Dialog open onOpenChange={cancel}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{confirm.title}</DialogTitle>
-              <DialogDescription>{confirm.description}</DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant={"ghost"} onClick={cancel}>
-                Cancel
-              </Button>
-              <Button variant={"secondary"} onClick={ok}>
-                Confirm
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>,
-      );
+
+      function Component() {
+        return (
+          <Dialog open onOpenChange={cancel}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{confirm.title}</DialogTitle>
+                <DialogDescription className="whitespace-pre-wrap">
+                  {confirm.description}
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant={"ghost"} onClick={cancel}>
+                  {confirm.cancelText || "Cancel"}
+                </Button>
+                <Button variant={"secondary"} onClick={ok}>
+                  {confirm.okText || "Confirm"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      }
+
+      root.render(<Component />);
     });
   },
   prompt: (prompt: Alert) => {

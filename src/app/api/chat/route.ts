@@ -205,14 +205,12 @@ export async function POST(request: Request) {
 
         // Precompute toolChoice to avoid repeated tool calls
         const computedToolChoice =
-          (isToolCallAllowed && mentions.length > 0 && inProgressToolStep) ||
-          Object.keys(workflowToVercelAITools).length
+          isToolCallAllowed && mentions.length > 0 && inProgressToolStep
             ? "required"
             : "auto";
 
         const vercelAITooles = safe(MCP_TOOLS)
           .map((t) => {
-            if (!Object.keys(t).length) return undefined;
             const bindingTools =
               toolChoice === "manual" ? excludeToolExecution(t) : t;
             return {
@@ -224,8 +222,12 @@ export async function POST(request: Request) {
           .unwrap();
 
         logger.debug(
-          `tool mode: ${toolChoice}, binding tool count: ${Object.keys(vercelAITooles ?? {}).length}, model: ${chatModel?.provider}/${chatModel?.model}`,
+          `tool mode: ${toolChoice}, tool choice: ${computedToolChoice}`,
         );
+        logger.debug(
+          `binding tool count MCP: ${Object.keys(MCP_TOOLS ?? {}).length}, Workflow: ${Object.keys(WORKFLOW_TOOLS ?? {}).length}`,
+        );
+        logger.debug(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
         const result = streamText({
           model,

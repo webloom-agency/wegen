@@ -333,10 +333,15 @@ ${workflow!.description ? `tool-description: ${workflow!.description}` : ""}`,
     [workflow!.id],
   );
 
-  const latstNodeValue = useMemo(() => {
-    const lastNode = histories.at(-1);
-    if (!lastNode) return undefined;
-    return lastNode.result;
+  const lastOutput = useMemo(() => {
+    const outputNodes = histories
+      .filter((h) => h.kind == NodeKind.Output)
+      .map((h) => h.result?.output)
+      .filter(Boolean);
+
+    if (outputNodes.length == 0) return undefined;
+    if (outputNodes.length == 1) return outputNodes[0];
+    return outputNodes;
   }, [histories]);
 
   const resultView = useMemo(() => {
@@ -351,13 +356,12 @@ ${workflow!.description ? `tool-description: ${workflow!.description}` : ""}`,
           </AlertDescription>
         </Alert>
       );
-
     return (
       <div className="p-2">
-        <JsonView data={latstNodeValue?.output} />
+        <JsonView data={lastOutput} />
       </div>
     );
-  }, [isRunning, result, latstNodeValue]);
+  }, [isRunning, result]);
   return (
     <div className="fade-300 w-sm h-[85vh] bg-card border rounded-lg shadow-lg overflow-y-auto py-4">
       <div className="flex flex-col px-4">
@@ -581,7 +585,7 @@ ${workflow!.description ? `tool-description: ${workflow!.description}` : ""}`,
                 variant={"ghost"}
                 size={"icon"}
                 className="ml-auto"
-                onClick={() => copy(JSON.stringify(latstNodeValue?.output))}
+                onClick={() => copy(JSON.stringify(lastOutput))}
               >
                 {copied ? (
                   <Check className="size-3" />

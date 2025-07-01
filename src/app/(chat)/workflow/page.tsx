@@ -99,7 +99,6 @@ export default function WorkflowPage() {
           <DialogTrigger asChild>
             <Button variant={"ghost"} className="relative group">
               What is Workflow?
-              {}
               <div className="absolute left-0 -top-1.5 opacity-100 group-hover:opacity-0 transition-opacity duration-300">
                 <MousePointer2 className="rotate-180 text-blue-500 fill-blue-500 size-3 wiggle" />
               </div>

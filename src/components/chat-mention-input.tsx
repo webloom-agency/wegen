@@ -201,7 +201,7 @@ function ChatMentionInputSuggestion({
                   className="cursor-pointer text-foreground"
                   onSelect={() =>
                     onSelectMention({
-                      label: `${item.name} `,
+                      label: `tool("${item.name}") `,
                       id: JSON.stringify(item),
                     })
                   }

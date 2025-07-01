@@ -6,7 +6,9 @@ import {
   AtSign,
   ChartColumn,
   ChevronRight,
+  InfoIcon,
   Loader,
+  MousePointer2,
   Package,
   Plus,
   Waypoints,
@@ -53,6 +55,7 @@ import { useMcpList } from "@/hooks/queries/use-mcp-list";
 import { useWorkflowToolList } from "@/hooks/queries/use-workflow-tool-list";
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 import { WorkflowSummary } from "app-types/workflow";
+import { WorkflowGreeting } from "./workflow/workflow-greeting";
 
 interface ToolSelectDropdownProps {
   align?: "start" | "end" | "center";
@@ -324,8 +327,26 @@ function WorkflowToolSelector({
         <DropdownMenuPortal>
           <DropdownMenuSubContent className="w-80 relative">
             {workflowToolList.length === 0 ? (
-              <div className="text-sm text-muted-foreground w-full h-full flex flex-col items-center justify-center py-6">
-                <p>{t("Common.noResults")}</p>
+              <div className="text-sm text-muted-foreground flex flex-col py-6 px-6 gap-4 items-center">
+                <InfoIcon className="size-4" />
+                <p className="whitespace-pre-wrap">{t("Workflow.noTools")}</p>
+
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant={"ghost"} className="relative group">
+                      What is Workflow?
+                      <div className="absolute left-0 -top-1.5 opacity-100 group-hover:opacity-0 transition-opacity duration-300">
+                        <MousePointer2 className="rotate-180 text-blue-500 fill-blue-500 size-3 wiggle" />
+                      </div>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="md:max-w-3xl!">
+                    <DialogTitle className="sr-only">
+                      workflow greeting
+                    </DialogTitle>
+                    <WorkflowGreeting />
+                  </DialogContent>
+                </Dialog>
               </div>
             ) : (
               workflowToolList.map((workflow) => (
