@@ -15,31 +15,30 @@ See the experience in action in the [preview](#preview) below!
 
 ## Table of Contents
 
-- [MCP Client Chatbot](#mcp-client-chatbot)
-  - [Table of Contents](#table-of-contents)
-  - [Preview](#preview)
-    - [🧩 Browser Automation with Playwright MCP](#-browser-automation-with-playwright-mcp)
-    - [🔗 Visual Workflows as Custom Tools](#-visual-workflows-as-custom-tools)
-    - [🎙️ Realtime Voice Assistant + MCP Tools](#️-realtime-voice-assistant--mcp-tools)
-    - [⚡️ Quick Tool Mentions (`@`) \& Presets](#️-quick-tool-mentions---presets)
-    - [🧭 Tool Choice Mode](#-tool-choice-mode)
-  - [Getting Started](#getting-started)
-    - [Quick Start (Docker Compose Version) 🐳](#quick-start-docker-compose-version-)
-    - [Quick Start (Local Version) 🚀](#quick-start-local-version-)
-    - [Environment Variables](#environment-variables)
-  - [📘 Guides](#-guides)
-      - [🔌 MCP Server Setup \& Tool Testing](#-mcp-server-setup--tool-testing)
-      - [🐳 Docker Hosting Guide](#-docker-hosting-guide)
-      - [▲ Vercel Hosting Guide](#-vercel-hosting-guide)
-      - [🎯 System Prompts \& Chat Customization](#-system-prompts--chat-customization)
-      - [🔐 OAuth Sign-In Setup](#-oauth-sign-in-setup)
-      - [Adding openAI like providers](#adding-openai-like-providers)
-  - [💡 Tips](#-tips)
-      - [🧠 Agentic Chatbot with Project Instructions](#-agentic-chatbot-with-project-instructions)
-      - [💬 Temporary Chat Windows](#-temporary-chat-windows)
-  - [🗺️ Roadmap](#️-roadmap)
-  - [🙌 Contributing](#-contributing)
-  - [💬 Join Our Discord](#-join-our-discord)
+- [Table of Contents](#table-of-contents)
+- [Preview](#preview)
+  - [🧩 Browser Automation with Playwright MCP](#-browser-automation-with-playwright-mcp)
+  - [🔗 Visual Workflows as Custom Tools](#-visual-workflows-as-custom-tools)
+  - [🎙️ Realtime Voice Assistant + MCP Tools](#️-realtime-voice-assistant--mcp-tools)
+  - [⚡️ Quick Tool Mentions (`@`) \& Presets](#️-quick-tool-mentions---presets)
+  - [🧭 Tool Choice Mode](#-tool-choice-mode)
+- [Getting Started](#getting-started)
+  - [Quick Start (Docker Compose Version) 🐳](#quick-start-docker-compose-version-)
+  - [Quick Start (Local Version) 🚀](#quick-start-local-version-)
+  - [Environment Variables](#environment-variables)
+- [📘 Guides](#-guides)
+    - [🔌 MCP Server Setup \& Tool Testing](#-mcp-server-setup--tool-testing)
+    - [🐳 Docker Hosting Guide](#-docker-hosting-guide)
+    - [▲ Vercel Hosting Guide](#-vercel-hosting-guide)
+    - [🎯 System Prompts \& Chat Customization](#-system-prompts--chat-customization)
+    - [🔐 OAuth Sign-In Setup](#-oauth-sign-in-setup)
+    - [Adding openAI like providers](#adding-openai-like-providers)
+- [💡 Tips](#-tips)
+    - [🧠 Agentic Chatbot with Project Instructions](#-agentic-chatbot-with-project-instructions)
+    - [💬 Temporary Chat Windows](#-temporary-chat-windows)
+- [🗺️ Roadmap](#️-roadmap)
+- [🙌 Contributing](#-contributing)
+- [💬 Join Our Discord](#-join-our-discord)
 
 ---
 
@@ -68,7 +67,7 @@ Finally, tell me how to install the package.
 
 ### 🔗 Visual Workflows as Custom Tools
 
-<img width="1755" alt="workflow" src="https://github.com/user-attachments/assets/afa895f0-cc59-4c2f-beb3-4b7a1dc1f891" />
+<img width="1755" alt="workflow" src="https://github.com/user-attachments/assets/afa895f0-cc59-4c2f-beb3-4b7a1dc1f891" loading="lazy" />
 
 
 **Example:** Create custom workflows that become callable tools in your chat conversations.
@@ -96,12 +95,16 @@ Talk to the assistant naturally, and watch it execute tools in real time.
 Quickly call any registered MCP tool during chat by typing `@toolname`.
 No need to memorize — just type `@` and select from the list!
 
+**Tool Selection vs. Mentions:**
+- **Tool Select**: Choose which tools are automatically available in LLM context for all conversations
+- **Mentions (`@`)**: Temporarily bind only the mentioned tools for that response, overriding Tool Select (saves tokens and improves performance)
+
 You can also create **tool presets** by selecting only the MCP servers or tools you want.
 Switch between presets instantly with a click — perfect for organizing tools by task or workflow.
 
 ### 🧭 Tool Choice Mode
 
-<img width="1225" alt="image" src="https://github.com/user-attachments/assets/c0ade861-3622-466a-be13-74643e8cc9bc" />
+<img width="1225" alt="image" src="https://github.com/user-attachments/assets/c0ade861-3622-466a-be13-74643e8cc9bc" loading="lazy"/>
 
 
 Control how tools are used in each chat with **Tool Choice Mode** — switch anytime with `⌘P`.
