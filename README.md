@@ -1,8 +1,9 @@
-# MCP Client Chatbot
+<img width="1274" alt="thumbnail" src="https://github.com/user-attachments/assets/bd018edb-69c9-43bb-a8c8-ffbc3f816ce5" />
 
 [![MCP Supported](https://img.shields.io/badge/MCP-Supported-00c853)](https://modelcontextprotocol.io/introduction)
 [![Local First](https://img.shields.io/badge/Local-First-blue)](https://localfirstweb.dev/)
 [![Discord](https://img.shields.io/discord/1374047276074537103?label=Discord&logo=discord&color=5865F2)](https://discord.gg/gCRu69Upnp)
+
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/cgoinglove/mcp-client-chatbot&env=BETTER_AUTH_SECRET&env=OPENAI_API_KEY&env=GOOGLE_GENERATIVE_AI_API_KEY&env=ANTHROPIC_API_KEY&envDescription=Learn+more+about+how+to+get+the+API+Keys+for+the+application&envLink=https://github.com/cgoinglove/mcp-client-chatbot/blob/main/.env.example&demo-title=MCP+Client+Chatbot&demo-description=An+Open-Source+MCP+Chatbot+Template+Built+With+Next.js+and+the+AI+SDK+by+Vercel.&products=[{"type":"integration","protocol":"storage","productSlug":"neon","integrationSlug":"neon"}])
 
@@ -48,7 +49,7 @@ Get a feel for the UX — here's a quick look at what's possible.
 
 ### 🧩 Browser Automation with Playwright MCP
 
-![playwright-preview](https://github.com/user-attachments/assets/53ec0069-aab4-47ff-b7c4-a8080a6a98ff)
+![playwright](https://github.com/user-attachments/assets/67f23b93-b48d-4eaa-9ced-6a14c591b3e1)
 
 **Example:** Control a web browser using Microsoft's [playwright-mcp](https://github.com/microsoft/playwright-mcp) tool.
 
@@ -67,7 +68,8 @@ Finally, tell me how to install the package.
 
 ### 🔗 Visual Workflows as Custom Tools
 
-![workflow-preview](workflow-image-placeholder)
+<img width="1755" alt="workflow" src="https://github.com/user-attachments/assets/afa895f0-cc59-4c2f-beb3-4b7a1dc1f891" />
+
 
 **Example:** Create custom workflows that become callable tools in your chat conversations.
 
@@ -88,7 +90,8 @@ Talk to the assistant naturally, and watch it execute tools in real time.
 
 ### ⚡️ Quick Tool Mentions (`@`) & Presets
 
-![tool-mention](https://github.com/user-attachments/assets/bd47b175-320f-4c38-bc2f-be887c46178e)
+![tool](https://github.com/user-attachments/assets/eb690c07-cb9f-4a61-8397-9f39518e1b6c)
+
 
 Quickly call any registered MCP tool during chat by typing `@toolname`.
 No need to memorize — just type `@` and select from the list!
@@ -98,7 +101,8 @@ Switch between presets instantly with a click — perfect for organizing tools b
 
 ### 🧭 Tool Choice Mode
 
-<img width="1161" alt="tool-mode" src="https://github.com/user-attachments/assets/0988f8dd-8a37-4adf-84da-79c083917af9" />
+<img width="1225" alt="image" src="https://github.com/user-attachments/assets/c0ade861-3622-466a-be13-74643e8cc9bc" />
+
 
 Control how tools are used in each chat with **Tool Choice Mode** — switch anytime with `⌘P`.
 
