@@ -201,7 +201,10 @@ function ChatMentionInputSuggestion({
                   className="cursor-pointer text-foreground"
                   onSelect={() =>
                     onSelectMention({
-                      label: `tool("${item.name}") `,
+                      label:
+                        item.type === "mcpServer"
+                          ? `${item.name} `
+                          : `tool("${item.name}") `,
                       id: JSON.stringify(item),
                     })
                   }
