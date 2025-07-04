@@ -38,7 +38,8 @@
     "generatingInputWithAI": "Generating input with AI...",
     "inputGeneratedSuccessfully": "Input generated successfully",
     "failedToGenerateInput": "Failed to generate input",
-    "createWithExample": "Create With Example"
+    "createWithExample": "Create With Example",
+    "resultsFound": "{count} results found"
   },
   "Error": {},
   "Workflow": {
@@ -193,6 +194,8 @@
     },
     "placeholder": "What do you want to know?",
     "Tool": {
+      "webSearching": "Searching the Web...",
+      "searchedTheWeb": "Searched the Web",
       "toolsSetupDescription": "Select tools for your chat.\nUse '@' to mention and call tools\nduring conversation.",
       "selectToolMode": "Select a tool mode",
       "autoToolModeDescription": "Decides when to use tools without asking you",
@@ -208,6 +211,7 @@
       "presetNameAlreadyExists": "Preset name already exists",
       "presetSaved": "Preset saved",
       "chartTools": "Chart Tools",
+      "webSearchTools": "Search the Web",
       "clickSaveAsPresetToGetStarted": "Click Save As Preset to get started."
     },
     "VoiceChat": {

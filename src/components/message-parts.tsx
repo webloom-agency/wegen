@@ -69,6 +69,9 @@ import { NodeResultPopup } from "./workflow/node-result-popup";
 
 import { Alert, AlertDescription, AlertTitle } from "ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
+import { GlobalIcon } from "ui/global-icon";
+import { TavilyResponse } from "lib/ai/tools/web-search";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "ui/hover-card";
 
 type MessagePart = UIMessage["parts"][number];
 
@@ -392,7 +395,7 @@ export const ToolMessagePart = memo(
     messageId,
     setMessages,
   }: ToolMessagePartProps) => {
-    const t = useTranslations("Common");
+    const t = useTranslations("");
     const { toolInvocation } = part;
     const { toolName, toolCallId, state, args } = toolInvocation;
     const [expanded, setExpanded] = useState(false);
@@ -416,7 +419,136 @@ export const ToolMessagePart = memo(
         .watch(() => setIsDeleting(false))
         .unwrap();
     }, [messageId, setMessages]);
-    const ChartResultComponent = useMemo(() => {
+
+    const result = useMemo(() => {
+      if (state === "result") {
+        return toolInvocation.result?.content
+          ? {
+              ...toolInvocation.result,
+              content: toolInvocation.result.content.map((node) => {
+                if (node.type === "text") {
+                  const parsed = safeJSONParse(node.text);
+                  return {
+                    ...node,
+                    text: parsed.success ? parsed.value : node.text,
+                  };
+                }
+                return node;
+              }),
+            }
+          : toolInvocation.result;
+      }
+      return null;
+    }, [state, toolInvocation]);
+
+    const CustomToolComponent = useMemo(() => {
+      if (
+        toolName === DefaultToolName.WebSearch ||
+        toolName === DefaultToolName.WebContent
+      ) {
+        if (state != "result")
+          return (
+            <div className="flex items-center gap-2 text-sm">
+              <GlobalIcon className="size-5 wiggle text-muted-foreground" />
+              <TextShimmer>{t("Chat.Tool.webSearching")}</TextShimmer>
+            </div>
+          );
+
+        return (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <GlobalIcon className="size-5 text-muted-foreground" />
+              <span className="text-sm font-semibold">
+                {t("Chat.Tool.searchedTheWeb")}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <div className="px-2.5">
+                <Separator
+                  orientation="vertical"
+                  className="bg-gradient-to-b from-border to-transparent from-80%"
+                />
+              </div>
+              <div className="flex flex-col gap-2 pb-2">
+                <div className="flex flex-wrap gap-1">
+                  {result?.isError ? (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <AlertTriangleIcon className="size-3.5" />
+                      {result.error || "Error"}
+                    </p>
+                  ) : (
+                    (result as TavilyResponse)?.results?.map((result, i) => {
+                      return (
+                        <HoverCard key={i} openDelay={200} closeDelay={0}>
+                          <HoverCardTrigger asChild>
+                            <a
+                              href={result.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group rounded-full bg-secondary pl-1.5 pr-2 py-1.5 text-xs flex items-center gap-1 hover:bg-input hover:ring hover:ring-blue-500 transition-all cursor-pointer"
+                            >
+                              <div className="rounded-full bg-input ring ring-input">
+                                <Avatar className="size-3 rounded-full">
+                                  <AvatarImage src={result.favicon} />
+                                  <AvatarFallback>
+                                    {result.title?.slice(0, 1).toUpperCase() ||
+                                      "?"}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </div>
+                              <span className="truncate max-w-44">
+                                {result.url}
+                              </span>
+                            </a>
+                          </HoverCardTrigger>
+
+                          <HoverCardContent className="flex flex-col gap-1 p-6">
+                            <div className="flex items-center gap-2">
+                              <div className="rounded-full ring ring-input">
+                                <Avatar className="size-6 rounded-full">
+                                  <AvatarImage src={result.favicon} />
+                                  <AvatarFallback>
+                                    {result.title?.slice(0, 1).toUpperCase() ||
+                                      "?"}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </div>
+                              <span
+                                className={cn(
+                                  "font-medium",
+                                  !result.title && "truncate",
+                                )}
+                              >
+                                {result.title || result.url}
+                              </span>
+                            </div>
+                            <div className="flex flex-col gap-2 mt-4">
+                              <div className="relative">
+                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent to-card from-80% " />
+                                <p className="text-xs text-muted-foreground max-h-60 overflow-y-auto">
+                                  {result.content || result.raw_content}
+                                </p>
+                              </div>
+                            </div>
+                          </HoverCardContent>
+                        </HoverCard>
+                      );
+                    })
+                  )}
+                </div>
+                {result?.results?.length && (
+                  <p className="text-xs text-muted-foreground ml-1 flex items-center gap-1">
+                    {t("Common.resultsFound", {
+                      count: result?.results?.length,
+                    })}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       if (state === "result") {
         switch (toolName) {
           case DefaultToolName.CreatePieChart:
@@ -457,27 +589,6 @@ export const ToolMessagePart = memo(
       return null;
     }, [toolName, state]);
 
-    const result = useMemo(() => {
-      if (state === "result") {
-        return toolInvocation.result?.content
-          ? {
-              ...toolInvocation.result,
-              content: toolInvocation.result.content.map((node) => {
-                if (node.type === "text") {
-                  const parsed = safeJSONParse(node.text);
-                  return {
-                    ...node,
-                    text: parsed.success ? parsed.value : node.text,
-                  };
-                }
-                return node;
-              }),
-            }
-          : toolInvocation.result;
-      }
-      return null;
-    }, [state, toolInvocation]);
-
     const isWorkflowTool = isVercelAIWorkflowTool(result);
 
     const { serverName: mcpServerName, toolName: mcpToolName } = useMemo(() => {
@@ -495,8 +606,8 @@ export const ToolMessagePart = memo(
 
     return (
       <div key={toolCallId} className="group w-full">
-        {ChartResultComponent ? (
-          ChartResultComponent
+        {CustomToolComponent ? (
+          CustomToolComponent
         ) : (
           <div className="flex flex-col fade-in duration-300 animate-in">
             <div
@@ -634,7 +745,7 @@ export const ToolMessagePart = memo(
                       onClick={() => onPoxyToolCall(true)}
                     >
                       <Check />
-                      {t("approve")}
+                      {t("Common.approve")}
                     </Button>
                     <Button
                       variant="outline"
@@ -643,7 +754,7 @@ export const ToolMessagePart = memo(
                       onClick={() => onPoxyToolCall(false)}
                     >
                       <X />
-                      {t("reject")}
+                      {t("Common.reject")}
                     </Button>
                   </div>
                 )}

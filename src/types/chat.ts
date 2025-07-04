@@ -47,6 +47,12 @@ export const ChatMentionSchema = z.discriminatedUnion("type", [
     serverId: z.string(),
   }),
   z.object({
+    type: z.literal("defaultTool"),
+    name: z.string(),
+    description: z.string().optional(),
+    label: z.string().optional(),
+  }),
+  z.object({
     type: z.literal("mcpServer"),
     name: z.string(),
     description: z.string().optional(),
@@ -79,6 +85,7 @@ export type ChatMessageAnnotation = {
 
 export enum AppDefaultToolkit {
   Visualization = "visualization",
+  WebSearch = "webSearch",
 }
 
 export const chatApiSchemaRequestBodySchema = z.object({
