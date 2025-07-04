@@ -264,7 +264,7 @@ export function convertTiptapJsonToAiMessage({
         typeof mentionItem == "object"
           ? "\n```json\n" + JSON.stringify(mentionItem, null, 2) + "\n```\n"
           : mentionItem
-            ? `**${String(mentionItem)}**`
+            ? String(mentionItem)
             : "";
       return value;
     },
