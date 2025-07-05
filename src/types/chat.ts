@@ -50,7 +50,6 @@ export const ChatMentionSchema = z.discriminatedUnion("type", [
     type: z.literal("defaultTool"),
     name: z.string(),
     description: z.string().optional(),
-    label: z.string().optional(),
   }),
   z.object({
     type: z.literal("mcpServer"),

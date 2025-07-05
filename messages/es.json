@@ -92,7 +92,7 @@
       "temporaryChatInstructionsPlaceholder": "Ingresa tus instrucciones aquí",
       "temporaryChatInstructionsDescription": "Puedes establecer instrucciones para el chat temporal. Esto se usará como prompt del sistema para el chat temporal."
     },
-    "placeholder": "¿Qué quieres saber?",
+    "placeholder": "Pregunta cualquier cosa o @menciona",
     "Tool": {
       "webSearching": "Buscando en la web...",
       "searchedTheWeb": "Buscado en la web",
@@ -113,7 +113,9 @@
       "presetSaved": "Preajuste guardado",
       "chartTools": "Herramientas de Gráficos",
       "webSearchTools": "Buscar en la web",
-      "clickSaveAsPresetToGetStarted": "Haz clic en Guardar como Preajuste para comenzar."
+      "clickSaveAsPresetToGetStarted": "Haz clic en Guardar como Preajuste para comenzar.",
+      "searchOptions": "Opciones de Búsqueda",
+      "searchOptionsDescription": "Puedes pasar opciones de búsqueda al chatbot, como el número máximo de resultados de búsqueda, la fecha de búsqueda, etc."
     },
     "VoiceChat": {
       "title": "Modo de Chat por Voz",

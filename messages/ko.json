@@ -93,7 +93,7 @@
       "temporaryChatInstructionsPlaceholder": "지침을 입력하세요",
       "temporaryChatInstructionsDescription": "임시 채팅에 대한 지침을 설정할 수 있습니다. 이것은 임시 채팅에 대한 시스템 프롬프트로 사용됩니다."
     },
-    "placeholder": "무엇이든 물어보세요",
+    "placeholder": "아무거나 물어보거나 @mention 하세요",
     "Tool": {
       "webSearching": "웹에서 찾아보는 중...",
       "searchedTheWeb": "참고한 웹 사이트",
@@ -114,7 +114,9 @@
       "presetSaved": "프리셋이 저장되었습니다",
       "chartTools": "차트 도구",
       "webSearchTools": "웹에서 검색하기",
-      "clickSaveAsPresetToGetStarted": "프리셋으로 저장하여 시작합니다."
+      "clickSaveAsPresetToGetStarted": "프리셋으로 저장하여 시작합니다.",
+      "searchOptions": "검색 옵션",
+      "searchOptionsDescription": "검색 결과의 최대 개수, 검색 날짜 등의 검색 옵션을 챗봇에 전달할 수 있습니다."
     },
     "VoiceChat": {
       "title": "음성 채팅 모드",

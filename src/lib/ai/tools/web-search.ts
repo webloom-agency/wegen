@@ -66,13 +66,13 @@ export const tavilySearchSchema: JSONSchema7 = {
     include_images: {
       type: "boolean",
       description: "Include a list of query-related images in the response",
-      default: false,
+      default: true,
     },
     include_image_descriptions: {
       type: "boolean",
       description:
         "Include a list of query-related images and their descriptions in the response",
-      default: false,
+      default: true,
     },
     include_raw_content: {
       type: "boolean",
@@ -271,7 +271,7 @@ export const tavilySearchSchema: JSONSchema7 = {
     include_favicon: {
       type: "boolean",
       description: "Whether to include the favicon URL for each result",
-      default: false,
+      default: true,
     },
   },
   required: ["query"],
@@ -408,6 +408,9 @@ export const tavilySearchTool = createTool({
         exclude_domains: Array.isArray(params.exclude_domains)
           ? params.exclude_domains
           : [],
+        include_images: true,
+        include_image_descriptions: true,
+        include_raw_content: false,
       }),
     )
       .ifFail((e) => {

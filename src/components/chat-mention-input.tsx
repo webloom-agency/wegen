@@ -1,7 +1,12 @@
 "use client";
 import React, { RefObject, useCallback, useMemo } from "react";
 
-import { WaypointsIcon, WrenchIcon } from "lucide-react";
+import {
+  ChartColumnIcon,
+  ChartPie,
+  TrendingUpIcon,
+  WrenchIcon,
+} from "lucide-react";
 import { MCPIcon } from "ui/mcp-icon";
 
 import { ChatMention } from "app-types/chat";
@@ -9,6 +14,7 @@ import { ChatMention } from "app-types/chat";
 import {
   Command,
   CommandEmpty,
+  CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
@@ -24,6 +30,8 @@ import { capitalizeFirstLetter, cn } from "lib/utils";
 import { useShallow } from "zustand/shallow";
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 import { Editor } from "@tiptap/react";
+import { DefaultToolName } from "lib/ai/tools/app-default-tool-name";
+import { GlobalIcon } from "ui/global-icon";
 
 interface ChatMentionInputProps {
   onChange: (text: string) => void;
@@ -33,39 +41,6 @@ interface ChatMentionInputProps {
   input: string;
   ref?: RefObject<Editor | null>;
 }
-
-const appDefaultToolMentions: ChatMention[] = [
-  {
-    type: "defaultTool",
-    name: "webSearch",
-    description: "Search the web for information",
-    label: "web-search",
-  },
-  {
-    type: "defaultTool",
-    name: "webDetail",
-    description: "Extract details from a web page",
-    label: "web-detail",
-  },
-  {
-    type: "defaultTool",
-    name: "createPieChart",
-    description: "Create a pie chart",
-    label: "pie-chart",
-  },
-  {
-    type: "defaultTool",
-    name: "createBarChart",
-    description: "Create a bar chart",
-    label: "bar-chart",
-  },
-  {
-    type: "defaultTool",
-    name: "createLineChart",
-    description: "Create a line chart",
-    label: "line-chart",
-  },
-];
 
 export default function ChatMentionInput({
   onChange,
@@ -135,7 +110,7 @@ export function ChatMentionInputMentionItem({
       <span
         className={cn(
           "ml-auto text-xs opacity-60",
-          item.type == "defaultTool" && "sr-only",
+          item.type == "defaultTool" && "hidden",
         )}
       >
         {capitalizeFirstLetter(item.type)}
@@ -169,40 +144,184 @@ function ChatMentionInputSuggestion({
   const [mcpList, workflowList] = appStore(
     useShallow((state) => [state.mcpList, state.workflowToolList]),
   );
-  const mentionItems = useMemo(() => {
+
+  const mcpMentions = useMemo(() => {
+    return mcpList
+      ?.filter((mcp) => mcp.toolInfo?.length)
+      .map((mcp) => {
+        return (
+          <CommandGroup heading={mcp.name} key={mcp.id}>
+            <CommandItem
+              key={`${mcp.id}-mcp`}
+              className="cursor-pointer text-foreground"
+              onSelect={() =>
+                onSelectMention({
+                  label: mcp.name,
+                  id: JSON.stringify({
+                    type: "mcpServer",
+                    name: mcp.name,
+                    serverId: mcp.id,
+                    description: `${mcp.name} is an MCP server that includes ${mcp.toolInfo?.length ?? 0} tool(s).`,
+                    toolCount: mcp.toolInfo?.length ?? 0,
+                  }),
+                })
+              }
+            >
+              <MCPIcon className="size-3.5 text-foreground" />
+              <span className="truncate min-w-0">{mcp.name}</span>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {mcp.toolInfo?.length} tools
+              </span>
+            </CommandItem>
+            {mcp.toolInfo?.map((tool) => {
+              return (
+                <CommandItem
+                  key={`${mcp.id}-${tool.name}`}
+                  className="cursor-pointer text-foreground"
+                  onSelect={() =>
+                    onSelectMention({
+                      label: `tool("${tool.name}") `,
+                      id: JSON.stringify({
+                        type: "tool",
+                        name: tool.name,
+                        serverId: mcp.id,
+                        description: tool.description,
+                        serverName: mcp.name,
+                      }),
+                    })
+                  }
+                >
+                  <WrenchIcon className="size-3.5" />
+                  <span className="truncate min-w-0">{tool.name}</span>
+                </CommandItem>
+              );
+            })}
+          </CommandGroup>
+        );
+      });
+  }, [mcpList]);
+
+  const workflowMentions = useMemo(() => {
     return (
-      (mcpList
-        ?.filter((mcp) => mcp.toolInfo?.length)
-        .flatMap((mcp) => [
-          {
-            type: "mcpServer",
-            name: mcp.name,
-            serverId: mcp.id,
-            description: `${mcp.name} is an MCP server that includes ${mcp.toolInfo?.length ?? 0} tool(s).`,
-            toolCount: mcp.toolInfo?.length ?? 0,
-          },
-          ...mcp.toolInfo.map((tool) => {
-            return {
-              type: "tool",
-              name: tool.name,
-              serverId: mcp.id,
-              description: tool.description,
-              serverName: mcp.name,
-            };
-          }),
-        ]) as ChatMention[]) ?? []
-    )
-      .concat(
-        workflowList.map((workflow) => ({
-          type: "workflow",
-          name: workflow.name,
-          workflowId: workflow.id,
-          icon: workflow.icon,
-          description: workflow.description,
-        })),
-      )
-      .concat(appDefaultToolMentions);
-  }, [mcpList, workflowList]);
+      <CommandGroup heading="Workflows" key="workflows">
+        {workflowList.map((workflow) => {
+          return (
+            <CommandItem
+              key={workflow.id}
+              className="cursor-pointer text-foreground"
+              onSelect={() =>
+                onSelectMention({
+                  label: workflow.name,
+                  id: JSON.stringify({
+                    type: "workflow",
+                    name: workflow.name,
+                    workflowId: workflow.id,
+                    icon: workflow.icon,
+                    description: workflow.description,
+                  }),
+                })
+              }
+            >
+              <Avatar
+                style={workflow.icon?.style}
+                className="size-3.5 ring-[1px] ring-input rounded-full"
+              >
+                <AvatarImage src={workflow.icon?.value} />
+                <AvatarFallback>{workflow.name.slice(0, 1)}</AvatarFallback>
+              </Avatar>
+              <span className="truncate min-w-0">{workflow.name}</span>
+            </CommandItem>
+          );
+        })}
+      </CommandGroup>
+    );
+  }, [workflowList]);
+
+  const defaultToolMentions = useMemo(() => {
+    return (
+      <>
+        <CommandGroup heading="Chart" key="visual-toolkits">
+          <CommandItem
+            onSelect={() =>
+              onSelectMention({
+                label: "pie-chart",
+                id: JSON.stringify({
+                  type: "defaultTool",
+                  name: DefaultToolName.CreatePieChart,
+                  description: "Create a pie chart",
+                }),
+              })
+            }
+          >
+            <ChartPie className="size-3.5 text-blue-500" />
+            <span className="truncate min-w-0">pie-chart</span>
+          </CommandItem>
+          <CommandItem
+            onSelect={() =>
+              onSelectMention({
+                label: "bar-chart",
+                id: JSON.stringify({
+                  type: "defaultTool",
+                  name: DefaultToolName.CreateBarChart,
+                  description: "Create a bar chart",
+                }),
+              })
+            }
+          >
+            <ChartColumnIcon className="size-3.5 text-blue-500" />
+            <span className="truncate min-w-0">bar-chart</span>
+          </CommandItem>
+          <CommandItem
+            onSelect={() =>
+              onSelectMention({
+                label: "line-chart",
+                id: JSON.stringify({
+                  type: "defaultTool",
+                  name: DefaultToolName.CreateLineChart,
+                  description: "Create a line chart",
+                }),
+              })
+            }
+          >
+            <TrendingUpIcon className="size-3.5 text-blue-500" />
+            <span className="truncate min-w-0">line-chart</span>
+          </CommandItem>
+        </CommandGroup>
+        <CommandGroup heading="Web" key="web-toolkits">
+          <CommandItem
+            onSelect={() =>
+              onSelectMention({
+                label: "web-search",
+                id: JSON.stringify({
+                  type: "defaultTool",
+                  name: DefaultToolName.WebSearch,
+                  description: "Search the web",
+                }),
+              })
+            }
+          >
+            <GlobalIcon className="size-3.5 text-blue-400" />
+            <span className="truncate min-w-0">web-search</span>
+          </CommandItem>
+          <CommandItem
+            onSelect={() =>
+              onSelectMention({
+                label: "web-content",
+                id: JSON.stringify({
+                  type: "defaultTool",
+                  name: DefaultToolName.WebContent,
+                  description: "Get the content of a web page",
+                }),
+              })
+            }
+          >
+            <GlobalIcon className="size-3.5 text-blue-400" />
+            <span className="truncate min-w-0">web-content</span>
+          </CommandItem>
+        </CommandGroup>
+      </>
+    );
+  }, []);
 
   return createPortal(
     <Popover open onOpenChange={(f) => !f && onClose()}>
@@ -227,62 +346,9 @@ function ChatMentionInputSuggestion({
           />
           <CommandList className="p-2">
             <CommandEmpty>{t("noResults")}</CommandEmpty>
-
-            {mentionItems.map((item) => {
-              const key =
-                item.type == "mcpServer"
-                  ? item.serverId
-                  : item.type == "workflow"
-                    ? item.workflowId
-                    : item.type == "defaultTool"
-                      ? `default-${item.name}`
-                      : `${item.serverId}-${item.name}`;
-              return (
-                <CommandItem
-                  key={key}
-                  className="cursor-pointer text-foreground"
-                  onSelect={() =>
-                    onSelectMention({
-                      label:
-                        item.type === "mcpServer"
-                          ? `${item.name} `
-                          : item.type === "defaultTool"
-                            ? `tool("${item.label || item.name}") `
-                            : `tool("${item.name}") `,
-                      id: JSON.stringify(item),
-                    })
-                  }
-                >
-                  {item.type == "mcpServer" ? (
-                    <div className="p-1 bg-secondary rounded-sm ring ring-input">
-                      <MCPIcon className="size-3.5 text-foreground" />
-                    </div>
-                  ) : item.type == "workflow" ? (
-                    <div className="p-1 bg-secondary rounded-sm ring ring-input">
-                      <WaypointsIcon className="size-3.5 text-foreground" />
-                    </div>
-                  ) : (
-                    <div className="p-1">
-                      <WrenchIcon className="size-3.5" />
-                    </div>
-                  )}
-                  <span className="truncate min-w-0">
-                    {item.type == "defaultTool"
-                      ? item.label || item.name
-                      : item.name}
-                  </span>
-                  {item.type == "mcpServer" ? (
-                    <span className="ml-auto text-xs text-muted-foreground">
-                      {item.toolCount} tools
-                    </span>
-                  ) : item.type === "tool" ? (
-                    <span className="ml-auto text-xs text-muted-foreground">
-                      {item.serverName}
-                    </span>
-                  ) : null}
-                </CommandItem>
-              );
-            })}
+            {workflowMentions}
+            {defaultToolMentions}
+            {mcpMentions}
           </CommandList>
         </Command>
       </PopoverContent>

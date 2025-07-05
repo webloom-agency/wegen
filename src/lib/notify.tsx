@@ -27,6 +27,31 @@ const createContainer = () => {
 };
 
 export const notify = {
+  component({
+    children,
+    className,
+  }: { children: ReactNode; className?: string }) {
+    return new Promise<void>((resolve) => {
+      const container = createContainer();
+      const root = createRoot(container);
+      const close = () => {
+        root.unmount();
+        container.remove();
+        resolve();
+      };
+      root.render(
+        <Dialog open onOpenChange={close}>
+          <DialogContent className={className}>
+            <DialogHeader className="hidden">
+              <DialogTitle></DialogTitle>
+              <DialogDescription></DialogDescription>
+            </DialogHeader>
+            {children}
+          </DialogContent>
+        </Dialog>,
+      );
+    });
+  },
   alert(alert: Alert) {
     return new Promise<void>((resolve) => {
       const container = createContainer();

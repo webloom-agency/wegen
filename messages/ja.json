@@ -92,7 +92,7 @@
       "temporaryChatInstructionsPlaceholder": "こちらに指示を入力してください",
       "temporaryChatInstructionsDescription": "一時チャットの指示を設定できます。これは一時チャットのシステムプロンプトとして使用されます。"
     },
-    "placeholder": "何について知りたいですか？",
+    "placeholder": "何でも聞くか @mention してください",
     "Tool": {
       "webSearching": "ウェブを検索中...",
       "searchedTheWeb": "ウェブを検索しました",
@@ -113,7 +113,9 @@
       "presetSaved": "プリセットが保存されました",
       "chartTools": "チャートツール",
       "webSearchTools": "ウェブを検索",
-      "clickSaveAsPresetToGetStarted": "開始するには「プリセットとして保存」をクリックしてください。"
+      "clickSaveAsPresetToGetStarted": "開始するには「プリセットとして保存」をクリックしてください。",
+      "searchOptions": "検索オプション",
+      "searchOptionsDescription": "検索結果の最大数、検索日時など、チャットボットに検索オプションを渡すことができます。"
     },
     "VoiceChat": {
       "title": "音声チャットモード",
