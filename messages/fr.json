@@ -321,7 +321,7 @@
     "addOutputVariable": "Ajouter Variable de Sortie",
     "outputSchema": "Schéma de Sortie",
     "addMessage": "Ajouter Message",
-    "messagesDescription": "Générer des données par traitement LLM.\n\nUtilisez '/' pour mentionner et référencer des données\nde nœuds précédents comme entrée.",
+    "messagesDescription": "Générer des données par traitement LLM.\n\nUtilisez '/' pour mentionner et référencer des données de nœuds précédents comme entrée.\n\nAvec Sortie Structurée activée, parfait pour la transformation, le formatage et la validation de données.",
     "descriptionAndSchema": "Description et Schéma",
     "noDescriptionAndSchema": "Pas de description et schéma",
     "toolDescription": "Fournissez les informations nécessaires pour que LLM génère les paramètres d'outil.\n\nUtilisez '/' pour mentionner des données de nœuds précédents.",
@@ -347,7 +347,7 @@
     "kindsDescription": {
       "input": "Définit les paramètres d'entrée que le chatbot fournira en utilisant ce flux de travail comme outil.\n\nSpécifie la structure des données et les règles de validation pour l'exécution de l'outil.",
       "output": "Collecte et retourne les résultats finaux de l'exécution de votre flux de travail.\n\nCombine les données de plusieurs nœuds dans la réponse finale de l'outil.",
-      "llm": "Génère du texte ou des données structurées en utilisant des modèles IA.\n\nRéférence les sorties de nœuds précédents avec des mentions '/' pour créer des réponses conscientes du contexte.",
+      "llm": "Génère du texte ou des données structurées en utilisant des modèles IA.\n\nRéférence les sorties de nœuds précédents avec des mentions '/' pour créer des réponses conscientes du contexte.\n\nUtilisez Sortie Structurée pour transformer, formater et valider les données - pas seulement pour la génération de texte.",
       "tool": "Exécute des outils MCP ou des services externes.\n\nÉcrivez des instructions dans les messages, et LLM générera les paramètres d'outil requis à partir de votre contexte.",
       "note": "Ajoute de la documentation et des commentaires pour organiser la logique de votre flux de travail.\n\nAide les membres de l'équipe à comprendre les processus complexes de flux de travail.",
       "code": "Exécute des scripts de code personnalisé avec accès aux données de nœuds précédents.\n\nExécute JavaScript, Python ou d'autres langages dans votre flux de travail (bientôt disponible).",
@@ -368,6 +368,8 @@
       "upcomingNodesTitle": "Nœuds à Venir",
       "ctaMessage": "Commencez à créer des flux de travail maintenant pour étendre les capacités de votre chatbot !",
       "soonMessage": "Bientôt disponible."
-    }
+    },
+    "arrangeNodes": "Auto Layout",
+    "nodesArranged": "Layout appliqué avec succès"
   }
 }

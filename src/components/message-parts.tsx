@@ -772,6 +772,7 @@ function SearchToolPart({ part }: { part: ToolMessagePart["toolInvocation"] }) {
                             children: (
                               <div className="flex flex-col h-full gap-4">
                                 <div className="flex-1 flex items-center justify-center min-h-0 py-6">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
                                   <img
                                     src={image.url}
                                     className="max-w-[80vw] max-h-[80vh] object-contain rounded-lg"
@@ -784,9 +785,11 @@ function SearchToolPart({ part }: { part: ToolMessagePart["toolInvocation"] }) {
                         }}
                         className="block shadow rounded-lg overflow-hidden ring ring-input cursor-pointer"
                       >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           loading="lazy"
                           src={image.url}
+                          alt={image.description}
                           className="w-full h-36 object-cover hover:scale-120 transition-transform duration-300"
                         />
                       </div>

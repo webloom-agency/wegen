@@ -322,7 +322,7 @@
     "addOutputVariable": "添加输出变量",
     "outputSchema": "输出架构",
     "addMessage": "添加消息",
-    "messagesDescription": "通过 LLM 处理生成数据。\n\n使用 '/' 提及和引用\n前一个节点的数据作为输入。",
+    "messagesDescription": "通过 LLM 处理生成数据。\n\n使用 '/' 提及和引用前一个节点的数据作为输入。\n\n启用结构化输出时，非常适合数据转换、格式化和验证。",
     "descriptionAndSchema": "描述和架构",
     "noDescriptionAndSchema": "无描述和架构",
     "toolDescription": "提供 LLM 生成工具参数所需的信息。\n\n使用 '/' 提及前一个节点的数据。",
@@ -348,7 +348,7 @@
     "kindsDescription": {
       "input": "定义聊天机器人将此工作流用作工具时提供的输入参数。\n\n指定工具执行的数据结构和验证规则。",
       "output": "收集并返回工作流执行的最终结果。\n\n将多个节点的数据合并为最终工具响应。",
-      "llm": "使用 AI 模型生成文本或结构化数据。\n\n使用 '/' 提及引用前一个节点的输出，创建上下文感知的响应。",
+      "llm": "使用 AI 模型生成文本或结构化数据。\n\n使用 '/' 提及引用前一个节点的输出，创建上下文感知的响应。\n\n使用结构化输出进行数据转换、格式化和验证 - 不仅仅是文本生成。",
       "tool": "执行 MCP 工具或外部服务。\n\n在消息中写入指令，LLM 将从您的上下文生成所需的工具参数。",
       "note": "添加文档和注释来组织您的工作流逻辑。\n\n帮助团队成员理解复杂的工作流过程。",
       "code": "执行可访问前一个节点数据的自定义代码脚本。\n\n在工作流中运行 JavaScript、Python 或其他语言（即将推出）。",
@@ -369,6 +369,8 @@
       "upcomingNodesTitle": "即将推出的节点",
       "ctaMessage": "现在就开始创建工作流来扩展您的聊天机器人能力！",
       "soonMessage": "即将推出。"
-    }
+    },
+    "arrangeNodes": "自动布局",
+    "nodesArranged": "布局已成功应用"
   }
 }

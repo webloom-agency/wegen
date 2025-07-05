@@ -321,7 +321,7 @@
     "addOutputVariable": "Agregar Variable de Salida",
     "outputSchema": "Esquema de Salida",
     "addMessage": "Agregar Mensaje",
-    "messagesDescription": "Generar datos a través del procesamiento LLM.\n\nUsa '/' para mencionar y referenciar datos\nde nodos anteriores como entrada.",
+    "messagesDescription": "Generar datos a través del procesamiento LLM.\n\nUsa '/' para mencionar y referenciar datos de nodos anteriores como entrada.\n\nCon Salida Estructurada habilitada, perfecto para transformación, formateo y validación de datos.",
     "descriptionAndSchema": "Descripción y Esquema",
     "noDescriptionAndSchema": "Sin descripción y esquema",
     "toolDescription": "Proporciona información necesaria para que LLM genere parámetros de herramienta.\n\nUsa '/' para mencionar datos de nodos anteriores.",
@@ -347,7 +347,7 @@
     "kindsDescription": {
       "input": "Define parámetros de entrada que el chatbot proporcionará al usar este flujo de trabajo como herramienta.\n\nEspecifica la estructura de datos y reglas de validación para la ejecución de la herramienta.",
       "output": "Recopila y retorna los resultados finales de la ejecución de tu flujo de trabajo.\n\nCombina datos de múltiples nodos en la respuesta final de la herramienta.",
-      "llm": "Genera texto o datos estructurados usando modelos de IA.\n\nReferencia salidas de nodos anteriores con menciones '/' para crear respuestas conscientes del contexto.",
+      "llm": "Genera texto o datos estructurados usando modelos de IA.\n\nReferencia salidas de nodos anteriores con menciones '/' para crear respuestas conscientes del contexto.\n\nUsa Salida Estructurada para transformar, formatear y validar datos - no solo para generación de texto.",
       "tool": "Ejecuta herramientas MCP o servicios externos.\n\nEscribe instrucciones en mensajes, y LLM generará los parámetros de herramienta requeridos desde tu contexto.",
       "note": "Agrega documentación y comentarios para organizar la lógica de tu flujo de trabajo.\n\nAyuda a los miembros del equipo a entender procesos complejos de flujo de trabajo.",
       "code": "Ejecuta scripts de código personalizado con acceso a datos de nodos anteriores.\n\nEjecuta JavaScript, Python u otros lenguajes dentro de tu flujo de trabajo (próximamente).",
@@ -368,6 +368,8 @@
       "upcomingNodesTitle": "Nodos Próximos",
       "ctaMessage": "¡Comienza a crear flujos de trabajo ahora para expandir las capacidades de tu chatbot!",
       "soonMessage": "Próximamente."
-    }
+    },
+    "arrangeNodes": "Auto Layout",
+    "nodesArranged": "Layout aplicado exitosamente"
   }
 }
