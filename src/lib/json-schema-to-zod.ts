@@ -168,8 +168,11 @@ export function jsonSchemaToZod(jsonSchema: JSONSchema7): z.ZodType<any> {
     }
 
     case "object": {
-      if (!jsonSchema.properties) {
-        const recordSchema = z.record(z.unknown());
+      if (
+        !jsonSchema.properties ||
+        Object.keys(jsonSchema.properties ?? {}).length === 0
+      ) {
+        const recordSchema = z.object({}).catchall(z.any());
 
         // Apply default value if present
         if (jsonSchema.default !== undefined) {

@@ -122,78 +122,6 @@ export const LLMNodeDataConfig = memo(function ({
         </Button>
       </SelectModel>
 
-      {/* <Separator className="my-4" /> */}
-      <div className="flex items-center justify-between">
-        <Label className="text-sm mt-1">Messages</Label>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="p-1 hover:bg-secondary rounded cursor-pointer">
-              <InfoIcon className="size-3" />
-            </div>
-          </TooltipTrigger>
-          <TooltipContent className="p-4 whitespace-pre-wrap">
-            {t("Workflow.messagesDescription")}
-          </TooltipContent>
-        </Tooltip>
-      </div>
-      <div className="flex flex-col gap-2">
-        {data.messages.map((message, index) => {
-          return (
-            <div key={index} className="w-full bg-secondary rounded-md p-2">
-              <div className="flex items-center gap-2">
-                <Select
-                  value={message.role}
-                  onValueChange={(value) => {
-                    updateMessage(index, {
-                      role: value as "user" | "assistant" | "system",
-                    });
-                  }}
-                >
-                  <SelectTrigger className="border-none" size={"sm"}>
-                    {message.role.toUpperCase()}
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user">USER</SelectItem>
-                    <SelectItem value="assistant">ASSISTANT</SelectItem>
-                    <SelectItem value="system">SYSTEM</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant={"ghost"}
-                  size={"icon"}
-                  className="ml-auto size-7 hover:bg-destructive/10! hover:text-destructive"
-                  onClick={() => removeMessage(index)}
-                >
-                  <TrashIcon className="size-3 hover:text-destructive" />
-                </Button>
-              </div>
-              <OutputSchemaMentionInput
-                currentNodeId={data.id}
-                nodes={nodes}
-                edges={edges}
-                content={message.content}
-                editable={editable}
-                onChange={(content) => {
-                  updateMessage(index, {
-                    content,
-                  });
-                }}
-              />
-            </div>
-          );
-        })}
-
-        <Button
-          variant={"ghost"}
-          size={"icon"}
-          className="w-full mt-1 border-dashed border text-muted-foreground"
-          onClick={addMessage}
-        >
-          <MessageCirclePlusIcon className="size-4" />{" "}
-          {t("Workflow.addMessage")}
-        </Button>
-      </div>
-      <Separator className="my-4" />
       <div className="flex items-center justify-between">
         <Label className="text-sm">LLM {t("Workflow.outputSchema")}</Label>
         <Tooltip>
@@ -276,6 +204,79 @@ export const LLMNodeDataConfig = memo(function ({
           ];
         })}
       </div>
+
+      <Separator className="my-4" />
+      <div className="flex items-center justify-between">
+        <Label className="text-sm mt-1">Messages</Label>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="p-1 hover:bg-secondary rounded cursor-pointer">
+              <InfoIcon className="size-3" />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent className="p-4 whitespace-pre-wrap">
+            {t("Workflow.messagesDescription")}
+          </TooltipContent>
+        </Tooltip>
+      </div>
+      <div className="flex flex-col gap-2">
+        {data.messages.map((message, index) => {
+          return (
+            <div key={index} className="w-full bg-secondary rounded-md p-2">
+              <div className="flex items-center gap-2">
+                <Select
+                  value={message.role}
+                  onValueChange={(value) => {
+                    updateMessage(index, {
+                      role: value as "user" | "assistant" | "system",
+                    });
+                  }}
+                >
+                  <SelectTrigger className="border-none" size={"sm"}>
+                    {message.role.toUpperCase()}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">USER</SelectItem>
+                    <SelectItem value="assistant">ASSISTANT</SelectItem>
+                    <SelectItem value="system">SYSTEM</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant={"ghost"}
+                  size={"icon"}
+                  className="ml-auto size-7 hover:bg-destructive/10! hover:text-destructive"
+                  onClick={() => removeMessage(index)}
+                >
+                  <TrashIcon className="size-3 hover:text-destructive" />
+                </Button>
+              </div>
+              <OutputSchemaMentionInput
+                currentNodeId={data.id}
+                nodes={nodes}
+                edges={edges}
+                content={message.content}
+                editable={editable}
+                onChange={(content) => {
+                  updateMessage(index, {
+                    content,
+                  });
+                }}
+              />
+            </div>
+          );
+        })}
+
+        <Button
+          variant={"ghost"}
+          size={"icon"}
+          className="w-full mt-1 border-dashed border text-muted-foreground"
+          onClick={addMessage}
+        >
+          <MessageCirclePlusIcon className="size-4" />{" "}
+          {t("Workflow.addMessage")}
+        </Button>
+      </div>
+
       <OutputSchemaEditor
         schema={data.outputSchema?.properties?.answer as ObjectJsonSchema7}
         open={structuredOutputOpen}

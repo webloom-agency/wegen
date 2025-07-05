@@ -214,6 +214,9 @@ Return ONLY the JSON Schema object - no explanations or markdown formatting.`,
         },
         schema: {
           type: "object",
+          description: "JSON Schema7",
+          properties: {},
+          additionalProperties: true,
         },
       }).then((res) => {
         setAdvancedJson(JSON.stringify(res, null, 2));

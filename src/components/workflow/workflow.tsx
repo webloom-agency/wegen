@@ -223,9 +223,14 @@ export default function Workflow({
         activeNodeIds.includes(edge.source) ||
         activeNodeIds.includes(edge.target);
 
-      const isErrorEdge = errorIds.includes(edge.target);
-      const isRunningEdge = runningIds.includes(edge.target);
-      const isSuccessEdge = successIds.includes(edge.target);
+      const isErrorEdge =
+        errorIds.includes(edge.target) &&
+        (successIds.includes(edge.source) || errorIds.includes(edge.source));
+      const isRunningEdge =
+        runningIds.includes(edge.target) && successIds.includes(edge.source);
+      const isSuccessEdge =
+        successIds.includes(edge.target) &&
+        (successIds.includes(edge.source) || runningIds.includes(edge.source));
       return {
         ...edge,
         style: {
