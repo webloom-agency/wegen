@@ -191,7 +191,7 @@ export async function POST(request: Request) {
               ) || {}
             );
           })
-          .unwrap();
+          .orElse({});
 
         const inProgressToolStep = extractInProgressToolPart(
           messages.slice(-2),
