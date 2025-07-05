@@ -70,6 +70,7 @@ Finally, tell me how to install the package.
 
 <img width="1755" alt="workflow" src="https://github.com/user-attachments/assets/afa895f0-cc59-4c2f-beb3-4b7a1dc1f891" loading="lazy" />
 
+<img width="1567" alt="workflow-mention" loading="lazy" src="https://github.com/user-attachments/assets/097526d6-54c1-4bc3-87f8-47d3f885a9c3" />
 
 **Example:** Create custom workflows that become callable tools in your chat conversations.
 
@@ -118,7 +119,7 @@ This lets you flexibly choose between autonomous, guided, or tool-free interacti
 
 ### 🌐 Web Search (Default Tool)
 
-<img width="1394" alt="web-search" src="https://github.com/user-attachments/assets/14e2dc33-b702-4b93-a05f-bc36edde18f1" />
+<img width="1394" alt="web-search" src="https://github.com/user-attachments/assets/14e2dc33-b702-4b93-a05f-bc36edde18f1" loading="lazy"/>
 
 
 Built-in web search powered by [Tavily API](https://app.tavily.com/home). Search the web and extract content from URLs directly in your chats.
