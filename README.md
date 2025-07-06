@@ -42,7 +42,7 @@ See the experience in action in the [preview](#preview) below!
 - [🙌 Contributing](#-contributing)
 - [💬 Join Our Discord](#-join-our-discord)
 
----
+
 
 ## Preview
 
@@ -50,8 +50,7 @@ Get a feel for the UX — here's a quick look at what's possible.
 
 ### 🧩 Browser Automation with Playwright MCP
 
-<img alt="playwright" src="https://github.com/user-attachments/assets/67f23b93-b48d-4eaa-9ced-6a14c591b3e1" loading="lazy"/>
-
+![preview](https://github.com/user-attachments/assets/86855a59-dfe0-4452-8891-dd390c131225)
 
 
 **Example:** Control a web browser using Microsoft's [playwright-mcp](https://github.com/microsoft/playwright-mcp) tool.
@@ -61,8 +60,11 @@ Get a feel for the UX — here's a quick look at what's possible.
 Sample prompt:
 
 ```prompt
+Use the @web-search to look up information about 'modelcontetprotocol'.
+
+Then, using : @playwright
 Please go to GitHub and visit the cgoinglove/better-chatbot project.
-Then, click on the README.md file.
+Click on the README.md file.
 After that, close the browser.
 Finally, tell me how to install the package.
 ```
