@@ -14,7 +14,7 @@ import {
   PenOff,
   Settings2,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "ui/button";
 import { useTranslations } from "next-intl";
 
