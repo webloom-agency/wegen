@@ -14,7 +14,7 @@ import {
   PenOff,
   Settings2,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "ui/button";
 import { useTranslations } from "next-intl";
 
@@ -42,9 +42,8 @@ export const ToolModeDropdown = ({ disabled }: { disabled?: boolean }) => {
     useShallow((state) => [state.toolChoice, state.mutate]),
   );
   const [open, setOpen] = useState(false);
-  const [toolChoiceChangeInfo, setToolChoiceChangeInfo] = useState<
-    true | undefined
-  >(undefined);
+
+  const [toolChoiceChangeInfo, setToolChoiceChangeInfo] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -63,7 +62,7 @@ export const ToolModeDropdown = ({ disabled }: { disabled?: boolean }) => {
         });
         setToolChoiceChangeInfo(true);
         debounce(() => {
-          setToolChoiceChangeInfo(undefined);
+          setToolChoiceChangeInfo(false);
         }, 1000);
       }
     };
@@ -74,8 +73,18 @@ export const ToolModeDropdown = ({ disabled }: { disabled?: boolean }) => {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild disabled={disabled}>
-        <div>
+        <div className="relative">
           <Tooltip open={toolChoiceChangeInfo}>
+            <TooltipTrigger asChild>
+              <span className="absolute inset-0 -z-10" />
+            </TooltipTrigger>
+            <TooltipContent className="flex items-center gap-2" side="bottom">
+              {capitalizeFirstLetter(toolChoice)}
+              <CheckIcon className="size-2.5" />
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant={"ghost"}
@@ -83,30 +92,17 @@ export const ToolModeDropdown = ({ disabled }: { disabled?: boolean }) => {
                 className="rounded-full p-2! data-[state=open]:bg-input! hover:bg-input!"
                 onClick={() => setOpen(true)}
               >
-                {/* <span>{capitalizeFirstLetter(toolChoice)}</span> */}
                 <Settings2 />
               </Button>
             </TooltipTrigger>
-            <TooltipContent
-              className="flex items-center gap-2"
-              side={toolChoiceChangeInfo ? "bottom" : undefined}
-            >
-              {toolChoiceChangeInfo ? (
-                <>
-                  {capitalizeFirstLetter(toolChoice)}
-                  <CheckIcon className="size-2.5" />
-                </>
-              ) : (
-                <>
-                  {t("selectToolMode")}
-                  <Badge className="text-xs" variant={"secondary"}>
-                    {capitalizeFirstLetter(toolChoice)}
-                    <span className="text-muted-foreground ml-2">
-                      {getShortcutKeyList(Shortcuts.toolMode).join("")}
-                    </span>
-                  </Badge>
-                </>
-              )}
+            <TooltipContent className="flex items-center gap-2" side="bottom">
+              {t("selectToolMode")}
+              <Badge className="text-xs" variant={"secondary"}>
+                {capitalizeFirstLetter(toolChoice)}
+                <span className="text-muted-foreground ml-2">
+                  {getShortcutKeyList(Shortcuts.toolMode).join("")}
+                </span>
+              </Badge>
             </TooltipContent>
           </Tooltip>
         </div>

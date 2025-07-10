@@ -135,8 +135,9 @@ export class MCPClient {
             },
           });
           await client.connect(transport);
-        } catch {
-          this.log.info(
+        } catch (streamableHttpError) {
+          this.log.error(streamableHttpError);
+          this.log.warn(
             "Streamable HTTP connection failed, falling back to SSE transport",
           );
           const transport = new SSEClientTransport(url, {
