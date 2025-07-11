@@ -114,6 +114,7 @@ export default function PromptInput({
     const userMessage = input?.trim() || "";
     if (userMessage.length === 0) return;
     const annotations: ChatMessageAnnotation[] = [];
+
     if (toolMentionItems.length > 0) {
       annotations.push({
         mentions: toolMentionItems,

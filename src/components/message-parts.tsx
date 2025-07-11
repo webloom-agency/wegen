@@ -16,11 +16,12 @@ import {
   XIcon,
   Loader2,
   AlertTriangleIcon,
+  Percent,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { Button } from "ui/button";
 import { Markdown } from "./markdown";
-import { cn, safeJSONParse } from "lib/utils";
+import { cn, isObject, safeJSONParse, toAny, wait } from "lib/utils";
 import JsonView from "ui/json-view";
 import {
   useMemo,
@@ -48,6 +49,7 @@ import {
   ChatMentionSchema,
   ChatMessageAnnotation,
   ChatModel,
+  ClientToolInvocation,
 } from "app-types/chat";
 
 import { Skeleton } from "ui/skeleton";
@@ -75,6 +77,9 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "ui/hover-card";
 import { notify } from "lib/notify";
 import { DefaultToolName } from "lib/ai/tools";
 import { TavilyResponse } from "lib/ai/tools/web/web-search";
+
+import { CodeBlock } from "ui/CodeBlock";
+import { SafeJsExecutionResult, safeJsRun } from "lib/safe-js-run";
 
 type MessagePart = UIMessage["parts"][number];
 
@@ -107,7 +112,8 @@ interface ToolMessagePartProps {
   messageId: string;
   showActions: boolean;
   isLast?: boolean;
-  onPoxyToolCall?: (answer: boolean) => void;
+  isManualToolInvocation?: boolean;
+  onPoxyToolCall?: (result: ClientToolInvocation) => void;
   isError?: boolean;
   setMessages?: UseChatHelpers["setMessages"];
 }
@@ -397,6 +403,7 @@ export const ToolMessagePart = memo(
     isError,
     messageId,
     setMessages,
+    isManualToolInvocation,
   }: ToolMessagePartProps) => {
     const t = useTranslations("");
     const { toolInvocation } = part;
@@ -442,7 +449,7 @@ export const ToolMessagePart = memo(
           : toolInvocation.result;
       }
       return null;
-    }, [state, toolInvocation]);
+    }, [toolInvocation, onPoxyToolCall]);
 
     const CustomToolComponent = useMemo(() => {
       if (
@@ -450,6 +457,23 @@ export const ToolMessagePart = memo(
         toolName === DefaultToolName.WebContent
       ) {
         return <SearchToolPart part={toolInvocation} />;
+      }
+
+      if (toolName === DefaultToolName.JavascriptExecution) {
+        return (
+          <SimpleJavascriptExecutionToolPart
+            part={toolInvocation}
+            onResult={
+              onPoxyToolCall
+                ? (result) =>
+                    onPoxyToolCall?.({
+                      action: "direct",
+                      result,
+                    })
+                : undefined
+            }
+          />
+        );
       }
 
       if (state === "result") {
@@ -490,7 +514,7 @@ export const ToolMessagePart = memo(
         }
       }
       return null;
-    }, [toolName, state]);
+    }, [toolName, state, onPoxyToolCall, result, args]);
 
     const isWorkflowTool = isVercelAIWorkflowTool(result);
 
@@ -639,13 +663,15 @@ export const ToolMessagePart = memo(
                   </div>
                 )}
 
-                {onPoxyToolCall && (
+                {onPoxyToolCall && isManualToolInvocation && (
                   <div className="flex flex-row gap-2 items-center mt-2">
                     <Button
                       variant="secondary"
                       size="sm"
                       className="rounded-full text-xs hover:ring"
-                      onClick={() => onPoxyToolCall(true)}
+                      onClick={() =>
+                        onPoxyToolCall({ action: "manual", result: true })
+                      }
                     >
                       <Check />
                       {t("Common.approve")}
@@ -654,7 +680,9 @@ export const ToolMessagePart = memo(
                       variant="outline"
                       size="sm"
                       className="rounded-full text-xs"
-                      onClick={() => onPoxyToolCall(false)}
+                      onClick={() =>
+                        onPoxyToolCall({ action: "manual", result: false })
+                      }
                     >
                       <X />
                       {t("Common.reject")}
@@ -698,6 +726,8 @@ export const ToolMessagePart = memo(
     if (prev.isLast !== next.isLast) return false;
     if (prev.showActions !== next.showActions) return false;
     if (!!prev.onPoxyToolCall !== !!next.onPoxyToolCall) return false;
+    if (prev.isManualToolInvocation !== next.isManualToolInvocation)
+      return false;
     if (prev.messageId !== next.messageId) return false;
     if (!equal(prev.part.toolInvocation, next.part.toolInvocation))
       return false;
@@ -1063,6 +1093,192 @@ export function WorkflowToolDetail({
         );
       })}
       <div className="px-2 mt-2">{output}</div>
+    </div>
+  );
+}
+
+export const SimpleJavascriptExecutionToolPart = memo(
+  function SimpleJavascriptExecutionToolPart({
+    part,
+    onResult,
+  }: {
+    part: ToolMessagePart["toolInvocation"];
+    onResult?: (result?: any) => void;
+  }) {
+    const isRun = useRef(false);
+
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    const runCode = useCallback(
+      async (code: string, input: any, timeout?: number) => {
+        await wait(2000);
+        const result = await safeJsRun(code, input, timeout);
+        onResult?.({
+          ...toAny(result),
+          guide:
+            "The code has already been executed and displayed to the user. Please provide only the output results from console.log() or error details if any occurred. Do not repeat the code itself.",
+        });
+      },
+      [onResult],
+    );
+
+    const scrollToCode = useCallback(() => {
+      scrollContainerRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "nearest",
+      });
+    }, []);
+
+    useEffect(() => {
+      if (onResult && part.args && part.state == "call" && !isRun.current) {
+        isRun.current = true;
+        runCode(part.args.code, part.args.input, part.args.timeout);
+      }
+    }, [part.state, !!onResult]);
+
+    useEffect(() => {
+      if (part.state != "result") {
+        const closeKey = setInterval(scrollToCode, 300);
+        return () => clearInterval(closeKey);
+      } else {
+        scrollToCode();
+      }
+    }, [part.state]);
+
+    const result = useMemo(() => {
+      if (part.state != "result") return null;
+      return part.result as SafeJsExecutionResult;
+    }, [part]);
+
+    const logs = useMemo(() => {
+      const error = result?.error;
+      const logs = result?.logs || [];
+
+      if (error) {
+        return [{ type: "error", args: [error] }, ...logs];
+      }
+
+      return logs;
+    }, [part]);
+
+    return (
+      <div className="flex flex-col">
+        <div className="px-6 py-3">
+          {!!part.args?.code && (
+            <div className="border relative rounded-lg overflow-hidden bg-background shadow fade-in animate-in duration-500">
+              <div className="py-2.5 px-4 flex items-center gap-1.5 z-20 border-b bg-background min-h-[37px]">
+                {part.state != "result" ? (
+                  <>
+                    <Loader className="size-3 animate-spin text-muted-foreground" />
+                    <TextShimmer className="text-xs">
+                      Generating Code...
+                    </TextShimmer>
+                  </>
+                ) : (
+                  <>
+                    {result?.error ? (
+                      <>
+                        <AlertTriangleIcon className="size-3 text-destructive" />
+                        <span className="text-destructive text-xs">ERROR</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-[7px] bg-border rounded-xs w-4 h-4 p-0.5 flex items-end justify-end font-bold">
+                          JS
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+                <div className="flex-1" />
+                <div className="w-1.5 h-1.5 rounded-full bg-input" />
+                <div className="w-1.5 h-1.5 rounded-full bg-input" />
+                <div className="w-1.5 h-1.5 rounded-full bg-input" />
+              </div>
+              <div className="relative">
+                <div
+                  className={`z-10 absolute inset-0 w-full h-1/4 bg-gradient-to-b to-90%  from-background to-transparent ${part.state != "result" ? "" : "h-1/8 pointer-events-none"}`}
+                />
+                <div
+                  className={`z-10 absolute inset-0 w-1/4 h-full bg-gradient-to-r from-background to-transparent ${part.state != "result" ? "" : "w-1/8 pointer-events-none"}`}
+                />
+                <div
+                  className={`z-10 absolute left-0 bottom-0 w-full h-1/4 bg-gradient-to-t from-background to-transparent ${part.state != "result" ? "" : "h-1/8 pointer-events-none"}`}
+                />
+                <div
+                  className={`z-10 absolute right-0 bottom-0 w-1/4 h-full bg-gradient-to-l from-background to-transparent ${part.state != "result" ? "" : "w-1/8 pointer-events-none"}`}
+                />
+
+                <div
+                  className={`min-h-14 p-6 text-xs overflow-y-auto transition-height duration-1000 max-h-60`}
+                >
+                  <div>
+                    <CodeBlock
+                      className="bg-background p-4 text-[10px]"
+                      code={part.args?.code}
+                      lang="javascript"
+                      fallback={<CodeFallback />}
+                    />
+                    <div ref={scrollContainerRef} />
+                  </div>
+                </div>
+              </div>
+              {logs.length > 0 && (
+                <div className="p-4 text-[10px] text-foreground flex flex-col gap-1">
+                  <div className="text-foreground flex items-center gap-1">
+                    <div className="w-1 h-1 mr-1 ring ring-border rounded-full" />{" "}
+                    better-chatbot
+                    <Percent className="size-2" />
+                  </div>
+                  {logs.map((log, i) => {
+                    return (
+                      <div
+                        key={i}
+                        className={cn(
+                          "flex gap-1 text-muted-foreground pl-3",
+                          log.type == "error" && "text-destructive",
+                          log.type == "warn" && "text-yellow-500",
+                        )}
+                      >
+                        <div className="h-[15px] flex items-center pr-2">
+                          {log.type == "error" ? (
+                            <AlertTriangleIcon className="size-2" />
+                          ) : log.type == "warn" ? (
+                            <AlertTriangleIcon className="size-2" />
+                          ) : (
+                            <ChevronRight className="size-2" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          {log.args
+                            .map((arg) =>
+                              isObject(arg)
+                                ? JSON.stringify(arg)
+                                : arg.toString(),
+                            )
+                            .join(" ")}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  },
+);
+
+function CodeFallback() {
+  return (
+    <div className="flex flex-col gap-2">
+      <Skeleton className="h-3 w-1/6" />
+      <Skeleton className="h-3 w-1/3" />
+      <Skeleton className="h-3 w-1/2" />
+      <Skeleton className="h-3 w-1/4" />
     </div>
   );
 }

@@ -40,7 +40,7 @@ export type ChatMessage = {
 
 export const ChatMentionSchema = z.discriminatedUnion("type", [
   z.object({
-    type: z.literal("tool"),
+    type: z.literal("mcpTool"),
     name: z.string(),
     description: z.string().optional(),
     serverName: z.string().optional(),
@@ -49,6 +49,7 @@ export const ChatMentionSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("defaultTool"),
     name: z.string(),
+    label: z.string(),
     description: z.string().optional(),
   }),
   z.object({
@@ -188,3 +189,12 @@ export type ChatRepository = {
     messages: PartialBy<ChatMessage, "createdAt">[],
   ): Promise<ChatMessage[]>;
 };
+
+export const ClientToolInvocationZodSchema = z.object({
+  action: z.enum(["manual", "direct"]),
+  result: z.any().optional(),
+});
+
+export type ClientToolInvocation = z.infer<
+  typeof ClientToolInvocationZodSchema
+>;

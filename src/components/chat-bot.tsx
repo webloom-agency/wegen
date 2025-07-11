@@ -22,10 +22,7 @@ import { UIMessage } from "ai";
 
 import { safe } from "ts-safe";
 import { mutate } from "swr";
-import {
-  ChatApiSchemaRequestBody,
-  ChatMessageAnnotation,
-} from "app-types/chat";
+import { ChatApiSchemaRequestBody, ClientToolInvocation } from "app-types/chat";
 import { useToRef } from "@/hooks/use-latest";
 import { isShortcutEvent, Shortcuts } from "lib/keyboard-shortcuts";
 import { Button } from "ui/button";
@@ -166,18 +163,15 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     if (status != "ready") return false;
     const lastMessage = messages.at(-1);
     if (lastMessage?.role != "assistant") return false;
-    const annotation = lastMessage.annotations?.at(-1) as ChatMessageAnnotation;
-    if (annotation?.toolChoice != "manual") return false;
     const lastPart = lastMessage.parts.at(-1);
     if (!lastPart) return false;
     if (lastPart.type != "tool-invocation") return false;
-    if (lastPart.toolInvocation.state != "call") return false;
+    if (lastPart.toolInvocation.state == "result") return false;
     return true;
   }, [status, messages]);
 
   const proxyToolCall = useCallback(
-    (answer: boolean) => {
-      if (!isPendingToolCall) throw new Error("Tool call is not supported");
+    (result: ClientToolInvocation) => {
       setIsExecutingProxyToolCall(true);
       return safe(async () => {
         const lastMessage = messages.at(-1)!;
@@ -187,13 +181,13 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
         >;
         return addToolResult({
           toolCallId: lastPart.toolInvocation.toolCallId,
-          result: answer,
+          result,
         });
       })
         .watch(() => setIsExecutingProxyToolCall(false))
         .unwrap();
     },
-    [isPendingToolCall, addToolResult],
+    [addToolResult],
   );
 
   useEffect(() => {
@@ -266,9 +260,9 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
                   message={message}
                   status={status}
                   onPoxyToolCall={
-                    isLastMessage &&
                     isPendingToolCall &&
-                    !isExecutingProxyToolCall
+                    !isExecutingProxyToolCall &&
+                    isLastMessage
                       ? proxyToolCall
                       : undefined
                   }

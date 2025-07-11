@@ -4,6 +4,7 @@ import React, { RefObject, useCallback, useMemo } from "react";
 import {
   ChartColumnIcon,
   ChartPie,
+  CodeIcon,
   HardDriveUploadIcon,
   TrendingUpIcon,
   WrenchIcon,
@@ -27,7 +28,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "ui/popover";
 import { createPortal } from "react-dom";
 import { appStore } from "@/app/store";
-import { capitalizeFirstLetter, cn } from "lib/utils";
+import { capitalizeFirstLetter, cn, toAny } from "lib/utils";
 import { useShallow } from "zustand/shallow";
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 import { Editor } from "@tiptap/react";
@@ -85,40 +86,75 @@ export function ChatMentionInputMentionItem({
   id: string;
   className?: string;
 }) {
-  const item = JSON.parse(id) as ChatMention;
-
-  const label = (
-    <div
-      className={cn(
-        "flex items-center text-sm gap-2 mx-1 px-2 py-0.5 font-semibold rounded-lg ring ring-blue-500/20 bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 hover:ring-blue-500 transition-colors",
-        item.type == "workflow" &&
-          "ring-pink-500/20 bg-pink-500/10 text-pink-500 hover:bg-pink-500/20 hover:ring-pink-500",
-        item.type == "mcpServer" &&
-          "ring-indigo-500/20 bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 hover:ring-indigo-500",
-        className,
-      )}
-    >
-      {item.type == "mcpServer" ? (
-        <MCPIcon className="size-3" />
-      ) : item.type == "workflow" ? (
-        <Avatar className="size-3 ring ring-input rounded-full">
-          <AvatarImage src={item.icon?.value} />
-          <AvatarFallback>{item.name.slice(0, 1)}</AvatarFallback>
-        </Avatar>
-      ) : (
-        <WrenchIcon className="size-3" />
-      )}
-      <span
+  const item = useMemo(() => JSON.parse(id) as ChatMention, [id]);
+  const label = useMemo(() => {
+    let appDefaultToolIcon;
+    if (item.type == "defaultTool") {
+      switch (item.name) {
+        case DefaultToolName.CreatePieChart:
+          appDefaultToolIcon = <ChartPie className="size-3 text-blue-500" />;
+          break;
+        case DefaultToolName.CreateBarChart:
+          appDefaultToolIcon = (
+            <ChartColumnIcon className="size-3 text-blue-500" />
+          );
+          break;
+        case DefaultToolName.CreateLineChart:
+          appDefaultToolIcon = (
+            <TrendingUpIcon className="size-3 text-blue-500" />
+          );
+          break;
+        case DefaultToolName.WebSearch:
+          appDefaultToolIcon = <GlobalIcon className="size-3 text-blue-500" />;
+          break;
+        case DefaultToolName.WebContent:
+          appDefaultToolIcon = <GlobalIcon className="size-3 text-blue-500" />;
+          break;
+        case DefaultToolName.Http:
+          appDefaultToolIcon = (
+            <HardDriveUploadIcon className="size-3 text-blue-500" />
+          );
+          break;
+        case DefaultToolName.JavascriptExecution:
+          appDefaultToolIcon = <CodeIcon className="size-3 text-blue-500" />;
+          break;
+      }
+    }
+    return (
+      <div
         className={cn(
-          "ml-auto text-xs opacity-60",
-          item.type == "defaultTool" && "hidden",
+          "flex items-center text-sm gap-2 mx-1 px-2 py-0.5 font-semibold rounded-lg ring ring-blue-500/20 bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 hover:ring-blue-500 transition-colors",
+          item.type == "workflow" &&
+            "ring-pink-500/20 bg-pink-500/10 text-pink-500 hover:bg-pink-500/20 hover:ring-pink-500",
+          item.type == "mcpServer" &&
+            "ring-indigo-500/20 bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 hover:ring-indigo-500",
+          className,
         )}
       >
-        {capitalizeFirstLetter(item.type)}
-      </span>
-      {item.name}
-    </div>
-  );
+        {item.type == "defaultTool" ? (
+          appDefaultToolIcon
+        ) : item.type == "mcpServer" ? (
+          <MCPIcon className="size-3" />
+        ) : item.type == "workflow" ? (
+          <Avatar className="size-3 ring ring-input rounded-full">
+            <AvatarImage src={item.icon?.value} />
+            <AvatarFallback>{item.name.slice(0, 1)}</AvatarFallback>
+          </Avatar>
+        ) : (
+          <WrenchIcon className="size-3" />
+        )}
+        <span
+          className={cn(
+            "ml-auto text-xs opacity-60",
+            item.type == "defaultTool" && "hidden",
+          )}
+        >
+          {capitalizeFirstLetter(item.type)}
+        </span>
+        {toAny(item).label || item.name}
+      </div>
+    );
+  }, [item]);
 
   return (
     <Tooltip>
@@ -183,7 +219,7 @@ function ChatMentionInputSuggestion({
                     onSelectMention({
                       label: `tool("${tool.name}") `,
                       id: JSON.stringify({
-                        type: "tool",
+                        type: "mcpTool",
                         name: tool.name,
                         serverId: mcp.id,
                         description: tool.description,
@@ -270,9 +306,14 @@ function ChatMentionInputSuggestion({
           description = "Get the content of a web page";
           break;
         case DefaultToolName.Http:
-          label = "http";
+          label = "HTTP";
           icon = <HardDriveUploadIcon className="size-3.5 text-blue-300" />;
           description = "Send an http request";
+          break;
+        case DefaultToolName.JavascriptExecution:
+          label = "js-execution";
+          icon = <CodeIcon className="size-3.5 text-yellow-400" />;
+          description = "Execute simple javascript code";
           break;
       }
       return {
@@ -296,6 +337,7 @@ function ChatMentionInputSuggestion({
                     id: JSON.stringify({
                       type: "defaultTool",
                       name: item.id,
+                      label: item.label,
                       description: item.description,
                     }),
                   })

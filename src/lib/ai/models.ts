@@ -19,27 +19,25 @@ const ollama = createOllama({
 const staticModels = {
   openai: {
     "gpt-4.1": openai("gpt-4.1"),
-    "gpt-4.1-nano": openai("gpt-4.1-nano"),
     "gpt-4.1-mini": openai("gpt-4.1-mini"),
-    o3: openai("o3"),
+    "4o": openai("gpt-4o"),
+    "4o-mini": openai("gpt-4o-mini", {}),
     "o4-mini": openai("o4-mini", {
       reasoningEffort: "medium",
     }),
-    "4o": openai("gpt-4o"),
-    "4o-mini": openai("gpt-4o-mini", {}),
   },
   google: {
-    "gemini-2.5-flash": google("gemini-2.5-flash"),
-    "gemini-2.5-pro": google("gemini-2.5-pro"),
+    "gemini-2.5-flash": google("gemini-2.5-flash-preview-04-17"),
+    "gemini-2.5-pro": google("gemini-2.5-pro-preview-05-06"),
   },
   anthropic: {
-    "claude-3-7-sonnet": anthropic("claude-3-5-sonnet-latest"),
     "claude-4-sonnet": anthropic("claude-4-sonnet-20250514"),
     "claude-4-opus": anthropic("claude-4-opus-20250514"),
+    "claude-3-7-sonnet": anthropic("claude-3-7-sonnet-latest"),
   },
   xai: {
-    "grok-3-mini": xai("grok-3-mini-latest"),
     "grok-3": xai("grok-3-latest"),
+    "grok-3-mini": xai("grok-3-mini-latest"),
   },
   ollama: {
     "gemma3:1b": ollama("gemma3:1b"),
@@ -53,6 +51,7 @@ const staticModels = {
 };
 
 const staticUnsupportedModels = new Set([
+  staticModels.openai["o4-mini"],
   staticModels.ollama["gemma3:1b"],
   staticModels.ollama["gemma3:4b"],
   staticModels.ollama["gemma3:12b"],

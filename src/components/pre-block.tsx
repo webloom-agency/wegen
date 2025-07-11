@@ -73,7 +73,7 @@ const PurePre = ({
   );
 };
 
-export async function highlight(
+export async function Highlight(
   code: string,
   lang: BundledLanguage | (string & {}),
   theme: string,
@@ -127,7 +127,7 @@ export function PreBlock({ children }: { children: any }) {
   useLayoutEffect(() => {
     safe()
       .map(() =>
-        highlight(
+        Highlight(
           code,
           language,
           theme == "dark" ? "dark-plus" : "github-light",

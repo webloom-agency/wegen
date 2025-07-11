@@ -97,7 +97,7 @@
       "webSearching": "Buscando en la web...",
       "searchedTheWeb": "Buscado en la web",
       "toolModeDescription": "Elije cómo se usan las herramientas:\n• Auto: La IA decide cuándo usar herramientas\n• Manual: Pide permiso antes de usar herramientas\n• Ninguno: Desactiva todas las herramientas",
-      "toolsSetupDescription": "Selecciona herramientas para tu chat.\nUsa '@' para mencionar y llamar\nherramientas durante la conversación.",
+      "toolsSetupDescription": "Selecciona las herramientas que el chatbot puede usar.\nEl chatbot utilizará las herramientas seleccionadas según su propio juicio.\n\nTambién puedes forzar el uso de herramientas específicas a través de @mention.",
       "selectToolMode": "Seleccionar modo de herramientas",
       "autoToolModeDescription": "Decide cuándo usar herramientas sin preguntarte",
       "manualToolModeDescription": "Pide tu permiso antes de usar cualquier herramienta",

@@ -54,7 +54,7 @@ ${
     : ""
 }
 - If a diagram or chart is requested or would be helpful to express your thoughts, use mermaid code blocks.
-- When you're about to use a tool, casually mention which tool you'll use and why - just a quick comment about your approach, then proceed to use the tool.
+- When you're about to use a tool, briefly mention which tool you'll use with natural, simple phrases. Examples: "I'll use the weather tool to check that for you", "Let me search for that information", "I'll run some calculations to help with this".
 </response_style>`.trim();
 
   return prompt.trim();
@@ -66,15 +66,20 @@ export const mentionPrompt = `
 - When a user mentions a mcp server using @mcp("{mcp_server_name}") format, treat it as an explicit request to use that specific mcp server. You should automatically select and use the most appropriate tool from that MCP server based on the user's question.
 
 <mention_rules>
-- If a mentioned tool requires parameters that are missing from the user's message, do NOT use the tool immediately.
-- Instead, ask specific questions to gather the required parameters.
-- ALWAYS end your response with: "Please mention the tool again using @tool or @mcp when providing the additional information, as I can only access tools when they are explicitly mentioned."
-- This ensures the tool remains available for the follow-up interaction.
+- When a user mentions a tool, they have likely already provided sufficient information for tool usage through the conversation context.
+- You are intelligent enough to infer parameter values from the existing conversation history and context.
+- FIRST attempt to use the tool by intelligently inferring missing parameters from:
+  - Previous messages in the conversation
+  - User's current message context
+  - Reasonable default values when appropriate
+- Only ask for clarification if you genuinely cannot determine the required parameters from the available context.
+- If you must ask for missing information, ALWAYS end your response with: "Please mention the tool again using @tool or @mcp when providing the additional information, as I can only access tools when they are explicitly mentioned."
 </mention_rules>
 
 <example>
 - User: "@tool('weather') Check the weather" (missing location parameter)
-- Response: "Which location would you like to check the weather for? For example: Seoul, New York, Tokyo. Please mention the tool again using @tool('weather') when providing the location, as I can only access tools when they are explicitly mentioned."
+- If user previously mentioned "Seoul" in conversation: Use Seoul as location parameter
+- If no location context exists: "Which location would you like to check the weather for? For example: Seoul, New York, Tokyo. Please mention the tool again using \`@tool('weather')\` when providing the location, as I can only access tools when they are explicitly mentioned."
 </example>
 
 

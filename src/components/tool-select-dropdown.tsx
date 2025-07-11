@@ -1,12 +1,13 @@
 import { appStore } from "@/app/store";
 import { AllowedMCPServer, MCPServerInfo } from "app-types/mcp";
-import { capitalizeFirstLetter, cn, objectFlow } from "lib/utils";
+import { cn, objectFlow } from "lib/utils";
 import {
   AtSign,
   ChartColumn,
   Check,
   ChevronRight,
   ClipboardCheck,
+  CodeIcon,
   HardDriveUploadIcon,
   Infinity,
   InfoIcon,
@@ -185,22 +186,9 @@ export function ToolSelectDropdown({
         <DropdownMenuLabel className="flex items-center gap-2">
           <WrenchIcon className="size-3.5" />
           {t("toolsSetup")}
-
-          <div className="ml-auto rounded-full px-2 py-1 bg-secondary text-xs flex items-center gap-1 ring ring-border">
-            {capitalizeFirstLetter(toolChoice)}
-          </div>
         </DropdownMenuLabel>
 
-        <p className="text-xs text-muted-foreground w-full pl-8 pr-4 mb-2">
-          {t(
-            toolChoice == "auto"
-              ? "autoToolModeDescription"
-              : toolChoice == "manual"
-                ? "manualToolModeDescription"
-                : "noneToolModeDescription",
-          )}
-          <br />
-          <br />
+        <p className="text-xs text-muted-foreground w-full pl-8 pr-4 mb-2 whitespace-pre-wrap">
           {t("toolsSetupDescription")}
         </p>
         <div className="py-1 ">
@@ -826,6 +814,9 @@ function AppDefaultToolKitSelector() {
           break;
         case AppDefaultToolkit.Http:
           icon = <HardDriveUploadIcon className="size-3.5 text-blue-400" />;
+          break;
+        case AppDefaultToolkit.Code:
+          icon = <CodeIcon className="size-3.5 text-yellow-400" />;
           break;
       }
       return {
