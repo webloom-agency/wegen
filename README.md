@@ -8,6 +8,7 @@
 
 Our goal is to create the best possible chatbot UX — focusing on the joy and intuitiveness users feel when calling and interacting with AI tools.
 
+
 See the experience in action in the [preview](#preview) below!
 
 > Built with [Vercel AI SDK](https://sdk.vercel.ai) and [Next.js](https://nextjs.org/), this app adopts modern patterns for building AI chat interfaces. It leverages the power of the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) to seamlessly integrate external tools into your chat experience. You can also create custom workflows that become callable tools in chat, allowing you to chain multiple MCP tools, LLM interactions, and logic into powerful automated sequences.
@@ -55,24 +56,29 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to get start
   - [🎙️ Realtime Voice Assistant + MCP Tools](#️-realtime-voice-assistant--mcp-tools)
   - [⚡️ Quick Tool Mentions (`@`) \& Presets](#️-quick-tool-mentions---presets)
   - [🧭 Tool Choice Mode](#-tool-choice-mode)
-  - [🌐 Web Search (Default Tool)](#-web-search-default-tool)
+  - [🛠️ Default Tools](#️-default-tools)
+    - [🌐 Web Search](#-web-search)
+    - [⚡️ JS Executor](#️-js-executor)
 - [Getting Started](#getting-started)
   - [Quick Start (Docker Compose Version) 🐳](#quick-start-docker-compose-version-)
   - [Quick Start (Local Version) 🚀](#quick-start-local-version-)
   - [Environment Variables](#environment-variables)
 - [📘 Guides](#-guides)
-  - [🔌 MCP Server Setup \& Tool Testing](#-mcp-server-setup--tool-testing)
-  - [🐳 Docker Hosting Guide](#-docker-hosting-guide)
-  - [▲ Vercel Hosting Guide](#-vercel-hosting-guide)
-  - [🎯 System Prompts \& Chat Customization](#-system-prompts--chat-customization)
-  - [🔐 OAuth Sign-In Setup](#-oauth-sign-in-setup)
-  - [🕵🏿 Adding openAI like providers](#-adding-openai-like-providers)
+    - [🔌 MCP Server Setup \& Tool Testing](#-mcp-server-setup--tool-testing)
+    - [🐳 Docker Hosting Guide](#-docker-hosting-guide)
+    - [▲ Vercel Hosting Guide](#-vercel-hosting-guide)
+    - [🎯 System Prompts \& Chat Customization](#-system-prompts--chat-customization)
+    - [🔐 OAuth Sign-In Setup](#-oauth-sign-in-setup)
+    - [🕵🏿 Adding openAI like providers](#-adding-openai-like-providers)
 - [💡 Tips](#-tips)
-  - [🧠 Agentic Chatbot with Project Instructions](#-agentic-chatbot-with-project-instructions)
-  - [💬 Temporary Chat Windows](#-temporary-chat-windows)
+    - [🧠 Agentic Chatbot with Project Instructions](#-agentic-chatbot-with-project-instructions)
+    - [💬 Temporary Chat Windows](#-temporary-chat-windows)
 - [🗺️ Roadmap](#️-roadmap)
 - [🙌 Contributing](#-contributing)
 - [💬 Join Our Discord](#-join-our-discord)
+
+
+> This project is evolving at lightning speed! ⚡️ We're constantly shipping new features and smashing bugs. **Star this repo** to join the ride and stay in the loop with the latest updates!
 
 ## Preview
 
@@ -89,13 +95,14 @@ Get a feel for the UX — here's a quick look at what's possible.
 Sample prompt:
 
 ```prompt
-Use the @web-search to look up information about 'modelcontetprotocol'.
+1. Use the @tool('web-search') to look up information about “modelcontetprotocol.”  
 
-Then, using : @playwright
-Please go to GitHub and visit the cgoinglove/better-chatbot project.
-Click on the README.md file.
-After that, close the browser.
-Finally, tell me how to install the package.
+2. Then, using : @mcp("playwright")
+   - navigate Google (https://www.google.com)  
+   - Click the “Login” button  
+   - Enter my email address (neo.cgoing@gmail.com)  
+   - Clock the "Next"  button
+   - Close the browser
 ```
 
 <br/>
@@ -127,16 +134,24 @@ Talk to the assistant naturally, and watch it execute tools in real time.
 
 <img src="https://github.com/user-attachments/assets/eb690c07-cb9f-4a61-8397-9f39518e1b6c" alt="mention" loading="lazy"/>
 
+Sure! Here's the revised English version with balanced emphasis:
+
+---
+
 Quickly call any registered MCP tool during chat by typing `@toolname`.
-No need to memorize — just type `@` and select from the list!
+No need to memorize — just type `@` and pick from the list!
 
-**Tool Selection vs. Mentions:**
+**Tool Selection vs. Mentions (`@`) — When to Use What:**
 
-- **Tool Select**: Choose which tools are automatically available in LLM context for all conversations
-- **Mentions (`@`)**: Temporarily bind only the mentioned tools for that response, overriding Tool Select (saves tokens and improves performance)
+* **Tool Selection**: Make frequently used tools always available to the LLM across all chats. Great for convenience and maintaining consistent context over time.
+* **Mentions (`@`)**: Temporarily bind only the mentioned tools for that specific response. Since only the mentioned tools are sent to the LLM, this saves tokens and can improve speed and accuracy.
 
-You can also create **tool presets** by selecting only the MCP servers or tools you want.
+Each method has its own strengths — use them together to balance efficiency and performance.
+
+You can also create **tool presets** by selecting only the MCP servers or tools you need.
 Switch between presets instantly with a click — perfect for organizing tools by task or workflow.
+
+
 
 ### 🧭 Tool Choice Mode
 
@@ -150,8 +165,9 @@ Control how tools are used in each chat with **Tool Choice Mode** — switch any
 
 This lets you flexibly choose between autonomous, guided, or tool-free interaction depending on the situation.
 
-### 🌐 Web Search (Default Tool)
+### 🛠️ Default Tools
 
+#### 🌐 Web Search
 <img width="1394" alt="web-search" src="https://github.com/user-attachments/assets/14e2dc33-b702-4b93-a05f-bc36edde18f1" loading="lazy"/>
 
 Built-in web search powered by [Tavily API](https://app.tavily.com/home). Search the web and extract content from URLs directly in your chats.
@@ -160,7 +176,12 @@ Built-in web search powered by [Tavily API](https://app.tavily.com/home). Search
 - **Free Tier:** 1,000 requests/month at no cost
 - **Easy Setup:** Get your API key with one click at [app.tavily.com](https://app.tavily.com/home)
 
-Works perfectly fine without the API key — web search just won't be available.
+#### ⚡️ JS Executor
+<img width="1225" alt="js-executor-preview" src="https://github.com/user-attachments/assets/eb690c07-cb9f-4a61-8397-9f39518e1b6c" loading="lazy"/>
+
+It is a simple JS execution tool.
+
+> Additionally, many basic tools are provided, such as visualization tools for drawing charts and tables, and an HTTP tool.
 
 <br/>
 
@@ -327,6 +348,8 @@ Planned features coming soon to better-chatbot:
 ## 🙌 Contributing
 
 We welcome all contributions! Bug reports, feature ideas, code improvements — everything helps us build the best local AI assistant.
+
+> **⚠️ Please read our [Contributing Guide](./CONTRIBUTING.md) before submitting any Pull Requests or Issues.** This helps us work together more effectively and saves time for everyone.
 
 **For detailed contribution guidelines**, please see our [Contributing Guide](./CONTRIBUTING.md).
 
