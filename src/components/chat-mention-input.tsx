@@ -24,16 +24,16 @@ import {
 
 import MentionInput from "./mention-input";
 import { useTranslations } from "next-intl";
-import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "ui/popover";
 import { createPortal } from "react-dom";
 import { appStore } from "@/app/store";
-import { capitalizeFirstLetter, cn, toAny } from "lib/utils";
+import { cn, toAny } from "lib/utils";
 import { useShallow } from "zustand/shallow";
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 import { Editor } from "@tiptap/react";
 import { DefaultToolName } from "lib/ai/tools";
 import { GlobalIcon } from "ui/global-icon";
+import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 
 interface ChatMentionInputProps {
   onChange: (text: string) => void;
@@ -92,42 +92,33 @@ export function ChatMentionInputMentionItem({
     if (item.type == "defaultTool") {
       switch (item.name) {
         case DefaultToolName.CreatePieChart:
-          appDefaultToolIcon = <ChartPie className="size-3 text-blue-500" />;
+          appDefaultToolIcon = <ChartPie className="size-3 text-blu" />;
           break;
         case DefaultToolName.CreateBarChart:
-          appDefaultToolIcon = (
-            <ChartColumnIcon className="size-3 text-blue-500" />
-          );
+          appDefaultToolIcon = <ChartColumnIcon className="size-3" />;
           break;
         case DefaultToolName.CreateLineChart:
-          appDefaultToolIcon = (
-            <TrendingUpIcon className="size-3 text-blue-500" />
-          );
+          appDefaultToolIcon = <TrendingUpIcon className="size-3" />;
           break;
         case DefaultToolName.WebSearch:
-          appDefaultToolIcon = <GlobalIcon className="size-3 text-blue-500" />;
+          appDefaultToolIcon = <GlobalIcon className="size-3" />;
           break;
         case DefaultToolName.WebContent:
-          appDefaultToolIcon = <GlobalIcon className="size-3 text-blue-500" />;
+          appDefaultToolIcon = <GlobalIcon className="size-3" />;
           break;
         case DefaultToolName.Http:
-          appDefaultToolIcon = (
-            <HardDriveUploadIcon className="size-3 text-blue-500" />
-          );
+          appDefaultToolIcon = <HardDriveUploadIcon className="size-3" />;
           break;
         case DefaultToolName.JavascriptExecution:
-          appDefaultToolIcon = <CodeIcon className="size-3 text-blue-500" />;
+          appDefaultToolIcon = <CodeIcon className="size-3" />;
           break;
       }
     }
     return (
       <div
         className={cn(
-          "flex items-center text-sm gap-2 mx-1 px-2 py-0.5 font-semibold rounded-lg ring ring-blue-500/20 bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 hover:ring-blue-500 transition-colors",
-          item.type == "workflow" &&
-            "ring-pink-500/20 bg-pink-500/10 text-pink-500 hover:bg-pink-500/20 hover:ring-pink-500",
-          item.type == "mcpServer" &&
-            "ring-indigo-500/20 bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 hover:ring-indigo-500",
+          "flex items-center text-sm gap-2 mx-1 px-2 py-0.5 font-semibold rounded-lg  transition-colors",
+          "ring ring-blue-500/40 text-blue-500 bg-blue-500/10 hover:ring-blue-500",
           className,
         )}
       >
@@ -143,14 +134,6 @@ export function ChatMentionInputMentionItem({
         ) : (
           <WrenchIcon className="size-3" />
         )}
-        <span
-          className={cn(
-            "ml-auto text-xs opacity-60",
-            item.type == "defaultTool" && "hidden",
-          )}
-        >
-          {capitalizeFirstLetter(item.type)}
-        </span>
         {toAny(item).label || item.name}
       </div>
     );
@@ -239,6 +222,7 @@ function ChatMentionInputSuggestion({
   }, [mcpList]);
 
   const workflowMentions = useMemo(() => {
+    if (!workflowList.length) return;
     return (
       <CommandGroup heading="Workflows" key="workflows">
         {workflowList.map((workflow) => {
