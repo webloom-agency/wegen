@@ -134,11 +134,8 @@ Talk to the assistant naturally, and watch it execute tools in real time.
 
 <img width="1225" alt="image" src="https://github.com/user-attachments/assets/4d56dd25-a94c-4c19-9efa-fd7b5d3d2187" loading="lazy"/>
 
-Sure! Here's the revised English version with balanced emphasis:
 
----
-
-Quickly call any registered MCP tool during chat by typing `@toolname`.
+Quickly call tool during chat by typing `@toolname`.
 No need to memorize — just type `@` and pick from the list!
 
 **Tool Selection vs. Mentions (`@`) — When to Use What:**
