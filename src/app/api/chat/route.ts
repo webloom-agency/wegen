@@ -20,13 +20,10 @@ import {
   buildMcpServerCustomizationsSystemPrompt,
   buildProjectInstructionsSystemPrompt,
   buildUserSystemPrompt,
+  buildToolCallUnsupportedModelSystemPrompt,
   mentionPrompt,
 } from "lib/ai/prompts";
-import {
-  chatApiSchemaRequestBodySchema,
-  ChatMention,
-  ChatMessageAnnotation,
-} from "app-types/chat";
+import { chatApiSchemaRequestBodySchema } from "app-types/chat";
 
 import { errorIf, safe } from "ts-safe";
 
@@ -76,6 +73,7 @@ export async function POST(request: Request) {
       allowedAppDefaultToolkit,
       allowedMcpServers,
       projectId,
+      mentions = [],
     } = chatApiSchemaRequestBodySchema.parse(json);
 
     const model = customModelProvider.getModel(chatModel);
@@ -111,12 +109,6 @@ export async function POST(request: Request) {
           message,
         })
       : previousMessages;
-
-    const userMessage = messages.slice(-2).findLast((m) => m.role == "user");
-
-    const mentions = (userMessage?.annotations as ChatMessageAnnotation[])
-      .flatMap((annotation) => annotation.mentions)
-      .filter(Boolean) as ChatMention[];
 
     const inProgressToolStep = extractInProgressToolPart(messages.slice(-2));
 
@@ -206,7 +198,9 @@ export async function POST(request: Request) {
           buildUserSystemPrompt(session.user, userPreferences),
           buildProjectInstructionsSystemPrompt(thread?.instructions),
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
-          mentions.length ? mentionPrompt : undefined,
+          mentions.length > 0 && mentionPrompt,
+          isToolCallUnsupportedModel(model) &&
+            buildToolCallUnsupportedModelSystemPrompt,
         );
 
         const vercelAITooles = safe({ ...MCP_TOOLS, ...WORKFLOW_TOOLS })

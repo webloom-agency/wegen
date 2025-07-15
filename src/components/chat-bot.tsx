@@ -38,6 +38,7 @@ import {
   DialogTitle,
 } from "ui/dialog";
 import { useTranslations } from "next-intl";
+import { Think } from "ui/think";
 
 type Props = {
   threadId: string;
@@ -59,6 +60,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     allowedAppDefaultToolkit,
     allowedMcpServers,
     threadList,
+    threadMentions,
   ] = appStore(
     useShallow((state) => [
       state.mutate,
@@ -67,6 +69,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
       state.allowedAppDefaultToolkit,
       state.allowedMcpServers,
       state.threadList,
+      state.threadMentions,
     ]),
   );
 
@@ -95,6 +98,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
         toolChoice: latestRef.current.toolChoice,
         allowedAppDefaultToolkit: latestRef.current.allowedAppDefaultToolkit,
         allowedMcpServers: latestRef.current.allowedMcpServers,
+        mentions: latestRef.current.mentions,
         message: lastMessage,
       };
       return request;
@@ -126,6 +130,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     allowedMcpServers,
     messages,
     threadId,
+    mentions: threadMentions[threadId],
   });
 
   const isLoading = useMemo(
@@ -189,6 +194,16 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     },
     [addToolResult],
   );
+
+  const showThink = useMemo(() => {
+    if (!isLoading) return false;
+    const lastMessage = messages.at(-1);
+    if (lastMessage?.role == "user") return true;
+    const lastPart = lastMessage?.parts.at(-1);
+
+    if (lastPart?.type == "step-start") return true;
+    return false;
+  }, [isLoading, messages.at(-1)]);
 
   useEffect(() => {
     appStoreMutate({ currentThreadId: threadId });
@@ -275,6 +290,11 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
                 />
               );
             })}
+            {showThink && (
+              <div className="w-full mx-auto max-w-3xl px-6">
+                <Think />
+              </div>
+            )}
             {status === "submitted" && messages.at(-1)?.role === "user" && (
               <div className="min-h-[calc(55dvh-56px)]" />
             )}
@@ -286,6 +306,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
       <div className={clsx(messages.length && "absolute bottom-14", "w-full")}>
         <PromptInput
           input={input}
+          threadId={threadId}
           append={append}
           setInput={setInput}
           isLoading={isLoading || isPendingToolCall}

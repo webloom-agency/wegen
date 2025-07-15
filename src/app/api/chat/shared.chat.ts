@@ -109,9 +109,11 @@ export function appendAnnotations(
   return [...annotations, ...newAnnotations];
 }
 
-export function mergeSystemPrompt(...prompts: (string | undefined)[]): string {
+export function mergeSystemPrompt(
+  ...prompts: (string | undefined | false)[]
+): string {
   const filteredPrompts = prompts
-    .map((prompt) => prompt?.trim())
+    .map((prompt) => (prompt ? prompt.trim() : ""))
     .filter(Boolean);
   return filteredPrompts.join("\n\n");
 }
