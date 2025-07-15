@@ -86,7 +86,7 @@ Get a feel for the UX — here's a quick look at what's possible.
 
 ### 🧩 Browser Automation with Playwright MCP
 
-![preview](https://github.com/user-attachments/assets/86855a59-dfe0-4452-8891-dd390c131225)
+![preview](https://github.com/user-attachments/assets/58b4c561-9b59-40db-9c62-9fd5aeea4432)
 
 **Example:** Control a web browser using Microsoft's [playwright-mcp](https://github.com/microsoft/playwright-mcp) tool.
 
@@ -111,7 +111,7 @@ Sample prompt:
 
 <img width="1755" alt="workflow" src="https://github.com/user-attachments/assets/afa895f0-cc59-4c2f-beb3-4b7a1dc1f891" loading="lazy" />
 
-<img width="1567" alt="workflow-mention" loading="lazy" src="https://github.com/user-attachments/assets/097526d6-54c1-4bc3-87f8-47d3f885a9c3" />
+<img width="1567" alt="workflow-mention" loading="lazy" src="https://github.com/user-attachments/assets/cf3e1339-ee44-4615-a71d-f6b46833e41f" />
 
 **Example:** Create custom workflows that become callable tools in your chat conversations.
 
@@ -132,7 +132,7 @@ Talk to the assistant naturally, and watch it execute tools in real time.
 
 ### ⚡️ Quick Tool Mentions (`@`) & Presets
 
-<img src="https://github.com/user-attachments/assets/eb690c07-cb9f-4a61-8397-9f39518e1b6c" alt="mention" loading="lazy"/>
+<img width="1225" alt="image" src="https://github.com/user-attachments/assets/4d56dd25-a94c-4c19-9efa-fd7b5d3d2187" loading="lazy"/>
 
 Sure! Here's the revised English version with balanced emphasis:
 
@@ -155,7 +155,7 @@ Switch between presets instantly with a click — perfect for organizing tools b
 
 ### 🧭 Tool Choice Mode
 
-<img width="1225" alt="image" src="https://github.com/user-attachments/assets/c0ade861-3622-466a-be13-74643e8cc9bc" loading="lazy"/>
+<img width="1225" alt="image" src="https://github.com/user-attachments/assets/8fc64c6a-30c9-41a4-a5e5-4e8804f73473" loading="lazy"/>
 
 Control how tools are used in each chat with **Tool Choice Mode** — switch anytime with `⌘P`.
 
@@ -168,7 +168,8 @@ This lets you flexibly choose between autonomous, guided, or tool-free interacti
 ### 🛠️ Default Tools
 
 #### 🌐 Web Search
-<img width="1394" alt="web-search" src="https://github.com/user-attachments/assets/14e2dc33-b702-4b93-a05f-bc36edde18f1" loading="lazy"/>
+
+<img width="1034" height="940" alt="web-search" src="https://github.com/user-attachments/assets/261037d9-e1a7-44ad-b45e-43780390a94e" />
 
 Built-in web search powered by [Tavily API](https://app.tavily.com/home). Search the web and extract content from URLs directly in your chats.
 
@@ -177,7 +178,7 @@ Built-in web search powered by [Tavily API](https://app.tavily.com/home). Search
 - **Easy Setup:** Get your API key with one click at [app.tavily.com](https://app.tavily.com/home)
 
 #### ⚡️ JS Executor
-<img width="1225" alt="js-executor-preview" src="https://github.com/user-attachments/assets/eb690c07-cb9f-4a61-8397-9f39518e1b6c" loading="lazy"/>
+<img width="1225" alt="js-executor-preview" src="https://github.com/user-attachments/assets/24d51665-c500-4c92-89de-7b46216e869f" loading="lazy"/>
 
 It is a simple JS execution tool.
 
