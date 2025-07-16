@@ -3,9 +3,10 @@
 import { appStore } from "@/app/store";
 import { useChatModels } from "@/hooks/queries/use-chat-models";
 import { ChatModel } from "app-types/chat";
-import { ChevronDown } from "lucide-react";
-import { Fragment, PropsWithChildren, useEffect, useState } from "react";
+import { CheckIcon, ChevronDown } from "lucide-react";
+import { Fragment, memo, PropsWithChildren, useEffect, useState } from "react";
 import { Button } from "ui/button";
+import { ClaudeIcon } from "ui/claude-icon";
 
 import {
   Command,
@@ -16,6 +17,9 @@ import {
   CommandList,
   CommandSeparator,
 } from "ui/command";
+import { GeminiIcon } from "ui/gemini-icon";
+import { GrokIcon } from "ui/grok-icon";
+import { OpenAIIcon } from "ui/openai-icon";
 import { Popover, PopoverContent, PopoverTrigger } from "ui/popover";
 
 interface SelectModelProps {
@@ -63,31 +67,37 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
             {providers?.map((provider, i) => (
               <Fragment key={provider.provider}>
                 <CommandGroup
-                  heading={provider.provider}
-                  className="pb-4"
+                  heading={<ProviderHeader provider={provider.provider} />}
+                  className="pb-4 group"
                   onWheel={(e) => {
                     e.stopPropagation();
                   }}
                 >
-                  {provider.models.map((model) => (
+                  {provider.models.map((item) => (
                     <CommandItem
-                      key={model.name}
+                      key={item.name}
                       className="cursor-pointer"
                       onSelect={() => {
                         setModel({
                           provider: provider.provider,
-                          model: model.name,
+                          model: item.name,
                         });
                         props.onSelect({
                           provider: provider.provider,
-                          model: model.name,
+                          model: item.name,
                         });
                         setOpen(false);
                       }}
-                      value={model.name}
+                      value={item.name}
                     >
-                      <span className="px-2">{model.name}</span>
-                      {model.isToolCallUnsupported && (
+                      {model?.provider === provider.provider &&
+                      model?.model === item.name ? (
+                        <CheckIcon className="size-3" />
+                      ) : (
+                        <div className="ml-3" />
+                      )}
+                      <span className="pr-2">{item.name}</span>
+                      {item.isToolCallUnsupported && (
                         <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
                           No tools
                         </div>
@@ -104,3 +114,22 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
     </Popover>
   );
 };
+
+const ProviderHeader = memo(function ProviderHeader({
+  provider,
+}: { provider: string }) {
+  return (
+    <div className="text-sm text-muted-foreground flex items-center gap-1.5 group-hover:text-foreground transition-colors duration-300">
+      {provider === "openai" ? (
+        <OpenAIIcon className="size-3 text-foreground" />
+      ) : provider === "xai" ? (
+        <GrokIcon className="size-3" />
+      ) : provider === "anthropic" ? (
+        <ClaudeIcon className="size-3" />
+      ) : provider === "google" ? (
+        <GeminiIcon className="size-3" />
+      ) : null}
+      {provider}
+    </div>
+  );
+});
