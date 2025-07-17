@@ -121,7 +121,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
         messages.filter((v) => v.role === "user" || v.role === "assistant")
           .length < 3;
       if (isNewThread) {
-        const part = messages.at(-1)!.parts.findLast((v) => v.type === "text");
+        const part = messages.at(-1)!.parts.find((v) => v.type === "text");
         if (part) {
           generateTitle(part.text);
         }

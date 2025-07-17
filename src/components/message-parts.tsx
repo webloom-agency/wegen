@@ -778,7 +778,7 @@ function SearchToolPart({ part }: { part: ToolMessagePart["toolInvocation"] }) {
           />
         </div>
         <div className="flex flex-col gap-2 pb-2">
-          {images?.length && (
+          {Boolean(images?.length) && (
             <div className="grid grid-cols-3 gap-3 max-w-2xl">
               {images.map((image, i) => {
                 if (!image.url) return null;
@@ -829,7 +829,7 @@ function SearchToolPart({ part }: { part: ToolMessagePart["toolInvocation"] }) {
           )}
           <div className="flex flex-wrap gap-1">
             {result?.isError ? (
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <p className="text-xs text-destructive flex items-center gap-1">
                 <AlertTriangleIcon className="size-3.5" />
                 {result.error || "Error"}
               </p>
