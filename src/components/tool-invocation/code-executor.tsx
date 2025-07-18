@@ -1,39 +1,70 @@
 import { ToolInvocationUIPart } from "app-types/chat";
-import { SafeJsExecutionResult, safeJsRun } from "lib/safe-js-run";
-import { cn, isObject, toAny } from "lib/utils";
+import { safeJsRun } from "lib/code-runner/safe-js-run";
+import {
+  CodeRunnerResult,
+  LogEntry,
+} from "lib/code-runner/code-runner.interface";
+import { cn, isString, toAny } from "lib/utils";
 import { AlertTriangleIcon, ChevronRight, Loader, Percent } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { safe } from "ts-safe";
 import { CodeBlock } from "ui/CodeBlock";
 import { Skeleton } from "ui/skeleton";
 import { TextShimmer } from "ui/text-shimmer";
+import { safePythonRun } from "lib/code-runner/safe-python-run";
 
 export const CodeExecutor = memo(function CodeExecutor({
   part,
   onResult,
+  type,
 }: {
   part: ToolInvocationUIPart["toolInvocation"];
   onResult?: (result?: any) => void;
+  type: "javascript" | "python";
 }) {
   const isRun = useRef(false);
   const [isExecuting, setIsExecuting] = useState(false);
 
   const [realtimeLogs, setRealtimeLogs] = useState<
-    (SafeJsExecutionResult["logs"][number] & { time: number })[]
+    (CodeRunnerResult["logs"][number] & { time: number })[]
   >([]);
 
   const codeResultContainerRef = useRef<HTMLDivElement>(null);
 
   const runCode = useCallback(
-    async (code: string, input: any) => {
-      const result = await safeJsRun(code, input, 60000, (log) => {
-        setRealtimeLogs((prev) => [...prev, { ...log, time: Date.now() }]);
+    async (code: string) => {
+      const engine = type == "javascript" ? safeJsRun : safePythonRun;
+      const result = await engine({
+        code,
+        timeout: 30000,
+        onLog: (log) => {
+          setRealtimeLogs((prev) => [...prev, { ...log, time: Date.now() }]);
+        },
       });
 
+      const logstring = JSON.stringify(result.logs);
+
       onResult?.({
-        ...toAny(result),
+        ...toAny({
+          ...result,
+          logs:
+            logstring.length > 10000
+              ? [
+                  {
+                    type: "info",
+                    args: [
+                      {
+                        type: "data",
+                        value:
+                          "Log output exceeded storage limit (10KB). Full output was displayed to user but truncated for server storage.",
+                      },
+                    ],
+                  },
+                ]
+              : result.logs,
+        }),
         guide:
-          "The code has already been executed and displayed to the user. Please provide only the output results from console.log() or error details if any occurred. Do not repeat the code itself.",
+          "Execution finished. Provide: 1) Main results/outputs 2) Key insights or findings 3) Error explanations if any. Don't repeat code or raw logs - interpret and summarize for the user.",
       });
     },
     [onResult],
@@ -52,31 +83,84 @@ export const CodeExecutor = memo(function CodeExecutor({
 
   const result = useMemo(() => {
     if (part.state != "result") return null;
-    return part.result as SafeJsExecutionResult;
+    return part.result as CodeRunnerResult;
   }, [part]);
 
   const logs = useMemo(() => {
     const error = result?.error;
-    const logs = realtimeLogs.length ? realtimeLogs : (result?.logs ?? []);
+    const logs: (LogEntry & { time?: number })[] = realtimeLogs.length
+      ? realtimeLogs
+      : (result?.logs ?? []);
 
     if (error) {
-      return [{ type: "error", args: [error], time: Date.now() }, ...logs];
+      logs.push({
+        type: "error",
+        args: [{ type: "data", value: error }],
+        time: Date.now(),
+      });
     }
 
-    return logs;
+    return logs.map((log, i) => {
+      return (
+        <div
+          key={i}
+          className={cn(
+            "flex gap-1 text-muted-foreground pl-3",
+            log.type == "error" && "text-destructive",
+            log.type == "warn" && "text-yellow-500",
+          )}
+        >
+          <div className="w-[8.6rem] hidden md:block">
+            {new Date(toAny(log).time || Date.now()).toISOString()}
+          </div>
+          <div className="h-[15px] flex items-center">
+            {log.type == "error" ? (
+              <AlertTriangleIcon className="size-2" />
+            ) : log.type == "warn" ? (
+              <AlertTriangleIcon className="size-2" />
+            ) : (
+              <ChevronRight className="size-2" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0 whitespace-pre-wrap gap-1">
+            {log.args.map((arg, i) => {
+              if (arg.type == "image") {
+                /* eslint-disable-next-line @next/next/no-img-element */
+                return <img key={i} src={arg.value} alt="Code output" />;
+              }
+              return (
+                <span key={i}>
+                  {isString(arg?.value)
+                    ? arg.value.toString()
+                    : JSON.stringify(arg.value ?? arg)}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      );
+    });
   }, [part, realtimeLogs]);
 
   const reExecute = useCallback(async () => {
     if (isExecuting) return;
     setIsExecuting(true);
     setRealtimeLogs([
-      { type: "info", args: ["Re-executing code..."], time: Date.now() },
+      {
+        type: "log",
+        args: [{ type: "data", value: "Re-executing code..." }],
+        time: Date.now(),
+      },
     ]);
     const code = part.args?.code;
-    const input = part.args?.input;
+    const engine = type == "javascript" ? safeJsRun : safePythonRun;
     safe(() =>
-      safeJsRun(code, input, 60000, (log) => {
-        setRealtimeLogs((prev) => [...prev, { ...log, time: Date.now() }]);
+      engine({
+        code,
+        timeout: 60000,
+        onLog: (log) => {
+          setRealtimeLogs((prev) => [...prev, { ...log, time: Date.now() }]);
+        },
       }),
     ).watch(() => setIsExecuting(false));
   }, [part.args, isExecuting]);
@@ -97,11 +181,9 @@ export const CodeExecutor = memo(function CodeExecutor({
             <span className="text-destructive text-xs">ERROR</span>
           </>
         ) : (
-          <>
-            <div className="text-[7px] bg-border rounded-xs w-4 h-4 p-0.5 flex items-end justify-end font-bold">
-              JS
-            </div>
-          </>
+          <div className="text-[7px] bg-border rounded-xs w-4 h-4 p-0.5 flex items-end justify-end font-bold">
+            {type == "javascript" ? "JS" : type == "python" ? "PY" : ">_"}
+          </div>
         )}
       </>
     );
@@ -132,38 +214,7 @@ export const CodeExecutor = memo(function CodeExecutor({
             </div>
           )}
         </div>
-        {logs.map((log, i) => {
-          return (
-            <div
-              key={i}
-              className={cn(
-                "flex gap-1 text-muted-foreground pl-3",
-                log.type == "error" && "text-destructive",
-                log.type == "warn" && "text-yellow-500",
-              )}
-            >
-              <div className="w-[8.6rem] hidden md:block">
-                {new Date(toAny(log).time || Date.now()).toISOString()}
-              </div>
-              <div className="h-[15px] flex items-center">
-                {log.type == "error" ? (
-                  <AlertTriangleIcon className="size-2" />
-                ) : log.type == "warn" ? (
-                  <AlertTriangleIcon className="size-2" />
-                ) : (
-                  <ChevronRight className="size-2" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0 whitespace-pre-wrap">
-                {log.args
-                  .map((arg) =>
-                    isObject(arg) ? JSON.stringify(arg) : arg.toString(),
-                  )
-                  .join(" ")}
-              </div>
-            </div>
-          );
-        })}
+        {logs}
         {isRunning && (
           <div className="ml-3 animate-caret-blink text-muted-foreground">
             |
@@ -176,7 +227,7 @@ export const CodeExecutor = memo(function CodeExecutor({
   useEffect(() => {
     if (onResult && part.args && part.state == "call" && !isRun.current) {
       isRun.current = true;
-      runCode(part.args.code, part.args.input);
+      runCode(part.args.code);
     }
   }, [part.state, !!onResult]);
 
@@ -209,7 +260,7 @@ export const CodeExecutor = memo(function CodeExecutor({
             <CodeBlock
               className="p-4 text-[10px] overflow-x-auto"
               code={part.args?.code}
-              lang="javascript"
+              lang={type}
               fallback={fallback}
             />
           </div>

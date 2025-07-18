@@ -279,7 +279,6 @@ export const AssistMessagePart = memo(function AssistMessagePart({
         reload({
           body: {
             model,
-            action: "update-assistant",
             id: threadId,
           },
         }),
@@ -517,6 +516,18 @@ export const ToolMessagePart = memo(
         .watch(() => setIsDeleting(false))
         .unwrap();
     }, [messageId]);
+    const onToolCallDirect = useMemo(
+      () =>
+        onPoxyToolCall
+          ? (result: any) => {
+              return onPoxyToolCall({
+                action: "direct",
+                result,
+              });
+            }
+          : undefined,
+      [onPoxyToolCall],
+    );
 
     const result = useMemo(() => {
       if (state === "result") {
@@ -552,15 +563,18 @@ export const ToolMessagePart = memo(
         return (
           <CodeExecutor
             part={toolInvocation}
-            onResult={
-              onPoxyToolCall
-                ? (result) =>
-                    onPoxyToolCall?.({
-                      action: "direct",
-                      result,
-                    })
-                : undefined
-            }
+            onResult={onToolCallDirect}
+            type="javascript"
+          />
+        );
+      }
+
+      if (toolName === DefaultToolName.PythonExecution) {
+        return (
+          <CodeExecutor
+            part={toolInvocation}
+            onResult={onToolCallDirect}
+            type="python"
           />
         );
       }
@@ -582,7 +596,7 @@ export const ToolMessagePart = memo(
         }
       }
       return null;
-    }, [toolName, state, onPoxyToolCall, result, args]);
+    }, [toolName, state, onToolCallDirect, result, args]);
 
     const isWorkflowTool = useMemo(
       () => isVercelAIWorkflowTool(result),
@@ -795,8 +809,8 @@ export const ToolMessagePart = memo(
   (prev, next) => {
     if (prev.isError !== next.isError) return false;
     if (prev.isLast !== next.isLast) return false;
+    if (prev.onPoxyToolCall !== next.onPoxyToolCall) return false;
     if (prev.showActions !== next.showActions) return false;
-    if (!!prev.onPoxyToolCall !== !!next.onPoxyToolCall) return false;
     if (prev.isManualToolInvocation !== next.isManualToolInvocation)
       return false;
     if (prev.messageId !== next.messageId) return false;
