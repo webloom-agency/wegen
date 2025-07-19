@@ -106,7 +106,7 @@ export function ToolSelectDropdown({
     );
   const t = useTranslations("Chat.Tool");
   const { isLoading } = useMcpList({
-    refreshInterval: 1000 * 60 * 5,
+    refreshInterval: 1000 * 30,
   });
 
   useWorkflowToolList({

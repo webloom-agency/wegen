@@ -151,7 +151,6 @@ export class MCPClient {
       } else {
         throw new Error("Invalid server config");
       }
-
       this.log.info(
         `Connected to MCP server in ${((Date.now() - startedAt) / 1000).toFixed(2)}s`,
       );
@@ -203,17 +202,26 @@ export class MCPClient {
     this.isConnected = false;
     const client = this.client;
     this.client = undefined;
-    await client?.close().catch((e) => this.log.error(e));
+    void client?.close().catch((e) => this.log.error(e));
   }
   async callTool(toolName: string, input?: unknown) {
+    const execute = async () => {
+      const client = await this.connect();
+      return client?.callTool({
+        name: toolName,
+        arguments: input as Record<string, unknown>,
+      });
+    };
     return safe(() => this.log.info("tool call", toolName))
       .ifOk(() => this.scheduleAutoDisconnect()) // disconnect if autoDisconnectSeconds is set
-      .map(async () => {
-        const client = await this.connect();
-        return client?.callTool({
-          name: toolName,
-          arguments: input as Record<string, unknown>,
-        });
+      .map(() => execute())
+      .ifFail(async (err) => {
+        if (err?.message?.includes("Transport is closed")) {
+          this.log.info("Transport is closed, reconnecting...");
+          await this.disconnect();
+          return execute();
+        }
+        throw err;
       })
       .ifOk((v) => {
         if (isNull(v)) {
@@ -226,7 +234,11 @@ export class MCPClient {
         if (!status.isOk) {
           this.log.error("Tool call failed", toolName, status.error);
         } else if (status.value?.isError) {
-          this.log.error("Tool call failed", toolName, status.value.content);
+          this.log.error(
+            "Tool call failed content",
+            toolName,
+            status.value.content,
+          );
         }
       })
       .ifFail((err) => {
