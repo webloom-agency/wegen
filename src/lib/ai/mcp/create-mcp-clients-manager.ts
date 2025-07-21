@@ -9,6 +9,7 @@ import { Locker } from "lib/utils";
 import { safe } from "ts-safe";
 import { McpServerSchema } from "lib/db/pg/schema.pg";
 import { createMCPToolId } from "./mcp-tool-id";
+import logger from "logger";
 /**
  * Interface for storage of MCP server configurations.
  * Implementations should handle persistent storage of server configs.
@@ -36,6 +37,7 @@ export class MCPClientsManager {
     }
   >();
   private initializedLock = new Locker();
+  private initialized = false;
 
   // Optional storage for persistent configurations
   constructor(
@@ -47,27 +49,37 @@ export class MCPClientsManager {
   }
 
   async init() {
+    logger.info("Initializing MCP clients manager");
+    if (this.initializedLock.isLocked) return this.initializedLock.wait();
     return safe(() => this.initializedLock.lock())
       .ifOk(() => this.cleanup())
       .ifOk(async () => {
         if (this.storage) {
           await this.storage.init(this);
           const configs = await this.storage.loadAll();
-          await Promise.all(
+          await Promise.allSettled(
             configs.map(({ id, name, config }) =>
               this.addClient(id, name, config),
             ),
           );
         }
       })
-      .watch(() => this.initializedLock.unlock())
+      .watch(() => {
+        this.initializedLock.unlock();
+        this.initialized = true;
+      })
       .unwrap();
   }
 
   /**
    * Returns all tools from all clients as a flat object
    */
-  tools(): Record<string, VercelAIMcpTool> {
+  async tools(): Promise<Record<string, VercelAIMcpTool>> {
+    if (!this.initialized) {
+      logger.info("tools: not initialized, initializing");
+      await this.init();
+    } else await this.initializedLock.wait();
+
     return Object.fromEntries(
       Array.from(this.clients.entries())
         .filter(([_, { client }]) => client.getInfo().toolInfo.length > 0)
@@ -147,10 +159,10 @@ export class MCPClientsManager {
     return this.addClient(id, prevClient.name, currentConfig);
   }
 
-  async cleanup() {
+  cleanup() {
     const clients = Array.from(this.clients.values());
     this.clients.clear();
-    await Promise.allSettled(clients.map(({ client }) => client.disconnect()));
+    void Promise.allSettled(clients.map(({ client }) => client.disconnect()));
   }
 
   async getClients() {
@@ -162,6 +174,10 @@ export class MCPClientsManager {
   }
   async getClient(id: string) {
     await this.initializedLock.wait();
+    const client = this.clients.get(id);
+    if (!client && !this.initialized) {
+      await this.init();
+    }
     return this.clients.get(id);
   }
 }

@@ -118,8 +118,24 @@ export async function POST(request: Request) {
 
     return createDataStreamResponse({
       execute: async (dataStream) => {
-        const MCP_TOOLS = safe(mcpClientsManager.tools())
+        const mcpClients = await mcpClientsManager.getClients();
+        logger.info(`mcpClients: ${mcpClients.length}`);
+        const MCP_TOOLS = await safe(mcpClientsManager.tools())
           .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
+          .ifOk(async (tools) => {
+            const mentionCounts = mentions.filter(
+              (m) => m.type == "mcpServer" || m.type == "mcpTool",
+            );
+            const allowedMcpServerTools = Object.values(allowedMcpServers ?? {})
+              .map((t) => t.tools)
+              .flat();
+            const needTools =
+              mentionCounts.length || allowedMcpServerTools.length;
+            if (needTools && Object.keys(tools).length === 0) {
+              logger.warn("No MCP tools found, but MCP server is binding");
+              await mcpClientsManager.init();
+            }
+          })
           .map((tools) => {
             // filter tools by mentions
             if (mentions.length) {
@@ -214,7 +230,13 @@ export async function POST(request: Request) {
           })
           .unwrap();
 
-        logger.info(`tool mode: ${toolChoice}, mentions: ${mentions.length}`);
+        const allowedMcpTools = Object.values(allowedMcpServers ?? {})
+          .map((t) => t.tools)
+          .flat();
+
+        logger.info(
+          `tool mode: ${toolChoice}, mentions: ${mentions.length}, allowedMcpTools: ${allowedMcpTools.length}`,
+        );
         logger.info(
           `binding tool count APP_DEFAULT: ${Object.keys(APP_DEFAULT_TOOLS ?? {}).length}, MCP: ${Object.keys(MCP_TOOLS ?? {}).length}, Workflow: ${Object.keys(WORKFLOW_TOOLS ?? {}).length}`,
         );
