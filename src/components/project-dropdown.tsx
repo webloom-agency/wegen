@@ -70,7 +70,7 @@ export function ProjectDropdown({ project, children, side, align }: Props) {
         if (currentProjectId === project.id) {
           router.push("/");
         }
-        mutate("threads");
+        mutate("/api/thread/list");
         mutate("projects");
       })
       .unwrap();

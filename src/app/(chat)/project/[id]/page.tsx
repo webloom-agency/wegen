@@ -122,7 +122,7 @@ export default function ProjectPage() {
     },
     initialMessages: [],
     onFinish: () => {
-      mutate("threads").then(() => {
+      mutate("/api/thread/list").then(() => {
         router.push(`/chat/${threadId}`);
       });
     },

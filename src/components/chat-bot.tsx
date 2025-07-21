@@ -135,7 +135,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
           generateTitle(part.text);
         }
       } else if (latestRef.current.threadList[0]?.id !== threadId) {
-        mutate("threads");
+        mutate("/api/thread/list");
       }
     },
     onError: (error) => {

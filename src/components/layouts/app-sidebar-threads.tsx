@@ -21,10 +21,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "ui/dropdown-menu";
-import {
-  deleteThreadsAction,
-  selectThreadListByUserIdAction,
-} from "@/app/api/chat/actions";
+import { deleteThreadsAction } from "@/app/api/chat/actions";
+import { fetcher } from "lib/utils";
 import { toast } from "sonner";
 import { useShallow } from "zustand/shallow";
 import { useRouter } from "next/navigation";
@@ -59,41 +57,37 @@ export function AppSidebarThreads() {
   // State to track if expanded view is active
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const { data: threadList, isLoading } = useSWR(
-    "threads",
-    selectThreadListByUserIdAction,
-    {
-      onError: handleErrorWithToast,
-      fallbackData: [],
-      onSuccess: (data) => {
-        storeMutate((prev) => {
-          const groupById = groupBy(prev.threadList, "id");
+  const { data: threadList, isLoading } = useSWR("/api/thread/list", fetcher, {
+    onError: handleErrorWithToast,
+    fallbackData: [],
+    onSuccess: (data) => {
+      storeMutate((prev) => {
+        const groupById = groupBy(prev.threadList, "id");
 
-          const generatingTitleThreads = prev.generatingTitleThreadIds
-            .map((id) => {
-              return groupById[id]?.[0];
-            })
-            .filter(Boolean) as ChatThread[];
-          const list = deduplicateByKey(
-            generatingTitleThreads.concat(data),
-            "id",
-          );
-          return {
-            threadList: list.map((v) => {
-              const target = groupById[v.id]?.[0];
-              if (!target) return v;
-              if (target.title && !v.title)
-                return {
-                  ...v,
-                  title: target.title,
-                };
-              return v;
-            }),
-          };
-        });
-      },
+        const generatingTitleThreads = prev.generatingTitleThreadIds
+          .map((id) => {
+            return groupById[id]?.[0];
+          })
+          .filter(Boolean) as ChatThread[];
+        const list = deduplicateByKey(
+          generatingTitleThreads.concat(data),
+          "id",
+        );
+        return {
+          threadList: list.map((v) => {
+            const target = groupById[v.id]?.[0];
+            if (!target) return v;
+            if (target.title && !v.title)
+              return {
+                ...v,
+                title: target.title,
+              };
+            return v;
+          }),
+        };
+      });
     },
-  );
+  });
 
   // Check if we have 40 or more threads to display "View All" button
   const hasExcessThreads = threadList && threadList.length >= MAX_THREADS_COUNT;
@@ -152,7 +146,7 @@ export function AppSidebarThreads() {
     await toast.promise(deleteThreadsAction(), {
       loading: t("deletingAllChats"),
       success: () => {
-        mutate("threads");
+        mutate("/api/thread/list");
         router.push("/");
         return t("allChatsDeleted");
       },
