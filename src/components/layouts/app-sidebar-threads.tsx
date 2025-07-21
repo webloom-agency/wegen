@@ -122,9 +122,10 @@ export function AppSidebarThreads() {
     ];
 
     displayThreadList.forEach((thread) => {
-      const threadDate = thread.lastMessageAt
-        ? new Date(thread.lastMessageAt)
-        : thread.createdAt;
+      const threadDate =
+        (thread.lastMessageAt
+          ? new Date(thread.lastMessageAt)
+          : new Date(thread.createdAt)) || new Date();
       threadDate.setHours(0, 0, 0, 0);
 
       if (threadDate.getTime() === today.getTime()) {
