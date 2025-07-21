@@ -26,20 +26,20 @@ vi.mock("lib/utils", () => ({
 
 vi.mock("ts-safe", () => ({
   safe: vi.fn((fn) => ({
-    ifOk: vi.fn((nextFn) => ({
-      ifOk: vi.fn((anotherFn) => ({
-        watch: vi.fn((watchFn) => ({
-          unwrap: vi.fn(() => {
-            fn();
-            nextFn();
-            if (typeof anotherFn === "function") {
-              return anotherFn();
-            }
-            watchFn();
-          }),
-        })),
+    // ifOk: vi.fn((nextFn) => ({
+    ifOk: vi.fn((anotherFn) => ({
+      watch: vi.fn((watchFn) => ({
+        unwrap: vi.fn(() => {
+          fn();
+          // nextFn();
+          if (typeof anotherFn === "function") {
+            return anotherFn();
+          }
+          watchFn();
+        }),
       })),
     })),
+    // })),
   })),
 }));
 

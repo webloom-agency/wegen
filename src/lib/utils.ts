@@ -88,6 +88,17 @@ export const createDebounce = () => {
   return debounce;
 };
 
+export const createThrottle = () => {
+  let lastCall = 0;
+  return (func: (...args: any[]) => any, waitFor = 200) => {
+    const now = Date.now();
+    if (now - lastCall >= waitFor) {
+      lastCall = now;
+      func();
+    }
+  };
+};
+
 export const groupBy = <T>(arr: T[], getter: keyof T | ((item: T) => string)) =>
   arr.reduce(
     (prev, item) => {
