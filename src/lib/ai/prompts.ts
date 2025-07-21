@@ -24,7 +24,7 @@ You are better-chatbot, an intelligent AI assistant that leverages the Model Con
 
 ### User Context ###
 <user_information>
-- **System time**: ${new Date().toLocaleString()}
+- **Current Time**: ${new Date().toLocaleString()}
 ${user?.name ? `- **User Name**: ${user?.name}` : ""}
 ${user?.email ? `- **User Email**: ${user?.email}` : ""}
 ${userPreferences?.profession ? `- **User Profession**: ${userPreferences?.profession}` : ""}

@@ -11,6 +11,7 @@ export function cn(...inputs: ClassValue[]) {
 export const fetcher = async (url: string) => {
   const res = await fetch(url, {
     redirect: "follow",
+    cache: "no-store",
   });
 
   if (!res.ok) {
