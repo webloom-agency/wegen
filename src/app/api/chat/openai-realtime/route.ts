@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
         threadId?: string;
       };
 
-    const mcpTools = await mcpClientsManager.tools();
+    const mcpTools = mcpClientsManager.tools();
 
     const tools = safe(mcpTools)
       .map(errorIf(() => toolChoice === "none" && "Not allowed"))

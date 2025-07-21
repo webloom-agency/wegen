@@ -118,7 +118,7 @@ export async function POST(request: Request) {
 
     return createDataStreamResponse({
       execute: async (dataStream) => {
-        const MCP_TOOLS = await safe(mcpClientsManager.tools())
+        const MCP_TOOLS = safe(mcpClientsManager.tools())
           .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
           .map((tools) => {
             // filter tools by mentions

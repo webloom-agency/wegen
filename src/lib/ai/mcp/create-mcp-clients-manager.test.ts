@@ -373,6 +373,15 @@ describe("MCPClientsManager", () => {
       await manager.addClient("test-server", "test-server", mockServerConfig);
     });
 
+    it("should return client when it exists", async () => {
+      const client = await manager.getClient("test-server");
+
+      expect(client).toEqual({
+        client: mockClient,
+        name: "test-server",
+      });
+    });
+
     it("should return undefined when client does not exist", async () => {
       const client = await manager.getClient("non-existent");
       expect(client).toBeUndefined();
@@ -385,8 +394,8 @@ describe("MCPClientsManager", () => {
       await manager.init();
     });
 
-    it("should return empty object when no clients", async () => {
-      const tools = await manager.tools();
+    it("should return empty object when no clients", () => {
+      const tools = manager.tools();
       expect(tools).toEqual({});
     });
 
@@ -405,7 +414,7 @@ describe("MCPClientsManager", () => {
       vi.mocked(mockCreateMCPClient).mockReturnValue(clientWithoutTools);
       await manager.addClient("empty-server", "empty-server", mockServerConfig);
 
-      const tools = await manager.tools();
+      const tools = manager.tools();
       expect(tools).toEqual({});
     });
   });

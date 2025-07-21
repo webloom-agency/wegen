@@ -36,7 +36,6 @@ export class MCPClientsManager {
     }
   >();
   private initializedLock = new Locker();
-  private initialized = false;
 
   // Optional storage for persistent configurations
   constructor(
@@ -54,28 +53,21 @@ export class MCPClientsManager {
         if (this.storage) {
           await this.storage.init(this);
           const configs = await this.storage.loadAll();
-          await Promise.allSettled(
+          await Promise.all(
             configs.map(({ id, name, config }) =>
               this.addClient(id, name, config),
             ),
           );
         }
       })
-      .watch(() => {
-        this.initializedLock.unlock();
-        this.initialized = true;
-      })
+      .watch(() => this.initializedLock.unlock())
       .unwrap();
   }
 
   /**
    * Returns all tools from all clients as a flat object
    */
-  async tools(): Promise<Record<string, VercelAIMcpTool>> {
-    if (!this.initialized) {
-      await this.init();
-    }
-    await this.initializedLock.wait();
+  tools(): Record<string, VercelAIMcpTool> {
     return Object.fromEntries(
       Array.from(this.clients.entries())
         .filter(([_, { client }]) => client.getInfo().toolInfo.length > 0)
@@ -169,9 +161,6 @@ export class MCPClientsManager {
     }));
   }
   async getClient(id: string) {
-    if (!this.initialized) {
-      await this.init();
-    }
     await this.initializedLock.wait();
     return this.clients.get(id);
   }
