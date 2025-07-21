@@ -52,11 +52,11 @@ export class MCPClientsManager {
     logger.info("Initializing MCP clients manager");
     if (this.initializedLock.isLocked) return this.initializedLock.wait();
     return safe(() => this.initializedLock.lock())
-      .ifOk(() => this.cleanup())
       .ifOk(async () => {
         if (this.storage) {
           await this.storage.init(this);
           const configs = await this.storage.loadAll();
+          this.cleanup();
           await Promise.allSettled(
             configs.map(({ id, name, config }) =>
               this.addClient(id, name, config),
@@ -159,10 +159,10 @@ export class MCPClientsManager {
     return this.addClient(id, prevClient.name, currentConfig);
   }
 
-  cleanup() {
+  async cleanup() {
     const clients = Array.from(this.clients.values());
     this.clients.clear();
-    void Promise.allSettled(clients.map(({ client }) => client.disconnect()));
+    await Promise.allSettled(clients.map(({ client }) => client.disconnect()));
   }
 
   async getClients() {
