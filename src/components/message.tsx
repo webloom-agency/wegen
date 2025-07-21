@@ -109,6 +109,8 @@ const PurePreviewMessage = ({
               return (
                 <AssistMessagePart
                   threadId={threadId}
+                  isLast={isLastMessage && isLastPart}
+                  isLoading={isLoading}
                   key={key}
                   part={part}
                   showActions={

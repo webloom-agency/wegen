@@ -119,7 +119,7 @@ export async function POST(request: Request) {
     return createDataStreamResponse({
       execute: async (dataStream) => {
         const mcpClients = await mcpClientsManager.getClients();
-        logger.info(`mcpClients: ${mcpClients.length}`);
+        logger.info(`mcp-server count: ${mcpClients.length}`);
         const MCP_TOOLS = await safe(mcpClientsManager.tools())
           .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
           .ifOk(async (tools) => {

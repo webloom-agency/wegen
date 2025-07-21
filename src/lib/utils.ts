@@ -11,6 +11,7 @@ export function cn(...inputs: ClassValue[]) {
 export const fetcher = async (url: string) => {
   const res = await fetch(url, {
     redirect: "follow",
+    cache: "no-store",
   });
 
   if (!res.ok) {
@@ -85,6 +86,17 @@ export const createDebounce = () => {
     clearTimeout(timeout!);
   };
   return debounce;
+};
+
+export const createThrottle = () => {
+  let lastCall = 0;
+  return (func: (...args: any[]) => any, waitFor = 200) => {
+    const now = Date.now();
+    if (now - lastCall >= waitFor) {
+      lastCall = now;
+      func();
+    }
+  };
 };
 
 export const groupBy = <T>(arr: T[], getter: keyof T | ((item: T) => string)) =>

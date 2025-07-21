@@ -22,8 +22,8 @@ import { useShallow } from "zustand/shallow";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import useSWR from "swr";
-import { selectProjectListByUserIdAction } from "@/app/api/chat/actions";
 import { handleErrorWithToast } from "ui/shared-toast";
+import { fetcher } from "lib/utils";
 import { CreateProjectPopup } from "../create-project-popup";
 import { ProjectDropdown } from "../project-dropdown";
 import { useTranslations } from "next-intl";
@@ -39,8 +39,8 @@ export function AppSidebarProjects() {
   );
 
   const { data: projectList, isLoading } = useSWR(
-    "projects",
-    selectProjectListByUserIdAction,
+    "/api/project/list",
+    fetcher,
     {
       onError: handleErrorWithToast,
       fallbackData: [],
