@@ -262,6 +262,7 @@ export default function PromptInput({
                   <>
                     <ToolModeDropdown />
                     <ToolSelectDropdown
+                      className="ml-1"
                       align="start"
                       side="top"
                       onSelectWorkflow={onSelectWorkflow}

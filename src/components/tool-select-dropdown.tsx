@@ -62,6 +62,7 @@ import { ChatMention } from "app-types/chat";
 import { CountAnimation } from "ui/count-animation";
 
 import { Separator } from "ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 
 interface ToolSelectDropdownProps {
   align?: "start" | "end" | "center";
@@ -69,6 +70,7 @@ interface ToolSelectDropdownProps {
   disabled?: boolean;
   mentions?: ChatMention[];
   onSelectWorkflow?: (workflow: WorkflowSummary) => void;
+  className?: string;
 }
 
 const calculateToolCount = (
@@ -87,7 +89,9 @@ export function ToolSelectDropdown({
   side,
   onSelectWorkflow,
   mentions,
+  className,
 }: ToolSelectDropdownProps) {
+  const [open, setOpen] = useState(false);
   const [toolChoice, allowedAppDefaultToolkit, allowedMcpServers, mcpList] =
     appStore(
       useShallow((state) => [
@@ -144,6 +148,8 @@ export function ToolSelectDropdown({
             !isLoading &&
             "text-muted-foreground bg-transparent border-transparent",
           isLoading && "bg-input/60",
+          open && "bg-input!",
+          className,
         )}
       >
         <span
@@ -173,23 +179,28 @@ export function ToolSelectDropdown({
         )}
       </Button>
     );
-  }, [mentions?.length, bindingTools.length, isLoading]);
+  }, [mentions?.length, bindingTools.length, isLoading, open]);
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>{triggerButton}</DropdownMenuTrigger>
-      <DropdownMenuContent className="md:w-72" align={align} side={side}>
-        <DropdownMenuLabel className="flex items-center gap-2">
-          <WrenchIcon className="size-3.5" />
-          {t("toolsSetup")}
-        </DropdownMenuLabel>
-        <p className="text-xs text-muted-foreground w-full pl-8 pr-4 mb-2 whitespace-pre-wrap">
-          {t("toolsSetupDescription")}
-        </p>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <div>
+          <Tooltip>
+            <TooltipTrigger asChild>{triggerButton}</TooltipTrigger>
+            <TooltipContent className="p-4 text-xs  ">
+              <div className="flex items-center gap-2">
+                <WrenchIcon className="size-3.5" />
+                <span className="text-sm">{t("toolsSetup")}</span>
+              </div>
 
-        <div className="py-1 ">
-          <DropdownMenuSeparator />
+              <p className="text-muted-foreground mt-4 whitespace-pre-wrap">
+                {t("toolsSetupDescription")}
+              </p>
+            </TooltipContent>
+          </Tooltip>
         </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="md:w-72" align={align} side={side}>
         <WorkflowToolSelector onSelectWorkflow={onSelectWorkflow} />
         <div className="py-1">
           <DropdownMenuSeparator />
