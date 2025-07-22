@@ -57,7 +57,10 @@ export class MCPClient {
     private disconnectDebounce = createDebounce(),
   ) {
     this.log = logger.withDefaults({
-      message: colorize("cyan", `MCP Client ${this.name}: `),
+      message: colorize(
+        "cyan",
+        `${IS_EDGE_RUNTIME ? "[EdgeRuntime] " : " "}MCP Client ${this.name}: `,
+      ),
     });
   }
 
