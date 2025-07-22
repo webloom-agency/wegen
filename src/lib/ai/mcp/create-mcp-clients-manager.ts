@@ -59,6 +59,7 @@ export class MCPClientsManager {
         if (this.storage) {
           await this.storage.init(this);
           const configs = await this.storage.loadAll();
+          this.cleanup();
           await Promise.allSettled(
             configs.map(({ id, name, config }) =>
               this.addClient(id, name, config).catch(() => {
