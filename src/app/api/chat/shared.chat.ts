@@ -17,7 +17,6 @@ import {
   ToolInvocationUIPart,
 } from "app-types/chat";
 import { errorToString, objectFlow, toAny } from "lib/utils";
-import { callMcpToolAction } from "../mcp/actions";
 import logger from "logger";
 import {
   AllowedMCPServer,
@@ -37,6 +36,7 @@ import {
 } from "app-types/workflow";
 import { createWorkflowExecutor } from "lib/ai/workflow/executor/workflow-executor";
 import { NodeKind } from "lib/ai/workflow/workflow.interface";
+import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 
 export function filterMCPToolsByMentions(
   tools: Record<string, VercelAIMcpTool>,
@@ -157,7 +157,7 @@ export function manualToolExecuteByLastMessage(
           });
         } else if (tool.__$ref__ === "mcp") {
           const mcpTool = tool as VercelAIMcpTool;
-          return callMcpToolAction(
+          return mcpClientsManager.toolCall(
             mcpTool._mcpServerId,
             mcpTool._originToolName,
             args,

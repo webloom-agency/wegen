@@ -4,6 +4,7 @@ import { UserPreferences } from "app-types/user";
 import { Project } from "app-types/chat";
 import { User } from "better-auth";
 import { createMCPToolId } from "./mcp/mcp-tool-id";
+import { format } from "date-fns";
 
 export const CREATE_THREAD_TITLE_PROMPT = `
 You are a chat title generation expert.
@@ -24,7 +25,7 @@ You are better-chatbot, an intelligent AI assistant that leverages the Model Con
 
 ### User Context ###
 <user_information>
-- **Current Time**: ${new Date().toLocaleString()}
+- **Current Time**: ${format(new Date(), "EEEE, MMMM d, yyyy 'at' h:mm:ss a")}
 ${user?.name ? `- **User Name**: ${user?.name}` : ""}
 ${user?.email ? `- **User Email**: ${user?.email}` : ""}
 ${userPreferences?.profession ? `- **User Profession**: ${userPreferences?.profession}` : ""}
@@ -79,7 +80,7 @@ You are better-chatbot, a conversational AI assistant that helps users through v
 
 ### User Context ###
 <user_information>
-- **System time**: ${new Date().toLocaleString()}
+- **System time**: ${format(new Date(), "EEEE, MMMM d, yyyy 'at' h:mm:ss a")}
 ${user?.name ? `- **User Name**: ${user?.name}` : ""}
 ${user?.email ? `- **User Email**: ${user?.email}` : ""}
 ${userPreferences?.profession ? `- **User Profession**: ${userPreferences?.profession}` : ""}

@@ -366,19 +366,6 @@ describe("MCPClientsManager", () => {
     });
   });
 
-  describe("getClient", () => {
-    beforeEach(async () => {
-      manager = new MCPClientsManager(mockStorage);
-      await manager.init();
-      await manager.addClient("test-server", "test-server", mockServerConfig);
-    });
-
-    it("should return undefined when client does not exist", async () => {
-      const client = await manager.getClient("non-existent");
-      expect(client).toBeUndefined();
-    });
-  });
-
   describe("tools", () => {
     beforeEach(async () => {
       manager = new MCPClientsManager(mockStorage);

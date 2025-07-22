@@ -122,20 +122,6 @@ export async function POST(request: Request) {
         logger.info(`mcp-server count: ${mcpClients.length}`);
         const MCP_TOOLS = await safe(mcpClientsManager.tools())
           .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
-          .ifOk(async (tools) => {
-            const mentionCounts = mentions.filter(
-              (m) => m.type == "mcpServer" || m.type == "mcpTool",
-            );
-            const allowedMcpServerTools = Object.values(allowedMcpServers ?? {})
-              .map((t) => t.tools)
-              .flat();
-            const needTools =
-              mentionCounts.length || allowedMcpServerTools.length;
-            if (needTools && Object.keys(tools).length === 0) {
-              logger.warn("No MCP tools found, but MCP server is binding");
-              await mcpClientsManager.init();
-            }
-          })
           .map((tools) => {
             // filter tools by mentions
             if (mentions.length) {

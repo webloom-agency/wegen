@@ -793,7 +793,7 @@ export const ToolMessagePart = memo(
                   </div>
                 )}
 
-                {onPoxyToolCall && isManualToolInvocation && (
+                {onPoxyToolCall && isManualToolInvocation && isLast && (
                   <div className="flex flex-row gap-2 items-center mt-2">
                     <Button
                       variant="secondary"
