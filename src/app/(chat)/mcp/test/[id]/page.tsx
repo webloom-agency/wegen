@@ -1,6 +1,9 @@
 "use client";
 
-import { selectMcpClientAction } from "@/app/api/mcp/actions";
+import {
+  callMcpToolAction,
+  selectMcpClientAction,
+} from "@/app/api/mcp/actions";
 import {
   ArrowLeft,
   ChevronDown,
@@ -64,7 +67,6 @@ import { useObjectState } from "@/hooks/use-object-state";
 import { useTranslations } from "next-intl";
 import { useChatModels } from "@/hooks/queries/use-chat-models";
 import { ChatModel } from "app-types/chat";
-import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 
 // Type definitions
 type SchemaProperty = {
@@ -447,7 +449,7 @@ export default function Page() {
 
     setIsCallLoading(true);
     try {
-      const result = await mcpClientsManager.toolCall(
+      const result = await callMcpToolAction(
         id,
         selectedTool.name,
         parsedInput.value,

@@ -63,3 +63,11 @@ export async function removeMcpClientAction(id: string) {
 export async function refreshMcpClientAction(id: string) {
   await mcpClientsManager.refreshClient(id);
 }
+
+export async function callMcpToolAction(
+  id: string,
+  toolName: string,
+  input: unknown,
+) {
+  return mcpClientsManager.toolCall(id, toolName, input);
+}
