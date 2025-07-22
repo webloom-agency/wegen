@@ -61,7 +61,9 @@ export class MCPClientsManager {
           const configs = await this.storage.loadAll();
           await Promise.allSettled(
             configs.map(({ id, name, config }) =>
-              this.addClient(id, name, config),
+              this.addClient(id, name, config).catch(() => {
+                `ignore error`;
+              }),
             ),
           );
         }
