@@ -236,7 +236,7 @@ export function CreateProjectWithThreadPopup({
       )
       .ifOk(() => setIsOpen(false))
       .ifOk(() => toast.success(t("Chat.Project.projectCreated")))
-      .ifOk(() => mutate("projects"))
+      .ifOk(() => mutate("/api/project/list"))
       .ifOk(() => onClose?.())
       .ifOk((project) => router.push(`/project/${project.id}`))
       .watch(() => setProjectOption({ isLoading: false }))

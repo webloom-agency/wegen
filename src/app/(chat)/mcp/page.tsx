@@ -1,31 +1,22 @@
 "use client";
 import { MCPCard } from "@/components/mcp-card";
-import { appStore } from "@/app/store";
+
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { MCPOverview } from "@/components/mcp-overview";
-import { selectMcpClientsAction } from "@/app/api/mcp/actions";
-import useSWR from "swr";
+
 import { Skeleton } from "ui/skeleton";
 
-import { handleErrorWithToast } from "ui/shared-toast";
 import { ScrollArea } from "ui/scroll-area";
 import { useTranslations } from "next-intl";
 import { MCPIcon } from "ui/mcp-icon";
+import { useMcpList } from "@/hooks/queries/use-mcp-list";
 
 export default function Page() {
-  const appStoreMutate = appStore((state) => state.mutate);
   const t = useTranslations("MCP");
-  const { data: mcpList, isLoading } = useSWR(
-    "mcp-list",
-    selectMcpClientsAction,
-    {
-      refreshInterval: 10000,
-      fallbackData: [],
-      onError: handleErrorWithToast,
-      onSuccess: (data) => appStoreMutate({ mcpList: data }),
-    },
-  );
+  const { data: mcpList, isLoading } = useMcpList({
+    refreshInterval: 10000,
+  });
 
   return (
     <ScrollArea className="h-full w-full">

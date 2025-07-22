@@ -98,7 +98,10 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     api: "/api/chat",
     initialMessages,
     experimental_prepareRequestBody: ({ messages, requestBody }) => {
-      window.history.replaceState({}, "", `/chat/${threadId}`);
+      if (window.location.pathname !== `/chat/${threadId}`) {
+        console.log("replace-state");
+        window.history.replaceState({}, "", `/chat/${threadId}`);
+      }
       const lastMessage = messages.at(-1)!;
       vercelAISdkV4ToolInvocationIssueCatcher(lastMessage);
       const request: ChatApiSchemaRequestBody = {
@@ -132,7 +135,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
           generateTitle(part.text);
         }
       } else if (latestRef.current.threadList[0]?.id !== threadId) {
-        mutate("threads");
+        mutate("/api/thread/list");
       }
     },
     onError: (error) => {

@@ -118,7 +118,9 @@ export async function POST(request: Request) {
 
     return createDataStreamResponse({
       execute: async (dataStream) => {
-        const MCP_TOOLS = safe(mcpClientsManager.tools())
+        const mcpClients = await mcpClientsManager.getClients();
+        logger.info(`mcp-server count: ${mcpClients.length}`);
+        const MCP_TOOLS = await safe(mcpClientsManager.tools())
           .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
           .map((tools) => {
             // filter tools by mentions
@@ -214,7 +216,13 @@ export async function POST(request: Request) {
           })
           .unwrap();
 
-        logger.info(`tool mode: ${toolChoice}, mentions: ${mentions.length}`);
+        const allowedMcpTools = Object.values(allowedMcpServers ?? {})
+          .map((t) => t.tools)
+          .flat();
+
+        logger.info(
+          `tool mode: ${toolChoice}, mentions: ${mentions.length}, allowedMcpTools: ${allowedMcpTools.length}`,
+        );
         logger.info(
           `binding tool count APP_DEFAULT: ${Object.keys(APP_DEFAULT_TOOLS ?? {}).length}, MCP: ${Object.keys(MCP_TOOLS ?? {}).length}, Workflow: ${Object.keys(WORKFLOW_TOOLS ?? {}).length}`,
         );

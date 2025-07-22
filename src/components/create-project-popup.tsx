@@ -40,7 +40,7 @@ export function CreateProjectPopup({ children }: PropsWithChildren) {
       .watch(() => setIsLoading(false))
       .ifOk(() => setIsOpen(false))
       .ifOk(() => toast.success(t("Chat.Project.projectCreated")))
-      .ifOk(() => mutate("projects"))
+      .ifOk(() => mutate("/api/project/list"))
       .ifOk((project) => router.push(`/project/${project.id}`))
       .ifFail(handleErrorWithToast);
   };
