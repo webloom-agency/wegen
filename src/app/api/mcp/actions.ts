@@ -71,3 +71,11 @@ export async function callMcpToolAction(
 ) {
   return mcpClientsManager.toolCall(id, toolName, input);
 }
+
+export async function callMcpToolByServerNameAction(
+  serverName: string,
+  toolName: string,
+  input: unknown,
+) {
+  return mcpClientsManager.toolCallByServerName(serverName, toolName, input);
+}
