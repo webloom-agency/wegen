@@ -4,6 +4,7 @@ import {
   AudioWaveformIcon,
   ChevronDown,
   CornerRightUp,
+  LightbulbIcon,
   Paperclip,
   Square,
   XIcon,
@@ -248,7 +249,7 @@ export default function PromptInput({
                   ref={editorRef}
                 />
               </div>
-              <div className="flex w-full items-center gap-[2px] z-30">
+              <div className="flex w-full items-center z-30">
                 <Button
                   variant={"ghost"}
                   size={"sm"}
@@ -257,12 +258,24 @@ export default function PromptInput({
                 >
                   <Paperclip />
                 </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={"ghost"}
+                      size={"sm"}
+                      className="rounded-full hover:bg-input! p-2!"
+                    >
+                      <LightbulbIcon />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Think Mode</TooltipContent>
+                </Tooltip>
 
                 {!toolDisabled && (
                   <>
                     <ToolModeDropdown />
                     <ToolSelectDropdown
-                      className="ml-1"
+                      className="mx-1"
                       align="start"
                       side="top"
                       onSelectWorkflow={onSelectWorkflow}
@@ -270,6 +283,7 @@ export default function PromptInput({
                     />
                   </>
                 )}
+
                 <div className="flex-1" />
 
                 <SelectModel onSelect={setChatModel} defaultModel={chatModel}>
