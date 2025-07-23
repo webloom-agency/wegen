@@ -174,7 +174,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     () =>
       initialMessages.length > 0 &&
       initialMessages.at(-1)?.id === messages.at(-1)?.id,
-    [initialMessages, messages],
+    [messages],
   );
 
   const needSpaceClass = useCallback(
@@ -220,13 +220,13 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
       .unwrap();
   }, []);
 
-  const showThink = useMemo(() => {
+  const space = useMemo(() => {
     if (!isLoading) return false;
     const lastMessage = messages.at(-1);
-    if (lastMessage?.role == "user") return true;
+    if (lastMessage?.role == "user") return "think";
     const lastPart = lastMessage?.parts.at(-1);
-
-    if (lastPart?.type == "step-start") return true;
+    if (lastPart?.type == "step-start")
+      return lastMessage?.parts.length == 1 ? "think" : "space";
     return false;
   }, [isLoading, messages.at(-1)]);
 
@@ -296,7 +296,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
                 <PreviewMessage
                   threadId={threadId}
                   messageIndex={index}
-                  key={message.id}
+                  key={index}
                   message={message}
                   status={status}
                   onPoxyToolCall={
@@ -311,14 +311,18 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
                   isLastMessage={isLastMessage}
                   setMessages={setMessages}
                   reload={reload}
-                  className={needSpaceClass(index) ? "min-h-[55dvh]" : ""}
+                  className={
+                    needSpaceClass(index) ? "min-h-[calc(55dvh-40px)]" : ""
+                  }
                 />
               );
             })}
-            {showThink && (
+            {space && (
               <>
                 <div className="w-full mx-auto max-w-3xl px-6 relative">
-                  <Think />
+                  <div className={space == "space" ? "opacity-0" : ""}>
+                    <Think />
+                  </div>
                 </div>
                 <div className="min-h-[calc(55dvh-56px)]" />
               </>
