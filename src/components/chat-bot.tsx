@@ -226,7 +226,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     if (lastMessage?.role == "user") return true;
     const lastPart = lastMessage?.parts.at(-1);
 
-    if (lastPart?.type == "step-start") return true;
+    if (lastPart?.type == "text" && !lastPart.text.trim()) return true;
     return false;
   }, [isLoading, messages.at(-1)]);
 
@@ -296,7 +296,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
                 <PreviewMessage
                   threadId={threadId}
                   messageIndex={index}
-                  key={message.id}
+                  key={index}
                   message={message}
                   status={status}
                   onPoxyToolCall={

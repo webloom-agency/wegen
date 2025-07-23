@@ -396,7 +396,20 @@ export const AssistMessagePart = memo(function AssistMessagePart({
   );
 });
 AssistMessagePart.displayName = "AssistMessagePart";
-
+const variants = {
+  collapsed: {
+    height: 0,
+    opacity: 0,
+    marginTop: 0,
+    marginBottom: 0,
+  },
+  expanded: {
+    height: "auto",
+    opacity: 1,
+    marginTop: "1rem",
+    marginBottom: "0.5rem",
+  },
+};
 export const ReasoningPart = memo(function ReasoningPart({
   reasoning,
   isThinking,
@@ -405,21 +418,6 @@ export const ReasoningPart = memo(function ReasoningPart({
   isThinking?: boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(isThinking);
-
-  const variants = {
-    collapsed: {
-      height: 0,
-      opacity: 0,
-      marginTop: 0,
-      marginBottom: 0,
-    },
-    expanded: {
-      height: "auto",
-      opacity: 1,
-      marginTop: "1rem",
-      marginBottom: "0.5rem",
-    },
-  };
 
   useEffect(() => {
     if (!isThinking && isExpanded) {
@@ -608,6 +606,7 @@ export const ToolMessagePart = memo(
         return (
           <CodeExecutor
             part={toolInvocation}
+            key={toolInvocation.toolCallId}
             onResult={onToolCallDirect}
             type="javascript"
           />
@@ -618,6 +617,7 @@ export const ToolMessagePart = memo(
         return (
           <CodeExecutor
             part={toolInvocation}
+            key={toolInvocation.toolCallId}
             onResult={onToolCallDirect}
             type="python"
           />

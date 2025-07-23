@@ -4,19 +4,15 @@ import { cn, objectFlow } from "lib/utils";
 import {
   AtSign,
   ChartColumn,
-  Check,
   ChevronRight,
-  ClipboardCheck,
   CodeIcon,
+  GlobeIcon,
   HardDriveUploadIcon,
-  Infinity,
   InfoIcon,
   Loader,
   MousePointer2,
   Package,
-  PenOffIcon,
   Plus,
-  Settings2Icon,
   Waypoints,
   Wrench,
   WrenchIcon,
@@ -44,7 +40,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuPortal,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -62,13 +57,12 @@ import { useWorkflowToolList } from "@/hooks/queries/use-workflow-tool-list";
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 import { WorkflowSummary } from "app-types/workflow";
 import { WorkflowGreeting } from "./workflow/workflow-greeting";
-import { GlobalIcon } from "ui/global-icon";
 import { AppDefaultToolkit } from "lib/ai/tools";
 import { ChatMention } from "app-types/chat";
 import { CountAnimation } from "ui/count-animation";
 
-import { getShortcutKeyList, Shortcuts } from "lib/keyboard-shortcuts";
 import { Separator } from "ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 
 interface ToolSelectDropdownProps {
   align?: "start" | "end" | "center";
@@ -76,6 +70,7 @@ interface ToolSelectDropdownProps {
   disabled?: boolean;
   mentions?: ChatMention[];
   onSelectWorkflow?: (workflow: WorkflowSummary) => void;
+  className?: string;
 }
 
 const calculateToolCount = (
@@ -94,7 +89,9 @@ export function ToolSelectDropdown({
   side,
   onSelectWorkflow,
   mentions,
+  className,
 }: ToolSelectDropdownProps) {
+  const [open, setOpen] = useState(false);
   const [toolChoice, allowedAppDefaultToolkit, allowedMcpServers, mcpList] =
     appStore(
       useShallow((state) => [
@@ -140,64 +137,70 @@ export function ToolSelectDropdown({
     mcpList,
   ]);
 
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size={"sm"}
-          className={cn(
-            "gap-0.5 bg-input/60 border rounded-full data-[state=open]:bg-input! hover:bg-input!",
-            !bindingTools.length &&
-              !isLoading &&
-              "text-muted-foreground bg-transparent border-transparent",
-            isLoading && "bg-input/60",
-          )}
+  const triggerButton = useMemo(() => {
+    return (
+      <Button
+        variant="ghost"
+        size={"sm"}
+        className={cn(
+          "gap-0.5 bg-input/60 border rounded-full data-[state=open]:bg-input! hover:bg-input!",
+          !bindingTools.length &&
+            !isLoading &&
+            "text-muted-foreground bg-transparent border-transparent",
+          isLoading && "bg-input/60",
+          open && "bg-input!",
+          className,
+        )}
+      >
+        <span
+          className={(mentions?.length ?? 0 > 0) ? "text-muted-foreground" : ""}
         >
-          <span
-            className={
-              (mentions?.length ?? 0 > 0) ? "text-muted-foreground" : ""
-            }
-          >
-            {(mentions?.length ?? 0 > 0) ? "Mention" : "Tools"}
-          </span>
-          {(bindingTools.length > 0 || isLoading) && (
-            <>
-              <div className="h-4 hidden sm:block mx-1">
-                <Separator orientation="vertical" />
+          {(mentions?.length ?? 0 > 0) ? "Mention" : "Tools"}
+        </span>
+        {(bindingTools.length > 0 || isLoading) && (
+          <>
+            <div className="h-4 hidden sm:block mx-1">
+              <Separator orientation="vertical" />
+            </div>
+
+            <div className="min-w-5 flex justify-center">
+              {isLoading ? (
+                <Loader className="animate-spin size-3.5" />
+              ) : (mentions?.length ?? 0) > 0 ? (
+                <AtSign className="size-3.5" />
+              ) : (
+                <CountAnimation
+                  number={bindingTools.length}
+                  className="text-xs"
+                />
+              )}
+            </div>
+          </>
+        )}
+      </Button>
+    );
+  }, [mentions?.length, bindingTools.length, isLoading, open]);
+
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <div>
+          <Tooltip>
+            <TooltipTrigger asChild>{triggerButton}</TooltipTrigger>
+            <TooltipContent className="p-4 text-xs  ">
+              <div className="flex items-center gap-2">
+                <WrenchIcon className="size-3.5" />
+                <span className="text-sm">{t("toolsSetup")}</span>
               </div>
-              <div className="min-w-5 flex justify-center">
-                {isLoading ? (
-                  <Loader className="animate-spin size-3.5" />
-                ) : (mentions?.length ?? 0) > 0 ? (
-                  <AtSign className="size-3.5" />
-                ) : (
-                  <CountAnimation
-                    number={bindingTools.length}
-                    className="text-xs"
-                  />
-                )}
-              </div>
-            </>
-          )}
-        </Button>
+
+              <p className="text-muted-foreground mt-4 whitespace-pre-wrap">
+                {t("toolsSetupDescription")}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="md:w-72" align={align} side={side}>
-        <DropdownMenuLabel className="flex items-center gap-2">
-          <WrenchIcon className="size-3.5" />
-          {t("toolsSetup")}
-        </DropdownMenuLabel>
-
-        <p className="text-xs text-muted-foreground w-full pl-8 pr-4 mb-2 whitespace-pre-wrap">
-          {t("toolsSetupDescription")}
-        </p>
-        <div className="py-1 ">
-          <DropdownMenuSeparator />
-        </div>
-        <ToolModeSelector />
-        <div className="py-1 ">
-          <DropdownMenuSeparator />
-        </div>
         <WorkflowToolSelector onSelectWorkflow={onSelectWorkflow} />
         <div className="py-1">
           <DropdownMenuSeparator />
@@ -469,97 +472,6 @@ function WorkflowToolSelector({
   );
 }
 
-function ToolModeSelector() {
-  const t = useTranslations("Chat.Tool");
-  const [toolChoice, appStoreMutate] = appStore(
-    useShallow((state) => [state.toolChoice, state.mutate]),
-  );
-
-  return (
-    <DropdownMenuGroup>
-      <DropdownMenuSub>
-        <DropdownMenuSubTrigger className="text-xs flex items-center gap-2 font-semibold cursor-pointer">
-          <Settings2Icon className="size-3.5" />
-          {t("selectToolMode")}
-        </DropdownMenuSubTrigger>
-        <DropdownMenuPortal>
-          <DropdownMenuSubContent className="w-80 relative">
-            <DropdownMenuLabel className="text-muted-foreground flex items-center gap-2">
-              {t("selectToolMode")}
-              <DropdownMenuShortcut>
-                <span className="text-xs text-muted-foreground bg-muted rounded-md px-2 py-0.5">
-                  {getShortcutKeyList(Shortcuts.toolMode).join("")}
-                </span>
-              </DropdownMenuShortcut>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.preventDefault();
-                  appStoreMutate({ toolChoice: "auto" });
-                }}
-              >
-                <div className="flex flex-col gap-2 w-full">
-                  <div className="flex items-center gap-2">
-                    <Infinity />
-                    <span className="font-bold">Auto</span>
-                    {toolChoice == "auto" && <Check className="ml-auto" />}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {t("autoToolModeDescription")}
-                  </p>
-                </div>
-              </DropdownMenuItem>
-              <div className="px-2 py-1">
-                <DropdownMenuSeparator />
-              </div>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.preventDefault();
-                  appStoreMutate({ toolChoice: "manual" });
-                }}
-              >
-                <div className="flex flex-col gap-2 w-full">
-                  <div className="flex items-center gap-2">
-                    <ClipboardCheck />
-                    <span className="font-bold">Manual</span>
-                    {toolChoice == "manual" && <Check className="ml-auto" />}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {t("manualToolModeDescription")}
-                  </p>
-                </div>
-              </DropdownMenuItem>
-              <div className="px-2 py-1">
-                <DropdownMenuSeparator />
-              </div>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.preventDefault();
-                  appStoreMutate({ toolChoice: "none" });
-                }}
-              >
-                <div className="flex flex-col gap-2 w-full">
-                  <div className="flex items-center gap-2">
-                    <PenOffIcon />
-                    <span className="font-bold">None</span>
-                    {toolChoice == "none" && <Check className="ml-auto" />}
-                  </div>
-
-                  <p className="text-xs text-muted-foreground">
-                    {t("noneToolModeDescription")}
-                  </p>
-                </div>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuSubContent>
-        </DropdownMenuPortal>
-      </DropdownMenuSub>
-    </DropdownMenuGroup>
-  );
-}
-
 function McpServerSelector() {
   const [appStoreMutate, allowedMcpServers, mcpServerList] = appStore(
     useShallow((state) => [
@@ -634,7 +546,7 @@ function McpServerSelector() {
               icon={
                 <div className="flex items-center gap-2 ml-auto">
                   {server.tools.filter((t) => t.checked).length > 0 ? (
-                    <span className="w-5 h-5 items-center justify-center flex text-[8px] text-blue-500 font-normal rounded-full border border-border/40 bg-blue-500/5">
+                    <span className="w-5 h-5 items-center justify-center flex text-[8px] text-muted-foreground font-semibold ">
                       {server.tools.filter((t) => t.checked).length}
                     </span>
                   ) : null}
@@ -804,19 +716,19 @@ function AppDefaultToolKitSelector() {
     return Object.values(AppDefaultToolkit).map((toolkit) => {
       const label = raw[toolkit] || toolkit;
       const id = toolkit;
-      let icon = <Wrench className="size-3.5 text-primary" />;
+      let icon = Wrench;
       switch (toolkit) {
         case AppDefaultToolkit.Visualization:
-          icon = <ChartColumn className="size-3.5 text-blue-500 stroke-3" />;
+          icon = ChartColumn;
           break;
         case AppDefaultToolkit.WebSearch:
-          icon = <GlobalIcon className="text-blue-400 size-3.5" />;
+          icon = GlobeIcon;
           break;
         case AppDefaultToolkit.Http:
-          icon = <HardDriveUploadIcon className="size-3.5 text-blue-400" />;
+          icon = HardDriveUploadIcon;
           break;
         case AppDefaultToolkit.Code:
-          icon = <CodeIcon className="size-3.5 text-yellow-400" />;
+          icon = CodeIcon;
           break;
       }
       return {
@@ -833,13 +745,22 @@ function AppDefaultToolKitSelector() {
         return (
           <DropdownMenuItem
             key={tool.id}
-            className="cursor-pointer font-semibold text-xs"
+            className={cn(
+              "cursor-pointer font-semibold text-xs text-muted-foreground",
+              allowedAppDefaultToolkit?.includes(tool.id) && "text-foreground",
+            )}
             onClick={(e) => {
               e.preventDefault();
               toggleAppDefaultToolkit(tool.id);
             }}
           >
-            {tool.icon}
+            <tool.icon
+              className={cn(
+                "size-3.5",
+                allowedAppDefaultToolkit?.includes(tool.id) &&
+                  "text-foreground",
+              )}
+            />
             {tool.label}
             <Switch
               className="ml-auto"
