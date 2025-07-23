@@ -2,120 +2,104 @@ import { tool as createTool } from "ai";
 import { z } from "zod";
 
 const parameters = z.object({
-  thought: z.string().describe("Your current thinking step"),
-  nextThoughtNeeded: z
-    .boolean()
-    .describe("Whether another thought step is needed"),
-  thoughtNumber: z.number().int().min(1).describe("Current thought number"),
-  totalThoughts: z
-    .number()
-    .int()
-    .min(1)
-    .describe("Estimated total thoughts needed"),
-  isRevision: z
-    .boolean()
-    .optional()
-    .describe("Whether this revises previous thinking"),
-  revisesThought: z
-    .number()
-    .int()
-    .min(1)
-    .optional()
-    .describe("Which thought is being reconsidered"),
-  branchFromThought: z
-    .number()
-    .int()
-    .min(1)
-    .optional()
-    .describe("Branching point thought number"),
-  branchId: z.string().optional().describe("Branch identifier"),
-  needsMoreThoughts: z
-    .boolean()
-    .optional()
-    .describe("If more thoughts are needed"),
+  steps: z
+    .array(
+      z.object({
+        thought: z.string().describe("Your current thinking step"),
+        nextThoughtNeeded: z
+          .boolean()
+          .describe("Whether another thought step is needed"),
+        thoughtNumber: z
+          .number()
+          .int()
+          .min(1)
+          .describe("Current thought number"),
+        totalThoughts: z
+          .number()
+          .int()
+          .min(1)
+          .describe("Estimated total thoughts needed"),
+        isRevision: z
+          .boolean()
+          .optional()
+          .describe("Whether this revises previous thinking"),
+        revisesThought: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .describe("Which thought is being reconsidered"),
+        branchFromThought: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .describe("Branching point thought number"),
+        branchId: z.string().optional().describe("Branch identifier"),
+        needsMoreThoughts: z
+          .boolean()
+          .optional()
+          .describe("If more thoughts are needed"),
+      }),
+    )
+    .describe(
+      "Complete sequence of thinking steps that form your reasoning process. Include all steps from initial analysis to final conclusion.",
+    ),
 });
 
-export type ThoughtData = z.infer<typeof parameters>;
+export type ThoughtData = z.infer<typeof parameters>["steps"][number];
 
 export const sequentialThinkingTool = createTool({
-  description: `A detailed tool for dynamic and reflective problem-solving through thoughts.
+  description: `A comprehensive tool for dynamic and reflective problem-solving through a complete sequence of thinking steps.
 This tool helps analyze problems through a flexible thinking process that can adapt and evolve.
 Each thought can build on, question, or revise previous insights as understanding deepens.
 
 When to use this tool:
-- Breaking down complex problems into steps
-- Planning and design with room for revision
-- Analysis that might need course correction
+- Breaking down complex problems into multiple reasoning steps
+- Planning and design with room for revision and iteration
+- Analysis that might need course correction or alternative approaches
 - Problems where the full scope might not be clear initially
-- Problems that require a multi-step solution
-- Tasks that need to maintain context over multiple steps
+- Problems that require a multi-step solution with connected reasoning
+- Tasks that need to maintain context and build upon previous steps
 - Situations where irrelevant information needs to be filtered out
 
 Key features:
-- You can adjust total_thoughts up or down as you progress
-- You can question or revise previous thoughts
-- You can add more thoughts even after reaching what seemed like the end
+- Provide a complete sequence of all thinking steps in one response
+- You can adjust total_thoughts up or down as your understanding evolves
+- You can question or revise previous thoughts within the sequence
 - You can express uncertainty and explore alternative approaches
-- Not every thought needs to build linearly - you can branch or backtrack
-- Generates a solution hypothesis
-- Verifies the hypothesis based on the Chain of Thought steps
-- Repeats the process until satisfied
-- Provides a correct answer
+- Thoughts don't need to build linearly - you can branch or backtrack
+- Generate solution hypotheses and verify them through reasoning
+- Continue until you reach a satisfactory conclusion
 
-Parameters explained:
-- thought: Your current thinking step, which can include:
-* Regular analytical steps
-* Revisions of previous thoughts
-* Questions about previous decisions
-* Realizations about needing more analysis
-* Changes in approach
-* Hypothesis generation
-* Hypothesis verification
-- next_thought_needed: True if you need more thinking, even if at what seemed like the end
-- thought_number: Current number in sequence (can go beyond initial total if needed)
-- total_thoughts: Current estimate of thoughts needed (can be adjusted up/down)
-- is_revision: A boolean indicating if this thought revises previous thinking
-- revises_thought: If is_revision is true, which thought number is being reconsidered
-- branch_from_thought: If branching, which thought number is the branching point
-- branch_id: Identifier for the current branch (if any)
-- needs_more_thoughts: If reaching end but realizing more thoughts needed
+How to structure your thinking sequence:
+- Start with initial analysis and problem understanding
+- Include hypothesis generation and testing steps
+- Add revision steps when reconsidering previous thoughts
+- Use branching for exploring alternative approaches
+- End with a clear conclusion or final answer
 
-You should:
-1. Start with an initial estimate of needed thoughts, but be ready to adjust
-2. Feel free to question or revise previous thoughts
-3. Don't hesitate to add more thoughts if needed, even at the "end"
-4. Express uncertainty when present
-5. Mark thoughts that revise previous thinking or branch into new paths
-6. Ignore information that is irrelevant to the current step
-7. Generate a solution hypothesis when appropriate
-8. Verify the hypothesis based on the Chain of Thought steps
-9. Repeat the process until satisfied with the solution
-10. Provide a single, ideally correct answer as the final output
-11. Only set next_thought_needed to false when truly done and a satisfactory answer is reached`,
+Parameters for each step:
+- thought: Your thinking step content (analysis, hypothesis, revision, conclusion, etc.)
+- next_thought_needed: True if more steps needed, false for the final step
+- thought_number: Current step number in sequence
+- total_thoughts: Current estimate of total steps needed (adjust as you progress)
+- is_revision: Mark true when revising or reconsidering previous thinking
+- revises_thought: If revising, specify which step number is being reconsidered
+- branch_from_thought: If branching to explore alternatives, specify the branching point
+- branch_id: Identifier for the current branch (if exploring multiple paths)
+- needs_more_thoughts: Use when realizing more steps are needed than initially estimated
+
+Guidelines for creating the sequence:
+1. Plan your complete reasoning process from start to finish
+2. Include all necessary steps for thorough analysis
+3. Feel free to revise or question earlier steps within the same sequence
+4. Express uncertainty when present and explore alternatives
+5. Mark revision and branching steps appropriately
+6. Ignore irrelevant information and focus on the core problem
+7. Generate and verify hypotheses as part of your reasoning
+8. Ensure the final step provides a clear, well-reasoned conclusion
+9. Only mark the last step as next_thought_needed: false when truly complete`,
   parameters,
-  execute: async ({
-    thought,
-    nextThoughtNeeded,
-    thoughtNumber,
-    totalThoughts,
-    isRevision,
-    revisesThought,
-    branchFromThought,
-    branchId,
-    needsMoreThoughts,
-  }) => {
-    const thoughtData: ThoughtData = {
-      thought,
-      thoughtNumber,
-      totalThoughts,
-      nextThoughtNeeded,
-      isRevision,
-      revisesThought,
-      branchFromThought,
-      branchId,
-      needsMoreThoughts,
-    };
-
-    return thoughtData;
-  },
+  execute: async (p) => p,
 });

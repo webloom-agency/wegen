@@ -22,6 +22,7 @@ import {
   buildUserSystemPrompt,
   buildToolCallUnsupportedModelSystemPrompt,
   mentionPrompt,
+  buildThinkingSystemPrompt,
 } from "lib/ai/prompts";
 import { chatApiSchemaRequestBodySchema } from "app-types/chat";
 
@@ -50,7 +51,8 @@ import { colorize } from "consola/utils";
 import { isVercelAIWorkflowTool } from "app-types/workflow";
 import { objectFlow } from "lib/utils";
 import { APP_DEFAULT_TOOL_KIT } from "lib/ai/tools/tool-kit";
-import { DefaultToolName } from "lib/ai/tools";
+import { SequentialThinkingToolName } from "lib/ai/tools";
+import { sequentialThinkingTool } from "lib/ai/tools/thinking/sequential-thinking";
 
 const logger = globalLogger.withDefaults({
   message: colorize("blackBright", `Chat API: `),
@@ -65,7 +67,6 @@ export async function POST(request: Request) {
     if (!session?.user.id) {
       return new Response("Unauthorized", { status: 401 });
     }
-
     const {
       id,
       message,
@@ -75,6 +76,7 @@ export async function POST(request: Request) {
       autoTitle,
       allowedMcpServers,
       projectId,
+      thinking,
       mentions = [],
     } = chatApiSchemaRequestBodySchema.parse(json);
 
@@ -113,9 +115,10 @@ export async function POST(request: Request) {
 
     const inProgressToolStep = extractInProgressToolPart(messages.slice(-2));
 
+    const supportToolCall = !isToolCallUnsupportedModel(model);
+
     const isToolCallAllowed =
-      !isToolCallUnsupportedModel(model) &&
-      (toolChoice != "none" || mentions.length > 0);
+      supportToolCall && (toolChoice != "none" || mentions.length > 0);
 
     return createDataStreamResponse({
       execute: async (dataStream) => {
@@ -202,8 +205,8 @@ export async function POST(request: Request) {
           buildProjectInstructionsSystemPrompt(thread?.instructions),
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
           mentions.length > 0 && mentionPrompt,
-          isToolCallUnsupportedModel(model) &&
-            buildToolCallUnsupportedModelSystemPrompt,
+          !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
+          thinking && buildThinkingSystemPrompt(supportToolCall),
         );
 
         const vercelAITooles = safe({ ...MCP_TOOLS, ...WORKFLOW_TOOLS })
@@ -215,6 +218,15 @@ export async function POST(request: Request) {
               ...APP_DEFAULT_TOOLS, // APP_DEFAULT_TOOLS Not Supported Manual
             };
           })
+          .map((t) => {
+            if (supportToolCall && thinking) {
+              return {
+                ...t,
+                [SequentialThinkingToolName]: sequentialThinkingTool,
+              };
+            }
+            return t;
+          })
           .unwrap();
 
         const allowedMcpTools = Object.values(allowedMcpServers ?? {})
@@ -222,7 +234,7 @@ export async function POST(request: Request) {
           .flat();
 
         logger.info(
-          `tool mode: ${toolChoice}, mentions: ${mentions.length}, allowedMcpTools: ${allowedMcpTools.length}`,
+          `tool mode: ${toolChoice}, mentions: ${mentions.length}, allowedMcpTools: ${allowedMcpTools.length} thinking: ${thinking}`,
         );
         logger.info(
           `binding tool count APP_DEFAULT: ${Object.keys(APP_DEFAULT_TOOLS ?? {}).length}, MCP: ${Object.keys(MCP_TOOLS ?? {}).length}, Workflow: ${Object.keys(WORKFLOW_TOOLS ?? {}).length}`,
@@ -301,8 +313,7 @@ export async function POST(request: Request) {
                     if (
                       v.type == "tool-invocation" &&
                       v.toolInvocation.state == "result" &&
-                      v.toolInvocation.toolName ==
-                        DefaultToolName.SequentialThinking
+                      v.toolInvocation.toolName == SequentialThinkingToolName
                     ) {
                       return {
                         ...v,

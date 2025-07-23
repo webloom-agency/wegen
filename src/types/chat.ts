@@ -86,6 +86,7 @@ export const chatApiSchemaRequestBodySchema = z.object({
   id: z.string(),
   projectId: z.string().optional(),
   message: z.any() as z.ZodType<UIMessage>,
+  thinking: z.boolean().optional(),
   chatModel: z
     .object({
       provider: z.string(),

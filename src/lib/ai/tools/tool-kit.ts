@@ -7,7 +7,6 @@ import { Tool } from "ai";
 import { httpFetchTool } from "./http/fetch";
 import { jsExecutionTool } from "./code/js-run-tool";
 import { pythonExecutionTool } from "./code/python-run-tool";
-import { sequentialThinkingTool } from "./thinking/sequential-thinking";
 
 export const APP_DEFAULT_TOOL_KIT: Record<
   AppDefaultToolkit,
@@ -28,8 +27,5 @@ export const APP_DEFAULT_TOOL_KIT: Record<
   [AppDefaultToolkit.Code]: {
     [DefaultToolName.JavascriptExecution]: jsExecutionTool,
     [DefaultToolName.PythonExecution]: pythonExecutionTool,
-  },
-  [AppDefaultToolkit.Thinking]: {
-    [DefaultToolName.SequentialThinking]: sequentialThinkingTool,
   },
 };

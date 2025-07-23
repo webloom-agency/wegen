@@ -9,7 +9,6 @@ import {
   GlobeIcon,
   HardDriveUploadIcon,
   InfoIcon,
-  LightbulbIcon,
   Loader,
   MousePointer2,
   Package,
@@ -730,9 +729,6 @@ function AppDefaultToolKitSelector() {
           break;
         case AppDefaultToolkit.Code:
           icon = CodeIcon;
-          break;
-        case AppDefaultToolkit.Thinking:
-          icon = LightbulbIcon;
           break;
       }
       return {

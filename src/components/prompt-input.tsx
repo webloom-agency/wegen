@@ -5,7 +5,7 @@ import {
   ChevronDown,
   CornerRightUp,
   LightbulbIcon,
-  Paperclip,
+  PlusIcon,
   Square,
   XIcon,
 } from "lucide-react";
@@ -34,6 +34,7 @@ import { OpenAIIcon } from "ui/openai-icon";
 import { GrokIcon } from "ui/grok-icon";
 import { ClaudeIcon } from "ui/claude-icon";
 import { GeminiIcon } from "ui/gemini-icon";
+import { cn } from "lib/utils";
 
 interface PromptInputProps {
   placeholder?: string;
@@ -44,6 +45,8 @@ interface PromptInputProps {
   toolDisabled?: boolean;
   isLoading?: boolean;
   model?: ChatModel;
+  onThinkingChange?: (thinking: boolean) => void;
+  thinking?: boolean;
   setModel?: (model: ChatModel) => void;
   voiceDisabled?: boolean;
   threadId?: string;
@@ -68,6 +71,8 @@ export default function PromptInput({
   toolDisabled,
   voiceDisabled,
   threadId,
+  onThinkingChange,
+  thinking,
 }: PromptInputProps) {
   const t = useTranslations("Chat");
 
@@ -170,6 +175,7 @@ export default function PromptInput({
     append!({
       role: "user",
       content: "",
+
       parts: [
         {
           type: "text",
@@ -256,20 +262,28 @@ export default function PromptInput({
                   className="rounded-full hover:bg-input! p-2!"
                   onClick={notImplementedToast}
                 >
-                  <Paperclip />
+                  <PlusIcon />
                 </Button>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={"ghost"}
-                      size={"sm"}
-                      className="rounded-full hover:bg-input! p-2!"
-                    >
-                      <LightbulbIcon />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Think Mode</TooltipContent>
-                </Tooltip>
+                {onThinkingChange && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size={"sm"}
+                        className={cn(
+                          "rounded-full hover:bg-input! p-2!",
+                          thinking && "bg-input!",
+                        )}
+                        onClick={() => {
+                          onThinkingChange(!thinking);
+                        }}
+                      >
+                        <LightbulbIcon />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Sequential Thinking</TooltipContent>
+                  </Tooltip>
+                )}
 
                 {!toolDisabled && (
                   <>
