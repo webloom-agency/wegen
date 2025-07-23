@@ -50,6 +50,7 @@ import { colorize } from "consola/utils";
 import { isVercelAIWorkflowTool } from "app-types/workflow";
 import { objectFlow } from "lib/utils";
 import { APP_DEFAULT_TOOL_KIT } from "lib/ai/tools/tool-kit";
+import { DefaultToolName } from "lib/ai/tools";
 
 const logger = globalLogger.withDefaults({
   message: colorize("blackBright", `Chat API: `),
@@ -294,6 +295,20 @@ export async function POST(request: Request) {
                               },
                             ),
                           },
+                        },
+                      };
+                    }
+                    if (
+                      v.type == "tool-invocation" &&
+                      v.toolInvocation.state == "result" &&
+                      v.toolInvocation.toolName ==
+                        DefaultToolName.SequentialThinking
+                    ) {
+                      return {
+                        ...v,
+                        toolInvocation: {
+                          ...v.toolInvocation,
+                          args: {},
                         },
                       };
                     }

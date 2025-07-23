@@ -31,7 +31,6 @@ export async function POST(request: Request) {
     logger.info(
       `chatModel: ${chatModel?.provider}/${chatModel?.model}, threadId: ${threadId}, projectId: ${projectId}`,
     );
-    logger.info(`message: ${message}`);
 
     const session = await getSession();
     if (!session) {

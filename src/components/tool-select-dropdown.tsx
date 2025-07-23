@@ -6,8 +6,10 @@ import {
   ChartColumn,
   ChevronRight,
   CodeIcon,
+  GlobeIcon,
   HardDriveUploadIcon,
   InfoIcon,
+  LightbulbIcon,
   Loader,
   MousePointer2,
   Package,
@@ -56,7 +58,6 @@ import { useWorkflowToolList } from "@/hooks/queries/use-workflow-tool-list";
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 import { WorkflowSummary } from "app-types/workflow";
 import { WorkflowGreeting } from "./workflow/workflow-greeting";
-import { GlobalIcon } from "ui/global-icon";
 import { AppDefaultToolkit } from "lib/ai/tools";
 import { ChatMention } from "app-types/chat";
 import { CountAnimation } from "ui/count-animation";
@@ -546,7 +547,7 @@ function McpServerSelector() {
               icon={
                 <div className="flex items-center gap-2 ml-auto">
                   {server.tools.filter((t) => t.checked).length > 0 ? (
-                    <span className="w-5 h-5 items-center justify-center flex text-[8px] text-blue-500 font-normal rounded-full border border-border/40 bg-blue-500/5">
+                    <span className="w-5 h-5 items-center justify-center flex text-[8px] text-muted-foreground font-semibold ">
                       {server.tools.filter((t) => t.checked).length}
                     </span>
                   ) : null}
@@ -716,19 +717,22 @@ function AppDefaultToolKitSelector() {
     return Object.values(AppDefaultToolkit).map((toolkit) => {
       const label = raw[toolkit] || toolkit;
       const id = toolkit;
-      let icon = <Wrench className="size-3.5 text-primary" />;
+      let icon = Wrench;
       switch (toolkit) {
         case AppDefaultToolkit.Visualization:
-          icon = <ChartColumn className="size-3.5 text-blue-500 stroke-3" />;
+          icon = ChartColumn;
           break;
         case AppDefaultToolkit.WebSearch:
-          icon = <GlobalIcon className="text-blue-400 size-3.5" />;
+          icon = GlobeIcon;
           break;
         case AppDefaultToolkit.Http:
-          icon = <HardDriveUploadIcon className="size-3.5 text-blue-400" />;
+          icon = HardDriveUploadIcon;
           break;
         case AppDefaultToolkit.Code:
-          icon = <CodeIcon className="size-3.5 text-yellow-400" />;
+          icon = CodeIcon;
+          break;
+        case AppDefaultToolkit.Thinking:
+          icon = LightbulbIcon;
           break;
       }
       return {
@@ -745,13 +749,22 @@ function AppDefaultToolKitSelector() {
         return (
           <DropdownMenuItem
             key={tool.id}
-            className="cursor-pointer font-semibold text-xs"
+            className={cn(
+              "cursor-pointer font-semibold text-xs text-muted-foreground",
+              allowedAppDefaultToolkit?.includes(tool.id) && "text-foreground",
+            )}
             onClick={(e) => {
               e.preventDefault();
               toggleAppDefaultToolkit(tool.id);
             }}
           >
-            {tool.icon}
+            <tool.icon
+              className={cn(
+                "size-3.5",
+                allowedAppDefaultToolkit?.includes(tool.id) &&
+                  "text-foreground",
+              )}
+            />
             {tool.label}
             <Switch
               className="ml-auto"

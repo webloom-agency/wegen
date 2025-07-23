@@ -47,7 +47,7 @@ import { TextShimmer } from "ui/text-shimmer";
 import equal from "lib/equal";
 import { isVercelAIWorkflowTool } from "app-types/workflow";
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
-import { DefaultToolName, ThinkingToolName } from "lib/ai/tools";
+import { DefaultToolName } from "lib/ai/tools";
 
 import { WorkflowInvocation } from "./tool-invocation/workflow-invocation";
 import dynamic from "next/dynamic";
@@ -396,7 +396,20 @@ export const AssistMessagePart = memo(function AssistMessagePart({
   );
 });
 AssistMessagePart.displayName = "AssistMessagePart";
-
+const variants = {
+  collapsed: {
+    height: 0,
+    opacity: 0,
+    marginTop: 0,
+    marginBottom: 0,
+  },
+  expanded: {
+    height: "auto",
+    opacity: 1,
+    marginTop: "1rem",
+    marginBottom: "0.5rem",
+  },
+};
 export const ReasoningPart = memo(function ReasoningPart({
   reasoning,
   isThinking,
@@ -405,21 +418,6 @@ export const ReasoningPart = memo(function ReasoningPart({
   isThinking?: boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(isThinking);
-
-  const variants = {
-    collapsed: {
-      height: 0,
-      opacity: 0,
-      marginTop: 0,
-      marginBottom: 0,
-    },
-    expanded: {
-      height: "auto",
-      opacity: 1,
-      marginTop: "1rem",
-      marginBottom: "0.5rem",
-    },
-  };
 
   useEffect(() => {
     if (!isThinking && isExpanded) {
@@ -619,6 +617,7 @@ export const ToolMessagePart = memo(
         return (
           <CodeExecutor
             part={toolInvocation}
+            key={toolInvocation.toolCallId}
             onResult={onToolCallDirect}
             type="javascript"
           />
@@ -629,14 +628,20 @@ export const ToolMessagePart = memo(
         return (
           <CodeExecutor
             part={toolInvocation}
+            key={toolInvocation.toolCallId}
             onResult={onToolCallDirect}
             type="python"
           />
         );
       }
 
-      if (toolName === ThinkingToolName.SequentialThinking) {
-        return <SequentialThinkingToolInvocation part={toolInvocation} />;
+      if (toolName === DefaultToolName.SequentialThinking) {
+        return (
+          <SequentialThinkingToolInvocation
+            key={toolInvocation.toolCallId}
+            part={toolInvocation}
+          />
+        );
       }
 
       if (state === "result") {

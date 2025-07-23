@@ -2,15 +2,14 @@
 
 import { ToolInvocationUIPart } from "app-types/chat";
 
-import { toAny } from "lib/utils";
+import { cn, isNull, toAny } from "lib/utils";
 
-import { memo, useMemo } from "react";
-import { BrainIcon } from "lucide-react";
-import { Card, CardContent } from "ui/card";
-import { Badge } from "ui/badge";
-import { Separator } from "ui/separator";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { CheckIcon, CircleSmallIcon, Loader2Icon } from "lucide-react";
+
 import { TextShimmer } from "ui/text-shimmer";
-import { SequentialThinkingResult } from "lib/ai/tools/thinking/sequential-thinking";
+import { ThoughtData } from "lib/ai/tools/thinking/sequential-thinking";
+import { WordByWordFadeIn } from "../markdown";
 
 interface SequentialThinkingToolInvocationProps {
   part: ToolInvocationUIPart["toolInvocation"];
@@ -19,154 +18,94 @@ interface SequentialThinkingToolInvocationProps {
 function PureSequentialThinkingToolInvocation({
   part,
 }: SequentialThinkingToolInvocationProps) {
-  const result = useMemo(() => {
-    if (part.state !== "result") return null;
-    return toAny(part).result as SequentialThinkingResult & {
-      isError?: boolean;
-      error?: string;
+  const createdAt = useRef(Date.now());
+
+  const [isDiff, setIsDiff] = useState(false);
+
+  const think = useMemo(() => {
+    return (toAny(part).result || part.args) as
+      | Partial<ThoughtData>
+      | undefined;
+  }, [part.args, part.state]);
+
+  const isFinalStep = useMemo(() => {
+    return (
+      !isNull(think?.thoughtNumber) &&
+      (think?.totalThoughts ?? 1) > 1 &&
+      think?.thoughtNumber == think?.totalThoughts
+    );
+  }, [think?.thoughtNumber, think?.totalThoughts]);
+
+  const second = useMemo(() => {
+    if (!isDiff) return;
+    return Math.floor((Date.now() - createdAt.current) / 1000);
+  }, [part.state]);
+
+  const header = useMemo(() => {
+    const message = `Reasoned for ${second ? `${second} seconds` : "a few seconds"}`;
+    if (part.state == "result") {
+      if (!isNull(think?.thoughtNumber) && (think?.totalThoughts ?? 1) > 1) {
+        if (isFinalStep) {
+          return `Final step`;
+        }
+        return `Step ${think?.thoughtNumber} of ${think?.totalThoughts}`;
+      }
+      return message;
+    }
+    return <TextShimmer>{message}</TextShimmer>;
+  }, [
+    part.state,
+    second,
+    think?.thoughtNumber,
+    think?.totalThoughts,
+    isFinalStep,
+  ]);
+  useEffect(() => {
+    return () => {
+      setIsDiff(true);
     };
   }, [part.state]);
 
-  const thoughtData = useMemo(() => {
-    if (!result) return null;
-    return result.thoughtData;
-  }, [result]);
-
-  if (part.state !== "result") {
-    return (
-      <div className="flex items-center gap-2 text-sm">
-        <BrainIcon className="size-5 wiggle text-muted-foreground" />
-        <TextShimmer>Thinking...</TextShimmer>
-      </div>
-    );
-  }
-
-  if (result?.isError) {
-    return (
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <BrainIcon className="size-5 text-destructive" />
-          <span className="text-sm font-semibold text-destructive">
-            Thinking Error
+  return (
+    <div className="flex w-full px-6 group">
+      <div className="flex flex-col">
+        <div className="text-sm text-muted-foreground select-none flex flex-row gap-4 items-center group-hover:text-foreground transition-colors">
+          <div
+            className={cn(
+              "w-4 h-4 rounded-full flex items-center justify-center transition-colors",
+              part.state == "result"
+                ? "bg-secondary text-secondary-foreground"
+                : "bg-muted text-muted-foreground",
+            )}
+          >
+            {isFinalStep ? (
+              <CheckIcon className="size-2.5 stroke-3" />
+            ) : part.state == "result" ? (
+              <CircleSmallIcon className="size-4 fill-background text-background" />
+            ) : (
+              <Loader2Icon className="size-2.5 animate-spin" />
+            )}
+          </div>
+          <span className={isFinalStep ? "text-foreground font-semibold" : ""}>
+            {header}
           </span>
         </div>
-        <div className="flex gap-2">
-          <div className="px-2.5">
-            <Separator
-              orientation="vertical"
-              className="bg-gradient-to-b from-border to-transparent from-80%"
-            />
-          </div>
-          <div className="flex flex-col gap-2 pb-2">
-            <p className="text-xs text-destructive">
-              {result.error || "An error occurred during thinking process"}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!thoughtData) {
-    return (
-      <div className="flex items-center gap-2 text-sm">
-        <BrainIcon className="size-5 text-muted-foreground" />
-        <span>No thinking data available</span>
-      </div>
-    );
-  }
-
-  const getThoughtType = () => {
-    if (thoughtData.isRevision) return "revision";
-    if (thoughtData.branchFromThought) return "branch";
-    return "thought";
-  };
-
-  const getThoughtIcon = () => {
-    switch (getThoughtType()) {
-      case "revision":
-        return "🔄";
-      case "branch":
-        return "🌿";
-      default:
-        return "💭";
-    }
-  };
-
-  const getThoughtLabel = () => {
-    switch (getThoughtType()) {
-      case "revision":
-        return `Revision (revising thought ${thoughtData.revisesThought})`;
-      case "branch":
-        return `Branch (from thought ${thoughtData.branchFromThought}, ID: ${thoughtData.branchId})`;
-      default:
-        return "Thought";
-    }
-  };
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <BrainIcon className="size-5 text-muted-foreground" />
-        <span className="text-sm font-semibold">Sequential Thinking</span>
-        <Badge variant="outline" className="text-xs">
-          {thoughtData.thoughtNumber}/{thoughtData.totalThoughts}
-        </Badge>
-        {thoughtData.nextThoughtNeeded && (
-          <Badge variant="secondary" className="text-xs">
-            More thoughts needed
-          </Badge>
-        )}
-      </div>
-      <div className="flex gap-2">
-        <div className="px-2.5">
-          <Separator
-            orientation="vertical"
-            className="bg-gradient-to-b from-border to-transparent from-80%"
+        <div className="pl-[7px] flex gap-4">
+          <div
+            className={cn(
+              "h-[calc(100%+1rem)] flex-shrink-0 w-0.5! bg-secondary bg-gradient-to-b from-secondary to-transparent from-90%",
+              isFinalStep && "bg-transparent",
+            )}
           />
-        </div>
-        <div className="flex flex-col gap-2 pb-2 w-full">
-          <Card className="w-full">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg">{getThoughtIcon()}</span>
-                <span className="text-sm font-medium">{getThoughtLabel()}</span>
-                <Badge variant="outline" className="text-xs">
-                  {thoughtData.thoughtNumber}/{thoughtData.totalThoughts}
-                </Badge>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <pre className="text-sm whitespace-pre-wrap break-words font-mono">
-                  {result?.formattedThought || "No thought content available"}
-                </pre>
-              </div>
-              {thoughtData.needsMoreThoughts && (
-                <div className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                  <p className="text-xs text-yellow-800 dark:text-yellow-200">
-                    ⚠️ More thoughts are needed to complete this analysis
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <p className="text-xs text-muted-foreground break-words py-4 px-2 group-hover:text-foreground transition-colors">
+            <WordByWordFadeIn>{think?.thought}</WordByWordFadeIn>
+          </p>
         </div>
       </div>
     </div>
   );
 }
 
-function areEqual(
-  { part: prevPart }: SequentialThinkingToolInvocationProps,
-  { part: nextPart }: SequentialThinkingToolInvocationProps,
-) {
-  return (
-    prevPart.state === nextPart.state &&
-    toAny(prevPart).result === toAny(nextPart).result &&
-    prevPart.args === nextPart.args
-  );
-}
-
 export const SequentialThinkingToolInvocation = memo(
   PureSequentialThinkingToolInvocation,
-  areEqual,
 );

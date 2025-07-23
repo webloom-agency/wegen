@@ -37,11 +37,6 @@ const parameters = z.object({
 
 export type ThoughtData = z.infer<typeof parameters>;
 
-export interface SequentialThinkingResult {
-  formattedThought: string;
-  thoughtData: ThoughtData;
-}
-
 export const sequentialThinkingTool = createTool({
   description: `A detailed tool for dynamic and reflective problem-solving through thoughts.
 This tool helps analyze problems through a flexible thinking process that can adapt and evolve.
@@ -109,31 +104,6 @@ You should:
     branchId,
     needsMoreThoughts,
   }) => {
-    // Format the thought for display
-    let prefix = "";
-    let context = "";
-
-    if (isRevision) {
-      prefix = "🔄 Revision";
-      context = ` (revising thought ${revisesThought})`;
-    } else if (branchFromThought) {
-      prefix = "🌿 Branch";
-      context = ` (from thought ${branchFromThought}, ID: ${branchId})`;
-    } else {
-      prefix = "💭 Thought";
-      context = "";
-    }
-
-    const header = `${prefix} ${thoughtNumber}/${totalThoughts}${context}`;
-    const border = "─".repeat(Math.max(header.length, thought.length) + 4);
-
-    const formattedThought = `
-┌${border}┐
-│ ${header} │
-├${border}┤
-│ ${thought.padEnd(border.length - 2)} │
-└${border}┘`;
-
     const thoughtData: ThoughtData = {
       thought,
       thoughtNumber,
@@ -146,9 +116,6 @@ You should:
       needsMoreThoughts,
     };
 
-    return {
-      formattedThought,
-      thoughtData,
-    };
+    return thoughtData;
   },
 });

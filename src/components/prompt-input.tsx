@@ -271,14 +271,6 @@ export default function PromptInput({
                   </>
                 )}
                 <div className="flex-1" />
-                <Button
-                  variant={"secondary"}
-                  size={"sm"}
-                  className="rounded-full hover:bg-input! p-2!"
-                  onClick={notImplementedToast}
-                >
-                  think
-                </Button>
 
                 <SelectModel onSelect={setChatModel} defaultModel={chatModel}>
                   <Button
