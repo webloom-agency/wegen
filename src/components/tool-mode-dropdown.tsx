@@ -99,7 +99,7 @@ export const ToolModeDropdown = ({ disabled }: { disabled?: boolean }) => {
                 <Settings2 />
               </Button>
             </TooltipTrigger>
-            <TooltipContent className="flex items-center gap-2">
+            <TooltipContent className="flex items-center gap-2" side="top">
               {t("selectToolMode")}
               <span className="text-muted-foreground ml-2">
                 {getShortcutKeyList(Shortcuts.toolMode).join("")}
@@ -108,7 +108,7 @@ export const ToolModeDropdown = ({ disabled }: { disabled?: boolean }) => {
           </Tooltip>
         </div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
+      <DropdownMenuContent align="start" side="top">
         <DropdownMenuLabel className="text-muted-foreground flex items-center gap-2">
           {t("selectToolMode")}
           <DropdownMenuShortcut>

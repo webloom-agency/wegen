@@ -1,5 +1,5 @@
 "use client";
-import { generateUUID } from "lib/utils";
+import { createDebounce, generateUUID } from "lib/utils";
 import {
   CodeRunnerOptions,
   CodeRunnerResult,
@@ -12,6 +12,13 @@ export function callCodeRunWorker(
   option: CodeRunnerOptions,
 ): Promise<CodeRunnerResult> {
   let tk: NodeJS.Timeout;
+  const terminateDebounce = createDebounce();
+  const terminate = () => {
+    terminateDebounce(() => {
+      worker.terminate();
+    }, 5000);
+  };
+  let isWorking = true;
   const worker = new Worker(new URL("./worker.ts", import.meta.url));
   const promise = new Promise<CodeRunnerResult>((resolve) => {
     const id = generateUUID();
@@ -21,16 +28,19 @@ export function callCodeRunWorker(
       code: option.code,
       timeout: option.timeout,
     };
-    worker.postMessage(request);
+    setTimeout(() => {
+      worker.postMessage(request);
+    }, 1000); // for boot-up effect
     worker.onmessage = (event) => {
       const response = event.data as CodeWorkerResponse;
       if (response.id !== id) return;
       if (response.type === "log") {
         option.onLog?.(response.entry);
+        if (!isWorking) terminate();
       } else {
         resolve(response.result as CodeRunnerResult);
         clearTimeout(tk);
-        worker.terminate();
+        terminate();
       }
     };
   });
@@ -58,17 +68,12 @@ export function callCodeRunWorker(
           error: "Timeout",
         };
         timeout(errorResult);
-        worker.terminate();
+        terminate();
       }, option.timeout || 40000);
     }),
   ]);
 
-  return Promise.all([
-    race,
-    new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(true);
-      }, 1000);
-    }),
-  ]).then(([result]) => result);
+  return race.finally(() => {
+    isWorking = false;
+  });
 }

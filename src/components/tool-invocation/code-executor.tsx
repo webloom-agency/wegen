@@ -70,7 +70,7 @@ export const CodeExecutor = memo(function CodeExecutor({
         ...toAny({
           ...result,
           logs:
-            logstring.length > 10000
+            logstring.length > 5000
               ? [
                   {
                     type: "info",

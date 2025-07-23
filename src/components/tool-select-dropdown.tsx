@@ -188,7 +188,7 @@ export function ToolSelectDropdown({
         <div>
           <Tooltip>
             <TooltipTrigger asChild>{triggerButton}</TooltipTrigger>
-            <TooltipContent className="p-4 text-xs  ">
+            <TooltipContent align={align} side={side} className="p-4 text-xs  ">
               <div className="flex items-center gap-2">
                 <WrenchIcon className="size-3.5" />
                 <span className="text-sm">{t("toolsSetup")}</span>
