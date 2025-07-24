@@ -4,11 +4,12 @@ import {
   AudioWaveformIcon,
   ChevronDown,
   CornerRightUp,
-  Paperclip,
+  LightbulbIcon,
+  PlusIcon,
   Square,
   XIcon,
 } from "lucide-react";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Button } from "ui/button";
 import { notImplementedToast } from "ui/shared-toast";
 import { UseChatHelpers } from "@ai-sdk/react";
@@ -33,6 +34,8 @@ import { OpenAIIcon } from "ui/openai-icon";
 import { GrokIcon } from "ui/grok-icon";
 import { ClaudeIcon } from "ui/claude-icon";
 import { GeminiIcon } from "ui/gemini-icon";
+import { cn } from "lib/utils";
+import { getShortcutKeyList, isShortcutEvent } from "lib/keyboard-shortcuts";
 
 interface PromptInputProps {
   placeholder?: string;
@@ -43,6 +46,8 @@ interface PromptInputProps {
   toolDisabled?: boolean;
   isLoading?: boolean;
   model?: ChatModel;
+  onThinkingChange?: (thinking: boolean) => void;
+  thinking?: boolean;
   setModel?: (model: ChatModel) => void;
   voiceDisabled?: boolean;
   threadId?: string;
@@ -54,6 +59,13 @@ const ChatMentionInput = dynamic(() => import("./chat-mention-input"), {
     return <div className="h-[2rem] w-full animate-pulse"></div>;
   },
 });
+
+const THINKING_SHORTCUT = {
+  shortcut: {
+    command: true,
+    key: "E",
+  },
+};
 
 export default function PromptInput({
   placeholder,
@@ -67,6 +79,8 @@ export default function PromptInput({
   toolDisabled,
   voiceDisabled,
   threadId,
+  onThinkingChange,
+  thinking,
 }: PromptInputProps) {
   const t = useTranslations("Chat");
 
@@ -169,6 +183,7 @@ export default function PromptInput({
     append!({
       role: "user",
       content: "",
+
       parts: [
         {
           type: "text",
@@ -177,6 +192,20 @@ export default function PromptInput({
       ],
     });
   };
+
+  useEffect(() => {
+    if (!onThinkingChange) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isShortcutEvent(e, THINKING_SHORTCUT)) {
+        e.preventDefault();
+        e.stopPropagation();
+        onThinkingChange(!thinking);
+        editorRef.current?.commands.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [!!onThinkingChange, thinking]);
 
   return (
     <div className="max-w-3xl mx-auto fade-in animate-in">
@@ -248,21 +277,50 @@ export default function PromptInput({
                   ref={editorRef}
                 />
               </div>
-              <div className="flex w-full items-center gap-[2px] z-30">
+              <div className="flex w-full items-center z-30">
                 <Button
                   variant={"ghost"}
                   size={"sm"}
                   className="rounded-full hover:bg-input! p-2!"
                   onClick={notImplementedToast}
                 >
-                  <Paperclip />
+                  <PlusIcon />
                 </Button>
+                {onThinkingChange && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size={"sm"}
+                        className={cn(
+                          "rounded-full hover:bg-input! p-2!",
+                          thinking && "bg-input!",
+                        )}
+                        onClick={() => {
+                          onThinkingChange(!thinking);
+                          editorRef.current?.commands.focus();
+                        }}
+                      >
+                        <LightbulbIcon />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      className="flex items-center gap-2"
+                      side="top"
+                    >
+                      Sequential Thinking
+                      <span className="text-muted-foreground ml-2">
+                        {getShortcutKeyList(THINKING_SHORTCUT).join("")}
+                      </span>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
 
                 {!toolDisabled && (
                   <>
                     <ToolModeDropdown />
                     <ToolSelectDropdown
-                      className="ml-1"
+                      className="mx-1"
                       align="start"
                       side="top"
                       onSelectWorkflow={onSelectWorkflow}
@@ -270,6 +328,7 @@ export default function PromptInput({
                     />
                   </>
                 )}
+
                 <div className="flex-1" />
 
                 <SelectModel onSelect={setChatModel} defaultModel={chatModel}>

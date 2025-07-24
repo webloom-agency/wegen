@@ -58,6 +58,8 @@ type Props = {
 export default function ChatBot({ threadId, initialMessages, slots }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const [thinking, setThinking] = useState(false);
+
   const [
     appStoreMutate,
     model,
@@ -106,6 +108,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
       vercelAISdkV4ToolInvocationIssueCatcher(lastMessage);
       const request: ChatApiSchemaRequestBody = {
         id: latestRef.current.threadId,
+        thinking,
         chatModel:
           (requestBody as { model: ChatModel })?.model ??
           latestRef.current.model,
@@ -218,6 +221,10 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
     })
       .watch(() => setIsExecutingProxyToolCall(false))
       .unwrap();
+  }, []);
+
+  const handleThinkingChange = useCallback((thinking: boolean) => {
+    setThinking(thinking);
   }, []);
 
   const space = useMemo(() => {
@@ -338,7 +345,9 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
           input={input}
           threadId={threadId}
           append={append}
+          thinking={thinking}
           setInput={setInput}
+          onThinkingChange={handleThinkingChange}
           isLoading={isLoading || isPendingToolCall}
           onStop={stop}
         />
