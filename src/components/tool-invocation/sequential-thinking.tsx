@@ -7,11 +7,11 @@ import { cn, toAny } from "lib/utils";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import {
   CheckIcon,
-  ChevronDown,
   ChevronDownIcon,
-  CircleSmallIcon,
+  CircleIcon,
   Loader2Icon,
 } from "lucide-react";
+import { motion } from "framer-motion";
 
 import { TextShimmer } from "ui/text-shimmer";
 import { ThoughtData } from "lib/ai/tools/thinking/sequential-thinking";
@@ -56,7 +56,7 @@ function PureSequentialThinkingToolInvocation({
   }, [part.state]);
 
   return (
-    <div className="flex w-full px-6 ">
+    <div className="flex w-full">
       <div className="flex flex-col">
         <div
           onClick={() => setExpanded(!expanded)}
@@ -71,41 +71,67 @@ function PureSequentialThinkingToolInvocation({
           />
         </div>
         <div className={cn("pl-[7px] flex gap-4", expanded && "hidden")}>
-          <div className="flex flex-col gap-2 py-4">
+          <div className="flex flex-col py-4 px-2">
             {steps.map((step, index) => {
               const isLastStep = index === steps.length - 1;
-              const isRunning = part.state !== "result";
-              const isStepFinal = !isRunning && isLastStep;
+              const isRunning = isLastStep && part.state !== "result";
+              const isStepFinal = part.state === "result" && isLastStep;
 
               return (
-                <div key={index} className="flex flex-col gap-1 group">
+                <div
+                  key={index}
+                  className="flex flex-col gap-1 group/step text-muted-foreground relative pb-4"
+                >
                   <div className="flex items-center gap-2">
                     <div
                       className={cn(
-                        "w-3 h-3 rounded-full flex items-center justify-center",
+                        "rounded-full flex items-center justify-center p-1 bg-secondary fade-in animate-in duration-500",
+                        isLastStep && "bg-primary text-primary-foreground",
                       )}
                     >
                       {isStepFinal ? (
-                        <CheckIcon className="size-3 stroke-3" />
+                        <CheckIcon className="size-2 stroke-4" />
+                      ) : isRunning ? (
+                        <Loader2Icon className="size-2 animate-spin " />
                       ) : (
-                        <span className="text-[10px] font-medium">
-                          {step.thoughtNumber}
-                        </span>
+                        <CircleIcon className="size-2 text-foreground stroke-background fill-background" />
                       )}
                     </div>
-                    <span className="text-xs font-medium text-muted-foreground">
+                    <span
+                      className={cn(
+                        "text-xs font-medium",
+                        (isStepFinal || isRunning) &&
+                          "text-foreground font-semibold",
+                        isRunning && "animate-pulse",
+                      )}
+                    >
                       {step.isRevision
                         ? `Revision of step ${step.revisesThought}`
                         : step.branchFromThought
                           ? `Branch from step ${step.branchFromThought}`
-                          : `Step ${step.thoughtNumber}`}
+                          : isStepFinal
+                            ? `Final Step`
+                            : `Step ${step.thoughtNumber || index + 1}`}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground break-words px-2 ml-3 group-hover:text-foreground transition-colors">
+                  <p className="text-xs text-muted-foreground break-words px-2 ml-4.5 group-hover/step:text-foreground transition-colors">
                     <WordByWordFadeIn>{step.thought}</WordByWordFadeIn>
                   </p>
                   {!isLastStep && (
-                    <div className="h-2 ml-[5px] w-0.5 bg-border" />
+                    <motion.div
+                      initial={{ scaleY: 0 }}
+                      animate={{ scaleY: 1 }}
+                      transition={{
+                        duration: 0.3,
+                        delay: 0.3,
+                        ease: "easeOut",
+                      }}
+                      className={cn(
+                        "h-full ml-[7px] w-[2px] bg-border absolute top-4 origin-top",
+                        index == steps.length - 2 &&
+                          "bg-gradient-to-b from-40% from-border to-primary",
+                      )}
+                    />
                   )}
                 </div>
               );

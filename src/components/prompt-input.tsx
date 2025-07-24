@@ -9,7 +9,7 @@ import {
   Square,
   XIcon,
 } from "lucide-react";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Button } from "ui/button";
 import { notImplementedToast } from "ui/shared-toast";
 import { UseChatHelpers } from "@ai-sdk/react";
@@ -35,6 +35,7 @@ import { GrokIcon } from "ui/grok-icon";
 import { ClaudeIcon } from "ui/claude-icon";
 import { GeminiIcon } from "ui/gemini-icon";
 import { cn } from "lib/utils";
+import { getShortcutKeyList, isShortcutEvent } from "lib/keyboard-shortcuts";
 
 interface PromptInputProps {
   placeholder?: string;
@@ -58,6 +59,13 @@ const ChatMentionInput = dynamic(() => import("./chat-mention-input"), {
     return <div className="h-[2rem] w-full animate-pulse"></div>;
   },
 });
+
+const THINKING_SHORTCUT = {
+  shortcut: {
+    command: true,
+    key: "E",
+  },
+};
 
 export default function PromptInput({
   placeholder,
@@ -185,6 +193,20 @@ export default function PromptInput({
     });
   };
 
+  useEffect(() => {
+    if (!onThinkingChange) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isShortcutEvent(e, THINKING_SHORTCUT)) {
+        e.preventDefault();
+        e.stopPropagation();
+        onThinkingChange(!thinking);
+        editorRef.current?.commands.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [!!onThinkingChange, thinking]);
+
   return (
     <div className="max-w-3xl mx-auto fade-in animate-in">
       <div className="z-10 mx-auto w-full max-w-3xl relative">
@@ -276,12 +298,21 @@ export default function PromptInput({
                         )}
                         onClick={() => {
                           onThinkingChange(!thinking);
+                          editorRef.current?.commands.focus();
                         }}
                       >
                         <LightbulbIcon />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Sequential Thinking</TooltipContent>
+                    <TooltipContent
+                      className="flex items-center gap-2"
+                      side="top"
+                    >
+                      Sequential Thinking
+                      <span className="text-muted-foreground ml-2">
+                        {getShortcutKeyList(THINKING_SHORTCUT).join("")}
+                      </span>
+                    </TooltipContent>
                   </Tooltip>
                 )}
 

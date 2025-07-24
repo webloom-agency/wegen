@@ -118,7 +118,6 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
         mentions: latestRef.current.mentions,
         message: lastMessage,
       };
-      setThinking(false);
       return request;
     },
     sendExtraMessageFields: true,
