@@ -348,7 +348,7 @@ export default function PromptInput({
                         ) : chatModel.provider === "google" ? (
                           <GeminiIcon className="size-3 opacity-0 group-data-[state=open]:opacity-100 group-hover:opacity-100" />
                         ) : null}
-                        <span className="text-muted-foreground group-data-[state=open]:text-foreground group-hover:text-foreground">
+                        <span className="text-foreground group-data-[state=open]:text-foreground  ">
                           {chatModel.model}
                         </span>
                       </>

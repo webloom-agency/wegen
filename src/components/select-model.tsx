@@ -47,11 +47,7 @@ export const SelectModel = (props: PropsWithChildren<SelectModelProps>) => {
             className="data-[state=open]:bg-input! hover:bg-input! "
           >
             <p className="mr-auto flex items-center gap-1">
-              {model?.model ? (
-                <span className="text-muted-foreground">{model.model}</span>
-              ) : (
-                <span className="text-muted-foreground">model</span>
-              )}
+              {model?.model || "model"}
             </p>
             <ChevronDown className="size-3" />
           </Button>
