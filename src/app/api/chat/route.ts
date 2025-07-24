@@ -206,7 +206,10 @@ export async function POST(request: Request) {
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
           mentions.length > 0 && mentionPrompt,
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
-          thinking && buildThinkingSystemPrompt(supportToolCall),
+          (!supportToolCall ||
+            ["openai", "anthropic"].includes(chatModel?.provider ?? "")) &&
+            thinking &&
+            buildThinkingSystemPrompt(supportToolCall),
         );
 
         const vercelAITooles = safe({ ...MCP_TOOLS, ...WORKFLOW_TOOLS })
