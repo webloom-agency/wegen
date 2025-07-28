@@ -36,6 +36,8 @@ import { ClaudeIcon } from "ui/claude-icon";
 import { GeminiIcon } from "ui/gemini-icon";
 import { cn } from "lib/utils";
 import { getShortcutKeyList, isShortcutEvent } from "lib/keyboard-shortcuts";
+import { Agent } from "app-types/agent";
+import { EMOJI_DATA } from "lib/const";
 
 interface PromptInputProps {
   placeholder?: string;
@@ -51,6 +53,8 @@ interface PromptInputProps {
   setModel?: (model: ChatModel) => void;
   voiceDisabled?: boolean;
   threadId?: string;
+  disabledMention?: boolean;
+  onFocus?: () => void;
 }
 
 const ChatMentionInput = dynamic(() => import("./chat-mention-input"), {
@@ -73,6 +77,7 @@ export default function PromptInput({
   model,
   setModel,
   input,
+  onFocus,
   setInput,
   onStop,
   isLoading,
@@ -81,19 +86,12 @@ export default function PromptInput({
   threadId,
   onThinkingChange,
   thinking,
+  disabledMention,
 }: PromptInputProps) {
   const t = useTranslations("Chat");
 
-  const [
-    currentThreadId,
-    currentProjectId,
-    globalModel,
-    threadMentions,
-    appStoreMutate,
-  ] = appStore(
+  const [globalModel, threadMentions, appStoreMutate] = appStore(
     useShallow((state) => [
-      state.currentThreadId,
-      state.currentProjectId,
       state.chatModel,
       state.threadMentions,
       state.mutate,
@@ -143,7 +141,12 @@ export default function PromptInput({
       if (!threadId) return;
       appStoreMutate((prev) => {
         if (mentions.some((m) => equal(m, mention))) return prev;
-        const newMentions = [...mentions, mention];
+
+        const newMentions =
+          mention.type == "agent"
+            ? [...mentions.filter((m) => m.type !== "agent"), mention]
+            : [...mentions, mention];
+
         return {
           threadMentions: {
             ...prev.threadMentions,
@@ -168,9 +171,43 @@ export default function PromptInput({
     [addMention],
   );
 
+  const onSelectAgent = useCallback(
+    (agent: Omit<Agent, "createdAt" | "updatedAt" | "instructions">) => {
+      appStoreMutate((prev) => {
+        return {
+          threadMentions: {
+            ...prev.threadMentions,
+            [threadId!]: [
+              {
+                type: "agent",
+                name: agent.name,
+                icon: agent.icon,
+                description: agent.description,
+                agentId: agent.id,
+              },
+            ],
+          },
+        };
+      });
+    },
+    [mentions, threadId],
+  );
+
   const onChangeMention = useCallback(
     (mentions: ChatMention[]) => {
-      mentions.forEach(addMention);
+      let hasAgent = false;
+      [...mentions]
+        .reverse()
+        .filter((m) => {
+          if (m.type == "agent") {
+            if (hasAgent) return false;
+            hasAgent = true;
+          }
+
+          return true;
+        })
+        .reverse()
+        .forEach(addMention);
     },
     [addMention],
   );
@@ -183,7 +220,6 @@ export default function PromptInput({
     append!({
       role: "user",
       content: "",
-
       parts: [
         {
           type: "text",
@@ -208,22 +244,52 @@ export default function PromptInput({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [!!onThinkingChange, thinking]);
 
+  // Handle ESC key to clear mentions
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && mentions.length > 0 && threadId) {
+        e.preventDefault();
+        e.stopPropagation();
+        appStoreMutate((prev) => ({
+          threadMentions: {
+            ...prev.threadMentions,
+            [threadId]: [],
+          },
+          agentId: undefined,
+        }));
+        editorRef.current?.commands.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [mentions.length, threadId, appStoreMutate]);
+
+  useEffect(() => {
+    if (!editorRef.current) return;
+  }, [editorRef.current]);
+
   return (
     <div className="max-w-3xl mx-auto fade-in animate-in">
       <div className="z-10 mx-auto w-full max-w-3xl relative">
         <fieldset className="flex w-full min-w-0 max-w-full flex-col px-4">
-          <div className="ring-8 ring-muted/60 overflow-hidden rounded-4xl backdrop-blur-sm transition-all duration-200 bg-muted/60 relative flex w-full flex-col cursor-text z-10 items-stretch focus-within:bg-muted hover:bg-muted focus-within:ring-muted hover:ring-muted">
+          <div className="shadow-lg overflow-hidden rounded-4xl backdrop-blur-sm transition-all duration-200 bg-muted/60 relative flex w-full flex-col cursor-text z-10 items-stretch focus-within:bg-muted hover:bg-muted focus-within:ring-muted hover:ring-muted">
             {mentions.length > 0 && (
-              <div className="bg-input rounded-b-sm rounded-t-3xl p-3 flex flex-col gap-4">
+              <div className="bg-input rounded-b-sm rounded-t-3xl p-3 flex flex-col gap-4 mx-2 my-2">
                 {mentions.map((mention, i) => {
                   return (
                     <div key={i} className="flex items-center gap-2">
-                      {mention.type === "workflow" ? (
+                      {mention.type === "workflow" ||
+                      mention.type === "agent" ? (
                         <Avatar
                           className="size-6 p-1 ring ring-border rounded-full flex-shrink-0"
                           style={mention.icon?.style}
                         >
-                          <AvatarImage src={mention.icon?.value} />
+                          <AvatarImage
+                            src={
+                              mention.icon?.value ||
+                              EMOJI_DATA[i % EMOJI_DATA.length]
+                            }
+                          />
                           <AvatarFallback>
                             {mention.name.slice(0, 1)}
                           </AvatarFallback>
@@ -267,7 +333,7 @@ export default function PromptInput({
                 })}
               </div>
             )}
-            <div className="flex flex-col gap-3.5 px-3 py-2">
+            <div className="flex flex-col gap-3.5 px-5 pt-2 pb-4">
               <div className="relative min-h-[2rem]">
                 <ChatMentionInput
                   input={input}
@@ -276,6 +342,8 @@ export default function PromptInput({
                   onEnter={submit}
                   placeholder={placeholder ?? t("placeholder")}
                   ref={editorRef}
+                  disabledMention={disabledMention}
+                  onFocus={onFocus}
                 />
               </div>
               <div className="flex w-full items-center z-30">
@@ -325,6 +393,7 @@ export default function PromptInput({
                       align="start"
                       side="top"
                       onSelectWorkflow={onSelectWorkflow}
+                      onSelectAgent={onSelectAgent}
                       mentions={mentions}
                     />
                   </>
@@ -370,8 +439,7 @@ export default function PromptInput({
                             voiceChat: {
                               ...state.voiceChat,
                               isOpen: true,
-                              threadId: currentThreadId ?? undefined,
-                              projectId: currentProjectId ?? undefined,
+                              agentId: undefined,
                             },
                           }));
                         }}
