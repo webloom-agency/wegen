@@ -50,7 +50,7 @@ export const ChatMentionSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("workflow"),
     name: z.string(),
-    description: z.string().optional(),
+    description: z.string().nullish(),
     workflowId: z.string(),
     icon: z
       .object({
@@ -63,7 +63,7 @@ export const ChatMentionSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("agent"),
     name: z.string(),
-    description: z.string().optional(),
+    description: z.string().nullish(),
     agentId: z.string(),
     icon: z
       .object({
