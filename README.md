@@ -17,33 +17,38 @@ See the experience in action in the [preview](#preview) below!
 
 ```bash
 # 1. Clone the repository
+
 git clone https://github.com/cgoinglove/better-chatbot.git
 cd better-chatbot
 
 # 2. (Optional) Install pnpm if you don't have it
+
 npm install -g pnpm
 
 # 3. Install dependencies
+
 pnpm i
 
-# 4. Create the environment variable file and fill in your .env values
-pnpm initial:env # This runs automatically in postinstall, so you can usually skip it.
+# 4. (Optional) Start a local PostgreSQL instance
 
-# 5. (Optional) If you already have PostgreSQL running and .env is configured, skip this step
 pnpm docker:pg
 
-# 6. Run database migrations
-pnpm db:migrate
+# If you already have your own PostgreSQL running, you can skip this step.
+# In that case, make sure to update the PostgreSQL URL in your .env file.
 
-# 7. Start the development server
-pnpm dev
+# 5. Enter required information in the .env file
 
-# 8. (Optional) Build & start for local production-like testing
+# The .env file is created automatically. Just fill in the required values.
+# For the fastest setup, provide at least one LLM provider's API key (e.g., OPENAI_API_KEY, CLAUDE_API_KEY, GEMINI_API_KEY, etc.) and the PostgreSQL URL you want to use.
+
+# 6. Start the server
+
 pnpm build:local && pnpm start
-# Use build:local for local start to ensure correct cookie settings
-```
 
-> **⚠️ Important:** When updating to a new version of the project (after `git pull`), always run `pnpm db:migrate` to ensure your database schema is up to date.
+# (Recommended for most cases. Ensures correct cookie settings.)
+# For development mode with hot-reloading and debugging, you can use:
+# pnpm dev
+```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser to get started.
 
@@ -215,24 +220,22 @@ pnpm docker-compose:up
 ### Quick Start (Local Version) 🚀
 
 ```bash
-# 1. Install dependencies
 pnpm i
 
-# 2. Create the environment variable file and fill in your .env values
-pnpm initial:env # This runs automatically in postinstall, so you can usually skip it.
-
-# 3. (Optional) If you already have PostgreSQL running and .env is configured, skip this step
+#(Optional) Start a local PostgreSQL instance
+# If you already have your own PostgreSQL running, you can skip this step.
+# In that case, make sure to update the PostgreSQL URL in your .env file.
 pnpm docker:pg
 
-# 4. Run database migrations
-pnpm db:migrate
+# Enter required information in the .env file
+# The .env file is created automatically. Just fill in the required values.
+# For the fastest setup, provide at least one LLM provider's API key (e.g., OPENAI_API_KEY, CLAUDE_API_KEY, GEMINI_API_KEY, etc.) and the PostgreSQL URL you want to use.
 
-# 5. Start the development server
-pnpm dev
-
-# 6. (Optional) Build & start for local production-like testing
 pnpm build:local && pnpm start
-# Use build:local for local start to ensure correct cookie settings
+
+# (Recommended for most cases. Ensures correct cookie settings.)
+# For development mode with hot-reloading and debugging, you can use:
+# pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser to get started.
