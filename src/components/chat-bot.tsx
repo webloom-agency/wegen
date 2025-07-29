@@ -45,6 +45,7 @@ import { useTranslations } from "next-intl";
 import { Think } from "ui/think";
 import { useGenerateThreadTitle } from "@/hooks/queries/use-generate-thread-title";
 import dynamic from "next/dynamic";
+import { useMounted } from "@/hooks/use-mounted";
 
 type Props = {
   threadId: string;
@@ -66,7 +67,7 @@ const Particles = dynamic(() => import("ui/particles"), {
 
 const debounce = createDebounce();
 
-const version = "0.1.0";
+const version = "0.1.1";
 const isFirstTime = !localStorage.getItem(`V_${version}`);
 localStorage.setItem(`V_${version}`, "true");
 
@@ -178,6 +179,8 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
   });
 
   const [isDeleteThreadPopupOpen, setIsDeleteThreadPopupOpen] = useState(false);
+
+  const mounted = useMounted();
 
   const latestRef = useToRef({
     toolChoice,
@@ -335,7 +338,9 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
   }, []);
 
   useEffect(() => {
-    handleFocus();
+    if (mounted) {
+      handleFocus();
+    }
   }, [input]);
 
   return (

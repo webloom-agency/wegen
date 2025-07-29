@@ -67,7 +67,7 @@ export function filterMCPToolsByMentions(
       };
     },
     {} as Record<string, string[]>,
-  ); // {serverId: [toolName1, toolName2]}
+  );
 
   return objectFlow(tools).filter((_tool) => {
     if (!metionsByServer[_tool._mcpServerId]) return false;
@@ -79,11 +79,11 @@ export function filterMCPToolsByAllowedMCPServers(
   tools: Record<string, VercelAIMcpTool>,
   allowedMcpServers?: Record<string, AllowedMCPServer>,
 ): Record<string, VercelAIMcpTool> {
-  if (!allowedMcpServers) {
-    return tools;
+  if (!allowedMcpServers || Object.keys(allowedMcpServers).length === 0) {
+    return {};
   }
   return objectFlow(tools).filter((_tool) => {
-    if (!allowedMcpServers[_tool._mcpServerId]?.tools) return true;
+    if (!allowedMcpServers[_tool._mcpServerId]?.tools) return false;
     return allowedMcpServers[_tool._mcpServerId].tools.includes(
       _tool._originToolName,
     );
@@ -451,7 +451,7 @@ export const loadMcpTools = (opt?: {
 }) =>
   safe(() => mcpClientsManager.tools())
     .map((tools) => {
-      if (opt?.mentions) {
+      if (opt?.mentions?.length) {
         return filterMCPToolsByMentions(tools, opt.mentions);
       }
       if (opt?.allowedMcpServers) {

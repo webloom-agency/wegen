@@ -21,7 +21,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "ui/badge";
 import { Button } from "ui/button";
@@ -84,8 +84,7 @@ const calculateToolCount = (
   mcpList: (MCPServerInfo & { id: string })[],
 ) => {
   return mcpList.reduce((acc, server) => {
-    const count =
-      allowedMcpServers[server.id]?.tools?.length ?? server.toolInfo.length;
+    const count = allowedMcpServers[server.id]?.tools?.length;
     return acc + count;
   }, 0);
 };
@@ -195,6 +194,12 @@ export function ToolSelectDropdown({
       </Button>
     );
   }, [mentions?.length, bindingTools.length, isLoading, open]);
+
+  useEffect(() => {
+    if (bindingTools.length > 128) {
+      toast("Too many tools selected, please select less than 128 tools");
+    }
+  }, [bindingTools.length > 128]);
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -508,8 +513,8 @@ function McpServerSelector() {
       )
       .map((server) => {
         const allowedTools: string[] =
-          allowedMcpServers?.[server.id]?.tools ??
-          server.toolInfo.map((tool) => tool.name);
+          allowedMcpServers?.[server.id]?.tools ?? [];
+
         return {
           id: server.id,
           serverName: server.name,
