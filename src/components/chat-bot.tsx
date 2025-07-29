@@ -363,6 +363,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
             <div
               className={"flex flex-col gap-2 overflow-y-auto py-6 z-10"}
               ref={containerRef}
+              onScroll={handleFocus}
             >
               {messages.map((message, index) => {
                 const isLastMessage = messages.length - 1 === index;
