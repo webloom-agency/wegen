@@ -46,7 +46,13 @@ export async function POST(request: Request) {
       })
       .unwrap();
 
-    await safe(mcpClientsManager.tools()).unwrap();
+    await safe(mcpClientsManager.tools())
+      .ifOk((tools) => {
+        objectFlow(tools).forEach((mcp) => {
+          toolNames.add(mcp._originToolName);
+        });
+      })
+      .unwrap();
 
     await safe(workflowRepository.selectExecuteAbility(session.user.id))
       .ifOk((tools) => {

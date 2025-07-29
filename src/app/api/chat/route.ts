@@ -145,6 +145,7 @@ export async function POST(request: Request) {
           .orElse({});
 
         const APP_DEFAULT_TOOLS = await safe()
+          .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
           .map(() =>
             loadAppDefaultTools({
               mentions,
