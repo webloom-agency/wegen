@@ -9,7 +9,7 @@ import { getSession } from "auth/server";
 import { colorize } from "consola/utils";
 import { AgentGenerateSchema } from "app-types/agent";
 import { z } from "zod";
-import { loadAppDefaultTools, loadMcpTools } from "../../chat/shared.chat";
+import { loadAppDefaultTools } from "../../chat/shared.chat";
 import { workflowRepository } from "lib/db/repository";
 import { safe } from "ts-safe";
 import { objectFlow } from "lib/utils";
