@@ -151,7 +151,7 @@ const LightRays: React.FC<LightRaysProps> = ({
     const initializeWebGL = async () => {
       if (!containerRef.current) return;
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => requestAnimationFrame(resolve));
 
       if (!containerRef.current) return;
 
@@ -353,7 +353,15 @@ void main() {
         }
       };
 
+      const handleBeforeUnload = () => {
+        if (renderer?.gl?.canvas) {
+          renderer.gl.canvas.style.opacity = "0";
+          renderer.gl.canvas.style.visibility = "hidden";
+        }
+      };
+
       window.addEventListener("resize", updatePlacement);
+      window.addEventListener("beforeunload", handleBeforeUnload);
       updatePlacement();
       animationIdRef.current = requestAnimationFrame(loop);
 
@@ -364,10 +372,17 @@ void main() {
         }
 
         window.removeEventListener("resize", updatePlacement);
+        window.removeEventListener("beforeunload", handleBeforeUnload);
 
         if (renderer) {
           try {
             const canvas = renderer.gl.canvas;
+
+            if (canvas) {
+              canvas.style.opacity = "0";
+              canvas.style.visibility = "hidden";
+            }
+
             const loseContextExt =
               renderer.gl.getExtension("WEBGL_lose_context");
             if (loseContextExt) {

@@ -67,7 +67,7 @@ const Particles = dynamic(() => import("ui/particles"), {
 
 const debounce = createDebounce();
 
-const version = "0.1.1";
+const version = "0.0.0";
 const isFirstTime = !localStorage.getItem(`V_${version}`);
 localStorage.setItem(`V_${version}`, "true");
 
@@ -422,7 +422,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
             onThinkingChange={handleThinkingChange}
             isLoading={isLoading || isPendingToolCall}
             onStop={stop}
-            onFocus={handleFocus}
+            onFocus={isFirstTime ? undefined : handleFocus}
           />
           {slots?.inputBottomSlot}
         </div>

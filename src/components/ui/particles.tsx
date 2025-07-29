@@ -159,6 +159,14 @@ const Particles: React.FC<ParticlesProps> = ({
       container.addEventListener("mousemove", handleMouseMove);
     }
 
+    const handleBeforeUnload = () => {
+      if (gl?.canvas) {
+        gl.canvas.style.opacity = "0";
+        gl.canvas.style.visibility = "hidden";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
     const count = particleCount;
     const positions = new Float32Array(count * 3);
     const randoms = new Float32Array(count * 4);
@@ -241,10 +249,17 @@ const Particles: React.FC<ParticlesProps> = ({
 
     return () => {
       window.removeEventListener("resize", resize);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
       if (moveParticlesOnHover) {
         container.removeEventListener("mousemove", handleMouseMove);
       }
       cancelAnimationFrame(animationFrameId);
+
+      if (gl.canvas) {
+        gl.canvas.style.opacity = "0";
+        gl.canvas.style.visibility = "hidden";
+      }
+
       if (container.contains(gl.canvas)) {
         container.removeChild(gl.canvas);
       }
