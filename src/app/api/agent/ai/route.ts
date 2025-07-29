@@ -13,6 +13,7 @@ import { loadAppDefaultTools, loadMcpTools } from "../../chat/shared.chat";
 import { workflowRepository } from "lib/db/repository";
 import { safe } from "ts-safe";
 import { objectFlow } from "lib/utils";
+import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 
 const logger = globalLogger.withDefaults({
   message: colorize("blackBright", `Agent Generate API: `),
@@ -45,13 +46,7 @@ export async function POST(request: Request) {
       })
       .unwrap();
 
-    await safe(loadMcpTools)
-      .ifOk((mcpTools) => {
-        objectFlow(mcpTools).forEach((tool) => {
-          toolNames.add(tool._originToolName);
-        });
-      })
-      .unwrap();
+    await safe(mcpClientsManager.tools()).unwrap();
 
     await safe(workflowRepository.selectExecuteAbility(session.user.id))
       .ifOk((tools) => {

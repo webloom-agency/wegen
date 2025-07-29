@@ -454,10 +454,7 @@ export const loadMcpTools = (opt?: {
       if (opt?.mentions?.length) {
         return filterMCPToolsByMentions(tools, opt.mentions);
       }
-      if (opt?.allowedMcpServers) {
-        return filterMCPToolsByAllowedMCPServers(tools, opt.allowedMcpServers);
-      }
-      return tools;
+      return filterMCPToolsByAllowedMCPServers(tools, opt?.allowedMcpServers);
     })
     .orElse({} as Record<string, VercelAIMcpTool>);
 

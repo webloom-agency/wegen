@@ -143,7 +143,8 @@ export default function EditAgent({ id }: { id?: string }) {
         mcp.toolInfo.forEach((tool) => {
           if (toolNames.includes(tool.name)) {
             allMentions.push({
-              type: "mcpServer",
+              type: "mcpTool",
+              serverName: mcp.name,
               name: tool.name,
               serverId: mcp.id,
             });
@@ -360,7 +361,6 @@ export default function EditAgent({ id }: { id?: string }) {
       });
     });
   }, [object]);
-
   useEffect(() => {
     if (id && !isValidating) {
       mutateStoredAgent();
