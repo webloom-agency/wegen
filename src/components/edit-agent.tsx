@@ -173,29 +173,28 @@ export default function EditAgent({ id }: { id?: string }) {
     },
     [mcpList, workflowToolList],
   );
-
-  const { isLoading: isStoredAgentLoading } = useSWR(
-    id ? `/api/agent/${id}` : null,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      revalidateIfStale: false,
-      revalidateIfHidden: false,
-      onError: (error) => {
-        handleErrorWithToast(error);
-        router.push(`/`);
-      },
-      onSuccess: (data) => {
-        if (data) {
-          setAgent({ ...defaultConfig(), ...data });
-        } else {
-          toast.error(`Agent not found`);
-          router.push(`/`);
-        }
-      },
+  const {
+    isLoading: isStoredAgentLoading,
+    mutate: mutateStoredAgent,
+    isValidating,
+  } = useSWR(id ? `/api/agent/${id}` : null, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    revalidateIfStale: false,
+    revalidateIfHidden: false,
+    onError: (error) => {
+      handleErrorWithToast(error);
+      router.push(`/`);
     },
-  );
+    onSuccess: (data) => {
+      if (data) {
+        setAgent({ ...defaultConfig(), ...data });
+      } else {
+        toast.error(`Agent not found`);
+        router.push(`/`);
+      }
+    },
+  });
 
   const saveAgent = useCallback(() => {
     setIsSaving(true);
@@ -209,7 +208,6 @@ export default function EditAgent({ id }: { id?: string }) {
       )
       .ifOk(() => {
         mutate(`/api/agent`);
-
         router.push(`/`);
       })
       .ifFail(handleErrorWithToast)
@@ -322,8 +320,8 @@ export default function EditAgent({ id }: { id?: string }) {
   }, [isMcpLoading, isWorkflowLoading]);
 
   const isLoading = useMemo(() => {
-    return isGenerating || isLoadingTool || isSaving || isStoredAgentLoading;
-  }, [isGenerating, isLoadingTool, isSaving, isStoredAgentLoading]);
+    return isGenerating || isLoadingTool || isSaving || isValidating;
+  }, [isGenerating, isLoadingTool, isSaving, isValidating]);
 
   useEffect(() => {
     if (!object) return;
@@ -362,6 +360,14 @@ export default function EditAgent({ id }: { id?: string }) {
       });
     });
   }, [object]);
+
+  useEffect(() => {
+    if (id && !isValidating) {
+      mutateStoredAgent();
+    } else if (!id) {
+      setAgent(defaultConfig());
+    }
+  }, [id]);
 
   return (
     <ScrollArea className="h-full w-full relative">

@@ -7,5 +7,5 @@ export default async function AgentPage({
 }) {
   const { id } = await params;
 
-  return <EditAgent id={id == "new" ? undefined : id} />;
+  return <EditAgent key={id} id={id == "new" ? undefined : id} />;
 }
