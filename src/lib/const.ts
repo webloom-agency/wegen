@@ -16,6 +16,21 @@ export const FILE_BASED_MCP_CONFIG =
 export const COOKIE_KEY_SIDEBAR_STATE = "sidebar:state";
 export const COOKIE_KEY_LOCALE = "i18n:locale";
 
+export const BASE_URL = (() => {
+  if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
+
+  if (IS_VERCEL_ENV) {
+    const vercelDomain =
+      (process.env.VERCEL_ENV == "production"
+        ? process.env.VERCEL_PROJECT_PRODUCTION_URL
+        : process.env.VERCEL_URL) || process.env.VERCEL_URL;
+
+    if (vercelDomain) return `https://${vercelDomain}`;
+  }
+
+  return `http://localhost:${process.env.PORT || 3000}`;
+})().replace(/\/+$/, "");
+
 export const BASE_THEMES = [
   "default",
   "zinc",
@@ -37,6 +52,8 @@ export const BASE_THEMES = [
   "misty-harbor",
   "zen-garden",
 ];
+
+export const OAUTH_REQUIRED_CODE = "OAUTH_REQUIRED";
 
 export const SUPPORTED_LOCALES = [
   {
