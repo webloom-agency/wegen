@@ -58,7 +58,10 @@ export class MCPClient {
     private options: ClientOptions = {},
   ) {
     this.logger = logger.withDefaults({
-      message: colorize("cyan", `MCP Client ${this.name}: `),
+      message: colorize(
+        "cyan",
+        `[${this.id.slice(0, 4)}] MCP Client ${this.name}: `,
+      ),
     });
   }
 
@@ -116,7 +119,7 @@ export class MCPClient {
           software_version: "1.0.0",
         },
         onRedirectToAuthorization: async (authorizationUrl: URL) => {
-          this.logger.warn(
+          this.logger.info(
             "OAuth authorization required - user interaction needed",
           );
           this.authorizationUrl = authorizationUrl;
@@ -201,7 +204,7 @@ export class MCPClient {
           await withTimeout(client.connect(this.transport), CONNET_TIMEOUT);
         } catch (streamableHttpError) {
           // Check if it's OAuth error and we haven't tried OAuth yet
-          if (this.isOAuth(streamableHttpError) && !this.needOauthProvider) {
+          if (isUnauthorized(streamableHttpError) && !this.needOauthProvider) {
             this.logger.info(
               "OAuth authentication required, retrying with OAuth provider",
             );
@@ -211,9 +214,7 @@ export class MCPClient {
             return this.connect(); // Recursive call with OAuth
           }
 
-          const requiresOAuthAuth =
-            this.isOAuthAuthorizationRequired(streamableHttpError);
-          if (!requiresOAuthAuth) {
+          if (!isOAuthAuthorizationRequired(streamableHttpError)) {
             this.logger.error(streamableHttpError);
             this.logger.warn(
               "Streamable HTTP connection failed, falling back to SSE transport",
@@ -226,12 +227,11 @@ export class MCPClient {
               },
               authProvider: this.createOAuthProvider(),
             });
-            await withTimeout(
-              client.connect(this.transport),
-              CONNET_TIMEOUT,
-            ).catch(async (sseError) => {
-              // Check if it's OAuth error and we haven't tried OAuth yet
-              if (this.isOAuth(sseError) && !this.needOauthProvider) {
+
+            try {
+              await withTimeout(client.connect(this.transport), CONNET_TIMEOUT);
+            } catch (sseError) {
+              if (isUnauthorized(sseError) && !this.needOauthProvider) {
                 this.logger.info(
                   "OAuth authentication required for SSE, retrying with OAuth provider",
                 );
@@ -241,9 +241,8 @@ export class MCPClient {
                 return this.connect(); // Recursive call with OAuth
               }
 
-              if (this.isOAuthAuthorizationRequired(sseError)) return;
-              throw sseError;
-            });
+              if (!isOAuthAuthorizationRequired(sseError)) throw sseError;
+            }
           }
         }
       } else {
@@ -263,8 +262,10 @@ export class MCPClient {
       this.error = errorToString(error);
       this.transport = undefined;
       throw error;
+    } finally {
+      this.locker.unlock();
     }
-    this.locker.unlock();
+
     await this.updateToolInfo();
 
     return this.client;
@@ -346,28 +347,6 @@ export class MCPClient {
       })
       .unwrap();
   }
-
-  private isOAuth(error: any): boolean {
-    return (
-      error instanceof UnauthorizedError ||
-      error?.status === 401 ||
-      error?.message?.includes("401") ||
-      error?.message?.includes("Unauthorized") ||
-      error?.message?.includes("invalid_token") ||
-      error?.message?.includes("HTTP 401")
-    );
-  }
-
-  private isOAuthAuthorizationRequired(error: any): boolean {
-    if (error instanceof OAuthAuthorizationRequiredError) {
-      return true;
-    }
-    if (this.isOAuth(error)) {
-      this.logger.error("OAuth authentication failed:", error.message);
-      throw error;
-    }
-    return false;
-  }
 }
 
 /**
@@ -385,4 +364,19 @@ class OAuthAuthorizationRequiredError extends Error {
     super("OAuth user authorization required");
     this.name = "OAuthAuthorizationRequiredError";
   }
+}
+
+function isUnauthorized(error: any): boolean {
+  return (
+    error instanceof UnauthorizedError ||
+    error?.status === 401 ||
+    error?.message?.includes("401") ||
+    error?.message?.includes("Unauthorized") ||
+    error?.message?.includes("invalid_token") ||
+    error?.message?.includes("HTTP 401")
+  );
+}
+
+function isOAuthAuthorizationRequired(error: any): boolean {
+  return error instanceof OAuthAuthorizationRequiredError;
 }

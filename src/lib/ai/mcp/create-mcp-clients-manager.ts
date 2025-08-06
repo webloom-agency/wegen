@@ -49,7 +49,7 @@ export class MCPClientsManager {
   private initializedLock = new Locker();
   private initialized = false;
   private logger = globalLogger.withDefaults({
-    message: colorize("dim", `[${generateUUID().slice(0, 8)}] MCP Manager: `),
+    message: colorize("dim", `[${generateUUID().slice(0, 4)}] MCP Manager: `),
   });
 
   // Optional storage for persistent configurations
@@ -65,7 +65,6 @@ export class MCPClientsManager {
     if (this.initialized) {
       return;
     }
-    this.logger.info("Waiting for MCP clients manager to be initialized");
     if (this.initializedLock.isLocked) {
       await this.initializedLock.wait();
       return;
@@ -172,7 +171,13 @@ export class MCPClientsManager {
       const entity = await this.storage.save(server);
       id = entity.id;
     }
-    await this.addClient(id, server.name, server.config);
+    await this.addClient(id, server.name, server.config).catch((err) => {
+      if (!server.id) {
+        void this.removeClient(id);
+      }
+      throw err;
+    });
+
     return this.clients.get(id)!;
   }
 
@@ -180,12 +185,13 @@ export class MCPClientsManager {
    * Removes a client by name, disposing resources and removing from storage
    */
   async removeClient(id: string) {
+    const client = this.clients.get(id);
+
     if (this.storage) {
       if (await this.storage.has(id)) {
         await this.storage.delete(id);
       }
     }
-    const client = this.clients.get(id);
     this.clients.delete(id);
     if (client) {
       void client.client.disconnect();
@@ -257,7 +263,7 @@ export class MCPClientsManager {
         if (res?.content && Array.isArray(res.content)) {
           const parsedResult = {
             ...res,
-            content: res.content.map((c) => {
+            content: res.content.map((c: any) => {
               if (c?.type === "text" && c?.text) {
                 const parsed = safeJSONParse(c.text);
                 return {

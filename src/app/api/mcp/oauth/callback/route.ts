@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { mcpOAuthRepository } from "@/lib/db/repository";
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
+
 import globalLogger from "logger";
 import { colorize } from "consola/utils";
 
@@ -171,13 +172,13 @@ export async function GET(request: NextRequest) {
       },
       statusCode: 200,
     });
-  } catch (error) {
+  } catch (error: any) {
     logger.error("OAuth callback failed", error);
     return createOAuthResponsePage({
       type: "error",
       title: "OAuth Error",
       heading: "Authentication Failed",
-      message: "Failed to complete the authentication process",
+      message: error.message || "Failed to complete the authentication process",
       postMessageType: "MCP_OAUTH_ERROR",
       postMessageData: {
         error: "auth_failed",
