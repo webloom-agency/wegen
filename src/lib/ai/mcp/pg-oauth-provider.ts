@@ -20,12 +20,13 @@ import { ConsolaInstance } from "consola";
 
 /**
  * PostgreSQL-based OAuth client provider for MCP servers
- * Manages OAuth authentication state and tokens with session expiration
+ * Manages OAuth authentication state and tokens with multi-instance support
  */
 export class PgOAuthClientProvider implements OAuthClientProvider {
-  private currentOAuthState: string = generateUUID(); // Random UUID for OAuth security
+  private currentOAuthState: string = "";
   private cachedAuthData: McpOAuthSession | undefined;
   private logger: ConsolaInstance;
+  private initialized = false;
 
   constructor(
     private config: {
@@ -34,31 +35,70 @@ export class PgOAuthClientProvider implements OAuthClientProvider {
       serverUrl: string;
       _clientMetadata: OAuthClientMetadata;
       onRedirectToAuthorization: (authUrl: URL) => Promise<void>;
+      state?: string;
     },
   ) {
     this.logger = globalLogger.withDefaults({
-      message: colorize("dim", `[MCP OAuth Provider ${this.config.name}] `),
+      message: colorize(
+        "dim",
+        `[MCP OAuth Provider ${this.config.name}-${generateUUID().slice(0, 4)}] `,
+      ),
     });
   }
 
-  private async getAuthData() {
-    if (this.cachedAuthData) {
-      return this.cachedAuthData;
+  private async initializeOAuth() {
+    if (this.initialized) return;
+    // 0. If a constructor state was provided (callback/hand-off), adopt it first
+    if (this.config.state) {
+      const session = await pgMcpOAuthRepository.getSessionByState(
+        this.config.state,
+      );
+      if (session && session.mcpServerId === this.config.mcpServerId) {
+        this.currentOAuthState = session.state || "";
+        this.cachedAuthData = session;
+        this.initialized = true;
+        this.logger.info("Adopted OAuth session from provided state");
+        return;
+      }
     }
-    this.cachedAuthData = await pgMcpOAuthRepository.getOAuthSession(
+    // 1. Check for authenticated session first
+    const authenticated = await pgMcpOAuthRepository.getAuthenticatedSession(
       this.config.mcpServerId,
     );
+    if (authenticated) {
+      this.currentOAuthState = authenticated.state || "";
+      this.cachedAuthData = authenticated;
+      this.initialized = true;
+      this.logger.info("Using existing authenticated session");
+      return;
+    }
+
+    // 2. Always create a new in-progress session when not authenticated
+    this.currentOAuthState = generateUUID();
+    this.cachedAuthData = await pgMcpOAuthRepository.createSession(
+      this.config.mcpServerId,
+      {
+        state: this.currentOAuthState,
+        serverUrl: this.config.serverUrl,
+      },
+    );
+    this.initialized = true;
+    this.logger.info("Created new OAuth session");
+  }
+
+  private async getAuthData() {
+    await this.initializeOAuth();
     return this.cachedAuthData;
   }
 
-  private async saveAuthData(data: Partial<McpOAuthSession>) {
-    this.cachedAuthData = await pgMcpOAuthRepository.saveOAuthSession(
-      this.config.mcpServerId,
-      {
-        ...data,
-        serverUrl: this.config.serverUrl,
-        state: this.currentOAuthState, // Update current state
-      },
+  private async updateAuthData(data: Partial<McpOAuthSession>) {
+    if (!this.currentOAuthState) {
+      throw new Error("OAuth not initialized");
+    }
+
+    this.cachedAuthData = await pgMcpOAuthRepository.updateSessionByState(
+      this.currentOAuthState,
+      data,
     );
     return this.cachedAuthData;
   }
@@ -78,12 +118,17 @@ export class PgOAuthClientProvider implements OAuthClientProvider {
   async clientInformation(): Promise<OAuthClientInformation | undefined> {
     const authData = await this.getAuthData();
     if (authData?.clientInfo) {
+      // Check if redirect URI matches (security check)
       if (
         !authData.tokens &&
         authData.clientInfo.redirect_uris[0] != this.redirectUrl
       ) {
-        await pgMcpOAuthRepository.deleteOAuthData(this.config.mcpServerId);
+        // Security guard: redirect URI mismatch → drop only this mismatched session by state
+        if (authData.state) {
+          await pgMcpOAuthRepository.deleteByState(authData.state);
+        }
         this.cachedAuthData = undefined;
+        this.initialized = false;
         return undefined;
       }
       return authData.clientInfo;
@@ -95,7 +140,7 @@ export class PgOAuthClientProvider implements OAuthClientProvider {
   async saveClientInformation(
     clientCredentials: OAuthClientInformationFull,
   ): Promise<void> {
-    await this.saveAuthData({
+    await this.updateAuthData({
       clientInfo: clientCredentials,
     });
 
@@ -112,9 +157,12 @@ export class PgOAuthClientProvider implements OAuthClientProvider {
   }
 
   async saveTokens(accessTokens: OAuthTokens): Promise<void> {
-    await this.saveAuthData({
-      tokens: accessTokens,
-    });
+    // Store tokens for current state
+    this.cachedAuthData = await pgMcpOAuthRepository.saveTokensAndCleanup(
+      this.currentOAuthState,
+      this.config.mcpServerId,
+      { tokens: accessTokens },
+    );
 
     this.logger.info(`OAuth tokens stored successfully`);
   }
@@ -125,7 +173,7 @@ export class PgOAuthClientProvider implements OAuthClientProvider {
   }
 
   async saveCodeVerifier(pkceVerifier: string): Promise<void> {
-    await this.saveAuthData({
+    await this.updateAuthData({
       codeVerifier: pkceVerifier,
     });
   }
@@ -138,37 +186,43 @@ export class PgOAuthClientProvider implements OAuthClientProvider {
     return authData.codeVerifier;
   }
 
+  /**
+   * Adopt the given OAuth state by loading its session from DB.
+   * Useful when the callback is handled by a different instance.
+   */
+  async adoptState(state: string): Promise<void> {
+    if (!state) return;
+    const session = await pgMcpOAuthRepository.getSessionByState(state);
+    if (!session) return;
+    if (session.mcpServerId !== this.config.mcpServerId) {
+      this.logger.warn(
+        `Attempted to adopt state for different server (${session.mcpServerId}), ignoring`,
+      );
+      return;
+    }
+    this.currentOAuthState = state;
+    this.cachedAuthData = session;
+    this.initialized = true;
+    this.logger.info(`Adopted OAuth state for callback reconciliation`);
+  }
+
   async invalidateCredentials(
     invalidationScope: "all" | "client" | "tokens" | "verifier",
   ): Promise<void> {
-    this.logger.info(
-      `Invalidating OAuth credentials for server ${this.config.mcpServerId}, scope: ${invalidationScope}`,
-    );
-
     try {
       switch (invalidationScope) {
         case "all":
-          await pgMcpOAuthRepository.deleteOAuthData(this.config.mcpServerId);
+          await pgMcpOAuthRepository.deleteByState(this.currentOAuthState);
           this.cachedAuthData = undefined;
+          this.initialized = false;
+          this.currentOAuthState = "";
           this.logger.info(`OAuth credentials invalidated`);
           break;
         case "tokens":
-          await this.saveAuthData({
+          await this.updateAuthData({
             tokens: undefined,
           });
           this.logger.info(`OAuth tokens invalidated`);
-          break;
-        case "verifier":
-          await this.saveAuthData({
-            codeVerifier: undefined,
-          });
-          this.logger.info(`OAuth code verifier invalidated`);
-          break;
-        case "client":
-          await this.saveAuthData({
-            clientInfo: undefined,
-          });
-          this.logger.info(`OAuth client information invalidated`);
           break;
       }
     } catch (error) {

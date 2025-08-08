@@ -45,6 +45,7 @@ export class MCPClient {
   private logger: ConsolaInstance;
   private locker = new Locker();
   private transport?: Transport;
+  private oauthProvider?: PgOAuthClientProvider;
   // Information about available tools from the server
   toolInfo: MCPToolInfo[] = [];
   private disconnectDebounce = createDebounce();
@@ -76,9 +77,14 @@ export class MCPClient {
     return this.authorizationUrl;
   }
 
-  async finishAuth(code: string) {
+  async finishAuth(code: string, state: string) {
     if (!isMaybeRemoteConfig(this.serverConfig))
       throw new Error("OAuth flow requires a remote MCP server");
+
+    if (this.status != "authorizing" || this.oauthProvider?.state() != state) {
+      await this.disconnect();
+      await this.connect(state);
+    }
     const finish = (this.transport as StreamableHTTPClientTransport)
       ?.finishAuth;
 
@@ -101,13 +107,20 @@ export class MCPClient {
     };
   }
 
-  private createOAuthProvider() {
+  private createOAuthProvider(oauthState?: string) {
     if (isMaybeRemoteConfig(this.serverConfig) && this.needOauthProvider) {
       this.logger.info("Creating OAuth provider for MCP server authentication");
-      return new PgOAuthClientProvider({
+      if (this.oauthProvider) {
+        if (oauthState && oauthState != this.oauthProvider.state()) {
+          this.oauthProvider.adoptState(oauthState);
+        }
+        return this.oauthProvider;
+      }
+      this.oauthProvider = new PgOAuthClientProvider({
         name: this.name,
         mcpServerId: this.id,
         serverUrl: this.serverConfig.url,
+        state: oauthState,
         _clientMetadata: {
           client_name: `better-chatbot-${this.name}`,
           grant_types: ["authorization_code", "refresh_token"],
@@ -126,6 +139,7 @@ export class MCPClient {
           throw new OAuthAuthorizationRequiredError(authorizationUrl);
         },
       });
+      return this.oauthProvider;
     }
     return undefined;
   }
@@ -138,12 +152,7 @@ export class MCPClient {
     }
   }
 
-  /**
-   * Connect to the MCP server
-   * Do not throw Error
-   * @returns this
-   */
-  async connect() {
+  async connect(oauthState?: string): Promise<Client | undefined> {
     if (this.status === "loading") {
       await this.locker.wait();
       return this.client;
@@ -199,10 +208,10 @@ export class MCPClient {
               headers: config.headers,
               signal: abortController.signal,
             },
-            authProvider: this.createOAuthProvider(),
+            authProvider: this.createOAuthProvider(oauthState),
           });
           await withTimeout(client.connect(this.transport), CONNET_TIMEOUT);
-        } catch (streamableHttpError) {
+        } catch (streamableHttpError: any) {
           // Check if it's OAuth error and we haven't tried OAuth yet
           if (isUnauthorized(streamableHttpError) && !this.needOauthProvider) {
             this.logger.info(
@@ -211,13 +220,12 @@ export class MCPClient {
             this.needOauthProvider = true;
             this.locker.unlock();
             await this.disconnect();
-            return this.connect(); // Recursive call with OAuth
+            return this.connect(oauthState); // Recursive call with OAuth
           }
 
           if (!isOAuthAuthorizationRequired(streamableHttpError)) {
-            this.logger.error(streamableHttpError);
             this.logger.warn(
-              "Streamable HTTP connection failed, falling back to SSE transport",
+              `Streamable HTTP connection failed, Because ${streamableHttpError.message}, falling back to SSE transport`,
             );
 
             this.transport = new SSEClientTransport(url, {
@@ -225,7 +233,7 @@ export class MCPClient {
                 headers: config.headers,
                 signal: abortController.signal,
               },
-              authProvider: this.createOAuthProvider(),
+              authProvider: this.createOAuthProvider(oauthState),
             });
 
             try {
@@ -238,7 +246,7 @@ export class MCPClient {
                 this.needOauthProvider = true;
                 this.locker.unlock();
                 await this.disconnect();
-                return this.connect(); // Recursive call with OAuth
+                return this.connect(oauthState); // Recursive call with OAuth
               }
 
               if (!isOAuthAuthorizationRequired(sseError)) throw sseError;
@@ -269,6 +277,15 @@ export class MCPClient {
     await this.updateToolInfo();
 
     return this.client;
+  }
+
+  /**
+   * Ensure the underlying OAuth provider adopts the callback state
+   * so that PKCE code_verifier matches in multi-instance environments.
+   */
+  async ensureOAuthState(state: string): Promise<void> {
+    if (!state) return;
+    await this.oauthProvider?.adoptState(state);
   }
 
   async disconnect() {
