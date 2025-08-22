@@ -9,7 +9,7 @@
     "dev": "next dev --turbopack",
     "dev:https": "next dev --turbopack --experimental-https",
     "build": "next build",
-    "start": "next start",
+    "start": "cross-env PORT=$PORT next start"
     "build:local": "cross-env NO_HTTPS='1' next build",
     "test": "vitest run",
     "test:watch": "vitest",
