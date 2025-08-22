@@ -22,3 +22,10 @@ export default () => {
   const withNextIntl = createNextIntlPlugin();
   return withNextIntl(nextConfig);
 };
+
+module.exports = {
+  server: {
+    port: process.env.PORT || 3000,  // Ensure it's using the environment variable
+  },
+};
+
