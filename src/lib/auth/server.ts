@@ -15,6 +15,7 @@ import { getAuthConfig } from "./config";
 
 import logger from "logger";
 import { redirect } from "next/navigation";
+import { sendEmail } from "lib/email/resend";
 
 const {
   emailAndPasswordEnabled,
@@ -37,6 +38,27 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: emailAndPasswordEnabled,
     disableSignUp: !signUpEnabled,
+    requireEmailVerification: true,
+    async sendResetPassword({ user, url }) {
+      await sendEmail({
+        to: user.email,
+        subject: "Reset your password",
+        html: `Click the link to reset your password: <a href="${url}">${url}</a>`,
+        text: `Reset your password: ${url}`,
+      });
+    },
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    async sendVerificationEmail({ user, url }) {
+      await sendEmail({
+        to: user.email,
+        subject: "Verify your email",
+        html: `Verify your email by clicking <a href="${url}">this link</a>.`,
+        text: `Verify your email: ${url}`,
+      });
+    },
   },
   session: {
     cookieCache: {
@@ -75,6 +97,12 @@ export const auth = betterAuth({
   socialProviders: socialAuthenticationProviders,
 });
 
+const parseAllowedDomains = () =>
+  (process.env.ALLOWED_SIGNUP_DOMAINS || "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+
 export const getSession = async () => {
   "use server";
   const session = await auth.api
@@ -89,5 +117,20 @@ export const getSession = async () => {
     logger.error("No session found");
     redirect("/sign-in");
   }
+
+  // Enforce email verification
+  if (session.user?.emailVerified === false) {
+    redirect("/sign-in?reason=verify-email");
+  }
+
+  // Optional: enforce allowed domains if configured
+  const allowed = parseAllowedDomains();
+  if (allowed.length && session.user?.email) {
+    const domain = String(session.user.email).toLowerCase().split("@")[1];
+    if (!allowed.includes(domain)) {
+      redirect("/sign-in?reason=domain-not-allowed");
+    }
+  }
+
   return session!;
 };

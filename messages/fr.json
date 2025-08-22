@@ -68,7 +68,7 @@
       "createAccount": "Créer un compte"
     },
     "Intro": {
-      "description": "Bienvenue sur better-chatbot. Connectez-vous pour découvrir nos outils de conversation alimentés par l'IA."
+      "description": "Bienvenue sur wegen. Connectez-vous pour découvrir nos outils de conversation alimentés par l'IA."
     }
   },
   "Chat": {
@@ -139,7 +139,6 @@
     },
     "Thread": {
       "chat": "Chat",
-
       "renameChat": "Renommer",
       "deleteChat": "Supprimer le Chat",
       "deleteUnarchivedChats": "Supprimer Tous les Chats Non Archivés",
@@ -154,7 +153,6 @@
       "threadUpdated": "Fil mis à jour",
       "areYouSureYouWantToDeleteThisChatThread": "Êtes-vous sûr de vouloir supprimer ce fil de chat ?"
     },
-
     "ChatPreferences": {
       "title": "Préférences de Chat",
       "whatShouldWeCallYou": "Comment devrions-nous vous appeler ?",
@@ -221,12 +219,11 @@
     "theme": "Thème",
     "signOut": "Se déconnecter",
     "language": "Langue",
-
     "showAllChats": "Voir Tous les Chats",
     "showLessChats": "Afficher moins",
     "reportAnIssue": "Signaler un problème",
     "joinCommunity": "Rejoindre la Communauté",
-    "workflow": "Flux de Travail"
+    "workflow": "Prompts personnalisés"
   },
   "Archive": {
     "title": "Archive",
@@ -352,7 +349,7 @@
     "vercelSyncDelay": "Fonctionnement sur Vercel\n\nLes modifications MCP peuvent prendre 10-15 secondes à se synchroniser. Veuillez patienter un moment si les changements n'apparaissent pas immédiatement après avoir ajouté, modifié ou supprimé des serveurs."
   },
   "Workflow": {
-    "title": "Flux de Travail",
+    "title": "Prompts personnalisés",
     "createWorkflow": "Créer Flux de Travail",
     "draft": "Brouillon",
     "publish": "Publier",

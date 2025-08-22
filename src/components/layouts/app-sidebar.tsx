@@ -72,7 +72,14 @@ export function AppSidebar({
                   router.refresh();
                 }}
               >
-                <h4 className="font-bold">better-chatbot</h4>
+                <div className="flex items-center gap-2">
+                  <img
+                    src="https://bucket-prod.jecreemavitrine.fr/uploads/sites/156/2023/07/logo-sansmarge-webloom-1.svg"
+                    alt="Wegen"
+                    className="h-5 w-auto"
+                  />
+                  <span className="font-bold">wegen</span>
+                </div>
                 <div
                   className="ml-auto block sm:hidden"
                   onClick={(e) => {
