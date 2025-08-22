@@ -36,14 +36,27 @@ export default function SignIn({
   const t = useTranslations("Auth.SignIn");
 
   const [loading, setLoading] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   const [formData, setFormData] = useObjectState({
     email: "",
     password: "",
   });
 
+  const resendVerification = async () => {
+    if (!formData.email) {
+      toast.error("Enter your email first");
+      return;
+    }
+    await authClient
+      .sendVerificationEmail({ email: formData.email, callbackURL: "/" })
+      .then(() => toast.success("Verification email sent. Check your inbox."))
+      .catch((e) => toast.error(e?.message || "Failed to send verification email"));
+  };
+
   const emailAndPasswordSignIn = () => {
     setLoading(true);
+    setNeedsVerification(false);
     safe(() =>
       authClient.signIn.email(
         {
@@ -53,7 +66,12 @@ export default function SignIn({
         },
         {
           onError(ctx) {
-            toast.error(ctx.error.message || ctx.error.statusText);
+            if (ctx.error.status === 403) {
+              setNeedsVerification(true);
+              toast.error("Please verify your email address");
+            } else {
+              toast.error(ctx.error.message || ctx.error.statusText);
+            }
           },
         },
       ),
@@ -124,6 +142,17 @@ export default function SignIn({
                   t("signIn")
                 )}
               </Button>
+              {needsVerification && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={resendVerification}
+                  disabled={loading}
+                >
+                  Resend verification email
+                </Button>
+              )}
             </div>
           )}
           {socialAuthenticationProviders.length > 0 && (
