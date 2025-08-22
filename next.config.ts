@@ -17,10 +17,6 @@ const nextConfig: NextConfig = {
   experimental: {
     taint: true,
   },
-  // Explicitly set the port for Next.js (this should force binding on the correct port)
-  server: {
-    port: process.env.PORT || 3000,  // default to 3000 if PORT isn't set
-  },
 };
 
 const withNextIntl = createNextIntlPlugin();
