@@ -155,14 +155,26 @@ function convertLegacyBarToXYChartBeta(input: string): string | null {
 function normalizeAndConvert(chart: string): string {
   if (!chart) return chart;
   let s = chart.replace(/\uFEFF/g, ""); // strip BOM
+  // Remove leading comment lines (%% ...) and blank lines
+  s = s
+    .split("\n")
+    .filter((line, idx, arr) => {
+      if (idx === 0) return !/^\s*$/.test(line) && !/^\s*%%/.test(line);
+      return true;
+    })
+    .join("\n");
+
   // Normalize unicode dashes in axis keys
   s = s.replace(/x[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]axis/gi, "x-axis");
   s = s.replace(/y[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]axis/gi, "y-axis");
-  // Ensure 'xychart-beta' is followed by a newline, even if concatenated
-  s = s.replace(/xychart-beta(?!\s*\n)/gi, "xychart-beta\n");
 
-  // If xychart-beta exists after fixes, use it directly
-  if (/xychart-beta/i.test(s)) return s;
+  // If xychart-beta exists anywhere, move it to the start and ensure newline
+  const idx = s.toLowerCase().indexOf("xychart-beta");
+  if (idx >= 0) {
+    const after = s.slice(idx + "xychart-beta".length);
+    s = `xychart-beta\n${after.replace(/^\s+/, "")}`;
+    return s;
+  }
 
   // If there is a legacy 'line' block anywhere, convert that portion
   const lineMatch = s.match(/(^|\n)\s*line\b[\s\S]*/i);
