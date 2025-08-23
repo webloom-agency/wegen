@@ -141,7 +141,8 @@ export class MCPClient {
           grant_types: ["authorization_code", "refresh_token"],
           response_types: ["code"],
           token_endpoint_auth_method: "none", // PKCE flow
-          scope: "mcp:tools",
+          // Only send custom scope for client-managed OAuth; let server-managed OAuth define Google scopes
+          ...(oauthMode === "client" ? { scope: "mcp:tools" as const } : {}),
           redirect_uris: redirectUris,
           software_id: "better-chatbot",
           software_version: "1.0.0",
