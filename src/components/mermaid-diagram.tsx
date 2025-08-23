@@ -20,8 +20,8 @@ interface MermaidDiagramProps {
 
 function normalizeXychartHeader(input: string): string {
   if (!input) return input;
-  // Ensure 'xychart-beta' is alone on the first line
-  let out = input.replace(/^(\s*xychart-beta)\s+/i, "$1\n");
+  // Ensure 'xychart-beta' is alone on the first line (even if concatenated like 'xychart-betatitle')
+  let out = input.replace(/^(\s*xychart-beta)\s*/i, "$1\n");
   // Normalize various unicode dashes in axis keys to plain '-'
   // Replace x–axis/x‑axis/x﹣axis with x-axis; same for y-axis
   out = out.replace(/x[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]axis/gi, "x-axis");
