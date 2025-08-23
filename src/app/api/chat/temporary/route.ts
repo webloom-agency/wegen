@@ -34,6 +34,7 @@ export async function POST(request: Request) {
         instructions ? `\n\n${instructions}` : ""
       }`.trim(),
       messages,
+      temperature: 1,
       maxSteps: 10,
       experimental_continueSteps: true,
       experimental_transform: smoothStream({ chunking: "word" }),

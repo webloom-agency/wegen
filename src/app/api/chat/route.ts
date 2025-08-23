@@ -234,6 +234,7 @@ export async function POST(request: Request) {
           model,
           system: systemPrompt,
           messages,
+          temperature: 1,
           maxSteps: 10,
           toolCallStreaming: true,
           experimental_transform: smoothStream({ chunking: "word" }),
