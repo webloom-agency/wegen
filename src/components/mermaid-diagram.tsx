@@ -71,6 +71,86 @@ function convertLegacyLineToXYChartBeta(input: string): string | null {
   return out.join("\n");
 }
 
+function convertLegacyBarToXYChartBeta(input: string): string | null {
+  const text = input?.trim();
+  if (!text?.toLowerCase().startsWith("bar")) return null;
+  const lines = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && l.toLowerCase() !== "bar");
+
+  let title: string | undefined;
+  let xAxisTitle: string | undefined;
+  let yAxisTitle: string | undefined;
+  let xLabels: string[] = [];
+  const series: { name: string; values: string }[] = [];
+
+  const parseArray = (raw: string) => {
+    const content = raw.trim().replace(/^\[/, "").replace(/\]$/, "");
+    // keep quoted labels intact; pass through as comma-separated
+    return content
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  };
+
+  for (const l of lines) {
+    const lower = l.toLowerCase();
+    if (lower.startsWith("title ")) {
+      title = l.slice(6).trim();
+      continue;
+    }
+    if (lower.startsWith("x-axis ")) {
+      const rest = l.slice(7).trim();
+      if (rest.startsWith("[")) {
+        xLabels = parseArray(rest);
+      } else if (rest.startsWith("\"")) {
+        xAxisTitle = rest.replace(/^\"|\"$/g, "");
+      } else {
+        xAxisTitle = rest;
+      }
+      continue;
+    }
+    if (lower.startsWith("y-axis ")) {
+      const rest = l.slice(7).trim();
+      yAxisTitle = rest.replace(/^\"|\"$/g, "");
+      continue;
+    }
+    if (lower.startsWith("series ")) {
+      // series Name: [1,2,3]
+      const after = l.slice(7).trim();
+      const idx = after.indexOf(":");
+      if (idx > 0) {
+        const name = after.slice(0, idx).trim().replace(/^\"|\"$/g, "");
+        const arrRaw = after.slice(idx + 1).trim();
+        const values = parseArray(arrRaw).join(", ");
+        series.push({ name, values });
+      }
+      continue;
+    }
+    if (lower.startsWith("bar ")) {
+      // bar "Name": 1,2,3
+      const m = l.match(/^bar\s+\"([^\"]+)\"\s*:\s*(.*)$/i);
+      if (m) {
+        series.push({ name: m[1], values: parseArray(m[2]).join(", ") });
+      }
+      continue;
+    }
+  }
+
+  if (!xLabels.length || !series.length) return null;
+
+  const out: string[] = ["xychart-beta"]; 
+  if (title) out.push(`    title: "${title.replaceAll("\"", '\\"')}"`);
+  out.push(`    x-axis: "${(xAxisTitle || "").replaceAll("\"", '\\"')}"`);
+  if (yAxisTitle) out.push(`    y-axis: "${yAxisTitle.replaceAll("\"", '\\"')}"`);
+  out.push(`    x-labels: ${xLabels.join(", ")}`);
+  for (const s of series) {
+    out.push(`    bar "${s.name.replaceAll("\"", '\\"')}": ${s.values}`);
+  }
+  return out.join("\n");
+}
+
 export function MermaidDiagram({ chart }: MermaidDiagramProps) {
   const { theme } = useTheme();
   const [state, setState] = useState<{
@@ -110,8 +190,11 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
           securityLevel: "loose",
         });
 
-        // Normalize legacy formats (e.g., top-level 'line')
-        const normalized = convertLegacyLineToXYChartBeta(chart) || chart;
+        // Normalize legacy formats (e.g., top-level 'line'/'bar')
+        const normalized =
+          convertLegacyBarToXYChartBeta(chart) ||
+          convertLegacyLineToXYChartBeta(chart) ||
+          chart;
 
         // First try to parse to catch syntax errors early
         await mermaid.parse(normalized);
