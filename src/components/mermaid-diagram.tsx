@@ -162,6 +162,35 @@ function convertLegacyBarToXYChartBeta(input: string): string | null {
   return out.join("\n");
 }
 
+function normalizeAndConvert(chart: string): string {
+  if (!chart) return chart;
+  let s = chart.replace(/\uFEFF/g, ""); // strip BOM
+  // Normalize unicode dashes in axis keys
+  s = s.replace(/x[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]axis/gi, "x-axis");
+  s = s.replace(/y[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]axis/gi, "y-axis");
+  // Ensure 'xychart-beta' is followed by a newline, even if concatenated
+  s = s.replace(/xychart-beta(?!\s*\n)/gi, "xychart-beta\n");
+
+  // If xychart-beta exists after fixes, use it directly
+  if (/xychart-beta/i.test(s)) return s;
+
+  // If there is a legacy 'line' block anywhere, convert that portion
+  const lineMatch = s.match(/(^|\n)\s*line\b[\s\S]*/i);
+  if (lineMatch) {
+    const converted = convertLegacyLineToXYChartBeta(lineMatch[0]);
+    if (converted) return converted;
+  }
+
+  // If there is a legacy 'bar' block anywhere, convert that portion
+  const barMatch = s.match(/(^|\n)\s*bar\b[\s\S]*/i);
+  if (barMatch) {
+    const converted = convertLegacyBarToXYChartBeta(barMatch[0]);
+    if (converted) return converted;
+  }
+
+  return s;
+}
+
 export function MermaidDiagram({ chart }: MermaidDiagramProps) {
   const { theme } = useTheme();
   const [state, setState] = useState<{
@@ -202,11 +231,7 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
         });
 
         // Normalize legacy formats and header quirks
-        const normalized = normalizeXychartHeader(
-          convertLegacyBarToXYChartBeta(chart) ||
-            convertLegacyLineToXYChartBeta(chart) ||
-            chart,
-        );
+        const normalized = normalizeAndConvert(chart);
 
         // First try to parse to catch syntax errors early
         await mermaid.parse(normalized);
