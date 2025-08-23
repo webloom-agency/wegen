@@ -26,6 +26,7 @@ const staticModels = {
     "o4-mini": openai("o4-mini", {
       reasoningEffort: "medium",
     }),
+    "gpt-5": openai("gpt-5"),
   },
   google: {
     "gemini-2.0-flash-lite": google("gemini-2.0-flash-lite"),
@@ -84,7 +85,7 @@ export const isToolCallUnsupportedModel = (model: LanguageModel) => {
   return allUnsupportedModels.has(model);
 };
 
-const fallbackModel = staticModels.openai["gpt-4.1"];
+const fallbackModel = staticModels.openai["gpt-5"] || staticModels.openai["gpt-4.1"];
 
 export const customModelProvider = {
   modelsInfo: Object.entries(allModels).map(([provider, models]) => ({

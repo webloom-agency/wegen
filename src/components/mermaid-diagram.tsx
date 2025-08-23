@@ -18,6 +18,59 @@ interface MermaidDiagramProps {
   chart?: string;
 }
 
+function convertLegacyLineToXYChartBeta(input: string): string | null {
+  const text = input?.trim();
+  if (!text?.toLowerCase().startsWith("line")) return null;
+
+  const lines = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0 && l.toLowerCase() !== "line");
+
+  let title: string | undefined;
+  let xAxis: string | undefined;
+  let yAxis: string | undefined;
+  const entries: { label: string; value: string }[] = [];
+
+  for (const l of lines) {
+    const lower = l.toLowerCase();
+    if (lower.startsWith("title ")) {
+      title = l.slice(6).trim();
+      continue;
+    }
+    if (lower.startsWith("x-axis ")) {
+      xAxis = l.slice(7).trim();
+      continue;
+    }
+    if (lower.startsWith("y-axis ")) {
+      yAxis = l.slice(7).trim();
+      continue;
+    }
+
+    // Data row pattern: <label>: <number>
+    const colonIdx = l.indexOf(":");
+    if (colonIdx > 0) {
+      const key = l.slice(0, colonIdx).trim();
+      const val = l.slice(colonIdx + 1).trim();
+      if (key && val) entries.push({ label: key, value: val });
+    }
+  }
+
+  if (!entries.length) return null;
+
+  const xLabels = entries.map((e) => e.label).join(", ");
+  const values = entries.map((e) => e.value).join(", ");
+
+  // Build xychart-beta
+  const out: string[] = ["xychart-beta"]; 
+  if (title) out.push(`    title: "${title.replaceAll("\"", '\\"')}"`);
+  if (xAxis) out.push(`    x-axis: "${xAxis.replaceAll("\"", '\\"')}"`);
+  if (yAxis) out.push(`    y-axis: "${yAxis.replaceAll("\"", '\\"')}"`);
+  out.push(`    x-labels: ${xLabels}`);
+  out.push(`    line "Series": ${values}`);
+  return out.join("\n");
+}
+
 export function MermaidDiagram({ chart }: MermaidDiagramProps) {
   const { theme } = useTheme();
   const [state, setState] = useState<{
@@ -57,12 +110,15 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
           securityLevel: "loose",
         });
 
-        // // First try to parse to catch syntax errors early
-        await mermaid.parse(chart);
+        // Normalize legacy formats (e.g., top-level 'line')
+        const normalized = convertLegacyLineToXYChartBeta(chart) || chart;
+
+        // First try to parse to catch syntax errors early
+        await mermaid.parse(normalized);
 
         // Render the diagram
         const id = `mermaid-${Date.now()}`;
-        const { svg } = await mermaid.render(id, chart);
+        const { svg } = await mermaid.render(id, normalized);
 
         setState({ svg, error: null, loading: false });
       } catch (err) {
