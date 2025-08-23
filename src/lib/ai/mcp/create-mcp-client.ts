@@ -124,6 +124,13 @@ export class MCPClient {
         }
         return this.oauthProvider;
       }
+      const remote = MCPRemoteConfigZodSchema.parse(this.serverConfig);
+      const oauthMode = remote.oauth?.mode || "client";
+      const redirectUris =
+        oauthMode === "server" && remote.oauth?.redirectUri
+          ? [remote.oauth.redirectUri]
+          : [`${BASE_URL}/api/mcp/oauth/callback`];
+
       this.oauthProvider = new PgOAuthClientProvider({
         name: this.name,
         mcpServerId: this.id,
@@ -135,7 +142,7 @@ export class MCPClient {
           response_types: ["code"],
           token_endpoint_auth_method: "none", // PKCE flow
           scope: "mcp:tools",
-          redirect_uris: [`${BASE_URL}/api/mcp/oauth/callback`],
+          redirect_uris: redirectUris,
           software_id: "better-chatbot",
           software_version: "1.0.0",
         },
