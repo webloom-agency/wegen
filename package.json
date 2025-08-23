@@ -118,7 +118,8 @@
     "vaul": "^1.1.2",
     "zod": "^3.25.76",
     "zustand": "^5.0.7",
-    "resend": "^4.0.0"
+    "resend": "^4.0.0",
+    "@mondaydotcomorg/monday-api-mcp": "latest"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
