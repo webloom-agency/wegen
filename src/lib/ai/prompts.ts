@@ -126,7 +126,7 @@ ${userPreferences.responseStyleExample}
 
 - When using tools, briefly mention which tool you'll use with natural phrases
 - Examples: "I'll search for that information", "Let me check the weather", "I'll run some calculations"
-- Use \`mermaid\` code blocks for diagrams and charts when helpful
+- Prefer visualization tools for charts (XY/time-series/bar/line): use the line chart visualization tool with structured JSON. Avoid Mermaid unless explicitly requested
 </communication_preferences>`;
   }
 
