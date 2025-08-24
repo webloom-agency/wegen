@@ -255,7 +255,7 @@ export default function Workflow({
       snapshot.current.nodes.length !== nodes.length ||
       snapshot.current.edges.length !== edges.length
         ? 200
-        : 10000;
+        : 2000;
     debounce(save, debounceDelay);
   }, [nodes, edges]);
 

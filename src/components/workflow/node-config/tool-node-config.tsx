@@ -29,7 +29,6 @@ import {
   exaContentsTool,
 } from "lib/ai/tools/web/web-search";
 import { DefaultToolName } from "lib/ai/tools";
-import { convertTiptapJsonToText } from "lib/ai/workflow/shared.workflow";
 
 export const ToolNodeDataConfig = memo(function ({
   data,

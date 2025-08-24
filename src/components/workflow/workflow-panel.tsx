@@ -47,7 +47,25 @@ export const WorkflowPanel = memo(
     const { setNodes, getNodes, getEdges } = useReactFlow();
     const [showExecutePanel, setShowExecutePanel] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [justSaved, setJustSaved] = useState(false);
     const t = useTranslations();
+
+    const onSaveImmediate = useCallback(async () => {
+      if (isProcessing || !hasEditAccess) return;
+      setIsSaving(true);
+      setJustSaved(false);
+      const close = addProcess();
+      try {
+        await onSave();
+        setJustSaved(true);
+        setTimeout(() => setJustSaved(false), 1500);
+      } catch (e) {
+        handleErrorWithToast(e);
+      } finally {
+        setIsSaving(false);
+        close();
+      }
+    }, [isProcessing, hasEditAccess, onSave, addProcess]);
 
     const handleArrangeNodes = useCallback(() => {
       const nodes = getNodes() as UINode[];
@@ -194,14 +212,18 @@ export const WorkflowPanel = memo(
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  disabled={isProcessing || !hasEditAccess}
-                  onClick={onSave}
+                  disabled={isProcessing || !hasEditAccess || isSaving}
+                  onClick={onSaveImmediate}
                   variant="default"
                 >
-                  {isProcessing ? (
+                  {isSaving ? (
                     <Loader className="size-3.5 animate-spin" />
                   ) : (
-                    t("Common.save")
+                    justSaved ? (
+                      <span>✓ {t("Common.saved")}</span>
+                    ) : (
+                      t("Common.save")
+                    )
                   )}
                 </Button>
               </TooltipTrigger>
