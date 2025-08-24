@@ -11,6 +11,7 @@ import { ChatMentionInputSuggestion } from "@/components/chat-mention-input";
 import { DefaultToolIcon } from "@/components/default-tool-icon";
 import { MCPIcon } from "ui/mcp-icon";
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
+import { useWorkflowToolList } from "@/hooks/queries/use-workflow-tool-list";
 
 interface AgentToolSelectorProps {
   mentions: ChatMention[];
@@ -30,6 +31,9 @@ export function AgentToolSelector({
   const t = useTranslations();
   const triggerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+
+  // Ensure workflows are loaded so they appear in mentions while in Agent mode
+  useWorkflowToolList({ refreshInterval: 1000 * 60 * 5 });
 
   const triggerRect = useMemo(() => {
     return triggerRef.current?.getBoundingClientRect();
