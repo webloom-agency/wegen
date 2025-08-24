@@ -22,6 +22,14 @@ export async function POST(
     return new Response("Workflow not found", { status: 404 });
   }
 
+  // Inject CURRENT_USER virtual variables into query context
+  const enrichedQuery = {
+    ...toAny(query),
+    CURRENT_USER: {
+      email: session.user.email || "",
+    },
+  };
+
   const wfLogger = logger.withDefaults({
     message: colorize("cyan", `WORKFLOW '${workflow.name}' `),
   });
@@ -76,7 +84,7 @@ export async function POST(
       // Start the workflow
       app
         .run(
-          { query },
+          { query: enrichedQuery },
           {
             disableHistory: true,
             timeout: 1000 * 60 * 5,

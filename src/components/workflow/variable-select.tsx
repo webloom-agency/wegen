@@ -180,7 +180,28 @@ export function VariableSelectContent({
             </p>
           </div>
         ) : (
-          filteredNodes
+          <>
+            {/* Virtual CURRENT_USER group */}
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1">
+                CURRENT_USER
+              </DropdownMenuLabel>
+              <SchemaItem
+                name="email"
+                schema={{ type: "string" } as any}
+                path={[]}
+                onChange={() =>
+                  onChange({
+                    nodeId: "CURRENT_USER",
+                    path: ["email"],
+                    nodeName: "CURRENT_USER",
+                    type: "string",
+                  })
+                }
+              />
+            </DropdownMenuGroup>
+            {filteredNodes}
+          </>
         )}
       </div>
     </div>
