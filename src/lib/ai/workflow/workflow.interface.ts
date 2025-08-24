@@ -119,6 +119,7 @@ export type ToolNodeData = BaseWorkflowNodeDataData<{
   model: ChatModel; // LLM model for parameter generation
   message?: TipTapMentionJsonContent; // Optional message to generate parameters
   parameters?: string; // Optional raw JSON parameters to bypass LLM
+  parametersMessage?: TipTapMentionJsonContent; // Rich editor content for parameters with mentions
 }>;
 
 /**
