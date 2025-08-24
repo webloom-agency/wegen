@@ -168,6 +168,15 @@ export class PgOAuthClientProvider implements OAuthClientProvider {
   }
 
   async redirectToAuthorization(authorizationUrl: URL): Promise<void> {
+    // Always request offline access to obtain a refresh_token
+    authorizationUrl.searchParams.set("access_type", "offline");
+
+    // On first-time (no tokens yet), force consent to ensure refresh_token issuance
+    const hasTokens = Boolean((await this.getAuthData())?.tokens);
+    if (!hasTokens) {
+      authorizationUrl.searchParams.set("prompt", "consent");
+    }
+
     authorizationUrl.searchParams.set("state", this.state());
     await this.config.onRedirectToAuthorization(authorizationUrl);
   }
