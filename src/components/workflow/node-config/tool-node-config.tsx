@@ -178,6 +178,19 @@ export const ToolNodeDataConfig = memo(function ({
           }}
         />
       </div>
+
+      <p className="text-sm font-semibold mt-4">Parameters (JSON, optional)</p>
+      <textarea
+        className="w-full text-xs bg-secondary rounded-md p-2 min-h-24 font-mono"
+        placeholder={"{\n  \"key\": \"value\"\n}"}
+        value={data.parameters || ""}
+        onChange={(e) =>
+          updateNodeData(data.id, {
+            parameters: e.target.value,
+          })
+        }
+        disabled={!editable}
+      />
     </div>
   );
 });
