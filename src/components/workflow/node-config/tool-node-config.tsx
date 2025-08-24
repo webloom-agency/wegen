@@ -29,6 +29,7 @@ import {
   exaContentsTool,
 } from "lib/ai/tools/web/web-search";
 import { DefaultToolName } from "lib/ai/tools";
+import { convertTiptapJsonToText } from "lib/ai/workflow/shared.workflow";
 
 export const ToolNodeDataConfig = memo(function ({
   data,
@@ -188,8 +189,14 @@ export const ToolNodeDataConfig = memo(function ({
           content={data.parametersMessage}
           editable={editable}
           onChange={(content) => {
+            const rendered = convertTiptapJsonToText({
+              json: content,
+              getOutput: () => "",
+              mentionParser: (part) => "/" + part.attrs.label,
+            });
             updateNodeData(data.id, {
               parametersMessage: content,
+              parameters: rendered,
             });
           }}
         />

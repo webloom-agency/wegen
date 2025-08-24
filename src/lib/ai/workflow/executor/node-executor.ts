@@ -350,9 +350,12 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
         };
       }
     }
-  }
+    }
 
-  // Execute the tool based on its type
+  // Record computed input for debugging/history
+  state.setInput(node.id, result.input);
+ 
+   // Execute the tool based on its type
   if (node.tool.type == "mcp-tool") {
     const toolResult = (await mcpClientsManager.toolCall(
       node.tool.serverId,
