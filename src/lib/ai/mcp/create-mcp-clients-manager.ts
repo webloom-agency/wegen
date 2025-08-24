@@ -52,6 +52,14 @@ export class MCPClientsManager {
     message: colorize("dim", `[${generateUUID().slice(0, 4)}] MCP Manager: `),
   });
 
+  private normalizeName(name: string) {
+    return (name || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[_\s]+/g, "-")
+      .replace(/-+/g, "-");
+  }
+
   // Optional storage for persistent configurations
   constructor(
     private storage: MCPConfigStorage = createMemoryMCPConfigStorage(),
@@ -242,12 +250,29 @@ export class MCPClientsManager {
     toolName: string,
     input: unknown,
   ) {
+    const normTarget = this.normalizeName(serverName);
     const clients = await this.getClients();
-    const client = clients.find((c) => c.client.getInfo().name === serverName);
+    let client = clients.find(
+      (c) => this.normalizeName(c.client.getInfo().name) === normTarget,
+    );
+    if (!client) {
+      // Try startsWith/contains matches for robustness
+      client = clients.find((c) =>
+        this.normalizeName(c.client.getInfo().name).includes(normTarget) ||
+        normTarget.includes(this.normalizeName(c.client.getInfo().name)),
+      );
+    }
     if (!client) {
       if (this.storage) {
         const servers = await this.storage.loadAll();
-        const server = servers.find((s) => s.name === serverName);
+        const server = servers.find(
+          (s) => this.normalizeName(s.name) === normTarget,
+        ) ||
+          servers.find(
+            (s) =>
+              this.normalizeName(s.name).includes(normTarget) ||
+              normTarget.includes(this.normalizeName(s.name)),
+          );
         if (server) {
           return this.toolCall(server.id, toolName, input);
         }
