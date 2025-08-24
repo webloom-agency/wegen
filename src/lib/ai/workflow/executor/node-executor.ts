@@ -275,81 +275,34 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
       parameter: undefined,
     };
   } else {
-    // Priority 1) parametersMessage (TipTap with mentions): to text with placeholders, then resolve
-    let explicitFromParametersMessage: any | undefined;
-    if (toAny(node).parametersMessage) {
-      try {
-        const paramsText = convertTiptapJsonToText({
-          json: toAny(node).parametersMessage,
-          getOutput: state.getOutput,
-          // Emit placeholder tokens like /{"nodeId":"..","path":[".."]}
-          mentionParser: (part) => {
-            return "/" + part.attrs.label;
-          },
-        });
-        const parsed = JSON.parse(paramsText);
-        explicitFromParametersMessage = resolvePlaceholdersInValue(
-          parsed,
-          state.getOutput,
-        );
-      } catch {
-        explicitFromParametersMessage = undefined;
-      }
-    }
+    // Fallback: Use LLM to generate tool parameters from the provided message
+    const prompt: string | undefined = node.message
+      ? toAny(
+          convertTiptapJsonToAiMessage({
+            role: "user",
+            getOutput: state.getOutput, // Access to previous node outputs
+            json: node.message,
+          }),
+        ).parts[0]?.text
+      : undefined;
 
-    if (explicitFromParametersMessage && typeof explicitFromParametersMessage === "object") {
-      result.input = {
-        parameter: explicitFromParametersMessage,
-        prompt: undefined,
-      };
-    } else {
-      // Priority 2) explicit raw JSON parameters (if provided)
-      let explicitParameter: any | undefined;
-      if (node.parameters && node.parameters.trim()) {
-        try {
-          const parsed = JSON.parse(node.parameters.trim());
-          explicitParameter = resolvePlaceholdersInValue(parsed, state.getOutput);
-        } catch {
-          explicitParameter = undefined;
-        }
-      }
+    const response = await generateText({
+      model: customModelProvider.getModel(node.model),
+      maxSteps: 1,
+      toolChoice: "required", // Force the model to call the tool
+      prompt,
+      tools: {
+        [node.tool.id]: {
+          description: node.tool.description,
+          parameters: jsonSchemaToZod(node.tool.parameterSchema),
+        },
+      },
+    });
 
-      if (explicitParameter && typeof explicitParameter === "object") {
-        result.input = {
-          parameter: explicitParameter,
-          prompt: undefined,
-        };
-      } else {
-        // Priority 3) Fallback: Use LLM to generate tool parameters from the provided message
-        const prompt: string | undefined = node.message
-          ? toAny(
-              convertTiptapJsonToAiMessage({
-                role: "user",
-                getOutput: state.getOutput, // Access to previous node outputs
-                json: node.message,
-              }),
-            ).parts[0]?.text
-          : undefined;
-
-        const response = await generateText({
-          model: customModelProvider.getModel(node.model),
-          maxSteps: 1,
-          toolChoice: "required", // Force the model to call the tool
-          prompt,
-          tools: {
-            [node.tool.id]: {
-              description: node.tool.description,
-              parameters: jsonSchemaToZod(node.tool.parameterSchema),
-            },
-          },
-        });
-
-        result.input = {
-          parameter: response.toolCalls.find((call) => call.args)?.args,
-          prompt,
-        };
-      }
-    }
+    result.input = {
+      parameter: response.toolCalls.find((call) => call.args)?.args,
+      prompt,
+    };
     }
 
   // Record computed input for debugging/history

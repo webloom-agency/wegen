@@ -180,40 +180,7 @@ export const ToolNodeDataConfig = memo(function ({
         />
       </div>
 
-      <p className="text-sm font-semibold mt-4">Parameters with variables (JSON as text)</p>
-      <div className="w-full bg-secondary rounded-md p-2 min-h-20">
-        <OutputSchemaMentionInput
-          currentNodeId={data.id}
-          nodes={nodes}
-          edges={edges}
-          content={data.parametersMessage}
-          editable={editable}
-          onChange={(content) => {
-            const rendered = convertTiptapJsonToText({
-              json: content,
-              getOutput: () => "",
-              mentionParser: (part) => "/" + part.attrs.label,
-            });
-            updateNodeData(data.id, {
-              parametersMessage: content,
-              parameters: rendered,
-            });
-          }}
-        />
-      </div>
 
-      <p className="text-xs text-muted-foreground -mt-1 mb-1">Rendered JSON (editable)</p>
-      <textarea
-        className="w-full text-xs bg-secondary rounded-md p-2 min-h-24 font-mono"
-        placeholder={"{\n  \"key\": \"value\"\n}"}
-        value={data.parameters || ""}
-        onChange={(e) =>
-          updateNodeData(data.id, {
-            parameters: e.target.value,
-          })
-        }
-        disabled={!editable}
-      />
     </div>
   );
 });
