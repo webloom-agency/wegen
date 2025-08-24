@@ -18,6 +18,7 @@ import {
   NodeMouseHandler,
   IsValidConnection,
   Connection,
+  useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { DBWorkflow } from "app-types/workflow";
@@ -58,6 +59,7 @@ export default function Workflow({
   const { init, addProcess, processIds } = useWorkflowStore();
   const [nodes, setNodes] = useState<UINode[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
+  const { getNodes, getEdges } = useReactFlow<UINode>();
 
   const isProcessing = useMemo(
     () => processIds.length > 0,
@@ -82,8 +84,12 @@ export default function Workflow({
 
   const save = async () => {
     if (workflow?.isPublished) return;
-
-    const diff = extractWorkflowDiff(snapshot.current, { nodes, edges });
+    const latestNodes = getNodes() as UINode[];
+    const latestEdges = getEdges();
+    const diff = extractWorkflowDiff(snapshot.current, {
+      nodes: latestNodes,
+      edges: latestEdges,
+    });
 
     if (
       diff.deleteEdges.length ||
@@ -96,8 +102,8 @@ export default function Workflow({
         .map(() => saveWorkflow(workflowId, diff))
         .ifOk(() => {
           snapshot.current = {
-            edges,
-            nodes,
+            edges: latestEdges,
+            nodes: latestNodes,
           };
         })
         .ifFail(() => {
