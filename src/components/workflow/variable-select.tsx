@@ -23,6 +23,7 @@ import { JSONSchema7 } from "json-schema";
 import { findAccessibleNodeIds } from "lib/ai/workflow/shared.workflow";
 import { cn } from "lib/utils";
 import { useTranslations } from "next-intl";
+import { NodeKind } from "lib/ai/workflow/workflow.interface";
 
 interface VariableSelectProps {
   currentNodeId: string;
@@ -75,6 +76,7 @@ export function VariableSelectContent({
   const { getNodes, getEdges } = useReactFlow<UINode>();
   const nodes = getNodes();
   const edges = getEdges();
+  const inputNodeId = nodes.find((n) => n.data.kind === NodeKind.Input)?.id;
   const t = useTranslations();
   const firstNodeRef = useRef<HTMLDivElement>(null);
 
@@ -192,7 +194,7 @@ export function VariableSelectContent({
                 path={[]}
                 onChange={() =>
                   onChange({
-                    nodeId: "CURRENT_USER",
+                    nodeId: inputNodeId || "CURRENT_USER",
                     path: ["email"],
                     nodeName: "CURRENT_USER",
                     type: "string",
