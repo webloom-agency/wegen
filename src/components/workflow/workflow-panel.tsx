@@ -60,7 +60,7 @@ export const WorkflowPanel = memo(
         setJustSaved(true);
         setTimeout(() => setJustSaved(false), 1500);
       } catch (e) {
-        handleErrorWithToast(e);
+        handleErrorWithToast(e as Error);
       } finally {
         setIsSaving(false);
         close();
