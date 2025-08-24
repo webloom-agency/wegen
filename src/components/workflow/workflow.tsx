@@ -19,6 +19,7 @@ import {
   IsValidConnection,
   Connection,
 } from "@xyflow/react";
+import type { ReactFlowInstance } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { DBWorkflow } from "app-types/workflow";
 import { extractWorkflowDiff } from "lib/ai/workflow/extract-workflow-diff";
@@ -58,6 +59,7 @@ export default function Workflow({
   const { init, addProcess, processIds } = useWorkflowStore();
   const [nodes, setNodes] = useState<UINode[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
+  const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
 
   const isProcessing = useMemo(
     () => processIds.length > 0,
@@ -82,7 +84,16 @@ export default function Workflow({
 
   const save = async () => {
     if (workflow?.isPublished) return;
-    const diff = extractWorkflowDiff(snapshot.current, { nodes, edges });
+
+    const latestNodes =
+      (reactFlowInstanceRef.current?.getNodes?.() as UINode[]) || nodes;
+    const latestEdges =
+      (reactFlowInstanceRef.current?.getEdges?.() as Edge[]) || edges;
+
+    const diff = extractWorkflowDiff(snapshot.current, {
+      nodes: latestNodes,
+      edges: latestEdges,
+    });
 
     if (
       diff.deleteEdges.length ||
@@ -95,8 +106,8 @@ export default function Workflow({
         .map(() => saveWorkflow(workflowId, diff))
         .ifOk(() => {
           snapshot.current = {
-            edges,
-            nodes,
+            edges: latestEdges,
+            nodes: latestNodes,
           };
         })
         .ifFail(() => {
@@ -285,6 +296,7 @@ export default function Workflow({
         multiSelectionKeyCode={null}
         id={workflowId}
         nodeTypes={nodeTypes}
+        onInit={(instance) => (reactFlowInstanceRef.current = instance)}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onSelectionChange={onSelectionChange}
