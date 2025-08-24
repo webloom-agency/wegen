@@ -357,11 +357,21 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
  
    // Execute the tool based on its type
   if (node.tool.type == "mcp-tool") {
-    const toolResult = (await mcpClientsManager.toolCall(
+    let toolResult = (await mcpClientsManager.toolCall(
       node.tool.serverId,
       node.tool.id,
       result.input.parameter,
     )) as any;
+
+    // Fallback: resolve by serverName if id is stale or not found
+    if (toolResult?.isError && /Client .* not found/i.test(toolResult?.error?.message || "")) {
+      toolResult = (await mcpClientsManager.toolCallByServerName(
+        node.tool.serverName,
+        node.tool.id,
+        result.input.parameter,
+      )) as any;
+    }
+
     if (toolResult.isError) {
       throw new Error(
         toolResult.error?.message ||
