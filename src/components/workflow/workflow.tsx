@@ -59,7 +59,9 @@ export default function Workflow({
   const { init, addProcess, processIds } = useWorkflowStore();
   const [nodes, setNodes] = useState<UINode[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
-  const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
+  const reactFlowInstanceRef = useRef<ReactFlowInstance<UINode, Edge> | null>(
+    null,
+  );
 
   const isProcessing = useMemo(
     () => processIds.length > 0,
@@ -296,7 +298,9 @@ export default function Workflow({
         multiSelectionKeyCode={null}
         id={workflowId}
         nodeTypes={nodeTypes}
-        onInit={(instance) => (reactFlowInstanceRef.current = instance)}
+        onInit={(instance) =>
+          (reactFlowInstanceRef.current =
+            instance as ReactFlowInstance<UINode, Edge>)}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onSelectionChange={onSelectionChange}
