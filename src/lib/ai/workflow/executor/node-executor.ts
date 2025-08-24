@@ -18,7 +18,7 @@ import {
   convertTiptapJsonToText,
 } from "../shared.workflow";
 import { jsonSchemaToZod } from "lib/json-schema-to-zod";
-import { safeJSONParse, toAny } from "lib/utils";
+import { toAny } from "lib/utils";
 import { AppError } from "lib/errors";
 import { DefaultToolName } from "lib/ai/tools";
 import {
@@ -198,60 +198,34 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
       parameter: undefined,
     };
   } else {
-    // First try: detect direct JSON in the message (after resolving mentions)
-    const rawText: string | undefined = node.message
-      ? convertTiptapJsonToText({
-          getOutput: state.getOutput,
-          json: node.message,
-        })
+    // Use LLM to generate tool parameters from the provided message
+    const prompt: string | undefined = node.message
+      ? toAny(
+          convertTiptapJsonToAiMessage({
+            role: "user",
+            getOutput: state.getOutput, // Access to previous node outputs
+            json: node.message,
+          }),
+        ).parts[0]?.text
       : undefined;
 
-    let directJSON: any | undefined;
-    if (rawText) {
-      const trimmed = rawText.trim();
-      if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-        const parsed = safeJSONParse<any>(trimmed);
-        if (parsed.success && parsed.value && typeof parsed.value === "object") {
-          directJSON = parsed.value;
-        }
-      }
-    }
-
-    if (directJSON) {
-      result.input = {
-        parameter: directJSON,
-        prompt: rawText,
-      };
-    } else {
-      // Fallback: use LLM to generate tool parameters from the provided message
-      const prompt: string | undefined = node.message
-        ? toAny(
-            convertTiptapJsonToAiMessage({
-              role: "user",
-              getOutput: state.getOutput, // Access to previous node outputs
-              json: node.message,
-            }),
-          ).parts[0]?.text
-        : undefined;
-
-      const response = await generateText({
-        model: customModelProvider.getModel(node.model),
-        maxSteps: 1,
-        toolChoice: "required", // Force the model to call the tool
-        prompt,
-        tools: {
-          [node.tool.id]: {
-            description: node.tool.description,
-            parameters: jsonSchemaToZod(node.tool.parameterSchema),
-          },
+    const response = await generateText({
+      model: customModelProvider.getModel(node.model),
+      maxSteps: 1,
+      toolChoice: "required", // Force the model to call the tool
+      prompt,
+      tools: {
+        [node.tool.id]: {
+          description: node.tool.description,
+          parameters: jsonSchemaToZod(node.tool.parameterSchema),
         },
-      });
+      },
+    });
 
-      result.input = {
-        parameter: response.toolCalls.find((call) => call.args)?.args,
-        prompt,
-      };
-    }
+    result.input = {
+      parameter: response.toolCalls.find((call) => call.args)?.args,
+      prompt,
+    };
   }
 
   // Execute the tool based on its type
