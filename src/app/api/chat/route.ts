@@ -257,6 +257,7 @@ export async function POST(request: Request) {
                 id: message.id,
                 annotations: appendAnnotations(message.annotations, {
                   usageTokens: usage.promptTokens,
+                  ...(agent ? { agentId: agent.id } : {}),
                 }),
               });
             }
@@ -267,6 +268,7 @@ export async function POST(request: Request) {
                 {
                   usageTokens: usage.completionTokens,
                   toolChoice,
+                  ...(agent ? { agentId: agent.id } : {}),
                 },
               );
               dataStream.writeMessageAnnotation(annotations.at(-1)!);

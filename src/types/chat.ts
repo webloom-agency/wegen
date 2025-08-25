@@ -131,6 +131,15 @@ export type ChatRepository = {
     })[]
   >;
 
+  selectThreadsByUserIdAndAgentId(
+    userId: string,
+    agentId: string,
+  ): Promise<
+    (ChatThread & {
+      lastMessageAt: number;
+    })[]
+  >;
+
   updateThread(
     id: string,
     thread: Partial<Omit<ChatThread, "id" | "createdAt">>,

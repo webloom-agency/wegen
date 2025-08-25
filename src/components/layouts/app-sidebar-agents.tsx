@@ -69,7 +69,10 @@ export function AppSidebarAgents() {
           );
 
           if (target) {
-            return prev;
+            return {
+              ...prev,
+              threadFilter: { agentId: agent.id },
+            } as any;
           }
 
           return {
@@ -80,6 +83,7 @@ export function AppSidebarAgents() {
                 newMention,
               ],
             },
+            threadFilter: { agentId: agent.id },
           };
         });
       } else {
@@ -87,6 +91,7 @@ export function AppSidebarAgents() {
 
         appStore.setState(() => ({
           pendingThreadMention: newMention,
+          threadFilter: { agentId: agent.id },
         }));
       }
     },

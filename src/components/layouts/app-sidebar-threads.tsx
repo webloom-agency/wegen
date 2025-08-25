@@ -57,10 +57,20 @@ export function AppSidebarThreads() {
       state.generatingTitleThreadIds,
     ]),
   );
+  const [threadFilter] = appStore(
+    useShallow((state) => [state.threadFilter]),
+  );
   // State to track if expanded view is active
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const { data: threadList, isLoading } = useSWR("/api/thread", fetcher, {
+  const threadApiKey = useMemo(() => {
+    const params = new URLSearchParams();
+    if (threadFilter?.agentId) params.set("agentId", threadFilter.agentId);
+    const query = params.toString();
+    return `/api/thread${query ? `?${query}` : ""}`;
+  }, [threadFilter]);
+
+  const { data: threadList, isLoading } = useSWR(threadApiKey, fetcher, {
     onError: handleErrorWithToast,
     fallbackData: [],
     onSuccess: (data) => {

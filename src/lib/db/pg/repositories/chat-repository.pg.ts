@@ -112,6 +112,48 @@ export const pgChatRepository: ChatRepository = {
     });
   },
 
+  selectThreadsByUserIdAndAgentId: async (
+    userId: string,
+    agentId: string,
+  ) => {
+    // Filter threads for the user where any message annotations contains an object with agentId
+    const threadWithLatestMessage = await db
+      .select({
+        threadId: ChatThreadSchema.id,
+        title: ChatThreadSchema.title,
+        createdAt: ChatThreadSchema.createdAt,
+        userId: ChatThreadSchema.userId,
+        lastMessageAt: sql<string>`MAX(${ChatMessageSchema.createdAt})`.as(
+          "last_message_at",
+        ),
+      })
+      .from(ChatThreadSchema)
+      .leftJoin(
+        ChatMessageSchema,
+        eq(ChatThreadSchema.id, ChatMessageSchema.threadId),
+      )
+      .where(
+        and(
+          eq(ChatThreadSchema.userId, userId),
+          sql`EXISTS (SELECT 1 FROM ${ChatMessageSchema} cm WHERE cm.thread_id = ${ChatThreadSchema.id} AND (cm.annotations)::jsonb @> ${sql.raw("'[{" + "\\\"agentId\\\":\\\"" + agentId + "\\\"}]' ")}::jsonb)`,
+        ),
+      )
+      .groupBy(ChatThreadSchema.id)
+      .orderBy(desc(sql`last_message_at`));
+
+    return threadWithLatestMessage.map((row) => {
+      return {
+        id: row.threadId,
+        title: row.title,
+        userId: row.userId,
+        createdAt: row.createdAt,
+        lastMessageAt: row.lastMessageAt
+          ? new Date(row.lastMessageAt).getTime()
+          : 0,
+      };
+    });
+  },
+
   updateThread: async (
     id: string,
     thread: Partial<Omit<ChatThread, "id" | "createdAt">>,
