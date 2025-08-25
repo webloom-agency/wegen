@@ -6,7 +6,6 @@ import equal from "lib/equal";
 
 import { cn, truncateString } from "lib/utils";
 import type { UseChatHelpers } from "@ai-sdk/react";
-import { Alert, AlertDescription, AlertTitle } from "ui/alert";
 import {
   UserMessagePart,
   AssistMessagePart,
