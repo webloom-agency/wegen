@@ -46,6 +46,11 @@ export function AppSidebarAgents() {
 
   const handleAgentClick = useCallback(
     (id: string) => {
+      const currentFilter = appStore.getState().threadFilter;
+      if (currentFilter?.agentId === id) {
+        appStore.setState({ threadFilter: undefined } as any);
+        return;
+      }
       const currentThreadId = appStore.getState().currentThreadId;
       const agent = agents.find((agent) => agent.id === id);
 

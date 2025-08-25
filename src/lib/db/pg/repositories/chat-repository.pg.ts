@@ -135,7 +135,16 @@ export const pgChatRepository: ChatRepository = {
       .where(
         and(
           eq(ChatThreadSchema.userId, userId),
-          sql`EXISTS (SELECT 1 FROM ${ChatMessageSchema} cm WHERE cm.thread_id = ${ChatThreadSchema.id} AND (cm.annotations)::jsonb @> ${sql.raw("'[{" + "\\\"agentId\\\":\\\"" + agentId + "\\\"}]' ")}::jsonb)`,
+          sql`EXISTS (
+            SELECT 1
+            FROM ${ChatMessageSchema} cm2
+            WHERE cm2.thread_id = ${ChatThreadSchema.id}
+              AND EXISTS (
+                SELECT 1
+                FROM unnest(cm2.annotations) AS ann
+                WHERE (ann)::jsonb ->> 'agentId' = ${agentId}
+              )
+          )`,
         ),
       )
       .groupBy(ChatThreadSchema.id)
