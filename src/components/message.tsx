@@ -64,16 +64,44 @@ const PurePreviewMessage = ({
           {message.experimental_attachments && (
             <div
               data-testid={"message-attachments"}
-              className="flex flex-row justify-end gap-2"
+              className="flex flex-row justify-end gap-2 flex-wrap"
             >
-              {message.experimental_attachments.map((attachment) => (
-                <Alert key={attachment.url}>
-                  <AlertTitle>Attachment</AlertTitle>
-                  <AlertDescription>
-                    attachment not yet implemented 😁
-                  </AlertDescription>
-                </Alert>
-              ))}
+              {message.experimental_attachments.map((attachment, idx) => {
+                const isImage = (attachment as any).contentType?.startsWith(
+                  "image/",
+                );
+                const name = (attachment as any).name as string | undefined;
+                const url = (attachment as any).url as string;
+                return isImage ? (
+                  <a
+                    key={`${url}-${idx}`}
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-md overflow-hidden border bg-background"
+                    title={name || "image attachment"}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={url}
+                      alt={name || "attachment"}
+                      className="h-24 w-24 object-cover"
+                    />
+                  </a>
+                ) : (
+                  <a
+                    key={`${url}-${idx}`}
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    download={name || true}
+                    className="px-2 py-1 text-xs rounded-md border bg-muted/70 hover:bg-muted transition-colors"
+                    title={name || "attachment"}
+                  >
+                    {name || "attachment"}
+                  </a>
+                );
+              })}
             </div>
           )}
 

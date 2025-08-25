@@ -9,9 +9,8 @@ import {
   Square,
   XIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "ui/button";
-import { notImplementedToast } from "ui/shared-toast";
 import { UseChatHelpers } from "@ai-sdk/react";
 import { SelectModel } from "./select-model";
 import { appStore } from "@/app/store";
@@ -38,6 +37,7 @@ import { cn } from "lib/utils";
 import { getShortcutKeyList, isShortcutEvent } from "lib/keyboard-shortcuts";
 import { AgentSummary } from "app-types/agent";
 import { EMOJI_DATA } from "lib/const";
+import { toast } from "sonner";
 
 interface PromptInputProps {
   placeholder?: string;
@@ -108,6 +108,12 @@ export default function PromptInput({
   }, [model, globalModel]);
 
   const editorRef = useRef<Editor | null>(null);
+
+  // Pending attachments selected via the "+" button
+  const [pendingAttachments, setPendingAttachments] = useState<
+    { url: string; contentType: string; name?: string; size?: number; textContent?: string }[]
+  >([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const setChatModel = useCallback(
     (model: ChatModel) => {
@@ -212,21 +218,158 @@ export default function PromptInput({
     [addMention],
   );
 
+  // Helpers for file attachments
+  const ACCEPTED_EXTENSIONS = [
+    // Documents
+    ".pdf", ".docx", ".txt", ".rtf", ".md", ".odt",
+    // Spreadsheets & Data
+    ".xlsx", ".csv", ".ods",
+    // Presentations
+    ".pptx", ".odp",
+    // Images
+    ".png", ".jpg", ".jpeg", ".gif", ".webp",
+    // Code files (common)
+    ".py", ".html", ".js", ".ts", ".tsx", ".json", ".css"
+  ];
+
+  const isTextLikeFile = (file: File) => {
+    const type = file.type.toLowerCase();
+    const name = file.name.toLowerCase();
+    const textExts = [
+      ".txt",
+      ".md",
+      ".json",
+      ".csv",
+      ".js",
+      ".ts",
+      ".tsx",
+      ".py",
+      ".html",
+      ".css",
+    ];
+    return (
+      type.startsWith("text/") ||
+      type === "application/json" ||
+      type === "text/markdown" ||
+      textExts.some((ext) => name.endsWith(ext))
+    );
+  };
+
+  const languageFromFilename = (name?: string) => {
+    const lower = (name || "").toLowerCase();
+    if (lower.endsWith(".json")) return "json";
+    if (lower.endsWith(".csv")) return "csv";
+    if (lower.endsWith(".md")) return "md";
+    if (lower.endsWith(".py")) return "python";
+    if (lower.endsWith(".html")) return "html";
+    if (lower.endsWith(".css")) return "css";
+    if (lower.endsWith(".tsx")) return "tsx";
+    if (lower.endsWith(".ts")) return "ts";
+    if (lower.endsWith(".js")) return "js";
+    if (lower.endsWith(".txt")) return "txt";
+    return "";
+  };
+
+  const onFilesPicked = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    const MAX_FILES = 10;
+    const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB each
+
+    const selected = Array.from(files);
+
+    if (pendingAttachments.length + selected.length > MAX_FILES) {
+      toast.warning(`You can attach up to ${MAX_FILES} files.`);
+      return;
+    }
+
+    for (const file of selected) {
+      const lowerName = file.name.toLowerCase();
+      const allowed = ACCEPTED_EXTENSIONS.some((ext) => lowerName.endsWith(ext));
+      if (!allowed) {
+        toast.warning(`Unsupported file type: ${file.name}`);
+        continue;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        toast.warning(`File too large (max 15MB): ${file.name}`);
+        continue;
+      }
+
+      if (isTextLikeFile(file)) {
+        const text = await file.text();
+        setPendingAttachments((prev) => [
+          ...prev,
+          {
+            url: `data:text/plain;base64,${btoa(unescape(encodeURIComponent(text)))}`,
+            contentType: file.type || "text/plain",
+            name: file.name,
+            size: file.size,
+            textContent: text,
+          },
+        ]);
+      } else {
+        // Read as data URL for images and other binaries
+        await new Promise<void>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            setPendingAttachments((prev) => [
+              ...prev,
+              {
+                url: String(reader.result || ""),
+                contentType: file.type || "application/octet-stream",
+                name: file.name,
+                size: file.size,
+              },
+            ]);
+            resolve();
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+    }
+
+    // clear the input value so picking the same file again triggers change
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const submit = () => {
     if (isLoading) return;
     const userMessage = input?.trim() || "";
-    if (userMessage.length === 0) return;
+    if (userMessage.length === 0 && pendingAttachments.length === 0) return;
+
+    const parts: { type: "text"; text: string }[] = [];
+
+    if (userMessage.length > 0) {
+      parts.push({ type: "text", text: userMessage });
+    }
+
+    // Append inline text contents from text-like attachments so the model can use them
+    for (const att of pendingAttachments) {
+      if (att.textContent) {
+        const lang = languageFromFilename(att.name);
+        const fenced = lang ? `\n\n\`\`\`${lang}\n${att.textContent}\n\`\`\`` : `\n\n\`\`\`\n${att.textContent}\n\`\`\``;
+        parts.push({
+          type: "text",
+          text: `Attached file: ${att.name}${fenced}`,
+        });
+      }
+    }
+
     setInput("");
+
     append!({
       role: "user",
       content: "",
-      parts: [
-        {
-          type: "text",
-          text: userMessage,
-        },
-      ],
+      parts,
+      experimental_attachments: pendingAttachments.map((a) => ({
+        url: a.url,
+        contentType: a.contentType,
+        name: a.name,
+      })),
     });
+
+    // Clear pending attachments after sending
+    setPendingAttachments([]);
   };
 
   useEffect(() => {
@@ -333,6 +476,29 @@ export default function PromptInput({
                 })}
               </div>
             )}
+            {pendingAttachments.length > 0 && (
+              <div className="bg-input rounded-b-sm rounded-t-3xl p-3 flex flex-row flex-wrap gap-2 mx-2 mt-2">
+                {pendingAttachments.map((att, idx) => (
+                  <div key={`${att.url}-${idx}`} className="flex items-center gap-2 px-2 py-1 bg-muted/70 rounded-md border text-xs">
+                    {att.contentType?.startsWith("image/") ? (
+                      <img src={att.url} alt={att.name || "attachment"} className="h-6 w-6 object-cover rounded-sm border" />
+                    ) : (
+                      <div className="h-6 w-6 flex items-center justify-center rounded-sm bg-background border">📎</div>
+                    )}
+                    <span className="max-w-40 truncate">{att.name}</span>
+                    <button
+                      className="ml-1 text-muted-foreground hover:text-foreground"
+                      onClick={() =>
+                        setPendingAttachments((prev) => prev.filter((_, i) => i !== idx))
+                      }
+                      aria-label="Remove attachment"
+                    >
+                      <XIcon className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="flex flex-col gap-3.5 px-5 pt-2 pb-4">
               <div className="relative min-h-[2rem]">
                 <ChatMentionInput
@@ -347,11 +513,19 @@ export default function PromptInput({
                 />
               </div>
               <div className="flex w-full items-center z-30">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept={ACCEPTED_EXTENSIONS.join(",")}
+                  className="hidden"
+                  onChange={(e) => onFilesPicked(e.target.files)}
+                />
                 <Button
                   variant={"ghost"}
                   size={"sm"}
                   className="rounded-full hover:bg-input! p-2!"
-                  onClick={notImplementedToast}
+                  onClick={() => fileInputRef.current?.click()}
                 >
                   <PlusIcon />
                 </Button>
@@ -433,6 +607,7 @@ export default function PromptInput({
                     <ChevronDown className="size-3" />
                   </Button>
                 </SelectModel>
+
                 {!isLoading && !input.length && !voiceDisabled ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
