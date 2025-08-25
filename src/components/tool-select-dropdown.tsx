@@ -136,13 +136,13 @@ export function ToolSelectDropdown({
       .filter((t) => allowedAppDefaultToolkit?.includes(t))
       .map((t) => translate[t]);
     const mcpIds = mcpList.map((v) => v.id);
-    const mcpTools = Object.values(
-      objectFlow(allowedMcpServers ?? {}).filter((_, id) =>
-        mcpIds.includes(id),
-      ),
-    )
-      .map((v) => v.tools)
-      .flat();
+    const mcpTools = (!allowedMcpServers || Object.keys(allowedMcpServers).length === 0)
+      ? mcpList.flatMap((server) => server.toolInfo.map((tool) => tool.name))
+      : Object.values(
+          objectFlow(allowedMcpServers).filter((_, id) => mcpIds.includes(id)),
+        )
+          .map((v) => v.tools)
+          .flat();
 
     return [...defaultTools, ...mcpTools];
   }, [
@@ -571,16 +571,18 @@ function McpServerSelector() {
           (b.status === "connected" ? -1 : 1),
       )
       .map((server) => {
-        const allowedTools: string[] =
-          allowedMcpServers?.[server.id]?.tools ?? [];
+        const allowAll = !allowedMcpServers || !allowedMcpServers[server.id];
+        const allowedTools: string[] = allowAll
+          ? server.toolInfo.map((t) => t.name)
+          : (allowedMcpServers?.[server.id]?.tools ?? []);
 
         return {
           id: server.id,
           serverName: server.name,
-          checked: allowedTools.length > 0,
+          checked: allowAll ? true : allowedTools.length > 0,
           tools: server.toolInfo.map((tool) => ({
             name: tool.name,
-            checked: allowedTools.includes(tool.name),
+            checked: allowAll ? true : allowedTools.includes(tool.name),
             description: tool.description,
           })),
           error: server.error,

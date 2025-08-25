@@ -96,16 +96,12 @@ export const appStore = create<AppState & AppDispatch>()(
       mutate: set,
     }),
     {
-      name: "mc-app-store-v2.0.1",
+      name: "mc-app-store-v2.1.0",
       partialize: (state) => ({
         chatModel: state.chatModel || initialState.chatModel,
         toolChoice: state.toolChoice || initialState.toolChoice,
-        allowedMcpServers:
-          state.allowedMcpServers || initialState.allowedMcpServers,
-        allowedAppDefaultToolkit: (
-          state.allowedAppDefaultToolkit ??
-          initialState.allowedAppDefaultToolkit
-        )?.filter((v) => AppDefaultToolkit[v]),
+        // Do not persist tool/MCP selections so each session defaults to ALL ON
+        // allowedMcpServers and allowedAppDefaultToolkit will reset to initialState on reload
         temporaryChat: {
           ...initialState.temporaryChat,
           ...state.temporaryChat,
