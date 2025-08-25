@@ -77,10 +77,10 @@ export function AppSidebarMenus() {
         <SidebarMenu>
           <Tooltip>
             <SidebarMenuItem>
-              <Link href="/mcp">
+              <Link href="/workflow">
                 <SidebarMenuButton className="font-semibold">
-                  <MCPIcon className="size-4 fill-accent-foreground" />
-                  {t("Layout.mcpConfiguration")}
+                  <Waypoints className="size-4" />
+                  {t("Layout.workflow")}
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
@@ -89,10 +89,10 @@ export function AppSidebarMenus() {
         <SidebarMenu>
           <Tooltip>
             <SidebarMenuItem>
-              <Link href="/workflow">
+              <Link href="/mcp">
                 <SidebarMenuButton className="font-semibold">
-                  <Waypoints className="size-4" />
-                  {t("Layout.workflow")}
+                  <MCPIcon className="size-4 fill-accent-foreground" />
+                  {t("Layout.mcpConfiguration")}
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
