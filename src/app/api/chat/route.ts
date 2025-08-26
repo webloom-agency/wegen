@@ -115,6 +115,10 @@ export async function POST(request: Request) {
     if (agent?.instructions?.mentions) {
       mentions.push(...agent.instructions.mentions);
     }
+    const mentionedAgentIds = mentions
+      .filter((m) => m.type === "agent")
+      .map((m: any) => m.agentId)
+      .filter(Boolean);
 
     const isToolCallAllowed =
       supportToolCall && (toolChoice != "none" || mentions.length > 0);
@@ -255,21 +259,23 @@ export async function POST(request: Request) {
                 parts: message.parts,
                 attachments: message.experimental_attachments,
                 id: message.id,
-                annotations: appendAnnotations(message.annotations, {
-                  usageTokens: usage.promptTokens,
-                  ...(agent ? { agentId: agent.id } : {}),
-                }),
+                annotations: appendAnnotations(
+                  message.annotations,
+                  [
+                    { usageTokens: usage.promptTokens },
+                    ...mentionedAgentIds.map((id) => ({ agentId: id })),
+                  ],
+                ),
               });
             }
             const assistantMessage = appendMessages.at(-1);
             if (assistantMessage) {
               const annotations = appendAnnotations(
                 assistantMessage.annotations,
-                {
-                  usageTokens: usage.completionTokens,
-                  toolChoice,
-                  ...(agent ? { agentId: agent.id } : {}),
-                },
+                [
+                  { usageTokens: usage.completionTokens, toolChoice },
+                  ...mentionedAgentIds.map((id) => ({ agentId: id })),
+                ],
               );
               dataStream.writeMessageAnnotation(annotations.at(-1)!);
               chatRepository.upsertMessage({
