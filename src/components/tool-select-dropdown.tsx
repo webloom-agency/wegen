@@ -201,10 +201,7 @@ export function ToolSelectDropdown({
   }, [mentions?.length, bindingTools.length, isLoading, open]);
 
   useEffect(() => {
-    if (bindingTools.length > 128) {
-      toast("Too many tools selected, please select less than 128 tools");
-    }
-  }, [bindingTools.length > 128]);
+  }, [bindingTools.length]);
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
