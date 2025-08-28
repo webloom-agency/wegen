@@ -373,6 +373,14 @@ export class MCPClient {
           await this.disconnect();
           return execute();
         }
+        if (isInvalidSession(err)) {
+          this.logger.info("Session invalid, reconnecting and retrying once...");
+          await this.disconnect();
+          // Force reconnect and refresh tool list for a fresh session
+          await this.connect();
+          await this.updateToolInfo();
+          return execute();
+        }
         throw err;
       })
       .ifOk((v) => {
@@ -442,4 +450,15 @@ function isUnauthorized(error: any): boolean {
 
 function isOAuthAuthorizationRequired(error: any): boolean {
   return error instanceof OAuthAuthorizationRequiredError;
+}
+
+function isInvalidSession(error: any): boolean {
+  const msg = error?.message ?? "";
+  return (
+    error?.status === 400 ||
+    msg.includes("HTTP 400") ||
+    msg.includes("Bad Request") ||
+    msg.includes("No valid session ID provided") ||
+    msg.toLowerCase().includes("session")
+  );
 }
