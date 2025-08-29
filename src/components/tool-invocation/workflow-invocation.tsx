@@ -30,6 +30,75 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
       );
     if (!result.result) return null;
 
+    // The final workflow result for an Output node is typically the node's output object: { result, csv, logs, ... }
+    const container = result.result as any;
+    const maybeFile = container?.result;
+    const isFileResult =
+      maybeFile &&
+      typeof maybeFile === "object" &&
+      maybeFile.type === "file" &&
+      typeof maybeFile.filename === "string" &&
+      typeof maybeFile.mime === "string" &&
+      typeof maybeFile.base64 === "string";
+
+    if (isFileResult) {
+      const href = `data:${maybeFile.mime};base64,${maybeFile.base64}`;
+      const csvText: string | undefined = container?.csv;
+      const isCsv = maybeFile.mime.startsWith("text/csv");
+      let csvPreview: string | null = null;
+      if (isCsv) {
+        try {
+          const decoded = typeof window !== "undefined" ? atob(maybeFile.base64) : "";
+          csvPreview = decoded.split("\n").slice(0, 20).join("\n");
+        } catch {}
+      }
+
+      return (
+        <div className="w-full bg-card p-4 border text-xs rounded-lg text-muted-foreground">
+          <div className="flex items-center">
+            <h5 className="text-muted-foreground font-medium select-none">Response</h5>
+            <div className="flex-1" />
+            {copied ? (
+              <Check className="size-3" />
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-3 text-muted-foreground"
+                onClick={() => copy(JSON.stringify(result.result))}
+              >
+                <Copy className="size-3" />
+              </Button>
+            )}
+          </div>
+          <div className="p-2 max-h-[300px] overflow-y-auto flex flex-col gap-2">
+            <a
+              href={href}
+              download={maybeFile.filename}
+              className="px-2 py-1 text-xs rounded-md border bg-muted/70 hover:bg-muted transition-colors w-fit"
+            >
+              Download {maybeFile.filename}
+            </a>
+            {csvText ? (
+              <a
+                href={`data:text/csv;charset=utf-8,${encodeURIComponent(csvText)}`}
+                download={(maybeFile.filename || "output").replace(/\.[^/.]+$/, "") + ".csv"}
+                className="px-2 py-1 text-xs rounded-md border bg-muted/70 hover:bg-muted transition-colors w-fit"
+              >
+                Download CSV
+              </a>
+            ) : null}
+            {isCsv && csvPreview ? (
+              <div className="mt-2">
+                <p className="mb-1 text-muted-foreground">CSV preview (first 20 lines)</p>
+                <pre className="text-[10px] p-2 bg-muted rounded overflow-auto whitespace-pre-wrap">{csvPreview}</pre>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="w-full bg-card p-4 border text-xs rounded-lg text-muted-foreground">
         <div className="flex items-center">
@@ -67,58 +136,58 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
       {result.history.map((item, i) => {
         const result = item.result || savedResult.current.history[i]?.result;
         return (
-          <NodeResultPopup
-            key={item.id}
-            disabled={!result}
-            history={{
-              name: item.name,
-              status: item.status,
-              startedAt: item.startedAt,
-              endedAt: item.endedAt,
-              error: item.error?.message,
-              result,
-            }}
-          >
-            <div
-              key={item.id}
-              className={cn(
-                "flex items-center gap-2 text-sm rounded-sm px-2 py-1.5 relative",
-                item.status == "fail" && "text-destructive",
-                !!result && "cursor-pointer hover:bg-secondary",
-              )}
+          <div key={item.id}>
+            <NodeResultPopup
+              disabled={!result}
+              history={{
+                name: item.name,
+                status: item.status,
+                startedAt: item.startedAt,
+                endedAt: item.endedAt,
+                error: item.error?.message,
+                result,
+              }}
             >
-              <div className="border rounded overflow-hidden">
-                <NodeIcon
-                  type={item.kind}
-                  iconClassName="size-3"
-                  className="rounded-none"
-                />
-              </div>
-              {item.status == "running" ? (
-                <TextShimmer className="font-semibold">
-                  {`${item.name} Running...`}
-                </TextShimmer>
-              ) : (
-                <span className="font-semibold">{item.name}</span>
-              )}
-              <span
+              <div
                 className={cn(
-                  "ml-auto text-xs",
-                  item.status != "fail" && "text-muted-foreground",
+                  "flex items-center gap-2 text-sm rounded-sm px-2 py-1.5 relative",
+                  item.status == "fail" && "text-destructive",
+                  !!result && "cursor-pointer hover:bg-secondary",
                 )}
               >
-                {item.status != "running" &&
-                  ((item.endedAt! - item.startedAt!) / 1000).toFixed(2)}
-              </span>
-              {item.status == "success" ? (
-                <Check className="size-3" />
-              ) : item.status == "fail" ? (
-                <XIcon className="size-3" />
-              ) : (
-                <Loader2 className="size-3 animate-spin" />
-              )}
-            </div>
-          </NodeResultPopup>
+                <div className="border rounded overflow-hidden">
+                  <NodeIcon
+                    type={item.kind}
+                    iconClassName="size-3"
+                    className="rounded-none"
+                  />
+                </div>
+                {item.status == "running" ? (
+                  <TextShimmer className="font-semibold">
+                    {`${item.name} Running...`}
+                  </TextShimmer>
+                ) : (
+                  <span className="font-semibold">{item.name}</span>
+                )}
+                <span
+                  className={cn(
+                    "ml-auto text-xs",
+                    item.status != "fail" && "text-muted-foreground",
+                  )}
+                >
+                  {item.status != "running" &&
+                    ((item.endedAt! - item.startedAt!) / 1000).toFixed(2)}
+                </span>
+                {item.status == "success" ? (
+                  <Check className="size-3" />
+                ) : item.status == "fail" ? (
+                  <XIcon className="size-3" />
+                ) : (
+                  <Loader2 className="size-3 animate-spin" />
+                )}
+              </div>
+            </NodeResultPopup>
+          </div>
         );
       })}
       <div className="mt-2">{output}</div>

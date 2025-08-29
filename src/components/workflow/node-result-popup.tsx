@@ -50,6 +50,16 @@ export function NodeResultPopup({
     return null;
   }, [history.endedAt, history.startedAt]);
 
+  // Helpers to detect file-like output from node execution
+  const outputData = tab == "input" ? history.result?.input : history.result?.output;
+  const fileResult = outputData && (outputData as any)?.result && (outputData as any).result.type === "file"
+    ? (outputData as any).result as { type: string; filename: string; mime: string; base64: string }
+    : null;
+  const csvText = typeof (outputData as any)?.csv === "string" ? ((outputData as any).csv as string) : null;
+  const csvDataUrl = csvText ? `data:text/csv;charset=utf-8,${encodeURIComponent(csvText)}` : null;
+  const fileHref = fileResult ? `data:${fileResult.mime};base64,${fileResult.base64}` : null;
+  const isCsvFile = fileResult?.mime?.startsWith("text/csv");
+
   return (
     <Dialog open={disabled ? false : undefined}>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -127,7 +137,7 @@ export function NodeResultPopup({
             </div>
             <div className="flex flex-col gap-2 w-full p-4 pt-2 min-w-0">
               {tab == "output" && history.status === "fail" ? null : (
-                <>
+                <div>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -148,7 +158,7 @@ export function NodeResultPopup({
                       <CopyIcon className="size-3" />
                     )}
                   </Button>
-                </>
+                </div>
               )}
               {tab == "output" && history.status === "fail" ? (
                 <Alert variant="destructive" className="flex flex-col gap-2">
@@ -158,14 +168,54 @@ export function NodeResultPopup({
                   </AlertDescription>
                 </Alert>
               ) : (
-                <JsonView
-                  initialExpandDepth={4}
-                  data={
-                    tab == "input"
-                      ? history.result?.input
-                      : history.result?.output
-                  }
-                />
+                <div>
+                  {(fileResult || csvText) ? (
+                    <div className="flex flex-col gap-2 mb-2">
+                      {fileResult && fileHref ? (
+                        <a
+                          href={fileHref}
+                          download={fileResult.filename}
+                          className="px-2 py-1 text-xs rounded-md border bg-muted/70 hover:bg-muted transition-colors w-fit"
+                        >
+                          Download {fileResult.filename}
+                        </a>
+                      ) : null}
+                      {csvText && csvDataUrl ? (
+                        <a
+                          href={csvDataUrl}
+                          download={fileResult?.filename || "output.csv"}
+                          className="px-2 py-1 text-xs rounded-md border bg-muted/70 hover:bg-muted transition-colors w-fit"
+                        >
+                          Download CSV
+                        </a>
+                      ) : null}
+                      {isCsvFile && fileResult ? (
+                        <div className="mt-1">
+                          <p className="mb-1 text-muted-foreground">CSV preview</p>
+                          <pre className="text-[10px] p-2 bg-muted rounded overflow-auto whitespace-pre-wrap">
+                            {(() => {
+                              try {
+                                return typeof window !== "undefined"
+                                  ? atob(fileResult.base64).split("\n").slice(0, 20).join("\n")
+                                  : "";
+                              } catch {
+                                return "";
+                              }
+                            })()}
+                          </pre>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  <JsonView
+                    initialExpandDepth={4}
+                    data={
+                      tab == "input"
+                        ? history.result?.input
+                        : history.result?.output
+                    }
+                  />
+                </div>
               )}
             </div>
           </div>
