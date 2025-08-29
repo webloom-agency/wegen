@@ -216,6 +216,32 @@ export async function POST(request: Request) {
             }
             return t;
           })
+          .map((allTools) => {
+            // Hard cap per provider limitation: 128 tools max
+            const MAX_TOOLS = 128;
+            const toolEntries = Object.entries(allTools);
+            if (toolEntries.length <= MAX_TOOLS) return allTools;
+
+            // Prioritize mentioned tools first, then app default tools, then others
+            const mentionedNames = new Set(
+              (mentions || [])
+                .filter((m) => m.type === "mcpTool" || m.type === "workflow" || m.type === "defaultTool")
+                .map((m: any) => m.name)
+                .filter(Boolean),
+            );
+            const appDefaultNames = new Set(Object.keys(APP_DEFAULT_TOOLS));
+
+            const mentioned = toolEntries.filter(([name]) => mentionedNames.has(name));
+            const appDefaults = toolEntries.filter(
+              ([name]) => !mentionedNames.has(name) && appDefaultNames.has(name),
+            );
+            const others = toolEntries.filter(
+              ([name]) => !mentionedNames.has(name) && !appDefaultNames.has(name),
+            );
+
+            const prioritized = [...mentioned, ...appDefaults, ...others].slice(0, MAX_TOOLS);
+            return Object.fromEntries(prioritized);
+          })
           .unwrap();
 
         const allowedMcpTools = Object.values(allowedMcpServers ?? {})
