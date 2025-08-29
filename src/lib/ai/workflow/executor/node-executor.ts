@@ -542,7 +542,7 @@ export const codeNodeExecutor: NodeExecutor<CodeNodeData> = async ({
   if (node.language === "python") {
     const prelude = `# 'params' is injected below as a dict\n`;
     const code = prelude + node.code;
-    const run = await runPythonServer({ code, timeout, onLog: (entry) => logs.push(entry), });
+    const run = await runPythonServer({ code, timeout, params, onLog: (entry) => logs.push(entry) });
     logs = run.logs;
     executionTimeMs = run.executionTimeMs;
     success = run.success;

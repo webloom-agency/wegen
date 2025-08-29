@@ -101,7 +101,7 @@ async function ensureVenv(baseDir: string, pythonBin: string) {
   return { venvDir, vpython, vpip };
 }
 
-export async function runPythonServer({ code, timeout = 30000, onLog }: CodeRunnerOptions & { params?: any }): Promise<CodeRunnerResult> {
+export async function runPythonServer({ code, timeout = 30000, onLog, params }: CodeRunnerOptions & { params?: any }): Promise<CodeRunnerResult> {
   const startTime = Date.now();
   const logs: LogEntry[] = [];
 
@@ -138,7 +138,7 @@ export async function runPythonServer({ code, timeout = 30000, onLog }: CodeRunn
 
   const dir = await mkdtemp(join(tmpdir(), "wfpy-"));
   const mainPath = join(dir, "main.py");
-  const paramsJson = JSON.stringify((arguments as any)[0]?.params ?? {});
+  const paramsJson = JSON.stringify(params ?? {});
   const finalCode = wrapper.replace("__WF_PARAMS__", paramsJson);
   await writeFile(mainPath, finalCode, "utf8");
 
