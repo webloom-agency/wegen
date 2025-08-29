@@ -167,21 +167,21 @@ export const conditionNodeExecutor: NodeExecutor<ConditionNodeData> = async ({
   node,
   state,
 }) => {
-  // Determine which branch matches
-  const ifMatch = checkConditionBranch(node.branches.if, state.getOutput);
-  let nextBranch = ifMatch
-    ? node.branches.if
-    : (node.branches.elseIf || []).find((b) => checkConditionBranch(b, state.getOutput)) || node.branches.else;
-
   // Record evaluation result for history/debugging
   state.setInput(node.id, {
-    matchedBranch: nextBranch.id,
+    matchedBranch:
+      checkConditionBranch(node.branches.if, state.getOutput)
+        ? node.branches.if.id
+        : ((node.branches.elseIf || []).find((b) => checkConditionBranch(b, state.getOutput)) || node.branches.else).id,
   });
 
   // The dynamic edge resolution in workflow-executor will route based on branch id handles
   return {
     output: {
-      branch: nextBranch.id,
+      branch:
+        checkConditionBranch(node.branches.if, state.getOutput)
+          ? node.branches.if.id
+          : ((node.branches.elseIf || []).find((b) => checkConditionBranch(b, state.getOutput)) || node.branches.else).id,
     },
   };
 };
