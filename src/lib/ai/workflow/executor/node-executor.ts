@@ -167,15 +167,21 @@ export const conditionNodeExecutor: NodeExecutor<ConditionNodeData> = async ({
   node,
   state,
 }) => {
-  // Evaluate conditions and determine next branches
-  const result = checkConditionBranch(node, state);
+  // Determine which branch matches
+  const ifMatch = checkConditionBranch(node.branches.if, state.getOutput);
+  let nextBranch = ifMatch
+    ? node.branches.if
+    : (node.branches.elseIf || []).find((b) => checkConditionBranch(b, state.getOutput)) || node.branches.else;
 
-  // Record result and instruct workflow to go to the next nodes
-  state.setInput(node.id, { result });
+  // Record evaluation result for history/debugging
+  state.setInput(node.id, {
+    matchedBranch: nextBranch.id,
+  });
+
+  // The dynamic edge resolution in workflow-executor will route based on branch id handles
   return {
     output: {
-      nextNodes: result.nextNodes,
-      evaluatedConditions: result.evaluatedConditions,
+      branch: nextBranch.id,
     },
   };
 };
