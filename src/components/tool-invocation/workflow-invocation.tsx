@@ -30,25 +30,28 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
       );
     if (!result.result) return null;
 
-    // The final workflow result for an Output node is typically the node's output object: { result, csv, logs, ... }
-    const container = result.result as any;
-    const maybeFile = container?.result;
-    const isFileResult =
-      maybeFile &&
-      typeof maybeFile === "object" &&
-      maybeFile.type === "file" &&
-      typeof maybeFile.filename === "string" &&
-      typeof maybeFile.mime === "string" &&
-      typeof maybeFile.base64 === "string";
+    // Support two shapes:
+    // 1) Top-level file object as final result
+    // 2) Container { result: fileObject, csv?: string }
+    const finalResult: any = result.result as any;
+    const isFileObject = (v: any) =>
+      v && typeof v === "object" && v.type === "file" && typeof v.filename === "string" && typeof v.mime === "string" && typeof v.base64 === "string";
 
-    if (isFileResult) {
-      const href = `data:${maybeFile.mime};base64,${maybeFile.base64}`;
-      const csvText: string | undefined = container?.csv;
-      const isCsv = maybeFile.mime.startsWith("text/csv");
+    const fileObj = isFileObject(finalResult)
+      ? finalResult
+      : isFileObject(finalResult?.result)
+        ? finalResult.result
+        : null;
+
+    const csvText: string | undefined = typeof finalResult?.csv === "string" ? finalResult.csv : undefined;
+
+    if (fileObj) {
+      const href = `data:${fileObj.mime};base64,${fileObj.base64}`;
+      const isCsv = String(fileObj.mime || "").startsWith("text/csv");
       let csvPreview: string | null = null;
       if (isCsv) {
         try {
-          const decoded = typeof window !== "undefined" ? atob(maybeFile.base64) : "";
+          const decoded = typeof window !== "undefined" ? atob(fileObj.base64) : "";
           csvPreview = decoded.split("\n").slice(0, 20).join("\n");
         } catch {}
       }
@@ -74,15 +77,15 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
           <div className="p-2 max-h-[300px] overflow-y-auto flex flex-col gap-2">
             <a
               href={href}
-              download={maybeFile.filename}
+              download={fileObj.filename}
               className="px-2 py-1 text-xs rounded-md border bg-muted/70 hover:bg-muted transition-colors w-fit"
             >
-              Download {maybeFile.filename}
+              Download {fileObj.filename}
             </a>
             {csvText ? (
               <a
                 href={`data:text/csv;charset=utf-8,${encodeURIComponent(csvText)}`}
-                download={(maybeFile.filename || "output").replace(/\.[^/.]+$/, "") + ".csv"}
+                download={(fileObj.filename || "output").replace(/\.[^/.]+$/, "") + ".csv"}
                 className="px-2 py-1 text-xs rounded-md border bg-muted/70 hover:bg-muted transition-colors w-fit"
               >
                 Download CSV
