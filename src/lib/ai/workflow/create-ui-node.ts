@@ -103,6 +103,24 @@ export function createUINode(
         content: [],
       },
     };
+  } else if (node.data.kind === NodeKind.Code) {
+    node.data.outputSchema = {
+      type: "object",
+      properties: {
+        result: { type: "string" },
+        csv: { type: "string" },
+        logs: { type: "array", items: { type: "object" } },
+        success: { type: "boolean" },
+        executionTimeMs: { type: "number" },
+      },
+    } as ObjectJsonSchema7;
+
+    const codeData = node.data as any;
+    codeData.language = "python";
+    codeData.code = "print('Hello from Python')\nresult = 'ok'";
+    codeData.params = { type: "doc", content: [] };
+    codeData.timeout = 30000;
+    codeData.exportCsv = false;
   }
 
   return node;

@@ -109,6 +109,8 @@ export const nodeValidate: NodeValidate<WorkflowNodeData> = ({
       return httpNodeValidate({ node, nodes, edges });
     case NodeKind.Template:
       return templateNodeValidate({ node, nodes, edges });
+    case NodeKind.Code:
+      return codeNodeValidate({ node: node as any, nodes, edges });
   }
 };
 
@@ -269,4 +271,14 @@ export const templateNodeValidate: NodeValidate<TemplateNodeData> = ({
 
   // Template content can be undefined/empty - that's valid
   // The actual content validation is handled by the TipTap editor
+};
+
+export const codeNodeValidate: NodeValidate<any> = ({ node }) => {
+  if (!node.language) throw new Error("Code node must have a language");
+  if (!node.code || String(node.code).trim().length === 0)
+    throw new Error("Code node must have code");
+  if (!["python"].includes(node.language))
+    throw new Error("Unsupported code language");
+  if (node.timeout !== undefined && (typeof node.timeout !== "number" || node.timeout <= 0))
+    throw new Error("Timeout must be a positive number");
 };

@@ -12,7 +12,7 @@ import { NodeIcon } from "./node-icon";
 import { useTranslations } from "next-intl";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 
-const unSupportedKinds: NodeKind[] = [NodeKind.Code];
+const unSupportedKinds: NodeKind[] = [];
 
 export function NodeSelect({
   children,

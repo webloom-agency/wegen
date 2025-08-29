@@ -189,6 +189,33 @@ export type TemplateNodeData = BaseWorkflowNodeDataData<{
 };
 
 /**
+ * Code node: Executes custom code in a sandboxed environment
+ * Currently supports Python 3 via Pyodide on the server
+ */
+export type CodeNodeData = BaseWorkflowNodeDataData<{
+  kind: NodeKind.Code;
+}> & {
+  language: "python" | "javascript";
+  /**
+   * Source code to execute
+   */
+  code: string;
+  /**
+   * Optional JSON parameters with mentions to previous node outputs.
+   * At runtime, mentions are resolved to concrete values and provided to the code as `params`.
+   */
+  params?: TipTapMentionJsonContent;
+  /**
+   * Max execution time in ms (default 30000)
+   */
+  timeout?: number;
+  /**
+   * If true and possible, convert the returned result to CSV (comma-separated)
+   */
+  exportCsv?: boolean;
+};
+
+/**
  * Union type of all possible node data types.
  * When adding a new node type, include it in this union.
  */
@@ -200,7 +227,8 @@ export type WorkflowNodeData =
   | ToolNodeData
   | ConditionNodeData
   | HttpNodeData
-  | TemplateNodeData;
+  | TemplateNodeData
+  | CodeNodeData;
 
 /**
  * Runtime fields added during workflow execution

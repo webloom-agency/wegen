@@ -9,6 +9,7 @@ import {
   HttpNodeData,
   TemplateNodeData,
   OutputSchemaSourceKey,
+  CodeNodeData,
 } from "../workflow.interface";
 import { WorkflowRuntimeState } from "./graph-store";
 import { generateObject, generateText, Message } from "ai";
@@ -26,6 +27,8 @@ import {
   exaContentsToolForWorkflow,
 } from "lib/ai/tools/web/web-search";
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
+import { safeJsRun } from "lib/code-runner/safe-js-run";
+import { runPythonServer } from "lib/code-runner/python-server-runner";
 
 /**
  * Interface for node executor functions.
@@ -507,6 +510,87 @@ export const templateNodeExecutor: NodeExecutor<TemplateNodeData> = ({
   return {
     output: {
       template: text,
+    },
+  };
+};
+
+export const codeNodeExecutor: NodeExecutor<CodeNodeData> = async ({
+  node,
+  state,
+}) => {
+  // Resolve params TipTap content into text then JSON if possible
+  let params: any = undefined;
+  if (node.params) {
+    const text = convertTiptapJsonToText({
+      getOutput: state.getOutput,
+      json: node.params,
+    });
+    try {
+      params = JSON.parse(text);
+    } catch {
+      params = text;
+    }
+  }
+
+  const timeout = node.timeout || 30000;
+
+  // Execute code based on language
+  let result: any = undefined;
+  let logs: any[] = [];
+  let success = false;
+  let executionTimeMs: number | undefined = undefined;
+  if (node.language === "python") {
+    const prelude = `# 'params' is injected below as a dict\n`;
+    const code = prelude + node.code;
+    const run = await runPythonServer({ code, timeout, onLog: (entry) => logs.push(entry), });
+    logs = run.logs;
+    executionTimeMs = run.executionTimeMs;
+    success = run.success;
+    result = run.result;
+  } else {
+    const prelude = `// Params are available in a constant named params\nconst params = ${JSON.stringify(
+      params ?? {},
+    )};\n`;
+    const code = prelude + node.code;
+    const run = await safeJsRun({ code, timeout });
+    logs = run.logs;
+    executionTimeMs = run.executionTimeMs;
+    success = run.success;
+    result = run.result;
+  }
+
+  // Optional CSV export if the result is array of objects
+  let csv: string | undefined = undefined;
+  if (node.exportCsv && Array.isArray(result) && result.length > 0) {
+    const headers = Array.from(
+      result.reduce((set: Set<string>, row: any) => {
+        Object.keys(row || {}).forEach((k) => set.add(k));
+        return set;
+      }, new Set<string>()),
+    );
+    const lines = [headers.join(",")];
+    for (const row of result) {
+      const line = headers
+        .map((h) => {
+          const v = row?.[h];
+          const s = v === null || v === undefined ? "" : String(v);
+          const needsQuote = /[",\n]/.test(s);
+          return needsQuote ? `"${s.replace(/"/g, '""')}` + `"` : s;
+        })
+        .join(",");
+      lines.push(line);
+    }
+    csv = lines.join("\n");
+  }
+
+  state.setInput(node.id, { code: node.code, params });
+  return {
+    output: {
+      result,
+      csv,
+      logs,
+      success,
+      executionTimeMs,
     },
   };
 };
