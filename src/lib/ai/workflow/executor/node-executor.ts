@@ -30,6 +30,20 @@ import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 import { safeJsRun } from "lib/code-runner/safe-js-run";
 import { runPythonServer } from "lib/code-runner/python-server-runner";
 
+/** Deep-trim whitespace from all string leaves in an object/array */
+function deepTrimStrings<T>(value: T): T {
+  if (typeof value === "string") return value.trim() as unknown as T;
+  if (Array.isArray(value)) return value.map((v) => deepTrimStrings(v)) as unknown as T;
+  if (value && typeof value === "object") {
+    const out: Record<string, any> = {};
+    for (const [k, v] of Object.entries(value as Record<string, any>)) {
+      out[k] = deepTrimStrings(v);
+    }
+    return out as unknown as T;
+  }
+  return value;
+}
+
 /**
  * Interface for node executor functions.
  * Each node type implements this interface to define its execution behavior.
@@ -69,10 +83,16 @@ export const outputNodeExecutor: NodeExecutor<OutputNodeData> = ({
   node,
   state,
 }) => {
+  const items = node.outputData.map((cur) => ({ key: cur.key, value: state.getOutput(cur.source!) }));
+  if (items.length === 1) {
+    // Unwrap single output to raw value to avoid { key: value } nesting
+    return {
+      output: items[0]?.value,
+    };
+  }
   return {
-    output: node.outputData.reduce((acc, cur) => {
-      // Collect data from each configured source node
-      acc[cur.key] = state.getOutput(cur.source!);
+    output: items.reduce((acc, cur) => {
+      (acc as any)[cur.key] = cur.value;
       return acc;
     }, {} as object),
   };
@@ -147,26 +167,15 @@ export const conditionNodeExecutor: NodeExecutor<ConditionNodeData> = async ({
   node,
   state,
 }) => {
-  // Evaluate conditions in order: if, then elseIf branches, finally else
-  const okBranch =
-    [node.branches.if, ...(node.branches.elseIf || [])].find((branch) => {
-      return checkConditionBranch(branch, state.getOutput);
-    }) || node.branches.else;
+  // Evaluate conditions and determine next branches
+  const result = checkConditionBranch(node, state);
 
-  // Find the target nodes for the selected branch
-  const nextNodes = state.edges
-    .filter(
-      (edge) =>
-        edge.uiConfig.sourceHandle === okBranch.id && edge.source == node.id,
-    )
-    .map((edge) => state.nodes.find((node) => node.id === edge.target)!)
-    .filter(Boolean);
-
+  // Record result and instruct workflow to go to the next nodes
+  state.setInput(node.id, { result });
   return {
     output: {
-      type: okBranch.type, // Which branch was taken
-      branch: okBranch.id, // Branch identifier
-      nextNodes, // Nodes to execute next (used by dynamic edge resolution)
+      nextNodes: result.nextNodes,
+      evaluatedConditions: result.evaluatedConditions,
     },
   };
 };
@@ -531,6 +540,9 @@ export const codeNodeExecutor: NodeExecutor<CodeNodeData> = async ({
       params = text;
     }
   }
+
+  // Normalize: trim whitespace from all string params
+  params = deepTrimStrings(params);
 
   const timeout = node.timeout || 30000;
 

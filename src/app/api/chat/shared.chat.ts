@@ -398,6 +398,17 @@ export const workflowToVercelAITool = ({
             outputNodeResults.length == 1
               ? outputNodeResults[0]
               : outputNodeResults;
+          // Unwrap single-key objects like { text: X } to just X for convenience in chat/tool output
+          if (
+            toolResult.result &&
+            typeof toolResult.result === "object" &&
+            !Array.isArray(toolResult.result)
+          ) {
+            const keys = Object.keys(toolResult.result as any);
+            if (keys.length === 1) {
+              toolResult.result = (toolResult.result as any)[keys[0]];
+            }
+          }
           return toolResult;
         })
         .ifFail((err) => {
