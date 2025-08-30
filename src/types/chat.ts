@@ -13,6 +13,7 @@ export type ChatThread = {
   title: string;
   userId: string;
   createdAt: Date;
+  userEmail?: string;
 };
 
 export type ChatMessage = {
@@ -132,6 +133,15 @@ export type ChatRepository = {
   >;
 
   selectThreadsByUserIdAndAgentId(
+    userId: string,
+    agentId: string,
+  ): Promise<
+    (ChatThread & {
+      lastMessageAt: number;
+    })[]
+  >;
+
+  selectThreadsByAgentVisibleToUser(
     userId: string,
     agentId: string,
   ): Promise<

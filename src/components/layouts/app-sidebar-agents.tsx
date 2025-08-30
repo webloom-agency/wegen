@@ -27,7 +27,7 @@ import { appStore } from "@/app/store";
 import { useRouter } from "next/navigation";
 import { ChatMention } from "app-types/chat";
 import { BACKGROUND_COLORS, EMOJI_DATA } from "lib/const";
-import { cn } from "lib/utils";
+import { cn, deduplicateByKey } from "lib/utils";
 
 const DISPLAY_LIMIT = 5; // Number of agents to show when collapsed
 
@@ -41,8 +41,9 @@ export function AppSidebarAgents() {
   }); // Increase limit since we're not artificially limiting display
 
   const agents = useMemo(() => {
-    return [...myAgents, ...bookmarkedAgents];
-  }, [bookmarkedAgents, myAgents]);
+    const combined = [...myAgents, ...bookmarkedAgents, ...sharedAgents];
+    return deduplicateByKey(combined, "id");
+  }, [bookmarkedAgents, myAgents, sharedAgents]);
 
   const handleAgentClick = useCallback(
     (id: string) => {

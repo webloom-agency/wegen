@@ -6,9 +6,10 @@ import {
   ChatThreadSchema,
   UserSchema,
   ArchiveItemSchema,
+  AgentSchema,
 } from "../schema.pg";
 
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, or, sql } from "drizzle-orm";
 
 export const pgChatRepository: ChatRepository = {
   insertThread: async (
@@ -161,6 +162,68 @@ export const pgChatRepository: ChatRepository = {
           : 0,
       };
     });
+  },
+
+  selectThreadsByAgentVisibleToUser: async (
+    userId: string,
+    agentId: string,
+  ) => {
+    // Threads by anyone that reference the agent in any message annotations,
+    // but only if the agent is visible to the current user (public/readonly) or owned by them.
+    const rows = await db
+      .select({
+        threadId: ChatThreadSchema.id,
+        title: ChatThreadSchema.title,
+        createdAt: ChatThreadSchema.createdAt,
+        creatorUserId: ChatThreadSchema.userId,
+        creatorEmail: UserSchema.email,
+        lastMessageAt: sql<string>`MAX(${ChatMessageSchema.createdAt})`.as(
+          "last_message_at",
+        ),
+      })
+      .from(ChatThreadSchema)
+      .innerJoin(UserSchema, eq(ChatThreadSchema.userId, UserSchema.id))
+      .leftJoin(
+        ChatMessageSchema,
+        eq(ChatThreadSchema.id, ChatMessageSchema.threadId),
+      )
+      .where(
+        and(
+          // agent must be visible to current user or owned
+          sql`EXISTS (
+            SELECT 1 FROM ${AgentSchema} a
+            WHERE a.id = ${agentId}
+              AND (
+                a.user_id = ${userId}
+                OR a.visibility IN ('public','readonly')
+              )
+          )`,
+          // thread references this agent id in any message annotations
+          sql`EXISTS (
+            SELECT 1
+            FROM ${ChatMessageSchema} cm2
+            WHERE cm2.thread_id = ${ChatThreadSchema.id}
+              AND EXISTS (
+                SELECT 1
+                FROM unnest(cm2.annotations) AS ann
+                WHERE (ann)::jsonb ->> 'agentId' = ${agentId}
+              )
+          )`,
+        ),
+      )
+      .groupBy(ChatThreadSchema.id, UserSchema.email)
+      .orderBy(desc(sql`last_message_at`));
+
+    return rows.map((row) => ({
+      id: row.threadId,
+      title: row.title,
+      userId: row.creatorUserId,
+      userEmail: row.creatorEmail ?? undefined,
+      createdAt: row.createdAt,
+      lastMessageAt: row.lastMessageAt
+        ? new Date(row.lastMessageAt).getTime()
+        : 0,
+    }));
   },
 
   updateThread: async (

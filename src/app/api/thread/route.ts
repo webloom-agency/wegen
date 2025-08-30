@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const agentId = url.searchParams.get("agentId");
   const threads = agentId
-    ? await chatRepository.selectThreadsByUserIdAndAgentId(
+    ? await chatRepository.selectThreadsByAgentVisibleToUser(
         session.user.id,
         agentId,
       )

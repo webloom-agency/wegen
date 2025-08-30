@@ -276,17 +276,24 @@ export function AppSidebarThreads() {
                                     href={`/chat/${thread.id}`}
                                     className="flex items-center"
                                   >
-                                    {generatingTitleThreadIds.includes(
-                                      thread.id,
-                                    ) ? (
-                                      <TextShimmer className="truncate min-w-0">
-                                        {thread.title || "New Chat"}
-                                      </TextShimmer>
-                                    ) : (
-                                      <p className="truncate min-w-0">
-                                        {thread.title || "New Chat"}
-                                      </p>
-                                    )}
+                                    <div className="flex flex-col items-start min-w-0">
+                                      {generatingTitleThreadIds.includes(
+                                        thread.id,
+                                      ) ? (
+                                        <TextShimmer className="truncate min-w-0">
+                                          {thread.title || "New Chat"}
+                                        </TextShimmer>
+                                      ) : (
+                                        <p className="truncate min-w-0">
+                                          {thread.title || "New Chat"}
+                                        </p>
+                                      )}
+                                      {thread.userEmail && (
+                                        <p className="truncate min-w-0 text-xs text-muted-foreground">
+                                          {thread.userEmail}
+                                        </p>
+                                      )}
+                                    </div>
                                   </Link>
                                 </SidebarMenuButton>
                               </TooltipTrigger>
