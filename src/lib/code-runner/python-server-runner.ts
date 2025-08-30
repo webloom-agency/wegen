@@ -82,10 +82,10 @@ async function ensureDir(p: string) {
 
 async function detectPython(): Promise<string> {
   try {
-    await pExecFile("python3", ["--version"]);
+    await pExecFile("python3", ["--version"], { env: { ...process.env } });
     return "python3";
   } catch {}
-  await pExecFile("python", ["--version"]);
+  await pExecFile("python", ["--version"], { env: { ...process.env } });
   return "python";
 }
 
@@ -96,7 +96,7 @@ async function ensureVenv(baseDir: string, pythonBin: string) {
   const vpython = join(bin, isWin ? "python.exe" : "python");
   const vpip = join(bin, isWin ? "pip.exe" : "pip");
   if (!(await pathExists(vpython))) {
-    await pExecFile(pythonBin, ["-m", "venv", venvDir]);
+    await pExecFile(pythonBin, ["-m", "venv", venvDir], { env: { ...process.env } });
   }
   return { venvDir, vpython, vpip };
 }
@@ -116,7 +116,7 @@ export async function runPythonServer({ code, timeout = 30000, onLog, params }: 
 
   if (pkgs.length > 0) {
     try {
-      await pExecFile(vpip, ["install", "--disable-pip-version-check", "--quiet", ...pkgs], { timeout });
+      await pExecFile(vpip, ["install", "--disable-pip-version-check", "--quiet", ...pkgs], { timeout, env: { ...process.env } });
     } catch (e: any) {
       logs.push({ type: "error", args: [{ type: "data", value: `pip install failed: ${e?.message || e}` }] });
     }
@@ -143,7 +143,7 @@ export async function runPythonServer({ code, timeout = 30000, onLog, params }: 
   await writeFile(mainPath, finalCode, "utf8");
 
   try {
-    const { stdout, stderr } = await pExecFile(vpython, ["-I", mainPath], { timeout });
+    const { stdout, stderr } = await pExecFile(vpython, ["-I", mainPath], { timeout, env: { ...process.env } });
     if (stderr?.trim()) logs.push({ type: "error", args: [{ type: "data", value: stderr }] });
     if (stdout?.length) logs.push({ type: "log", args: [{ type: "data", value: stdout }] });
     onLog?.({ type: "log", args: [{ type: "data", value: stdout }] });
