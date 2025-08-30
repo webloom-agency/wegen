@@ -30,7 +30,6 @@ import { Skeleton } from "ui/skeleton";
 import { useArchives } from "@/hooks/queries/use-archives";
 import { ArchiveDialog } from "../archive-dialog";
 import useSWR from "swr";
-import { authClient } from "auth/client";
 
 export function AppSidebarMenus() {
   const router = useRouter();
