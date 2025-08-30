@@ -9,7 +9,7 @@ import {
   AgentSchema,
 } from "../schema.pg";
 
-import { and, desc, eq, gte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 
 export const pgChatRepository: ChatRepository = {
   insertThread: async (
