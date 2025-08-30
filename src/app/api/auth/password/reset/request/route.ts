@@ -7,8 +7,8 @@ export async function POST(request: Request) {
     if (!email) {
       return NextResponse.json({ message: "Email is required" }, { status: 400 });
     }
-    // Use Better Auth server API to request a password reset (sends email)
-    await auth.api.resetPassword.request({
+    // Use Better Auth server API to send a password reset email
+    await auth.api.sendResetPassword({
       body: {
         email,
         redirectTo: callbackURL || "/",
