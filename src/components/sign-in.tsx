@@ -108,7 +108,12 @@ export default function SignIn({
       return;
     }
     try {
-      await authClient.password.reset.request({ email, callbackURL: "/" });
+      const res = await fetch(`/api/auth/password/reset/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, callbackURL: "/" }),
+      });
+      if (!res.ok) throw new Error(await res.text());
       toast.success("Password reset link sent. Check your inbox.");
       setResetOpen(false);
     } catch (e: any) {
