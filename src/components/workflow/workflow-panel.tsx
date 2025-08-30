@@ -144,7 +144,7 @@ export const WorkflowPanel = memo(
           const res = await fetch("/api/workflow", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: workflow.id, icon: newIcon }),
+            body: JSON.stringify({ id: workflow.id, name: workflow.name, icon: newIcon }),
           });
           if (!res.ok) throw new Error(await res.text());
           mutate(`/api/workflow/${workflow.id}`);
@@ -156,7 +156,7 @@ export const WorkflowPanel = memo(
           close();
         }
       },
-      [workflow.id, workflow.icon?.style?.backgroundColor, hasEditAccess, workflow.isPublished, t, addProcess],
+      [workflow.id, workflow.icon?.style?.backgroundColor, workflow.name, hasEditAccess, workflow.isPublished, t, addProcess],
     );
 
     const updatePublished = useCallback(
