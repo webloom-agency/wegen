@@ -137,53 +137,56 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
   return (
     <div className="w-full flex flex-col gap-1">
       {result.history.map((item, i) => {
-        const result = item.result || savedResult.current.history[i]?.result;
+        const step = savedResult.current.history[i] || item;
+        const stepResult = step.result;
         return (
           <div key={item.id}>
             <NodeResultPopup
-              disabled={!result}
+              disabled={!stepResult}
               history={{
-                name: item.name,
-                status: item.status,
-                startedAt: item.startedAt,
-                endedAt: item.endedAt,
-                error: item.error?.message,
-                result,
+                name: step.name,
+                status: step.status,
+                startedAt: step.startedAt,
+                endedAt: step.endedAt,
+                error: step.error?.message,
+                result: result.isReadOnly
+                  ? { input: undefined, output: stepResult?.output }
+                  : stepResult,
               }}
             >
               <div
                 className={cn(
                   "flex items-center gap-2 text-sm rounded-sm px-2 py-1.5 relative",
-                  item.status == "fail" && "text-destructive",
-                  !!result && "cursor-pointer hover:bg-secondary",
+                  step.status == "fail" && "text-destructive",
+                  !!stepResult && "cursor-pointer hover:bg-secondary",
                 )}
               >
                 <div className="border rounded overflow-hidden">
                   <NodeIcon
-                    type={item.kind}
+                    type={step.kind}
                     iconClassName="size-3"
                     className="rounded-none"
                   />
                 </div>
-                {item.status == "running" ? (
+                {step.status == "running" ? (
                   <TextShimmer className="font-semibold">
-                    {`${item.name} Running...`}
+                    {`${step.name} Running...`}
                   </TextShimmer>
                 ) : (
-                  <span className="font-semibold">{item.name}</span>
+                  <span className="font-semibold">{step.name}</span>
                 )}
                 <span
                   className={cn(
                     "ml-auto text-xs",
-                    item.status != "fail" && "text-muted-foreground",
+                    step.status != "fail" && "text-muted-foreground",
                   )}
                 >
-                  {item.status != "running" &&
-                    ((item.endedAt! - item.startedAt!) / 1000).toFixed(2)}
+                  {step.status != "running" &&
+                    ((step.endedAt! - step.startedAt!) / 1000).toFixed(2)}
                 </span>
-                {item.status == "success" ? (
+                {step.status == "success" ? (
                   <Check className="size-3" />
-                ) : item.status == "fail" ? (
+                ) : step.status == "fail" ? (
                   <XIcon className="size-3" />
                 ) : (
                   <Loader2 className="size-3 animate-spin" />

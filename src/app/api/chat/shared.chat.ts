@@ -304,6 +304,7 @@ export const workflowToVercelAITool = ({
         history,
         result: undefined,
         status: "running",
+        _workflowId: id,
       };
       return safe(id)
         .map((id) =>
@@ -318,6 +319,7 @@ export const workflowToVercelAITool = ({
             edges: workflow.edges,
           });
           toolResult.workflowIcon = workflow.icon;
+          toolResult.isReadOnly = workflow.visibility === "readonly";
 
           abortSignal?.addEventListener("abort", () => executor.exit());
           executor.subscribe((e) => {

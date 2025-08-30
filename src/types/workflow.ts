@@ -145,6 +145,8 @@ export type VercelAIWorkflowToolStreamingResult = {
   error?: { name: string; message: string };
   result?: any;
   status: "running" | "success" | "fail";
+  _workflowId?: string;
+  isReadOnly?: boolean;
 };
 
 export function isVercelAIWorkflowTool(
