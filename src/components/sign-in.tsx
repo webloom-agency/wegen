@@ -108,7 +108,7 @@ export default function SignIn({
       return;
     }
     try {
-      await authClient.resetPassword({ email, callbackURL: "/" });
+      await authClient.password.reset.request({ email, callbackURL: "/" });
       toast.success("Password reset link sent. Check your inbox.");
       setResetOpen(false);
     } catch (e: any) {
