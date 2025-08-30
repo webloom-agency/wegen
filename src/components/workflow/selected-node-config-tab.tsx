@@ -24,9 +24,11 @@ import { TemplateNodeConfig } from "./node-config/template-node-config";
 import { CodeNodeConfig } from "./node-config/code-node-config";
 import { useTranslations } from "next-intl";
 
-export function SelectedNodeConfigTab({ node }: { node: UINode }) {
+export function SelectedNodeConfigTab({ node, hasEditAccess }: { node: UINode; hasEditAccess?: boolean }) {
   const t = useTranslations();
   const { updateNodeData, updateNode, setNodes } = useReactFlow();
+
+  const isReadonly = !hasEditAccess;
 
   return (
     <div
@@ -38,24 +40,30 @@ export function SelectedNodeConfigTab({ node }: { node: UINode }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 w-full">
             <NodeIcon type={node.data.kind} />
-            <Input
-              maxLength={20}
-              onChange={(e) =>
-                updateNodeData(node.id, { name: e.target.value })
-              }
-              value={node.data.name}
-              className="bg-transparent border-none px-0 text-lg font-semibold"
-            />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <div className="ml-auto rounded hover:bg-secondary cursor-pointer p-1">
-                  <MoreHorizontalIcon className="size-3.5" />
-                </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <NodeContextMenuContent node={node.data} />
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {isReadonly ? (
+              <div className="text-lg font-semibold truncate" title={node.data.name}>{node.data.name}</div>
+            ) : (
+              <Input
+                maxLength={20}
+                onChange={(e) =>
+                  updateNodeData(node.id, { name: e.target.value })
+                }
+                value={node.data.name}
+                className="bg-transparent border-none px-0 text-lg font-semibold"
+              />
+            )}
+            {!isReadonly && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div className="ml-auto rounded hover:bg-secondary cursor-pointer p-1">
+                    <MoreHorizontalIcon className="size-3.5" />
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <NodeContextMenuContent node={node.data} />
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <div
               className="p-1 rounded hover:bg-secondary cursor-pointer"
               onClick={() => {
@@ -71,60 +79,68 @@ export function SelectedNodeConfigTab({ node }: { node: UINode }) {
           </div>
         </div>
         {node.data.kind !== NodeKind.Note && (
-          <Textarea
-            className="text-xs bg-transparent rounded-none resize-none overflow-y-auto max-h-14 min-h-6 h-6 mt-2 p-0 border-none"
-            value={node.data.description}
-            onChange={(e) =>
-              updateNodeData(node.id, {
-                description: e.target.value,
-              })
-            }
-            placeholder={t("Workflow.nodeDescriptionPlaceholder")}
-          />
-        )}
-      </div>
-
-      <Separator className="my-6" />
-      <div className="flex-1">
-        {node.data.kind === NodeKind.Input ? (
-          <InputNodeDataConfig data={node.data} />
-        ) : node.data.kind === NodeKind.Output ? (
-          <OutputNodeDataConfig data={node.data} />
-        ) : node.data.kind === NodeKind.LLM ? (
-          <LLMNodeDataConfig data={node.data} />
-        ) : node.data.kind === NodeKind.Condition ? (
-          <ConditionNodeDataConfig data={node.data} />
-        ) : node.data.kind === NodeKind.Tool ? (
-          <ToolNodeDataConfig data={node.data} />
-        ) : node.data.kind === NodeKind.Http ? (
-          <HttpNodeConfig node={node} />
-        ) : node.data.kind === NodeKind.Template ? (
-          <TemplateNodeConfig data={node.data} />
-        ) : node.data.kind === NodeKind.Code ? (
-          <CodeNodeConfig node={node} />
-        ) : node.data.kind === NodeKind.Note ? (
-          <div className="h-full flex flex-col gap-2 px-4">
-            <Label
-              htmlFor="description"
-              className="text-muted-foreground text-xs"
-            >
-              {t("Common.description")}
-            </Label>
+          isReadonly ? (
+            <div className="text-xs text-muted-foreground mt-2 whitespace-pre-wrap break-words min-h-6">
+              {node.data.description || t("Workflow.nodeDescriptionPlaceholder")}
+            </div>
+          ) : (
             <Textarea
-              id="description"
-              className="resize-none min-h-80 max-h-80 overflow-y-auto"
+              className="text-xs bg-transparent rounded-none resize-none overflow-y-auto max-h-14 min-h-6 h-6 mt-2 p-0 border-none"
               value={node.data.description}
               onChange={(e) =>
                 updateNodeData(node.id, {
                   description: e.target.value,
                 })
               }
+              placeholder={t("Workflow.nodeDescriptionPlaceholder")}
             />
-          </div>
-        ) : null}
+          )
+        )}
       </div>
 
-      {![NodeKind.Output, NodeKind.Note].includes(node.data.kind) && (
+      {!isReadonly && <Separator className="my-6" />}
+      {!isReadonly && (
+        <div className="flex-1">
+          {node.data.kind === NodeKind.Input ? (
+            <InputNodeDataConfig data={node.data} />
+          ) : node.data.kind === NodeKind.Output ? (
+            <OutputNodeDataConfig data={node.data} />
+          ) : node.data.kind === NodeKind.LLM ? (
+            <LLMNodeDataConfig data={node.data} />
+          ) : node.data.kind === NodeKind.Condition ? (
+            <ConditionNodeDataConfig data={node.data} />
+          ) : node.data.kind === NodeKind.Tool ? (
+            <ToolNodeDataConfig data={node.data} />
+          ) : node.data.kind === NodeKind.Http ? (
+            <HttpNodeConfig node={node} />
+          ) : node.data.kind === NodeKind.Template ? (
+            <TemplateNodeConfig data={node.data} />
+          ) : node.data.kind === NodeKind.Code ? (
+            <CodeNodeConfig node={node} />
+          ) : node.data.kind === NodeKind.Note ? (
+            <div className="h-full flex flex-col gap-2 px-4">
+              <Label
+                htmlFor="description"
+                className="text-muted-foreground text-xs"
+              >
+                {t("Common.description")}
+              </Label>
+              <Textarea
+                id="description"
+                className="resize-none min-h-80 max-h-80 overflow-y-auto"
+                value={node.data.description}
+                onChange={(e) =>
+                  updateNodeData(node.id, {
+                    description: e.target.value,
+                  })
+                }
+              />
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {!isReadonly && ![NodeKind.Output, NodeKind.Note].includes(node.data.kind) && (
         <>
           <Separator className="my-6" />
           <div className="px-4 ">

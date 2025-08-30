@@ -370,7 +370,9 @@ export const WorkflowPanel = memo(
           />
         </div>
         <div className="flex gap-2">
-          {selectedNode && <SelectedNodeConfigTab node={selectedNode} />}
+          {selectedNode && (
+            <SelectedNodeConfigTab node={selectedNode} hasEditAccess={hasEditAccess} />
+          )}
           {showExecutePanel && (
             <ExecuteTab
               close={() => {
