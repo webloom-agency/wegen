@@ -149,10 +149,13 @@ export default function MCPEditor({
           }),
         }),
       )
-      .ifOk(() => {
+      .ifOk(async () => {
         toast.success(t("MCP.configurationSavedSuccessfully"));
         mutate("/api/mcp/list");
-        router.push("/mcp");
+        // stay on page if editing; redirect on create
+        if (shouldInsert) {
+          router.push("/mcp");
+        }
       })
       .ifFail(handleErrorWithToast)
       .watch(() => setIsLoading(false));
@@ -185,7 +188,7 @@ export default function MCPEditor({
           <Input
             id="name"
             value={name}
-            disabled={!shouldInsert}
+            disabled={false}
             onChange={(e) => {
               setName(e.target.value);
               if (e.target.value) validateName(e.target.value);

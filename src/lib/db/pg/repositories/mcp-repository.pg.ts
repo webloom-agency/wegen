@@ -19,6 +19,7 @@ export const pgMcpRepository: MCPRepository = {
       .onConflictDoUpdate({
         target: [McpServerSchema.id],
         set: {
+          name: server.name,
           config: server.config,
           updatedAt: new Date(),
         },
