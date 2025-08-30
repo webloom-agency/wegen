@@ -38,7 +38,8 @@ export const pgAgentRepository: AgentRepository = {
   },
 
   async selectAgentById(id, userId): Promise<Agent | null> {
-    const [result] = await db
+    const admin = await isAdmin(userId);
+    const baseSelect = db
       .select({
         id: AgentSchema.id,
         name: AgentSchema.name,
@@ -60,16 +61,20 @@ export const pgAgentRepository: AgentRepository = {
           eq(BookmarkSchema.itemType, "agent"),
         ),
       )
-      .where(
-        and(
-          eq(AgentSchema.id, id),
-          or(
-            eq(AgentSchema.userId, userId), // Own agent
-            eq(AgentSchema.visibility, "public"), // Public agent
-            eq(AgentSchema.visibility, "readonly"), // Readonly agent
+      .where(eq(AgentSchema.id, id));
+
+    const [result] = admin
+      ? await baseSelect
+      : await baseSelect.where(
+          and(
+            eq(AgentSchema.id, id),
+            or(
+              eq(AgentSchema.userId, userId),
+              eq(AgentSchema.visibility, "public"),
+              eq(AgentSchema.visibility, "readonly"),
+            ),
           ),
-        ),
-      );
+        );
 
     if (!result) return null;
 
@@ -122,13 +127,7 @@ export const pgAgentRepository: AgentRepository = {
         ...agent,
         updatedAt: new Date(),
       })
-      .where(
-        and(
-          // Only allow updates to agents owned by the user or public agents
-          eq(AgentSchema.id, id),
-          eq(AgentSchema.userId, userId),
-        ),
-      )
+      .where(and(eq(AgentSchema.id, id), eq(AgentSchema.userId, userId)))
       .returning();
     return {
       ...result,
@@ -150,7 +149,6 @@ export const pgAgentRepository: AgentRepository = {
     const admin = await isAdmin(currentUserId);
     let orConditions: any[] = [];
 
-    // Build OR conditions based on filters array
     for (const filter of filters) {
       if (filter === "mine") {
         orConditions.push(eq(AgentSchema.userId, currentUserId));
@@ -176,14 +174,11 @@ export const pgAgentRepository: AgentRepository = {
           ),
         );
       } else if (filter === "all") {
-        // All available agents (mine + shared)
         orConditions = [
           admin
             ? sql`true`
             : or(
-                // My agents
                 eq(AgentSchema.userId, currentUserId),
-                // Shared agents
                 and(
                   ne(AgentSchema.userId, currentUserId),
                   or(
@@ -193,7 +188,7 @@ export const pgAgentRepository: AgentRepository = {
                 ),
               ),
         ];
-        break; // "all" overrides everything else
+        break;
       }
     }
 
@@ -224,13 +219,11 @@ export const pgAgentRepository: AgentRepository = {
       .innerJoin(UserSchema, eq(AgentSchema.userId, UserSchema.id))
       .where(orConditions.length > 1 ? or(...orConditions) : orConditions[0])
       .orderBy(
-        // My agents first, then other shared agents
         sql`CASE WHEN ${AgentSchema.userId} = ${currentUserId} THEN 0 ELSE 1 END`,
         desc(AgentSchema.createdAt),
       )
       .limit(limit);
 
-    // Map database nulls to undefined
     return results.map((result) => ({
       ...result,
       description: result.description ?? undefined,

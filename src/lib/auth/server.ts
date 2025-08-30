@@ -95,6 +95,19 @@ export const auth = betterAuth({
     },
   },
   socialProviders: socialAuthenticationProviders,
+  // Ensure default role is 'user' on creation (defense in depth with DB default)
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user: any) => {
+          if (user && !user.role) {
+            return { data: { ...user, role: "user" } } as any;
+          }
+          return { data: user } as any;
+        },
+      },
+    },
+  },
 });
 
 const parseAllowedDomains = () =>
