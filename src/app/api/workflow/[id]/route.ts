@@ -11,7 +11,7 @@ export async function GET(
   if (!hasAccess) {
     return new Response("Unauthorized", { status: 401 });
   }
-  const workflow = await workflowRepository.selectById(id);
+  const workflow = await workflowRepository.selectStructureById(id);
   return Response.json(workflow);
 }
 
