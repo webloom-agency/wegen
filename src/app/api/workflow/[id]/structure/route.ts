@@ -33,7 +33,11 @@ export async function POST(
   }
 
   // Guard: prevent accidental wipe of all nodes
-  const nextNodeCount = (nodes?.length ?? 0) - (deleteNodes?.length ?? 0);
+  const current = await workflowRepository.selectStructureById(id);
+  const currentCount = current?.nodes?.length ?? 0;
+  const addsOrUpdates = nodes?.length ?? 0; // treat as non-deletions
+  const deletions = deleteNodes?.length ?? 0;
+  const nextNodeCount = currentCount + addsOrUpdates - deletions;
   if (nextNodeCount <= 0) {
     return new Response("Refusing to save empty workflow structure", { status: 400 });
   }
