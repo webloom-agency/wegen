@@ -39,7 +39,8 @@ export const pgAgentRepository: AgentRepository = {
 
   async selectAgentById(id, userId): Promise<Agent | null> {
     const admin = await isAdmin(userId);
-    const baseSelect = db
+
+    const base = db
       .select({
         id: AgentSchema.id,
         name: AgentSchema.name,
@@ -60,12 +61,11 @@ export const pgAgentRepository: AgentRepository = {
           eq(BookmarkSchema.userId, userId),
           eq(BookmarkSchema.itemType, "agent"),
         ),
-      )
-      .where(eq(AgentSchema.id, id));
+      );
 
-    const [result] = admin
-      ? await baseSelect
-      : await baseSelect.where(
+    const rows = admin
+      ? await base.where(eq(AgentSchema.id, id))
+      : await base.where(
           and(
             eq(AgentSchema.id, id),
             or(
@@ -76,6 +76,7 @@ export const pgAgentRepository: AgentRepository = {
           ),
         );
 
+    const result = rows[0];
     if (!result) return null;
 
     return {
@@ -108,7 +109,6 @@ export const pgAgentRepository: AgentRepository = {
       .where(eq(AgentSchema.userId, userId))
       .orderBy(desc(AgentSchema.createdAt));
 
-    // Map database nulls to undefined and set defaults for owned agents
     return results.map((result) => ({
       ...result,
       description: result.description ?? undefined,
@@ -116,7 +116,7 @@ export const pgAgentRepository: AgentRepository = {
       instructions: result.instructions ?? {},
       userName: result.userName ?? undefined,
       userAvatar: result.userAvatar ?? undefined,
-      isBookmarked: false, // Always false for owned agents
+      isBookmarked: false,
     }));
   },
 
