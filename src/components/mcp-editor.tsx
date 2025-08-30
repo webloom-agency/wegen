@@ -132,7 +132,8 @@ export default function MCPEditor({
 
     safe(() => setIsLoading(true))
       .map(async () => {
-        if (shouldInsert) {
+        // Check duplicates on insert, or on rename when name changed
+        if (shouldInsert || name !== (initialName ?? "")) {
           const exist = await existMcpClientByServerNameAction(name);
           if (exist) {
             throw new Error(t("MCP.nameAlreadyExists"));
@@ -185,7 +186,8 @@ export default function MCPEditor({
           <Input
             id="name"
             value={name}
-            disabled={!shouldInsert}
+            // allow editing even when updating existing server
+            disabled={false}
             onChange={(e) => {
               setName(e.target.value);
               if (e.target.value) validateName(e.target.value);
@@ -240,14 +242,11 @@ export default function MCPEditor({
           </div>
         </div>
 
-        {/* Save button */}
-        <Button onClick={handleSave} className="w-full" disabled={saveDisabled}>
-          {isLoading ? (
-            <Loader className="size-4 animate-spin" />
-          ) : (
-            <span className="font-bold">{t("MCP.saveConfiguration")}</span>
-          )}
-        </Button>
+        <div className="flex gap-2 justify-end">
+          <Button onClick={handleSave} disabled={saveDisabled}>
+            {isLoading ? <Loader className="size-3.5 animate-spin" /> : t("Common.save")}
+          </Button>
+        </div>
       </div>
     </>
   );

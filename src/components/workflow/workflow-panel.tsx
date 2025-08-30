@@ -27,6 +27,7 @@ import { allNodeValidate } from "lib/ai/workflow/node-validate";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { arrangeNodes } from "lib/ai/workflow/arrange-nodes";
+import { Input } from "ui/input";
 
 export const WorkflowPanel = memo(
   function WorkflowPanel({
@@ -48,6 +49,7 @@ export const WorkflowPanel = memo(
     const [showExecutePanel, setShowExecutePanel] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [justSaved, setJustSaved] = useState(false);
+    const [nameDraft, setNameDraft] = useState(workflow.name);
     const t = useTranslations();
 
     const onSaveImmediate = useCallback(async () => {
@@ -100,6 +102,29 @@ export const WorkflowPanel = memo(
       },
       [workflow],
     );
+
+    const saveName = useCallback(async () => {
+      const trimmed = (nameDraft || "").trim();
+      if (!hasEditAccess || !trimmed || trimmed === workflow.name) return;
+      setIsSaving(true);
+      const close = addProcess();
+      try {
+        const res = await fetch("/api/workflow", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: workflow.id, name: trimmed }),
+        });
+        if (!res.ok) throw new Error(await res.text());
+        mutate(`/api/workflow/${workflow.id}`);
+        toast.success(t("Common.saved"));
+      } catch (e) {
+        handleErrorWithToast(e as Error);
+        setNameDraft(workflow.name);
+      } finally {
+        setIsSaving(false);
+        close();
+      }
+    }, [nameDraft, workflow.id, workflow.name, hasEditAccess, t, addProcess]);
 
     const updatePublished = useCallback(
       (isPublished: boolean) => {
@@ -171,6 +196,25 @@ export const WorkflowPanel = memo(
               <p>{workflow?.name}</p>
             </TooltipContent>
           </Tooltip>
+
+          {/* Inline name edit */}
+          <Input
+            value={nameDraft}
+            disabled={isProcessing || !hasEditAccess || workflow.isPublished}
+            onChange={(e) => setNameDraft(e.target.value)}
+            onBlur={saveName}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.currentTarget.blur();
+              }
+              if (e.key === "Escape") {
+                setNameDraft(workflow.name);
+                e.currentTarget.blur();
+              }
+            }}
+            className="h-8 w-56"
+          />
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
