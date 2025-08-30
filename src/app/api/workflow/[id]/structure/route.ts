@@ -31,13 +31,20 @@ export async function POST(
   if (!hasAccess) {
     return new Response("Unauthorized", { status: 401 });
   }
+
+  // Guard: prevent accidental wipe of all nodes
+  const nextNodeCount = (nodes?.length ?? 0) - (deleteNodes?.length ?? 0);
+  if (nextNodeCount <= 0) {
+    return new Response("Refusing to save empty workflow structure", { status: 400 });
+  }
+
   await workflowRepository.saveStructure({
     workflowId: id,
-    nodes: nodes.map((v) => ({
+    nodes: nodes.map((v: any) => ({
       ...v,
       workflowId: id,
     })),
-    edges: edges.map((v) => ({
+    edges: edges.map((v: any) => ({
       ...v,
       workflowId: id,
     })),
