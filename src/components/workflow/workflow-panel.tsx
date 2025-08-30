@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useState, useEffect } from "react";
 
 import { Separator } from "@/components/ui/separator";
 
@@ -52,9 +52,15 @@ export const WorkflowPanel = memo(
     const [showExecutePanel, setShowExecutePanel] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [justSaved, setJustSaved] = useState(false);
-    const [nameDraft, setNameDraft] = useState(workflow.name);
     const t = useTranslations();
     const { theme } = useTheme();
+
+    // Sync local input when server workflow name changes
+    const [nameDraft, setNameDraft] = useState(workflow.name);
+    
+    // keep in sync with server updates
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => setNameDraft(workflow.name), [workflow.name]);
 
     const onSaveImmediate = useCallback(async () => {
       if (isProcessing || !hasEditAccess) return;
