@@ -67,11 +67,43 @@ export async function selectThreadWithMessagesAction(threadId: string) {
     logger.error("Thread not found", threadId);
     return null;
   }
-  if (thread.userId !== session?.user.id) {
+
+  // Owner can always view
+  if (thread.userId === session?.user.id) {
+    const messages = await chatRepository.selectMessagesByThreadId(threadId);
+    return { ...thread, messages: messages ?? [] };
+  }
+
+  // Non-owner: only allow if thread is tagged with an agent visible to current user (public/readonly or owned)
+  const messages = await chatRepository.selectMessagesByThreadId(threadId);
+  const agentIds = new Set<string>();
+  for (const m of messages) {
+    const anns = (m as any).annotations as any[] | undefined;
+    if (!anns || !Array.isArray(anns)) continue;
+    for (const ann of anns) {
+      const a = ann as any;
+      if (a && typeof a === "object" && typeof a.agentId === "string") {
+        agentIds.add(a.agentId);
+      }
+    }
+  }
+
+  if (agentIds.size === 0) {
     return null;
   }
-  const messages = await chatRepository.selectMessagesByThreadId(threadId);
-  return { ...thread, messages: messages ?? [] };
+
+  for (const agentId of agentIds) {
+    const agent = await agentRepository.selectAgentById(
+      agentId,
+      session?.user.id as string,
+    );
+    if (agent) {
+      // Agent is visible to current user, allow viewing this thread
+      return { ...thread, messages: messages ?? [] };
+    }
+  }
+
+  return null;
 }
 
 export async function deleteMessageAction(messageId: string) {
