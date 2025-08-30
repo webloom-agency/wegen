@@ -307,26 +307,6 @@ export default function Workflow({
     snapshot.current = { nodes: [inputNode], edges: [] };
   }, [workflow, nodes?.length]);
 
-  useEffect(() => {
-    setNodes((nds) => {
-      return nds.map((node) => {
-        if (node.data.kind === NodeKind.Input) {
-          const hasEmail = Boolean(
-            (node.data.outputSchema?.properties as any)?.email,
-          );
-          if (!hasEmail) {
-            const nextSchema = structuredClone(node.data.outputSchema);
-            nextSchema.properties = {
-              ...(nextSchema.properties || {}),
-              email: { type: "string" } as any,
-            } as any;
-            return { ...node, data: { ...node.data, outputSchema: nextSchema } };
-          }
-        }
-        return node;
-      });
-    });
-  }, []);
 
   useEffect(() => {
     init(workflow as DBWorkflow, hasEditAccess);
