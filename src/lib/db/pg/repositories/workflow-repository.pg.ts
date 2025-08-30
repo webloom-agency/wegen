@@ -21,6 +21,14 @@ import {
 } from "lib/ai/workflow/shared.workflow";
 import { ObjectJsonSchema7 } from "app-types/util";
 
+async function isAdmin(userId: string) {
+  const [u] = await pgDb
+    .select({ role: UserSchema.role })
+    .from(UserSchema)
+    .where(eq(UserSchema.id, userId));
+  return u?.role === "admin";
+}
+
 export const pgWorkflowRepository: WorkflowRepository = {
   async selectToolByIds(ids) {
     if (!ids.length) return [];
@@ -62,6 +70,7 @@ export const pgWorkflowRepository: WorkflowRepository = {
   },
 
   async selectExecuteAbility(userId) {
+    const isAdminUser = await isAdmin(userId);
     const rows = await pgDb
       .select({
         id: WorkflowSchema.id,
@@ -80,15 +89,18 @@ export const pgWorkflowRepository: WorkflowRepository = {
       .where(
         and(
           eq(WorkflowSchema.isPublished, true),
-          or(
-            eq(WorkflowSchema.userId, userId),
-            not(eq(WorkflowSchema.visibility, "private")),
-          ),
+          isAdminUser
+            ? sql`true`
+            : or(
+                eq(WorkflowSchema.userId, userId),
+                not(eq(WorkflowSchema.visibility, "private")),
+              ),
         ),
       );
     return rows as WorkflowSummary[];
   },
   async selectAll(userId) {
+    const isAdminUser = await isAdmin(userId);
     const rows = await pgDb
       .select({
         id: WorkflowSchema.id,
@@ -105,10 +117,12 @@ export const pgWorkflowRepository: WorkflowRepository = {
       .from(WorkflowSchema)
       .innerJoin(UserSchema, eq(WorkflowSchema.userId, UserSchema.id))
       .where(
-        or(
-          inArray(WorkflowSchema.visibility, ["public", "readonly"]),
-          eq(WorkflowSchema.userId, userId),
-        ),
+        isAdminUser
+          ? sql`true`
+          : or(
+              inArray(WorkflowSchema.visibility, ["public", "readonly"]),
+              eq(WorkflowSchema.userId, userId),
+            ),
       )
       .orderBy(desc(WorkflowSchema.createdAt));
     return rows as WorkflowSummary[];
@@ -122,6 +136,8 @@ export const pgWorkflowRepository: WorkflowRepository = {
   },
 
   async checkAccess(workflowId, userId, readOnly = true) {
+    const admin = await isAdmin(userId);
+    if (admin) return true;
     const [workflow] = await pgDb
       .select({
         visibility: WorkflowSchema.visibility,

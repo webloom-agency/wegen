@@ -4,6 +4,14 @@ import { AgentSchema, BookmarkSchema, UserSchema } from "../schema.pg";
 import { and, desc, eq, ne, or, sql } from "drizzle-orm";
 import { generateUUID } from "lib/utils";
 
+async function isAdmin(userId: string) {
+  const [u] = await db
+    .select({ role: UserSchema.role })
+    .from(UserSchema)
+    .where(eq(UserSchema.id, userId));
+  return u?.role === "admin";
+}
+
 export const pgAgentRepository: AgentRepository = {
   async insertAgent(agent) {
     const [result] = await db
@@ -118,26 +126,20 @@ export const pgAgentRepository: AgentRepository = {
         and(
           // Only allow updates to agents owned by the user or public agents
           eq(AgentSchema.id, id),
-          or(
-            eq(AgentSchema.userId, userId),
-            eq(AgentSchema.visibility, "public"),
-          ),
+          eq(AgentSchema.userId, userId),
         ),
       )
       .returning();
-
     return {
       ...result,
       description: result.description ?? undefined,
       icon: result.icon ?? undefined,
       instructions: result.instructions ?? {},
-    };
+    } as Agent;
   },
 
   async deleteAgent(id, userId) {
-    await db
-      .delete(AgentSchema)
-      .where(and(eq(AgentSchema.id, id), eq(AgentSchema.userId, userId)));
+    await db.delete(AgentSchema).where(and(eq(AgentSchema.id, id), eq(AgentSchema.userId, userId)));
   },
 
   async selectAgents(
@@ -145,6 +147,7 @@ export const pgAgentRepository: AgentRepository = {
     filters = ["all"],
     limit = 50,
   ): Promise<AgentSummary[]> {
+    const admin = await isAdmin(currentUserId);
     let orConditions: any[] = [];
 
     // Build OR conditions based on filters array
@@ -173,20 +176,22 @@ export const pgAgentRepository: AgentRepository = {
           ),
         );
       } else if (filter === "all") {
-        // All available agents (mine + shared) - this overrides other filters
+        // All available agents (mine + shared)
         orConditions = [
-          or(
-            // My agents
-            eq(AgentSchema.userId, currentUserId),
-            // Shared agents
-            and(
-              ne(AgentSchema.userId, currentUserId),
-              or(
-                eq(AgentSchema.visibility, "public"),
-                eq(AgentSchema.visibility, "readonly"),
+          admin
+            ? sql`true`
+            : or(
+                // My agents
+                eq(AgentSchema.userId, currentUserId),
+                // Shared agents
+                and(
+                  ne(AgentSchema.userId, currentUserId),
+                  or(
+                    eq(AgentSchema.visibility, "public"),
+                    eq(AgentSchema.visibility, "readonly"),
+                  ),
+                ),
               ),
-            ),
-          ),
         ];
         break; // "all" overrides everything else
       }
@@ -199,24 +204,24 @@ export const pgAgentRepository: AgentRepository = {
         description: AgentSchema.description,
         icon: AgentSchema.icon,
         userId: AgentSchema.userId,
-        // Exclude instructions from list queries for performance
+        instructions: AgentSchema.instructions,
         visibility: AgentSchema.visibility,
         createdAt: AgentSchema.createdAt,
         updatedAt: AgentSchema.updatedAt,
         userName: UserSchema.name,
         userAvatar: UserSchema.image,
-        isBookmarked: sql<boolean>`CASE WHEN ${BookmarkSchema.id} IS NOT NULL THEN true ELSE false END`,
+        isBookmarked: sql<boolean>`false`,
       })
       .from(AgentSchema)
-      .innerJoin(UserSchema, eq(AgentSchema.userId, UserSchema.id))
       .leftJoin(
         BookmarkSchema,
         and(
           eq(BookmarkSchema.itemId, AgentSchema.id),
-          eq(BookmarkSchema.itemType, "agent"),
           eq(BookmarkSchema.userId, currentUserId),
+          eq(BookmarkSchema.itemType, "agent"),
         ),
       )
+      .innerJoin(UserSchema, eq(AgentSchema.userId, UserSchema.id))
       .where(orConditions.length > 1 ? or(...orConditions) : orConditions[0])
       .orderBy(
         // My agents first, then other shared agents
@@ -236,6 +241,8 @@ export const pgAgentRepository: AgentRepository = {
   },
 
   async checkAccess(agentId, userId, destructive = false) {
+    const admin = await isAdmin(userId);
+    if (admin) return true;
     const [agent] = await db
       .select({
         visibility: AgentSchema.visibility,

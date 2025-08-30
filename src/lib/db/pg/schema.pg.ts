@@ -96,6 +96,7 @@ export const UserSchema = pgTable("user", {
   password: text("password"),
   image: text("image"),
   preferences: json("preferences").default({}).$type<UserPreferences>(),
+  role: varchar("role", { enum: ["user", "admin"] }).notNull().default("user"),
   createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
@@ -179,11 +180,11 @@ export const McpServerCustomizationSchema = pgTable(
       .references(() => McpServerSchema.id, { onDelete: "cascade" }),
     prompt: text("prompt"),
     createdAt: timestamp("created_at")
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
     updatedAt: timestamp("updated_at")
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [unique().on(table.userId, table.mcpServerId)],
 );

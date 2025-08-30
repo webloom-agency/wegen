@@ -1,4 +1,4 @@
-import { User, UserPreferences, UserRepository } from "app-types/user";
+import { User, UserPreferences, UserRepository, UserRole } from "app-types/user";
 import { pgDb as db } from "../db.pg";
 import { UserSchema } from "../schema.pg";
 import { eq } from "drizzle-orm";
@@ -27,7 +27,7 @@ export const pgUserRepository: UserRepository = {
     return {
       ...result,
       preferences: result.preferences ?? undefined,
-    };
+    } as User;
   },
   updatePreferences: async (
     userId: string,
@@ -44,7 +44,7 @@ export const pgUserRepository: UserRepository = {
     return {
       ...result,
       preferences: result.preferences ?? undefined,
-    };
+    } as User;
   },
   getPreferences: async (userId: string) => {
     const [result] = await db
@@ -59,5 +59,17 @@ export const pgUserRepository: UserRepository = {
       .from(UserSchema)
       .where(eq(UserSchema.id, userId));
     return (result as User) ?? null;
+  },
+  listAll: async () => {
+    const rows = await db.select().from(UserSchema).orderBy(UserSchema.createdAt);
+    return rows.map((r) => ({ ...r, preferences: r.preferences ?? undefined })) as User[];
+  },
+  updateRole: async (userId: string, role: UserRole) => {
+    const [row] = await db
+      .update(UserSchema)
+      .set({ role, updatedAt: new Date() })
+      .where(eq(UserSchema.id, userId))
+      .returning();
+    return { ...row, preferences: row.preferences ?? undefined } as User;
   },
 };

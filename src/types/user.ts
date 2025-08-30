@@ -7,12 +7,15 @@ export type UserPreferences = {
   botName?: string; // Name of the bot
 };
 
+export type UserRole = "user" | "admin";
+
 export type User = {
   id: string;
   name: string;
   email: string;
   image: string | null;
   preferences?: UserPreferences;
+  role?: UserRole;
 };
 
 export type UserRepository = {
@@ -24,6 +27,8 @@ export type UserRepository = {
   ) => Promise<User>;
   getPreferences: (userId: string) => Promise<UserPreferences | null>;
   findById: (userId: string) => Promise<User | null>;
+  listAll: () => Promise<User[]>;
+  updateRole: (userId: string, role: UserRole) => Promise<User>;
 };
 
 export const UserZodSchema = z.object({
