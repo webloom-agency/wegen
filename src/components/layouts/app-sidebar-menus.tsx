@@ -23,11 +23,14 @@ import {
   FolderSearchIcon,
   PlusIcon,
   Waypoints,
+  ShieldCheck,
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Skeleton } from "ui/skeleton";
 import { useArchives } from "@/hooks/queries/use-archives";
 import { ArchiveDialog } from "../archive-dialog";
+import useSWR from "swr";
+import { authClient } from "auth/client";
 
 export function AppSidebarMenus() {
   const router = useRouter();
@@ -40,6 +43,11 @@ export function AppSidebarMenus() {
   const toggleArchive = useCallback(() => {
     setExpandedArchive((prev) => !prev);
   }, []);
+
+  const { data: session } = useSWR("/session-admin", () => authClient.getSession(), {
+    revalidateOnFocus: false,
+  });
+  const isAdmin = (session?.data?.user as any)?.role === "admin";
 
   return (
     <SidebarGroup>
@@ -98,6 +106,20 @@ export function AppSidebarMenus() {
             </SidebarMenuItem>
           </Tooltip>
         </SidebarMenu>
+        {isAdmin && (
+          <SidebarMenu>
+            <Tooltip>
+              <SidebarMenuItem>
+                <Link href="/admin/users">
+                  <SidebarMenuButton className="font-semibold">
+                    <ShieldCheck className="size-4" />
+                    Admin
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            </Tooltip>
+          </SidebarMenu>
+        )}
         <SidebarMenu className="group/archive">
           <Tooltip>
             <SidebarMenuItem>
