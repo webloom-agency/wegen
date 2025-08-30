@@ -9,10 +9,12 @@ export async function GET(
   const session = await getSession();
   const hasAccess = await workflowRepository.checkAccess(id, session.user.id);
   if (!hasAccess) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response("Unauthorized", { status: 401, headers: { "Cache-Control": "no-store" } });
   }
-  const workflow = await workflowRepository.selectById(id);
-  return Response.json(workflow);
+  const workflow = await workflowRepository.selectStructureById(id);
+  return new Response(JSON.stringify(workflow), {
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+  });
 }
 
 export async function PUT(
@@ -20,7 +22,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const { visibility, isPublished } = await request.json();
+  const { visibility, isPublished, name, description, icon } = await request.json();
 
   const session = await getSession();
   const hasAccess = await workflowRepository.checkAccess(
@@ -29,24 +31,29 @@ export async function PUT(
     false,
   );
   if (!hasAccess) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response("Unauthorized", { status: 401, headers: { "Cache-Control": "no-store" } });
   }
 
   // Get existing workflow
   const existingWorkflow = await workflowRepository.selectById(id);
   if (!existingWorkflow) {
-    return new Response("Workflow not found", { status: 404 });
+    return new Response("Workflow not found", { status: 404, headers: { "Cache-Control": "no-store" } });
   }
 
   // Update only the specified fields
   const updatedWorkflow = await workflowRepository.save({
     ...existingWorkflow,
+    name: name ?? existingWorkflow.name,
+    description: description ?? existingWorkflow.description,
+    icon: icon ?? existingWorkflow.icon,
     visibility: visibility ?? existingWorkflow.visibility,
     isPublished: isPublished ?? existingWorkflow.isPublished,
     updatedAt: new Date(),
   });
 
-  return Response.json(updatedWorkflow);
+  return new Response(JSON.stringify(updatedWorkflow), {
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+  });
 }
 
 export async function DELETE(
@@ -61,8 +68,10 @@ export async function DELETE(
     false,
   );
   if (!hasAccess) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response("Unauthorized", { status: 401, headers: { "Cache-Control": "no-store" } });
   }
   await workflowRepository.delete(id);
-  return Response.json({ message: "Workflow deleted" });
+  return new Response(JSON.stringify({ message: "Workflow deleted" }), {
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+  });
 }
