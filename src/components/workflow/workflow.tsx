@@ -157,7 +157,27 @@ export default function Workflow({
         });
         return;
       }
-      setNodes((nds) => applyNodeChanges(changes, nds) as UINode[]);
+      // When editable, also handle 'replace' changes (e.g., updateNodeData) by merging new data
+      setNodes((nds) => {
+        let updatedNodes = nds;
+        const otherChanges: any[] = [];
+        changes.forEach((change) => {
+          if (change.type === "replace" && "item" in change) {
+            const newNode = change.item as UINode;
+            updatedNodes = updatedNodes.map((node) =>
+              node.id === change.id
+                ? { ...node, data: { ...node.data, ...newNode.data } }
+                : node,
+            );
+          } else {
+            otherChanges.push(change);
+          }
+        });
+        if (otherChanges.length) {
+          updatedNodes = applyNodeChanges(otherChanges as any, updatedNodes) as UINode[];
+        }
+        return updatedNodes;
+      });
     },
     [editable],
   );
@@ -298,7 +318,7 @@ export default function Workflow({
         kind: NodeKind.Input,
         outputSchema: {
           type: "object",
-          properties: { keywords: { type: "string" }, database: { type: "string" }, email: { type: "string" } },
+          properties: {},
         } as any,
       } as any,
     };
