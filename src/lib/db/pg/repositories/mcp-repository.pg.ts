@@ -19,8 +19,6 @@ export const pgMcpRepository: MCPRepository = {
       .onConflictDoUpdate({
         target: [McpServerSchema.id],
         set: {
-          // Allow rename and config updates when updating existing id
-          name: server.name,
           config: server.config,
           updatedAt: new Date(),
         },

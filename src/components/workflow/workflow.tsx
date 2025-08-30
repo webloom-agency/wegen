@@ -21,13 +21,11 @@ import {
 } from "@xyflow/react";
 import type { ReactFlowInstance } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { DBWorkflow, DBNode, DBEdge } from "app-types/workflow";
+import { DBWorkflow } from "app-types/workflow";
 import { extractWorkflowDiff } from "lib/ai/workflow/extract-workflow-diff";
 import {
   convertUIEdgeToDBEdge,
   convertUINodeToDBNode,
-  convertDBNodeToUINode,
-  convertDBEdgeToUIEdge,
 } from "lib/ai/workflow/shared.workflow";
 import { NodeKind, UINode } from "lib/ai/workflow/workflow.interface";
 import { wouldCreateCycle } from "lib/ai/workflow/would-create-cycle";
@@ -69,12 +67,12 @@ export default function Workflow({
     () => processIds.length > 0,
     [processIds.length],
   );
-  const { data: workflow } = useSWR<DBWorkflow & { nodes?: DBNode[]; edges?: DBEdge[] }>(
+  const { data: workflow } = useSWR<DBWorkflow>(
     `/api/workflow/${workflowId}`,
     fetcher,
     {
       onSuccess: (workflow) => {
-        init(workflow as DBWorkflow, hasEditAccess);
+        init(workflow, hasEditAccess);
       },
     },
   );
@@ -157,27 +155,7 @@ export default function Workflow({
         });
         return;
       }
-      // When editable, also handle 'replace' changes (e.g., updateNodeData) by merging new data
-      setNodes((nds) => {
-        let updatedNodes = nds;
-        const otherChanges: any[] = [];
-        changes.forEach((change) => {
-          if (change.type === "replace" && "item" in change) {
-            const newNode = change.item as UINode;
-            updatedNodes = updatedNodes.map((node) =>
-              node.id === change.id
-                ? { ...node, data: { ...node.data, ...newNode.data } }
-                : node,
-            );
-          } else {
-            otherChanges.push(change);
-          }
-        });
-        if (otherChanges.length) {
-          updatedNodes = applyNodeChanges(otherChanges as any, updatedNodes) as UINode[];
-        }
-        return updatedNodes;
-      });
+      setNodes((nds) => applyNodeChanges(changes, nds) as UINode[]);
     },
     [editable],
   );
@@ -293,43 +271,29 @@ export default function Workflow({
     debounce(save, debounceDelay);
   }, [nodes, edges]);
 
-  // Ensure an Input node exists and rehydrate from API if nodes are empty
   useEffect(() => {
-    if ((nodes?.length ?? 0) > 0) return;
-    const apiNodes = (workflow as any)?.nodes as DBNode[] | undefined;
-    const apiEdges = (workflow as any)?.edges as DBEdge[] | undefined;
-    if (apiNodes && apiNodes.length) {
-      const uiNodes = apiNodes.map(convertDBNodeToUINode);
-      const uiEdges = (apiEdges || []).map(convertDBEdgeToUIEdge);
-      setNodes(uiNodes);
-      setEdges(uiEdges);
-      snapshot.current = { nodes: uiNodes, edges: uiEdges };
-      return;
-    }
-    // Fallback: create a single INPUT if nothing present
-    const inputNode: UINode = {
-      id: generateUUID(),
-      type: "default",
-      position: { x: 100, y: 100 },
-      data: {
-        id: "INPUT",
-        name: "INPUT",
-        description: "",
-        kind: NodeKind.Input,
-        outputSchema: {
-          type: "object",
-          properties: {},
-        } as any,
-      } as any,
-    };
-    setNodes([inputNode]);
-    setEdges([]);
-    snapshot.current = { nodes: [inputNode], edges: [] };
-  }, [workflow, nodes?.length]);
-
+    setNodes((nds) => {
+      return nds.map((node) => {
+        if (node.data.kind === NodeKind.Input) {
+          const hasEmail = Boolean(
+            (node.data.outputSchema?.properties as any)?.email,
+          );
+          if (!hasEmail) {
+            const nextSchema = structuredClone(node.data.outputSchema);
+            nextSchema.properties = {
+              ...(nextSchema.properties || {}),
+              email: { type: "string" } as any,
+            } as any;
+            return { ...node, data: { ...node.data, outputSchema: nextSchema } };
+          }
+        }
+        return node;
+      });
+    });
+  }, []);
 
   useEffect(() => {
-    init(workflow as DBWorkflow, hasEditAccess);
+    init(workflow, hasEditAccess);
   }, [workflow, hasEditAccess]);
 
   return (
@@ -364,7 +328,7 @@ export default function Workflow({
               addProcess={addProcess}
               onSave={save}
               selectedNode={selectedNode}
-              workflow={workflow as DBWorkflow}
+              workflow={workflow}
               isProcessing={isProcessing}
             />
           )}

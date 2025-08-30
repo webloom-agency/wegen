@@ -123,7 +123,7 @@ export const InputNodeDataConfig = memo(function ({
               </span>
               <div className="hidden group-hover/item:flex items-center gap-1">
                 <EditJsonSchemaFieldPopup
-                  editAbleKey={true}
+                  editAbleKey={false}
                   field={{
                     key,
                     type: value.type as any,

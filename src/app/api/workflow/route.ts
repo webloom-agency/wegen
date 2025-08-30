@@ -20,16 +20,6 @@ export async function POST(request: Request) {
 
   const session = await getSession();
 
-  let base = {
-    name,
-    description,
-    id,
-    isPublished,
-    visibility,
-    icon,
-    userId: session.user.id,
-  } as any;
-
   if (id) {
     const hasAccess = await workflowRepository.checkAccess(
       id,
@@ -39,23 +29,20 @@ export async function POST(request: Request) {
     if (!hasAccess) {
       return new Response("Unauthorized", { status: 401 });
     }
-    // Merge with existing workflow so unspecified fields are preserved
-    const existing = await workflowRepository.selectById(id);
-    if (!existing) {
-      return new Response("Workflow not found", { status: 404 });
-    }
-    base = {
-      ...existing,
-      name: name ?? existing.name,
-      description: description ?? existing.description,
-      icon: icon ?? existing.icon,
-      isPublished: isPublished ?? existing.isPublished,
-      visibility: visibility ?? existing.visibility,
-      userId: existing.userId, // do not change owner
-    };
   }
 
-  const workflow = await workflowRepository.save(base, noGenerateInputNode);
+  const workflow = await workflowRepository.save(
+    {
+      name,
+      description,
+      id,
+      isPublished,
+      visibility,
+      icon,
+      userId: session.user.id,
+    },
+    noGenerateInputNode,
+  );
 
   return Response.json(workflow);
 }
