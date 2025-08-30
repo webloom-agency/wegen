@@ -28,6 +28,9 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { arrangeNodes } from "lib/ai/workflow/arrange-nodes";
 import { Input } from "ui/input";
+import EmojiPicker, { Theme } from "emoji-picker-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent } from "ui/dropdown-menu";
+import { useTheme } from "next-themes";
 
 export const WorkflowPanel = memo(
   function WorkflowPanel({
@@ -51,6 +54,7 @@ export const WorkflowPanel = memo(
     const [justSaved, setJustSaved] = useState(false);
     const [nameDraft, setNameDraft] = useState(workflow.name);
     const t = useTranslations();
+    const { theme } = useTheme();
 
     const onSaveImmediate = useCallback(async () => {
       if (isProcessing || !hasEditAccess) return;
@@ -126,6 +130,35 @@ export const WorkflowPanel = memo(
       }
     }, [nameDraft, workflow.id, workflow.name, hasEditAccess, t, addProcess]);
 
+    const saveIcon = useCallback(
+      async (imageUrl: string) => {
+        if (!hasEditAccess || workflow.isPublished) return;
+        setIsSaving(true);
+        const close = addProcess();
+        try {
+          const newIcon = {
+            type: "emoji",
+            value: imageUrl,
+            style: { backgroundColor: workflow.icon?.style?.backgroundColor || "#0ea5e9" },
+          } as DBWorkflow["icon"];
+          const res = await fetch("/api/workflow", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: workflow.id, icon: newIcon }),
+          });
+          if (!res.ok) throw new Error(await res.text());
+          mutate(`/api/workflow/${workflow.id}`);
+          toast.success(t("Common.saved"));
+        } catch (e) {
+          handleErrorWithToast(e as Error);
+        } finally {
+          setIsSaving(false);
+          close();
+        }
+      },
+      [workflow.id, workflow.icon?.style?.backgroundColor, hasEditAccess, workflow.isPublished, t, addProcess],
+    );
+
     const updatePublished = useCallback(
       (isPublished: boolean) => {
         if (isPublished) {
@@ -177,19 +210,41 @@ export const WorkflowPanel = memo(
         <div className="flex items-center gap-2 mb-2">
           <Tooltip>
             <TooltipTrigger asChild>
-              <div
-                style={{
-                  backgroundColor: workflow.icon?.style?.backgroundColor,
-                }}
-                className="border transition-colors hover:bg-secondary! group items-center justify-center flex w-8 h-8 rounded-md ring ring-background hover:ring-ring"
-              >
-                <Avatar className="size-6">
-                  <AvatarImage
-                    src={workflow.icon?.value}
-                    className="group-hover:scale-110  transition-transform"
-                  />
-                  <AvatarFallback></AvatarFallback>
-                </Avatar>
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div
+                      style={{
+                        backgroundColor: workflow.icon?.style?.backgroundColor,
+                        cursor:
+                          isProcessing || !hasEditAccess || workflow.isPublished
+                            ? "default"
+                            : "pointer",
+                      }}
+                      className="border transition-colors hover:bg-secondary! group items-center justify-center flex w-8 h-8 rounded-md ring ring-background hover:ring-ring"
+                      title={hasEditAccess && !workflow.isPublished ? t("Workflow.nameAndIcon") : undefined}
+                    >
+                      <Avatar className="size-6">
+                        <AvatarImage
+                          src={workflow.icon?.value}
+                          className="group-hover:scale-110  transition-transform"
+                        />
+                        <AvatarFallback></AvatarFallback>
+                      </Avatar>
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="p-0 border-none bg-transparent" align="start" side="bottom">
+                    {hasEditAccess && !workflow.isPublished && (
+                      <div className="rounded-md overflow-hidden">
+                        <EmojiPicker
+                          open
+                          theme={theme === "dark" ? Theme.DARK : Theme.LIGHT}
+                          onEmojiClick={(emoji) => saveIcon(emoji.imageUrl)}
+                        />
+                      </div>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </TooltipTrigger>
             <TooltipContent side="bottom">
