@@ -21,11 +21,13 @@ import {
 } from "@xyflow/react";
 import type { ReactFlowInstance } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { DBWorkflow } from "app-types/workflow";
+import { DBWorkflow, DBNode, DBEdge } from "app-types/workflow";
 import { extractWorkflowDiff } from "lib/ai/workflow/extract-workflow-diff";
 import {
   convertUIEdgeToDBEdge,
   convertUINodeToDBNode,
+  convertDBNodeToUINode,
+  convertDBEdgeToUIEdge,
 } from "lib/ai/workflow/shared.workflow";
 import { NodeKind, UINode } from "lib/ai/workflow/workflow.interface";
 import { wouldCreateCycle } from "lib/ai/workflow/would-create-cycle";
@@ -67,12 +69,12 @@ export default function Workflow({
     () => processIds.length > 0,
     [processIds.length],
   );
-  const { data: workflow } = useSWR<DBWorkflow>(
+  const { data: workflow } = useSWR<DBWorkflow & { nodes?: DBNode[]; edges?: DBEdge[] }>(
     `/api/workflow/${workflowId}`,
     fetcher,
     {
       onSuccess: (workflow) => {
-        init(workflow, hasEditAccess);
+        init(workflow as DBWorkflow, hasEditAccess);
       },
     },
   );
@@ -271,6 +273,40 @@ export default function Workflow({
     debounce(save, debounceDelay);
   }, [nodes, edges]);
 
+  // Ensure an Input node exists and rehydrate from API if nodes are empty
+  useEffect(() => {
+    if ((nodes?.length ?? 0) > 0) return;
+    const apiNodes = (workflow as any)?.nodes as DBNode[] | undefined;
+    const apiEdges = (workflow as any)?.edges as DBEdge[] | undefined;
+    if (apiNodes && apiNodes.length) {
+      const uiNodes = apiNodes.map(convertDBNodeToUINode);
+      const uiEdges = (apiEdges || []).map(convertDBEdgeToUIEdge);
+      setNodes(uiNodes);
+      setEdges(uiEdges);
+      snapshot.current = { nodes: uiNodes, edges: uiEdges };
+      return;
+    }
+    // Fallback: create a single INPUT if nothing present
+    const inputNode: UINode = {
+      id: generateUUID(),
+      type: "default",
+      position: { x: 100, y: 100 },
+      data: {
+        id: "INPUT",
+        name: "INPUT",
+        description: "",
+        kind: NodeKind.Input,
+        outputSchema: {
+          type: "object",
+          properties: { keywords: { type: "string" }, database: { type: "string" }, email: { type: "string" } },
+        } as any,
+      } as any,
+    };
+    setNodes([inputNode]);
+    setEdges([]);
+    snapshot.current = { nodes: [inputNode], edges: [] };
+  }, [workflow, nodes?.length]);
+
   useEffect(() => {
     setNodes((nds) => {
       return nds.map((node) => {
@@ -293,7 +329,7 @@ export default function Workflow({
   }, []);
 
   useEffect(() => {
-    init(workflow, hasEditAccess);
+    init(workflow as DBWorkflow, hasEditAccess);
   }, [workflow, hasEditAccess]);
 
   return (
@@ -328,7 +364,7 @@ export default function Workflow({
               addProcess={addProcess}
               onSave={save}
               selectedNode={selectedNode}
-              workflow={workflow}
+              workflow={workflow as DBWorkflow}
               isProcessing={isProcessing}
             />
           )}
