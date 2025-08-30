@@ -44,10 +44,10 @@ export function AppSidebarMenus() {
     setExpandedArchive((prev) => !prev);
   }, []);
 
-  const { data: session } = useSWR("/session-admin", () => authClient.getSession(), {
+  const { data: me } = useSWR("/api/user/me", (url) => fetch(url).then((r) => r.json()), {
     revalidateOnFocus: false,
   });
-  const isAdmin = (session?.data?.user as any)?.role === "admin";
+  const isAdmin = (me?.role || "user") === "admin";
 
   return (
     <SidebarGroup>
