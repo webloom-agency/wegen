@@ -23,6 +23,14 @@ import { GoogleIcon } from "ui/google-icon";
 import { useTranslations } from "next-intl";
 import { MicrosoftIcon } from "ui/microsoft-icon";
 import { SocialAuthenticationProvider } from "app-types/authentication";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "ui/dialog";
 
 export default function SignIn({
   emailAndPasswordEnabled,
@@ -42,6 +50,9 @@ export default function SignIn({
     email: "",
     password: "",
   });
+
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
 
   const resendVerification = async () => {
     if (!formData.email) {
@@ -85,6 +96,27 @@ export default function SignIn({
       toast.error(e.error);
     });
   };
+
+  const openReset = () => {
+    setResetEmail(formData.email || "");
+    setResetOpen(true);
+  };
+
+  const sendReset = async () => {
+    const email = resetEmail.trim();
+    if (!email) {
+      toast.error("Enter your email");
+      return;
+    }
+    try {
+      await authClient.sendResetPassword({ email, callbackURL: "/" });
+      toast.success("Password reset link sent. Check your inbox.");
+      setResetOpen(false);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to send reset email");
+    }
+  };
+
   return (
     <div className="w-full h-full flex flex-col p-4 md:p-8 justify-center">
       <Card className="w-full md:max-w-md bg-background border-none mx-auto shadow-none animate-in fade-in duration-1000">
@@ -113,8 +145,16 @@ export default function SignIn({
                 />
               </div>
               <div className="grid gap-2">
-                <div className="flex items-center">
+                <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
+                  <button
+                    type="button"
+                    onClick={openReset}
+                    className="text-xs text-primary underline underline-offset-4"
+                    disabled={loading}
+                  >
+                    Forgot your password?
+                  </button>
                 </div>
                 <Input
                   id="password"
@@ -210,6 +250,31 @@ export default function SignIn({
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Password reset</DialogTitle>
+            <DialogDescription>Enter your email to receive a reset link.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2 py-2">
+            <Label htmlFor="reset-email">Email</Label>
+            <Input
+              id="reset-email"
+              type="email"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+              placeholder="user@example.com"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setResetOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={sendReset}>Send reset link</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
