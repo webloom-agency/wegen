@@ -48,7 +48,6 @@ import { SelectModel } from "@/components/select-model";
 import { useCopy } from "@/hooks/use-copy";
 import { NodeResultPopup } from "../node-result-popup";
 import { useTranslations } from "next-intl";
-import { JSONSchema7 } from "json-schema";
 
 const debounce = createDebounce();
 
@@ -103,10 +102,7 @@ export function ExecuteTab({
   }, [startNodeData]);
 
   const inputSchemaIterator = useMemo(() => {
-    return Object.entries(inputSchema.properties ?? {}) as [
-      string,
-      JSONSchema7,
-    ][];
+    return Object.entries(inputSchema.properties ?? {});
   }, [inputSchema]);
 
   const handleGenerateInputWithAI = useCallback(async () => {

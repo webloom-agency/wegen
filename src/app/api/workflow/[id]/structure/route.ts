@@ -38,7 +38,7 @@ export async function POST(
   const addsOrUpdates = nodes?.length ?? 0; // treat as non-deletions
   const deletions = deleteNodes?.length ?? 0;
   const nextNodeCount = currentCount + addsOrUpdates - deletions;
-  if (deletions > 0 && nextNodeCount <= 0) {
+  if (nextNodeCount <= 0) {
     return new Response("Refusing to save empty workflow structure", { status: 400 });
   }
 

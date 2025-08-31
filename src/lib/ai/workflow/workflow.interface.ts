@@ -23,8 +23,6 @@ export enum NodeKind {
   Template = "template", // Template processing node
   Code = "code", // Code execution node (future implementation)
   Output = "output", // Exit point of workflow - produces final result
-  LoopStart = "loopStart", // Begin a foreach loop over a collection
-  LoopEnd = "loopEnd", // End/aggregate a foreach loop
 }
 
 /**
@@ -52,8 +50,8 @@ export type BaseWorkflowNodeDataData<
  * Used to create data dependencies between nodes.
  */
 export type OutputSchemaSourceKey = {
-  nodeId: string;
-  path: string[];
+  nodeId: string; // ID of the source node
+  path: string[]; // Path to the specific field in the output (e.g., ["result", "data"])
 };
 
 /**
@@ -96,11 +94,12 @@ export type InputNodeData = BaseWorkflowNodeDataData<{
  */
 export type OutputNodeData = BaseWorkflowNodeDataData<{
   kind: NodeKind.Output;
+}> & {
   outputData: {
-    key: string;
-    source?: OutputSchemaSourceKey;
+    key: string; // Key name in final output
+    source?: OutputSchemaSourceKey; // Reference to source node's output
   }[];
-}>;
+};
 
 /**
  * Note node: For documentation and annotations
@@ -116,9 +115,9 @@ export type NoteNodeData = BaseWorkflowNodeDataData<{
  */
 export type ToolNodeData = BaseWorkflowNodeDataData<{
   kind: NodeKind.Tool;
-  tool?: WorkflowToolKey;
-  model?: ChatModel;
-  message?: TipTapMentionJsonContent;
+  tool?: WorkflowToolKey; // Selected tool to execute
+  model: ChatModel; // LLM model for parameter generation
+  message?: TipTapMentionJsonContent; // Optional message to generate parameters
 }>;
 
 /**
@@ -127,12 +126,13 @@ export type ToolNodeData = BaseWorkflowNodeDataData<{
  */
 export type LLMNodeData = BaseWorkflowNodeDataData<{
   kind: NodeKind.LLM;
-  model?: ChatModel;
+}> & {
+  model: ChatModel;
   messages: {
-    role: "system" | "assistant" | "user";
-    content?: TipTapMentionJsonContent;
+    role: "user" | "assistant" | "system";
+    content?: TipTapMentionJsonContent; // Can reference other node outputs via mentions
   }[];
-}>;
+};
 
 /**
  * Condition node: Provides conditional branching in workflows
@@ -140,8 +140,9 @@ export type LLMNodeData = BaseWorkflowNodeDataData<{
  */
 export type ConditionNodeData = BaseWorkflowNodeDataData<{
   kind: NodeKind.Condition;
+}> & {
   branches: ConditionBranches; // if-elseIf-else structure for conditional logic
-}>;
+};
 
 /**
  * HTTP request method type
@@ -159,13 +160,20 @@ export type HttpValue = string | OutputSchemaSourceKey;
  */
 export type HttpNodeData = BaseWorkflowNodeDataData<{
   kind: NodeKind.Http;
-  url: HttpValue;
-  method: HttpMethod;
-  headers?: { key: string; value: HttpValue }[];
-  query?: { key: string; value: HttpValue }[];
-  body?: HttpValue;
-  timeout?: number;
-}>;
+}> & {
+  url?: HttpValue; // Request URL (can reference other node outputs)
+  method: HttpMethod; // HTTP method
+  headers: {
+    key: string;
+    value?: HttpValue; // Header value (can reference other node outputs)
+  }[]; // Request headers
+  query: {
+    key: string;
+    value?: HttpValue; // Query parameter value (can reference other node outputs)
+  }[]; // Query parameters
+  body?: HttpValue; // Request body (can reference other node outputs)
+  timeout?: number; // Request timeout in milliseconds (default: 30000)
+};
 
 /**
  * Template node: Processes text templates with variable substitution
@@ -173,8 +181,12 @@ export type HttpNodeData = BaseWorkflowNodeDataData<{
  */
 export type TemplateNodeData = BaseWorkflowNodeDataData<{
   kind: NodeKind.Template;
-  template?: TipTapMentionJsonContent;
-}>;
+}> & {
+  template: {
+    type: "tiptap";
+    tiptap: TipTapMentionJsonContent;
+  };
+};
 
 /**
  * Code node: Executes custom code in a sandboxed environment
@@ -182,6 +194,7 @@ export type TemplateNodeData = BaseWorkflowNodeDataData<{
  */
 export type CodeNodeData = BaseWorkflowNodeDataData<{
   kind: NodeKind.Code;
+}> & {
   language: "python" | "javascript";
   /**
    * Source code to execute
@@ -200,22 +213,7 @@ export type CodeNodeData = BaseWorkflowNodeDataData<{
    * If true and possible, convert the returned result to CSV (comma-separated)
    */
   exportCsv?: boolean;
-}>;
-
-// Loop nodes
-export type LoopStartNodeData = BaseWorkflowNodeDataData<{
-  kind: NodeKind.LoopStart;
-  source?: OutputSchemaSourceKey; // array source to iterate
-  endNodeId?: string; // optional paired end node
-  variableName?: string; // item variable name (documentation only for now)
-  concurrency?: number; // future use
-}>;
-
-export type LoopEndNodeData = BaseWorkflowNodeDataData<{
-  kind: NodeKind.LoopEnd;
-  startNodeId?: string; // paired start node
-  collect?: OutputSchemaSourceKey; // what to collect for each iteration
-}>;
+};
 
 /**
  * Union type of all possible node data types.
@@ -230,27 +228,22 @@ export type WorkflowNodeData =
   | ConditionNodeData
   | HttpNodeData
   | TemplateNodeData
-  | CodeNodeData
-  | LoopStartNodeData
-  | LoopEndNodeData;
+  | CodeNodeData;
 
 /**
  * Runtime fields added during workflow execution
  */
 export type NodeRuntimeField = {
-  executionTimeMs?: number;
+  isNew?: boolean; // Flag for newly created nodes
+  status?: "fail" | "running" | "success"; // Execution status
 };
 
 /**
  * UI representation of a workflow node with runtime information
  */
-export type UINode<T extends WorkflowNodeData = any> = Node<{
-  id: string;
-  kind: NodeKind;
-  name: string;
-  description?: string;
-  outputSchema: ObjectJsonSchema7;
-} & Omit<T, "id" | "name" | "description" | "outputSchema">> & { data: T & { runtime?: { executionTimeMs?: number } } };
+export type UINode<Kind extends NodeKind = NodeKind> = Node<
+  Extract<WorkflowNodeData, { kind: Kind }> & { runtime?: NodeRuntimeField }
+>;
 
 /**
  * Runtime history record for node execution tracking

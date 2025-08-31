@@ -11,8 +11,6 @@ import {
   httpNodeExecutor,
   templateNodeExecutor,
   codeNodeExecutor,
-  loopStartNodeExecutor,
-  loopEndNodeExecutor,
 } from "./node-executor";
 import { toAny } from "lib/utils";
 import { addEdgeBranchLabel } from "./add-edge-branch-label";
@@ -44,10 +42,6 @@ function getExecutorByKind(kind: NodeKind): NodeExecutor {
       return templateNodeExecutor;
     case NodeKind.Code:
       return codeNodeExecutor as any;
-    case NodeKind.LoopStart:
-      return loopStartNodeExecutor as any;
-    case NodeKind.LoopEnd:
-      return loopEndNodeExecutor as any;
     case "NOOP" as any:
       return () => {
         return {
@@ -56,7 +50,10 @@ function getExecutorByKind(kind: NodeKind): NodeExecutor {
         };
       };
   }
-  return () => ({ input: {}, output: {} });
+  return () => {
+    console.warn(`Undefined '${kind}' Node Executor`);
+    return {};
+  };
 }
 
 /**
@@ -152,20 +149,16 @@ export const createWorkflowExecutor = (workflow: {
       },
     });
 
-    // Handle edges differently for specific dynamic nodes
-    if (
-      node.kind === NodeKind.Condition ||
-      node.kind === NodeKind.LoopStart ||
-      node.kind === NodeKind.LoopEnd
-    ) {
-      // Dynamic edges based on executor output 'nextNodes'
+    // Handle edges differently for condition nodes vs regular nodes
+    if (node.kind === NodeKind.Condition) {
+      // Condition nodes use dynamic edges based on their evaluation result
       graph.dynamicEdge(node.id, (state) => {
         const next = state.getOutput({
           nodeId: node.id,
           path: ["nextNodes"],
-        }) as DBNode[] | string[];
-        if (!next || (Array.isArray(next) && next.length === 0)) return;
-        return (next as any[]).map((n) => (typeof n === "string" ? n : (n as any).id));
+        }) as DBNode[];
+        if (!next?.length) return;
+        return next.map((node) => node.id);
       });
     } else {
       // Regular nodes have static edges defined in the workflow
@@ -177,17 +170,14 @@ export const createWorkflowExecutor = (workflow: {
     }
   });
 
-  // Build table to track how many branches need to reach each target node
+  // Build table to track how many branches need to reach each node
   // Used to prevent duplicate execution when multiple condition branches
   // converge on the same target node
   let needTable: Record<string, number> = buildNeedTable(workflow.edges);
 
   // Compile the graph starting from the Input node
   const app = graph
-    .compile(
-      workflow.nodes.find((n) => n.kind === NodeKind.Input)?.id as string,
-      workflow.nodes.find((n) => n.kind === NodeKind.Output)?.id as string,
-    )
+    .compile(workflow.nodes.find((node) => node.kind == NodeKind.Input)!.id)
     .use(async ({ name: nodeId, input }, next) => {
       // Check if this node is expecting multiple incoming branches
       if (!(nodeId in needTable)) return;
@@ -241,16 +231,17 @@ export const createWorkflowExecutor = (workflow: {
  * @param edges - All edges in the workflow
  * @returns Object mapping node IDs to required branch count
  */
-function buildNeedTable(edges: DBEdge[]) {
-  const needTable: Record<string, number> = {};
-  const targetToSources: Record<string, Set<string>> = {};
-  edges.forEach((edge) => {
-    if (!targetToSources[edge.target]) targetToSources[edge.target] = new Set();
-    targetToSources[edge.target].add(edge.source);
+function buildNeedTable(edges: DBEdge[]): Record<string, number> {
+  const map = new Map<string, Set<string>>();
+
+  // Group edges by target and track unique branch labels
+  edges.forEach((e) => {
+    const bid = e.uiConfig.label as string;
+    (map.get(e.target) ?? map.set(e.target, new Set()).get(e.target))!.add(bid);
   });
-  Object.keys(targetToSources).forEach((target) => {
-    const sources = targetToSources[target];
-    if (sources.size > 1) needTable[target] = sources.size;
-  });
-  return needTable;
+
+  // Only nodes with multiple incoming branches need synchronization
+  const tbl: Record<string, number> = {};
+  map.forEach((set, n) => set.size > 1 && (tbl[n] = set.size));
+  return tbl;
 }

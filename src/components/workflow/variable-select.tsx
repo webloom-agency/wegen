@@ -3,7 +3,7 @@
 import { useReactFlow } from "@xyflow/react";
 import { UINode } from "lib/ai/workflow/workflow.interface";
 import { ChevronRightIcon, SearchIcon, VariableIcon } from "lucide-react";
-import React, { ReactNode, useMemo, useRef, useState } from "react";
+import { ReactNode, useMemo, useRef, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -105,9 +105,7 @@ export function VariableSelectContent({
     const first = [firstNodeRef];
     return accessibleSchemas
       .map(({ name, id, schema }) => {
-        const items = Array.from(
-          Object.entries(schema ?? {}) as [string, JSONSchema7][]
-        )
+        const items = Array.from(Object.entries(schema ?? {}))
           .filter(([key]) => key.includes(query))
           .map(([key, schema]) => {
             const ref = first.shift()!;

@@ -353,7 +353,6 @@ function saveWorkflow(
 ) {
   return fetch(`/api/workflow/${workflowId}/structure`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       nodes: diff.updateNodes.map((node) =>
         convertUINodeToDBNode(workflowId, node),

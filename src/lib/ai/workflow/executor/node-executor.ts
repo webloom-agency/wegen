@@ -10,8 +10,6 @@ import {
   TemplateNodeData,
   OutputSchemaSourceKey,
   CodeNodeData,
-  LoopStartNodeData,
-  LoopEndNodeData,
 } from "../workflow.interface";
 import { WorkflowRuntimeState } from "./graph-store";
 import { generateObject, generateText, Message } from "ai";
@@ -101,118 +99,6 @@ export const outputNodeExecutor: NodeExecutor<OutputNodeData> = ({
 };
 
 /**
- * Loop Start Node Executor (sequential v1)
- * Resolves an array source and exposes per-iteration context.
- * The actual iteration/branching is coordinated in the executor via dynamic edges.
- */
-export const loopStartNodeExecutor: NodeExecutor<LoopStartNodeData> = ({ node, state }) => {
-  const source = node.source;
-  let list: any[] = [];
-  if (source) {
-    const value = state.getOutput<any>({ nodeId: source.nodeId, path: source.path });
-    if (Array.isArray(value)) list = value;
-    else if (value != null) list = [value];
-  } else {
-    // Auto-detect: if no source configured, try to use the immediate upstream node's full output
-    const incoming = (state.edges || []).filter((e) => e.target === node.id);
-    const prev = incoming[0]?.source;
-    if (prev) {
-      const value = state.getOutput<any>({ nodeId: prev, path: [] });
-      if (Array.isArray(value)) list = value;
-      else if (value != null) list = [value];
-    }
-  }
-
-  // Determine body start targets and potential end targets
-  const outgoing = (state.edges || []).filter((e) => e.source === node.id);
-  const bodyTargets = outgoing
-    .filter((e) => (node.endNodeId ? e.target !== node.endNodeId : true))
-    .map((e) => e.target);
-  const endTargets = outgoing
-    .filter((e) => (node.endNodeId ? e.target === node.endNodeId : false))
-    .map((e) => e.target);
-
-  // Initialize iteration state on the start node output
-  const index = 0;
-  const item = list[index];
-
-  // For sequential v1: if there are items, go into body; otherwise, go to end (if wired)
-  const nextNodes = list.length > 0
-    ? (bodyTargets.length > 0 ? bodyTargets : outgoing.map((e) => e.target))
-    : (endTargets.length > 0 ? endTargets : outgoing.map((e) => e.target));
-
-  return {
-    output: {
-      length: list.length,
-      items: list,
-      index,
-      item,
-      nextNodes,
-    },
-    input: {
-      length: list.length,
-    },
-  };
-};
-
-/**
- * Loop End Node Executor
- * Aggregates collected values per iteration. In v1, downstream nodes can read loop results from this node's output.items
- */
-export const loopEndNodeExecutor: NodeExecutor<LoopEndNodeData> = ({ node, state }) => {
-  // Locate paired start node
-  let startNodeId = node.startNodeId;
-  if (!startNodeId) {
-    const candidate = (state.nodes || []).find(
-      (n) => n.kind === "loopStart" && (n.nodeConfig as any)?.endNodeId === node.id,
-    );
-    startNodeId = candidate?.id;
-  }
-
-  // Resolve current iteration context from start
-  const items = startNodeId
-    ? (state.getOutput<any>({ nodeId: startNodeId, path: ["items"] }) || [])
-    : [];
-  const length = Array.isArray(items) ? items.length : 0;
-  const index = startNodeId
-    ? (state.getOutput<number>({ nodeId: startNodeId, path: ["index"] }) || 0)
-    : 0;
-
-  // Identify body start targets (from start) and after-loop targets (from end)
-  const outgoingFromStart = (state.edges || []).filter((e) => e.source === startNodeId);
-  const bodyTargets = outgoingFromStart
-    .filter((e) => e.target !== node.id)
-    .map((e) => e.target);
-  const afterLoopTargets = (state.edges || [])
-    .filter((e) => e.source === node.id)
-    .map((e) => e.target);
-
-  // Decide next step
-  const nextIndex = index + 1;
-  let nextNodes: string[] = afterLoopTargets;
-  if (nextIndex < length && bodyTargets.length > 0 && startNodeId) {
-    // Continue next iteration: bump index and item on start node output
-    state.setOutput({ nodeId: startNodeId, path: ["index"] }, nextIndex);
-    state.setOutput({ nodeId: startNodeId, path: ["item"] }, items[nextIndex]);
-    nextNodes = bodyTargets;
-  }
-
-  // Optional aggregation: if a collect source is configured, resolve its value
-  let collected: any[] | undefined = undefined;
-  if (node.collect) {
-    const v = state.getOutput<any>({ nodeId: node.collect.nodeId, path: node.collect.path });
-    if (Array.isArray(v)) collected = v;
-  }
-
-  return {
-    output: {
-      items: collected,
-      nextNodes,
-    },
-  };
-};
-
-/**
  * LLM Node Executor
  * Executes Large Language Model interactions with support for:
  * - Multiple messages (system, user, assistant)
@@ -281,26 +167,21 @@ export const conditionNodeExecutor: NodeExecutor<ConditionNodeData> = async ({
   node,
   state,
 }) => {
-  // Compute matched branch id
-  const matchedBranch =
-    checkConditionBranch(node.branches.if, state.getOutput)
-      ? node.branches.if.id
-      : ((node.branches.elseIf || []).find((b) => checkConditionBranch(b, state.getOutput)) || node.branches.else).id;
-
-  // Determine dynamic next nodes by matching sourceHandle to branch id
-  const nextNodes = (state.edges || [])
-    .filter((e) => e.source === node.id && (e.uiConfig as any)?.sourceHandle === matchedBranch)
-    .map((e) => e.target);
-
   // Record evaluation result for history/debugging
   state.setInput(node.id, {
-    matchedBranch,
+    matchedBranch:
+      checkConditionBranch(node.branches.if, state.getOutput)
+        ? node.branches.if.id
+        : ((node.branches.elseIf || []).find((b) => checkConditionBranch(b, state.getOutput)) || node.branches.else).id,
   });
 
+  // The dynamic edge resolution in workflow-executor will route based on branch id handles
   return {
     output: {
-      branch: matchedBranch,
-      nextNodes,
+      branch:
+        checkConditionBranch(node.branches.if, state.getOutput)
+          ? node.branches.if.id
+          : ((node.branches.elseIf || []).find((b) => checkConditionBranch(b, state.getOutput)) || node.branches.else).id,
     },
   };
 };
@@ -635,10 +516,10 @@ export const templateNodeExecutor: NodeExecutor<TemplateNodeData> = ({
 }) => {
   let text: string = "";
   // Convert TipTap template content to text with variable substitution
-  if (node.template && (node as any).template?.type == "tiptap") {
+  if (node.template.type == "tiptap") {
     text = convertTiptapJsonToText({
       getOutput: state.getOutput, // Access to previous node outputs for variable substitution
-      json: (node as any).template.tiptap,
+      json: node.template.tiptap,
     });
   }
   return {

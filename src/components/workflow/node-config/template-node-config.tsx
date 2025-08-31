@@ -69,22 +69,7 @@ export const TemplateNodeConfig = memo(function TemplateNodeConfig({
             currentNodeId={data.id}
             nodes={nodes}
             edges={edges}
-            content={
-              (data.template && (data.template as any).tiptap) || {
-                type: "doc",
-                content: [
-                  {
-                    type: "paragraph",
-                    content: [
-                      {
-                        type: "text",
-                        text: "",
-                      },
-                    ],
-                  },
-                ],
-              }
-            }
+            content={data.template.tiptap}
             onChange={handleTemplateChange}
             editable={editable}
           />
