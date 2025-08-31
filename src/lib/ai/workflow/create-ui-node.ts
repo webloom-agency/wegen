@@ -105,6 +105,7 @@ export function createUINode(
       properties: {
         items: { type: "array", items: {} },
         index: { type: "number" },
+        item: {},
       },
     } as ObjectJsonSchema7;
   } else if (node.data.kind === NodeKind.LoopEnd) {
