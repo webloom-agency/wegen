@@ -131,9 +131,9 @@ export function UserInstructionsContent() {
           {isLoading ? (
             <Skeleton className="h-9" />
           ) : (
-            <Input
-              placeholder="better-chatbot"
-              value={preferences.botName}
+                          <Input
+                placeholder="wegen"
+                value={preferences.botName}
               onChange={(e) => {
                 setPreferences({
                   botName: e.target.value,

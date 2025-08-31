@@ -1,6 +1,6 @@
 # 🎯 System Prompts & Chat Customization Guide
 
-> Transform your chatbot experience with powerful system prompt customization. The better-chatbot uses a sophisticated multi-layered prompt system that adapts to your preferences, project context, and MCP tool usage — making every conversation more personalized and effective.
+> Transform your chatbot experience with powerful system prompt customization. The wegen app uses a sophisticated multi-layered prompt system that adapts to your preferences, project context, and MCP tool usage — making every conversation more personalized and effective.
 
 The system intelligently combines multiple prompt layers to create the perfect context for each chat, ensuring the assistant understands exactly how to help you.
 
