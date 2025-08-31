@@ -24,10 +24,13 @@ import { HttpNodeConfig } from "./node-config/http-node-config";
 import { TemplateNodeConfig } from "./node-config/template-node-config";
 import { CodeNodeConfig } from "./node-config/code-node-config";
 import { useTranslations } from "next-intl";
+import { Button } from "ui/button";
+import { VariableSelect } from "./variable-select";
+import { VariableMentionItem } from "./variable-mention-item";
 
 export function SelectedNodeConfigTab({ node, hasEditAccess }: { node: UINode; hasEditAccess?: boolean }) {
   const t = useTranslations();
-  const { updateNodeData, updateNode, setNodes } = useReactFlow();
+  const { updateNodeData, updateNode, setNodes, getNodes } = useReactFlow();
 
   const isReadonly = !hasEditAccess;
 
@@ -119,7 +122,31 @@ export function SelectedNodeConfigTab({ node, hasEditAccess }: { node: UINode; h
           ) : node.data.kind === NodeKind.Code ? (
             <CodeNodeConfig node={node} />
           ) : node.data.kind === NodeKind.Loop ? (
-            <div className="flex flex-col gap-3 px-4 text-sm">
+            <div className="flex flex-col gap-4 px-4 text-sm">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Loop Source</Label>
+                <div className="flex items-center gap-2">
+                  {(node.data as any).source ? (
+                    <VariableMentionItem
+                      className="py-[7px] text-sm truncate flex-1"
+                      nodeName={(() => getNodes().find((n) => n.data.id === (node.data as any).source?.nodeId)?.data.name || "ERROR")()}
+                      path={(node.data as any).source?.path || []}
+                      notFound={!getNodes().some((n) => n.data.id === (node.data as any).source?.nodeId)}
+                      onRemove={() => updateNodeData(node.id, { source: undefined })}
+                    />
+                  ) : (
+                    <div className="flex-1 text-xs text-muted-foreground">Select a variable</div>
+                  )}
+                  <VariableSelect
+                    currentNodeId={node.data.id}
+                    onChange={(item) => {
+                      updateNodeData(node.id, { source: { nodeId: item.nodeId, path: item.path } as any });
+                    }}
+                  >
+                    <Button size="sm" variant={(node.data as any).source ? "secondary" : "outline"}>Var</Button>
+                  </VariableSelect>
+                </div>
+              </div>
               <div>
                 <Label>Max runs</Label>
                 <Input
