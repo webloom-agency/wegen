@@ -1,3 +1,4 @@
+"use client";
 import { NodeKind, UINode } from "lib/ai/workflow/workflow.interface";
 import { useReactFlow } from "@xyflow/react";
 import { NodeIcon } from "./node-icon";
@@ -117,6 +118,22 @@ export function SelectedNodeConfigTab({ node, hasEditAccess }: { node: UINode; h
             <TemplateNodeConfig data={node.data} />
           ) : node.data.kind === NodeKind.Code ? (
             <CodeNodeConfig node={node} />
+          ) : node.data.kind === NodeKind.Loop ? (
+            <div className="flex flex-col gap-3 px-4 text-sm">
+              <div>
+                <Label>Max runs</Label>
+                <Input
+                  type="number"
+                  value={(node.data as any).maxRuns ?? ""}
+                  placeholder="optional"
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    updateNodeData(node.id, { maxRuns: v ? Math.max(0, Number(v)) : undefined });
+                  }}
+                />
+                <div className="text-[10px] text-muted-foreground mt-1">Hard cap on iterations. Leave empty for no cap.</div>
+              </div>
+            </div>
           ) : node.data.kind === NodeKind.Note ? (
             <div className="h-full flex flex-col gap-2 px-4">
               <Label

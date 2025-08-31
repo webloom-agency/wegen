@@ -227,6 +227,8 @@ export type LoopNodeData = BaseWorkflowNodeDataData<{
   source?: OutputSchemaSourceKey;
   // (reserved) maximum concurrency
   concurrency?: number;
+  // Hard cap on number of iterations (if set and > 0)
+  maxRuns?: number;
 };
 
 export type LoopEndNodeData = BaseWorkflowNodeDataData<{

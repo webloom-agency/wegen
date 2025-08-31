@@ -638,6 +638,10 @@ export const loopNodeExecutor: NodeExecutor<LoopNodeData> = ({ node, state }) =>
       }
     }
   }
+  // Enforce hard cap if provided
+  const maxRuns = Number.isFinite(node.maxRuns as any) && (node.maxRuns as any) > 0 ? Math.floor(node.maxRuns as any) : undefined;
+  if (maxRuns !== undefined) items = items.slice(0, maxRuns);
+
   const outgoing = (state.edges || []).filter((e) => e.source === node.id);
   const nodesById = new Map((state.nodes || []).map((n) => [n.id, n]));
   const endTargets = outgoing.filter((e) => nodesById.get(e.target)?.kind === "loopEnd").map((e) => e.target);
