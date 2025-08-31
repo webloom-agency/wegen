@@ -35,6 +35,7 @@ interface ShareableCardProps {
   isBookmarkToggleLoading?: boolean;
   isDeleteLoading?: boolean;
   actionsDisabled?: boolean;
+  canManage?: boolean;
 }
 
 export function ShareableCard({
@@ -49,6 +50,7 @@ export function ShareableCard({
   isVisibilityChangeLoading,
   isDeleteLoading,
   actionsDisabled,
+  canManage = false,
 }: ShareableCardProps) {
   const t = useTranslations();
   const isPublished = (item as WorkflowSummary).isPublished;
@@ -110,6 +112,7 @@ export function ShareableCard({
                 type={type}
                 visibility={item.visibility}
                 isOwner={isOwner}
+                canManage={canManage}
                 isBookmarked={isBookmarked}
                 editHref={href}
                 onVisibilityChange={

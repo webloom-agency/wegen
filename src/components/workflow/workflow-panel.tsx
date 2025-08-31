@@ -31,6 +31,8 @@ import { Input } from "ui/input";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent } from "ui/dropdown-menu";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
+import { notify } from "lib/notify";
 
 export const WorkflowPanel = memo(
   function WorkflowPanel({
@@ -54,6 +56,7 @@ export const WorkflowPanel = memo(
     const [justSaved, setJustSaved] = useState(false);
     const t = useTranslations();
     const { theme } = useTheme();
+    const router = useRouter();
 
     // Sync local input when server workflow name changes
     const [nameDraft, setNameDraft] = useState(workflow.name);
@@ -78,6 +81,26 @@ export const WorkflowPanel = memo(
         close();
       }
     }, [isProcessing, hasEditAccess, onSave, addProcess]);
+
+    const handleDelete = useCallback(async () => {
+      if (!hasEditAccess) return;
+      const ok = await notify.confirm({ description: t("Workflow.deleteConfirm") });
+      if (!ok) return;
+      setIsSaving(true);
+      const close = addProcess();
+      try {
+        const res = await fetch(`/api/workflow/${workflow.id}`, { method: "DELETE" });
+        if (!res.ok) throw new Error(await res.text());
+        toast.success(t("Workflow.deleted"));
+        router.replace("/workflow");
+        router.refresh();
+      } catch (e) {
+        handleErrorWithToast(e as Error);
+      } finally {
+        setIsSaving(false);
+        close();
+      }
+    }, [hasEditAccess, workflow.id, t, addProcess, router]);
 
     const handleArrangeNodes = useCallback(() => {
       const nodes = getNodes() as UINode[];
@@ -367,6 +390,8 @@ export const WorkflowPanel = memo(
             isOwner={hasEditAccess || false}
             onVisibilityChange={hasEditAccess ? updateVisibility : undefined}
             isVisibilityChangeLoading={isSaving}
+            onDelete={hasEditAccess ? handleDelete : undefined}
+            isDeleteLoading={isSaving}
           />
         </div>
         <div className="flex gap-2">

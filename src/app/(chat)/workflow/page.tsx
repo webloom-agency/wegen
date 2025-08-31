@@ -79,6 +79,12 @@ export default function WorkflowPage() {
     },
   );
 
+  // Fetch role for admin controls
+  const { data: me } = useSWR("/api/user/me", (url) => fetch(url).then((r) => r.json()), {
+    revalidateOnFocus: false,
+  });
+  const isAdmin = (me?.role || "user") === "admin";
+
   // Separate workflows into user's own and shared
   const myWorkflows =
     workflows?.filter((w) => w.userId === currentUserId) || [];
@@ -248,7 +254,12 @@ export default function WorkflowPage() {
                 type="workflow"
                 item={workflow}
                 isOwner={false}
+                canManage={isAdmin}
                 href={`/workflow/${workflow.id}`}
+                onVisibilityChange={isAdmin ? updateVisibility : undefined}
+                onDelete={isAdmin ? deleteWorkflow : undefined}
+                isVisibilityChangeLoading={isAdmin ? isVisibilityChangeLoading : undefined}
+                isDeleteLoading={isAdmin ? isDeleteLoading : undefined}
               />
             ))}
           </div>

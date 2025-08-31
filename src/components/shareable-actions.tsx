@@ -72,6 +72,7 @@ interface ShareableActionsProps {
   isDeleteLoading?: boolean;
   renderActions?: () => React.ReactNode;
   disabled?: boolean;
+  canManage?: boolean;
 }
 
 export function ShareableActions({
@@ -88,6 +89,7 @@ export function ShareableActions({
   isBookmarkToggleLoading = false,
   isDeleteLoading = false,
   disabled = false,
+  canManage = false,
 }: ShareableActionsProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -116,7 +118,7 @@ export function ShareableActions({
     <div className="flex items-center gap-1">
       {VisibilityIcon && (
         <>
-          {isOwner && onVisibilityChange ? (
+          {(isOwner || canManage) && onVisibilityChange ? (
             <DropdownMenu>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -215,7 +217,7 @@ export function ShareableActions({
       )}
 
       {/* Edit Action */}
-      {isOwner && editHref && (
+      {(isOwner || canManage) && editHref && (
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -237,10 +239,10 @@ export function ShareableActions({
       )}
 
       {/* Custom Actions */}
-      {isOwner && renderActions && renderActions()}
+      {(isOwner || canManage) && renderActions && renderActions()}
 
       {/* Delete Action */}
-      {isOwner && onDelete && (
+      {(isOwner || canManage) && onDelete && (
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
