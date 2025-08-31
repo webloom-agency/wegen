@@ -623,45 +623,28 @@ export const codeNodeExecutor: NodeExecutor<CodeNodeData> = async ({
  * - Initializes iteration state on Loop node output, and routes into body if items exist, otherwise to end
  */
 export const loopNodeExecutor: NodeExecutor<LoopNodeData> = ({ node, state }) => {
-  // 1) Resolve items to iterate
   let items: any[] = [];
   if (node.source) {
     const v = state.getOutput<any>({ nodeId: node.source.nodeId, path: node.source.path });
     if (Array.isArray(v)) items = v; else if (v != null) items = [v];
   } else {
-    // Auto-detect: take the first incoming edge's full output
     const incoming = (state.edges || []).filter((e) => e.target === node.id);
     const prevId = incoming[0]?.source;
     if (prevId) {
       const v = state.getOutput<any>({ nodeId: prevId, path: [] });
-      if (Array.isArray(v)) items = v;
-      else if (v && typeof v === "object") {
-        // Pick the first array-valued property
+      if (Array.isArray(v)) items = v; else if (v && typeof v === "object") {
         const firstArray = Object.values(v).find((x) => Array.isArray(x));
         if (firstArray) items = firstArray as any[];
       }
     }
   }
-
-  // 2) Determine body targets and paired end
   const outgoing = (state.edges || []).filter((e) => e.source === node.id);
   const nodesById = new Map((state.nodes || []).map((n) => [n.id, n]));
   const endTargets = outgoing.filter((e) => nodesById.get(e.target)?.kind === "loopEnd").map((e) => e.target);
   const bodyTargets = outgoing.filter((e) => nodesById.get(e.target)?.kind !== "loopEnd").map((e) => e.target);
-
   const index = 0;
-  // 3) Decide next nodes
-  const nextNodes: string[] = items.length > 0 && bodyTargets.length > 0
-    ? bodyTargets
-    : (endTargets.length > 0 ? endTargets : []);
-
-  return {
-    output: {
-      items,
-      index,
-      nextNodes,
-    },
-  };
+  const nextNodes: string[] = items.length > 0 && bodyTargets.length > 0 ? bodyTargets : (endTargets.length > 0 ? endTargets : []);
+  return { output: { items, index, item: items[0], nextNodes } };
 };
 
 /**
@@ -673,44 +656,26 @@ export const loopNodeExecutor: NodeExecutor<LoopNodeData> = ({ node, state }) =>
  * - Optional collect: if configured and resolves to array, expose as output.items
  */
 export const loopEndNodeExecutor: NodeExecutor<LoopEndNodeData> = ({ node, state }) => {
-  const nodes = state.nodes || [];
-  const edges = state.edges || [];
+  const nodes = state.nodes || []; const edges = state.edges || [];
   const nodesById = new Map(nodes.map((n) => [n.id, n]));
-
-  // Find paired loop: prefer direct incoming from a Loop, else any upstream Loop found in outgoing from Loop->this end
   const directLoop = edges.find((e) => e.target === node.id && nodesById.get(e.source)?.kind === "loop");
   const loopId = (node.startNodeId && nodesById.get(node.startNodeId)?.kind === "loop") ? node.startNodeId : (directLoop?.source);
-
-  // Find body entry: targets of the Loop that are not LoopEnd
-  const bodyTargets = loopId
-    ? edges.filter((e) => e.source === loopId && nodesById.get(e.target)?.kind !== "loopEnd").map((e) => e.target)
-    : [];
+  const bodyTargets = loopId ? edges.filter((e) => e.source === loopId && nodesById.get(e.target)?.kind !== "loopEnd").map((e) => e.target) : [];
   const afterLoopTargets = edges.filter((e) => e.source === node.id).map((e) => e.target);
-
-  // Current iteration state
-  const length = loopId ? (state.getOutput<number>({ nodeId: loopId, path: ["items","length"] }) || (state.getOutput<any[]>({ nodeId: loopId, path: ["items"] }) || []).length) : 0;
+  const items = loopId ? (state.getOutput<any[]>({ nodeId: loopId, path: ["items"] }) || []) : [];
+  const length = items.length;
   const index = loopId ? (state.getOutput<number>({ nodeId: loopId, path: ["index"] }) || 0) : 0;
-
-  // Collect (optional)
   let collected: any[] | undefined = undefined;
   if (node.collect) {
     const v = state.getOutput<any>({ nodeId: node.collect.nodeId, path: node.collect.path });
     if (Array.isArray(v)) collected = v;
   }
-
-  // Advance or exit
   const nextIndex = index + 1;
   let nextNodes: string[] = afterLoopTargets;
   if (loopId && nextIndex < length && bodyTargets.length > 0) {
-    // continue iteration
     state.setOutput({ nodeId: loopId, path: ["index"] }, nextIndex);
+    state.setOutput({ nodeId: loopId, path: ["item"] }, items[nextIndex]);
     nextNodes = bodyTargets;
   }
-
-  return {
-    output: {
-      items: collected,
-      nextNodes,
-    },
-  };
+  return { output: { items: collected, nextNodes } };
 };
