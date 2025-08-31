@@ -1,4 +1,4 @@
-import { Think } from "ui/think";
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { FlipWords } from "ui/flip-words";
 import { BackgroundPaths } from "ui/background-paths";
@@ -16,7 +16,14 @@ export default async function AuthLayout({
               <BackgroundPaths />
             </div>
             <h1 className="text-xl font-semibold flex items-center gap-3 animate-in fade-in duration-1000">
-              <img src="https://bucket-prod.jecreemavitrine.fr/uploads/sites/156/2023/07/logo-sansmarge-webloom-1.svg" alt="wegen" className="h-6" />
+              <Image
+                src="https://bucket-prod.jecreemavitrine.fr/uploads/sites/156/2023/07/logo-sansmarge-webloom-1.svg"
+                alt="wegen"
+                width={96}
+                height={24}
+                className="h-6 w-auto"
+                priority
+              />
 
               <span>wegen</span>
             </h1>

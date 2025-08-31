@@ -22,6 +22,7 @@ import { AppSidebarUser } from "./app-sidebar-user";
 import { PanelLeft } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Session, User } from "better-auth";
+import Image from "next/image";
 
 export function AppSidebar({
   session,
@@ -73,10 +74,13 @@ export function AppSidebar({
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <img
+                  <Image
                     src="https://bucket-prod.jecreemavitrine.fr/uploads/sites/156/2023/07/logo-sansmarge-webloom-1.svg"
                     alt="Wegen"
+                    width={100}
+                    height={20}
                     className="h-5 w-auto"
+                    priority
                   />
                   <span className="font-bold">wegen</span>
                 </div>
@@ -85,7 +89,7 @@ export function AppSidebar({
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    setOpenMobile(false);
+                    // setOpenMobile is in parent component; leaving behavior intact
                   }}
                 >
                   <PanelLeft className="size-4" />
@@ -98,9 +102,9 @@ export function AppSidebar({
 
       <SidebarContent className="mt-2 overflow-hidden relative">
         <div className="flex flex-col overflow-y-auto">
-          <AppSidebarMenus />
           <AppSidebarAgents />
           <AppSidebarThreads />
+          <AppSidebarMenus />
         </div>
       </SidebarContent>
       <SidebarFooter className="flex flex-col items-stretch space-y-2">

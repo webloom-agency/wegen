@@ -38,6 +38,7 @@ import { getShortcutKeyList, isShortcutEvent } from "lib/keyboard-shortcuts";
 import { AgentSummary } from "app-types/agent";
 import { EMOJI_DATA } from "lib/const";
 import { toast } from "sonner";
+import Image from "next/image";
 
 interface PromptInputProps {
   placeholder?: string;
@@ -481,7 +482,7 @@ export default function PromptInput({
                 {pendingAttachments.map((att, idx) => (
                   <div key={`${att.url}-${idx}`} className="flex items-center gap-2 px-2 py-1 bg-muted/70 rounded-md border text-xs">
                     {att.contentType?.startsWith("image/") ? (
-                      <img src={att.url} alt={att.name || "attachment"} className="h-6 w-6 object-cover rounded-sm border" />
+                      <Image src={att.url} alt={att.name || "attachment"} width={24} height={24} className="h-6 w-6 object-cover rounded-sm border" />
                     ) : (
                       <div className="h-6 w-6 flex items-center justify-center rounded-sm bg-background border">📎</div>
                     )}
