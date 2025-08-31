@@ -184,7 +184,10 @@ export const createWorkflowExecutor = (workflow: {
 
   // Compile the graph starting from the Input node
   const app = graph
-    .compile()
+    .compile(
+      workflow.nodes.find((n) => n.kind === NodeKind.Input)?.id as string,
+      workflow.nodes.find((n) => n.kind === NodeKind.Output)?.id as string,
+    )
     .use(async ({ name: nodeId, input }, next) => {
       // Check if this node is expecting multiple incoming branches
       if (!(nodeId in needTable)) return;
