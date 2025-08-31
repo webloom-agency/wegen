@@ -20,6 +20,7 @@ import {
   chatRepository,
   mcpMcpToolCustomizationRepository,
   mcpServerCustomizationRepository,
+  userRepository,
 } from "lib/db/repository";
 import { customModelProvider } from "lib/ai/models";
 import { toAny } from "lib/utils";
@@ -66,6 +67,13 @@ export async function selectThreadWithMessagesAction(threadId: string) {
   if (!thread) {
     logger.error("Thread not found", threadId);
     return null;
+  }
+
+  // Admin bypass: allow viewing any thread
+  const me = await userRepository.findById(session.user.id);
+  if ((me as any)?.role === "admin") {
+    const messages = await chatRepository.selectMessagesByThreadId(threadId);
+    return { ...thread, messages: messages ?? [] };
   }
 
   // Owner can always view
