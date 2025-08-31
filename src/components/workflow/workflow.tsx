@@ -287,6 +287,34 @@ export default function Workflow({
             return { ...node, data: { ...node.data, outputSchema: nextSchema } };
           }
         }
+        // Ensure Loop node schema exposes items, index, item so variable picker can show loop/item
+        if (node.data.kind === NodeKind.Loop) {
+          const props = (node.data.outputSchema?.properties || {}) as any;
+          const needsUpdate = !props.items || !props.index || props.item === undefined;
+          if (needsUpdate) {
+            const nextSchema = structuredClone(node.data.outputSchema);
+            nextSchema.properties = {
+              ...(nextSchema.properties || {}),
+              items: props.items || { type: "array", items: {} },
+              index: props.index || { type: "number" },
+              // allow any type for current item
+              item: props.item === undefined ? {} : props.item,
+            } as any;
+            return { ...node, data: { ...node.data, outputSchema: nextSchema } };
+          }
+        }
+        // Ensure LoopEnd node schema exposes items for collected array
+        if (node.data.kind === NodeKind.LoopEnd) {
+          const props = (node.data.outputSchema?.properties || {}) as any;
+          if (!props.items) {
+            const nextSchema = structuredClone(node.data.outputSchema);
+            nextSchema.properties = {
+              ...(nextSchema.properties || {}),
+              items: { type: "array", items: {} },
+            } as any;
+            return { ...node, data: { ...node.data, outputSchema: nextSchema } };
+          }
+        }
         return node;
       });
     });
