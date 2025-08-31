@@ -175,7 +175,7 @@ export const createWorkflowExecutor = (workflow: {
   // Build table to track how many branches need to reach each node
   // Used to prevent duplicate execution when multiple condition branches
   // converge on the same target node
-  let needTable: Record<string, number> = buildNeedTable(workflow.edges);
+  let needTable: Record<string, number> = buildNeedTable(workflow.nodes, workflow.edges);
 
   // Compile the graph starting from the Input node
   const app = graph
@@ -196,7 +196,7 @@ export const createWorkflowExecutor = (workflow: {
   // Set up event logging for workflow execution monitoring
   app.subscribe((event) => {
     if (event.eventType == "WORKFLOW_START") {
-      needTable = buildNeedTable(workflow.edges);
+      needTable = buildNeedTable(workflow.nodes, workflow.edges);
       logger.debug(
         `[${event.eventType}] ${workflow.nodes.length} nodes, ${workflow.edges.length} edges`,
       );
@@ -233,11 +233,15 @@ export const createWorkflowExecutor = (workflow: {
  * @param edges - All edges in the workflow
  * @returns Object mapping node IDs to required branch count
  */
-function buildNeedTable(edges: DBEdge[]): Record<string, number> {
+function buildNeedTable(nodes: DBNode[], edges: DBEdge[]): Record<string, number> {
+  const nodesById = new Map(nodes.map((n) => [n.id, n]));
   const map = new Map<string, Set<string>>();
 
   // Group edges by target and track unique branch labels
   edges.forEach((e) => {
+    // Ignore edges from Loop nodes for branch-synchronization purposes
+    const sourceKind = nodesById.get(e.source)?.kind as NodeKind | undefined;
+    if (sourceKind === NodeKind.Loop) return;
     const bid = e.uiConfig.label as string;
     (map.get(e.target) ?? map.set(e.target, new Set()).get(e.target))!.add(bid);
   });
