@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "u
 
 export function LoopStartConfig({ node }: { node: UINode<any> }) {
   const t = useTranslations("Workflow");
-  const { getNodes, getEdges, updateNodeData } = useReactFlow<UINode>();
+  const { getNodes, updateNodeData } = useReactFlow<UINode>();
 
   const loopEnds = getNodes().filter((n) => n.data.kind === NodeKind.LoopEnd);
 
@@ -68,7 +68,7 @@ export function LoopStartConfig({ node }: { node: UINode<any> }) {
 
 export function LoopEndConfig({ node }: { node: UINode<any> }) {
   const t = useTranslations("Workflow");
-  const { getNodes, getEdges, updateNodeData } = useReactFlow<UINode>();
+  const { getNodes, updateNodeData } = useReactFlow<UINode>();
 
   const loopStarts = getNodes().filter((n) => n.data.kind === NodeKind.LoopStart);
 
