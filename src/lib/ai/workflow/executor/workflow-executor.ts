@@ -11,6 +11,8 @@ import {
   httpNodeExecutor,
   templateNodeExecutor,
   codeNodeExecutor,
+  loopNodeExecutor,
+  loopEndNodeExecutor,
 } from "./node-executor";
 import { toAny } from "lib/utils";
 import { addEdgeBranchLabel } from "./add-edge-branch-label";
@@ -42,18 +44,14 @@ function getExecutorByKind(kind: NodeKind): NodeExecutor {
       return templateNodeExecutor;
     case NodeKind.Code:
       return codeNodeExecutor as any;
+    case NodeKind.Loop:
+      return loopNodeExecutor as any;
+    case NodeKind.LoopEnd:
+      return loopEndNodeExecutor as any;
     case "NOOP" as any:
-      return () => {
-        return {
-          input: {},
-          output: {},
-        };
-      };
+      return () => ({ input: {}, output: {} });
   }
-  return () => {
-    console.warn(`Undefined '${kind}' Node Executor`);
-    return {};
-  };
+  return () => ({ input: {}, output: {} });
 }
 
 /**
@@ -149,16 +147,20 @@ export const createWorkflowExecutor = (workflow: {
       },
     });
 
-    // Handle edges differently for condition nodes vs regular nodes
-    if (node.kind === NodeKind.Condition) {
-      // Condition nodes use dynamic edges based on their evaluation result
+    // Handle dynamic edges for control nodes (condition, loop, loopEnd)
+    if (
+      node.kind === NodeKind.Condition ||
+      node.kind === NodeKind.Loop ||
+      node.kind === NodeKind.LoopEnd
+    ) {
+      // Use result.output.nextNodes for routing
       graph.dynamicEdge(node.id, (state) => {
         const next = state.getOutput({
           nodeId: node.id,
           path: ["nextNodes"],
-        }) as DBNode[];
-        if (!next?.length) return;
-        return next.map((node) => node.id);
+        }) as (DBNode[] | string[]) | undefined;
+        if (!next || (Array.isArray(next) && next.length === 0)) return;
+        return (next as any[]).map((n) => (typeof n === "string" ? n : (n as any).id));
       });
     } else {
       // Regular nodes have static edges defined in the workflow

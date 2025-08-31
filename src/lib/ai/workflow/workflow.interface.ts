@@ -12,6 +12,8 @@ import { JSONSchema7 } from "json-schema";
  * 3. Implement executor in node-executor.ts
  * 4. Add validation in node-validate.ts
  * 5. Create UI config component in components/workflow/node-config/
+ *
+ * NOTE: Loop and LoopEnd nodes implement foreach-style iteration over a body subgraph
  */
 export enum NodeKind {
   Input = "input", // Entry point of workflow - receives initial data
@@ -23,6 +25,8 @@ export enum NodeKind {
   Template = "template", // Template processing node
   Code = "code", // Code execution node (future implementation)
   Output = "output", // Exit point of workflow - produces final result
+  Loop = "loop", // Foreach control entry
+  LoopEnd = "loopEnd", // Loop aggregator/exit
 }
 
 /**
@@ -215,6 +219,25 @@ export type CodeNodeData = BaseWorkflowNodeDataData<{
   exportCsv?: boolean;
 };
 
+// Loop nodes
+export type LoopNodeData = BaseWorkflowNodeDataData<{
+  kind: NodeKind.Loop;
+}> & {
+  // Array to iterate over
+  source?: OutputSchemaSourceKey;
+  // (reserved) maximum concurrency
+  concurrency?: number;
+};
+
+export type LoopEndNodeData = BaseWorkflowNodeDataData<{
+  kind: NodeKind.LoopEnd;
+}> & {
+  // Optional explicit pair to the Loop node
+  startNodeId?: string;
+  // Optional: what to collect each iteration (array)
+  collect?: OutputSchemaSourceKey;
+};
+
 /**
  * Union type of all possible node data types.
  * When adding a new node type, include it in this union.
@@ -228,7 +251,9 @@ export type WorkflowNodeData =
   | ConditionNodeData
   | HttpNodeData
   | TemplateNodeData
-  | CodeNodeData;
+  | CodeNodeData
+  | LoopNodeData
+  | LoopEndNodeData;
 
 /**
  * Runtime fields added during workflow execution

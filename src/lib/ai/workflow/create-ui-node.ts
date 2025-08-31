@@ -64,45 +64,23 @@ export function createUINode(
       response: {
         type: "object",
         properties: {
-          status: {
-            type: "number",
-          },
-          statusText: {
-            type: "string",
-          },
-          ok: {
-            type: "boolean",
-          },
-          headers: {
-            type: "object",
-          },
-          body: {
-            type: "string",
-          },
-          duration: {
-            type: "number",
-          },
-          size: {
-            type: "number",
-          },
+          status: { type: "number" },
+          statusText: { type: "string" },
+          ok: { type: "boolean" },
+          headers: { type: "object" },
+          body: { type: "string" },
+          duration: { type: "number" },
+          size: { type: "number" },
         },
       },
     };
-    // Set default values for HTTP node
     node.data.method = "GET";
     node.data.headers = [];
     node.data.query = [];
-    node.data.timeout = 30000; // 30 seconds default
+    node.data.timeout = 30000;
   } else if (node.data.kind === NodeKind.Template) {
     node.data.outputSchema = structuredClone(defaultTemplateNodeOutputSchema);
-    // Set default values for Template node
-    node.data.template = {
-      type: "tiptap",
-      tiptap: {
-        type: "doc",
-        content: [],
-      },
-    };
+    node.data.template = { type: "tiptap", tiptap: { type: "doc", content: [] } };
   } else if (node.data.kind === NodeKind.Code) {
     node.data.outputSchema = {
       type: "object",
@@ -114,13 +92,29 @@ export function createUINode(
         executionTimeMs: { type: "number" },
       },
     } as ObjectJsonSchema7;
-
     const codeData = node.data as any;
     codeData.language = "python";
     codeData.code = "print('Hello from Python')\nresult = 'ok'";
     codeData.params = { type: "doc", content: [] };
     codeData.timeout = 30000;
     codeData.exportCsv = false;
+  } else if (node.data.kind === NodeKind.Loop) {
+    // Loop node exposes iteration state
+    node.data.outputSchema = {
+      type: "object",
+      properties: {
+        items: { type: "array", items: {} },
+        index: { type: "number" },
+      },
+    } as ObjectJsonSchema7;
+  } else if (node.data.kind === NodeKind.LoopEnd) {
+    // LoopEnd may expose collected items
+    node.data.outputSchema = {
+      type: "object",
+      properties: {
+        items: { type: "array", items: {} },
+      },
+    } as ObjectJsonSchema7;
   }
 
   return node;
