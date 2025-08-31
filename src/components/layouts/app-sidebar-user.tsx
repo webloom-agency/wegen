@@ -25,6 +25,7 @@ import {
   Sun,
   MoonStar,
   ChevronRight,
+  Monitor,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { appStore } from "@/app/store";
@@ -146,7 +147,7 @@ export function AppSidebarUser({
 function SelectTheme() {
   const t = useTranslations("Layout");
 
-  const { theme = "light", setTheme } = useTheme();
+  const { theme = "system", setTheme } = useTheme();
 
   const { themeStyle = "default", setThemeStyle } = useThemeStyle();
 
@@ -157,9 +158,7 @@ function SelectTheme() {
         icon={
           <>
             <span className="text-muted-foreground text-xs min-w-0 truncate">
-              {`${capitalizeFirstLetter(theme)} ${capitalizeFirstLetter(
-                themeStyle,
-              )}`}
+              {capitalizeFirstLetter(theme)} {capitalizeFirstLetter(themeStyle)}
             </span>
             <ChevronRight className="size-4 ml-2" />
           </>
@@ -176,25 +175,37 @@ function SelectTheme() {
             </span>
             <div className="flex-1" />
 
-            <div
-              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-              className="cursor-pointer border rounded-full flex items-center"
-            >
+            <div className="cursor-pointer border rounded-full flex items-center overflow-hidden">
               <div
+                onClick={() => setTheme("dark")}
                 className={cn(
                   theme === "dark" &&
                     "bg-accent ring ring-muted-foreground/40 text-foreground",
-                  "p-1 rounded-full",
+                  "p-1",
                 )}
+                title="Dark"
               >
                 <MoonStar className="size-3" />
               </div>
               <div
+                onClick={() => setTheme("system")}
+                className={cn(
+                  theme === "system" &&
+                    "bg-accent ring ring-muted-foreground/40 text-foreground",
+                  "p-1",
+                )}
+                title="System"
+              >
+                <Monitor className="size-3" />
+              </div>
+              <div
+                onClick={() => setTheme("light")}
                 className={cn(
                   theme === "light" &&
                     "bg-accent ring ring-muted-foreground/40 text-foreground",
-                  "p-1 rounded-full",
+                  "p-1",
                 )}
+                title="Light"
               >
                 <Sun className="size-3" />
               </div>
