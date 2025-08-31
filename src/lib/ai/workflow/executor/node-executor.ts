@@ -626,10 +626,10 @@ export const templateNodeExecutor: NodeExecutor<TemplateNodeData> = ({
 }) => {
   let text: string = "";
   // Convert TipTap template content to text with variable substitution
-  if (node.template.type == "tiptap") {
+  if (node.template && (node as any).template?.type == "tiptap") {
     text = convertTiptapJsonToText({
       getOutput: state.getOutput, // Access to previous node outputs for variable substitution
-      json: node.template.tiptap,
+      json: (node as any).template.tiptap,
     });
   }
   return {

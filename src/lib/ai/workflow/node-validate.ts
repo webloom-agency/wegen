@@ -265,7 +265,7 @@ export const templateNodeValidate: NodeValidate<TemplateNodeData> = ({
 }) => {
   // Validate template type
   const validTypes = ["tiptap"]; // Future: add "handlebars"
-  if (!validTypes.includes(node.template.type)) {
+  if (!node.template || !validTypes.includes((node as any).template?.type)) {
     throw new Error(`Template type must be one of: ${validTypes.join(", ")}`);
   }
 
