@@ -80,7 +80,7 @@ export function HttpNodeConfig({ node }: { node: UINode<any> }) {
   const addHeader = () => {
     const currentHeaders = httpNode.headers || [];
     handleUpdateNode({
-      headers: [...currentHeaders, { key: "", value: undefined }],
+      headers: [...currentHeaders, { key: "", value: "" }],
     });
   };
 
@@ -100,7 +100,7 @@ export function HttpNodeConfig({ node }: { node: UINode<any> }) {
   const addQueryParam = () => {
     const currentQuery = httpNode.query || [];
     handleUpdateNode({
-      query: [...currentQuery, { key: "", value: undefined }],
+      query: [...currentQuery, { key: "", value: "" }],
     });
   };
 

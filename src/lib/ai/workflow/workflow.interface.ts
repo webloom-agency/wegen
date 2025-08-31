@@ -159,11 +159,11 @@ export type HttpValue = string | OutputSchemaSourceKey;
  */
 export type HttpNodeData = BaseWorkflowNodeDataData<{
   kind: NodeKind.Http;
-  url: TipTapMentionJsonContent;
+  url: HttpValue;
   method: HttpMethod;
-  headers?: { key: string; value: TipTapMentionJsonContent }[];
-  params?: { key: string; value: TipTapMentionJsonContent }[];
-  body?: TipTapMentionJsonContent;
+  headers?: { key: string; value: HttpValue }[];
+  query?: { key: string; value: HttpValue }[];
+  body?: HttpValue;
   timeout?: number;
 }>;
 
