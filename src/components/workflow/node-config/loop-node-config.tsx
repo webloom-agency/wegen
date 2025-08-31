@@ -6,12 +6,10 @@ import { Label } from "ui/label";
 import { Button } from "ui/button";
 import { VariableSelect } from "../variable-select";
 import { VariableMentionItem } from "../variable-mention-item";
-import { useTranslations } from "next-intl";
 import { OutputSchemaSourceKey, NodeKind } from "lib/ai/workflow/workflow.interface";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "ui/select";
 
 export function LoopStartConfig({ node }: { node: UINode<any> }) {
-  const t = useTranslations("Workflow");
   const { getNodes, updateNodeData } = useReactFlow<UINode>();
 
   const loopEnds = getNodes().filter((n) => n.data.kind === NodeKind.LoopEnd);
@@ -19,7 +17,7 @@ export function LoopStartConfig({ node }: { node: UINode<any> }) {
   return (
     <div className="flex flex-col gap-4 px-4">
       <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">{t("loopSource") || "Loop Source"}</Label>
+        <Label className="text-xs text-muted-foreground">Loop Source</Label>
         <div className="flex items-center gap-2">
           {node.data.source ? (
             <VariableMentionItem
@@ -30,7 +28,7 @@ export function LoopStartConfig({ node }: { node: UINode<any> }) {
               onRemove={() => updateNodeData(node.id, { source: undefined })}
             />
           ) : (
-            <div className="flex-1 text-xs text-muted-foreground">{t("selectVariable") || "Select a variable"}</div>
+            <div className="flex-1 text-xs text-muted-foreground">Select a variable</div>
           )}
           <VariableSelect
             currentNodeId={node.data.id}
@@ -46,16 +44,16 @@ export function LoopStartConfig({ node }: { node: UINode<any> }) {
       </div>
 
       <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">{t("loopEndNode") || "Loop End Node"}</Label>
+        <Label className="text-xs text-muted-foreground">Loop End Node</Label>
         <Select
           value={node.data.endNodeId || ""}
           onValueChange={(value) => updateNodeData(node.id, { endNodeId: value || undefined })}
         >
           <SelectTrigger>
-            <SelectValue placeholder={t("selectNode") || "Select node"} />
+            <SelectValue placeholder="Select node" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">{t("none") || "None"}</SelectItem>
+            <SelectItem value="">None</SelectItem>
             {loopEnds.map((n) => (
               <SelectItem key={n.id} value={n.id}>{n.data.name}</SelectItem>
             ))}
@@ -67,7 +65,6 @@ export function LoopStartConfig({ node }: { node: UINode<any> }) {
 }
 
 export function LoopEndConfig({ node }: { node: UINode<any> }) {
-  const t = useTranslations("Workflow");
   const { getNodes, updateNodeData } = useReactFlow<UINode>();
 
   const loopStarts = getNodes().filter((n) => n.data.kind === NodeKind.LoopStart);
@@ -75,16 +72,16 @@ export function LoopEndConfig({ node }: { node: UINode<any> }) {
   return (
     <div className="flex flex-col gap-4 px-4">
       <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">{t("loopStartNode") || "Loop Start Node"}</Label>
+        <Label className="text-xs text-muted-foreground">Loop Start Node</Label>
         <Select
           value={node.data.startNodeId || ""}
           onValueChange={(value) => updateNodeData(node.id, { startNodeId: value || undefined })}
         >
           <SelectTrigger>
-            <SelectValue placeholder={t("selectNode") || "Select node"} />
+            <SelectValue placeholder="Select node" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">{t("none") || "None"}</SelectItem>
+            <SelectItem value="">None</SelectItem>
             {loopStarts.map((n) => (
               <SelectItem key={n.id} value={n.id}>{n.data.name}</SelectItem>
             ))}
@@ -93,7 +90,7 @@ export function LoopEndConfig({ node }: { node: UINode<any> }) {
       </div>
 
       <div className="space-y-2">
-        <Label className="text-xs text-muted-foreground">{t("loopCollect") || "Collect (optional)"}</Label>
+        <Label className="text-xs text-muted-foreground">Collect (optional)</Label>
         <div className="flex items-center gap-2">
           {node.data.collect ? (
             <VariableMentionItem
@@ -104,7 +101,7 @@ export function LoopEndConfig({ node }: { node: UINode<any> }) {
               onRemove={() => updateNodeData(node.id, { collect: undefined })}
             />
           ) : (
-            <div className="flex-1 text-xs text-muted-foreground">{t("selectVariableOptional") || "Select variable (optional)"}</div>
+            <div className="flex-1 text-xs text-muted-foreground">Select variable (optional)</div>
           )}
           <VariableSelect
             currentNodeId={node.data.id}
