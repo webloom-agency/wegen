@@ -112,6 +112,15 @@ export const loopStartNodeExecutor: NodeExecutor<LoopStartNodeData> = ({ node, s
     const value = state.getOutput<any>({ nodeId: source.nodeId, path: source.path });
     if (Array.isArray(value)) list = value;
     else if (value != null) list = [value];
+  } else {
+    // Auto-detect: if no source configured, try to use the immediate upstream node's full output
+    const incoming = (state.edges || []).filter((e) => e.target === node.id);
+    const prev = incoming[0]?.source;
+    if (prev) {
+      const value = state.getOutput<any>({ nodeId: prev, path: [] });
+      if (Array.isArray(value)) list = value;
+      else if (value != null) list = [value];
+    }
   }
 
   // Determine body start targets and potential end targets

@@ -117,6 +117,12 @@ export function SelectedNodeConfigTab({ node, hasEditAccess }: { node: UINode; h
             <TemplateNodeConfig data={node.data} />
           ) : node.data.kind === NodeKind.Code ? (
             <CodeNodeConfig node={node} />
+          ) : node.data.kind === NodeKind.LoopStart ? (
+            // @ts-ignore: add loop config component
+            (await import("./node-config/loop-node-config")).LoopStartConfig({ node: node as any })
+          ) : node.data.kind === NodeKind.LoopEnd ? (
+            // @ts-ignore: add loop config component
+            (await import("./node-config/loop-node-config")).LoopEndConfig({ node: node as any })
           ) : node.data.kind === NodeKind.Note ? (
             <div className="h-full flex flex-col gap-2 px-4">
               <Label
