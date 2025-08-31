@@ -102,9 +102,9 @@ export function AppSidebar({
 
       <SidebarContent className="mt-2 overflow-hidden relative">
         <div className="flex flex-col overflow-y-auto">
+          <AppSidebarMenus />
           <AppSidebarAgents />
           <AppSidebarThreads />
-          <AppSidebarMenus />
         </div>
       </SidebarContent>
       <SidebarFooter className="flex flex-col items-stretch space-y-2">
