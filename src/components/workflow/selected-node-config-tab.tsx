@@ -129,7 +129,12 @@ export function SelectedNodeConfigTab({ node, hasEditAccess }: { node: UINode; h
                   {(node.data as any).source ? (
                     <VariableMentionItem
                       className="py-[7px] text-sm truncate flex-1"
-                      nodeName={(() => getNodes().find((n) => n.data.id === (node.data as any).source?.nodeId)?.data.name || "ERROR")()}
+                      nodeName={
+                        (
+                          getNodes().find((n) => n.data.id === (node.data as any).source?.nodeId)?.data
+                            .name as string
+                        ) || "ERROR"
+                      }
                       path={(node.data as any).source?.path || []}
                       notFound={!getNodes().some((n) => n.data.id === (node.data as any).source?.nodeId)}
                       onRemove={() => updateNodeData(node.id, { source: undefined })}
