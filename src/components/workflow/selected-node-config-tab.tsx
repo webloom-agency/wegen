@@ -23,6 +23,7 @@ import { HttpNodeConfig } from "./node-config/http-node-config";
 import { TemplateNodeConfig } from "./node-config/template-node-config";
 import { CodeNodeConfig } from "./node-config/code-node-config";
 import { useTranslations } from "next-intl";
+import { LoopStartConfig, LoopEndConfig } from "./node-config/loop-node-config";
 
 export function SelectedNodeConfigTab({ node, hasEditAccess }: { node: UINode; hasEditAccess?: boolean }) {
   const t = useTranslations();
@@ -118,11 +119,9 @@ export function SelectedNodeConfigTab({ node, hasEditAccess }: { node: UINode; h
           ) : node.data.kind === NodeKind.Code ? (
             <CodeNodeConfig node={node} />
           ) : node.data.kind === NodeKind.LoopStart ? (
-            // @ts-ignore: add loop config component
-            (await import("./node-config/loop-node-config")).LoopStartConfig({ node: node as any })
+            <LoopStartConfig node={node as any} />
           ) : node.data.kind === NodeKind.LoopEnd ? (
-            // @ts-ignore: add loop config component
-            (await import("./node-config/loop-node-config")).LoopEndConfig({ node: node as any })
+            <LoopEndConfig node={node as any} />
           ) : node.data.kind === NodeKind.Note ? (
             <div className="h-full flex flex-col gap-2 px-4">
               <Label
