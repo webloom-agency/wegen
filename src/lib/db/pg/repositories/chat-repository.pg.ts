@@ -113,6 +113,39 @@ export const pgChatRepository: ChatRepository = {
     });
   },
 
+  selectAllThreadsWithEmails: async () => {
+    const rows = await db
+      .select({
+        threadId: ChatThreadSchema.id,
+        title: ChatThreadSchema.title,
+        createdAt: ChatThreadSchema.createdAt,
+        userId: ChatThreadSchema.userId,
+        userEmail: UserSchema.email,
+        lastMessageAt: sql<string>`MAX(${ChatMessageSchema.createdAt})`.as(
+          "last_message_at",
+        ),
+      })
+      .from(ChatThreadSchema)
+      .innerJoin(UserSchema, eq(ChatThreadSchema.userId, UserSchema.id))
+      .leftJoin(
+        ChatMessageSchema,
+        eq(ChatThreadSchema.id, ChatMessageSchema.threadId),
+      )
+      .groupBy(ChatThreadSchema.id, UserSchema.email)
+      .orderBy(desc(sql`last_message_at`));
+
+    return rows.map((row) => ({
+      id: row.threadId,
+      title: row.title,
+      userId: row.userId,
+      userEmail: row.userEmail ?? undefined,
+      createdAt: row.createdAt,
+      lastMessageAt: row.lastMessageAt
+        ? new Date(row.lastMessageAt).getTime()
+        : 0,
+    }));
+  },
+
   selectThreadsByUserIdAndAgentId: async (
     userId: string,
     agentId: string,
