@@ -1,3 +1,4 @@
+"use client";
 import { NodeKind, UINode } from "lib/ai/workflow/workflow.interface";
 import { useReactFlow } from "@xyflow/react";
 import { NodeIcon } from "./node-icon";
