@@ -282,7 +282,7 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
     }
 
     return {
-      output: toolResult,
+      output: { tool_result: toolResult },
     };
   }
 
@@ -305,7 +305,7 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
     abortSignal: new AbortController().signal,
     messages: [],
   });
-  return { output: res };
+  return { output: { tool_result: res } };
 };
 
 /**
