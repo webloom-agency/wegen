@@ -260,6 +260,17 @@ export async function POST(request: Request) {
         );
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
+        // Decide provider toolChoice: force tools when any are tagged
+        const mentionedToolCount = (mentions || []).filter(
+          (m: any) => m?.type === "mcpTool" || m?.type === "workflow" || m?.type === "defaultTool",
+        ).length;
+        const providerToolChoice =
+          supportToolCall && mentionedToolCount > 0
+            ? "required"
+            : toolChoice === "none"
+            ? "none"
+            : "auto";
+
         const result = streamText({
           model,
           system: systemPrompt,
@@ -270,7 +281,7 @@ export async function POST(request: Request) {
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 2,
           tools: vercelAITooles,
-          toolChoice: "auto",
+          toolChoice: providerToolChoice,
           abortSignal: request.signal,
           onFinish: async ({ response, usage }) => {
             const appendMessages = appendResponseMessages({
