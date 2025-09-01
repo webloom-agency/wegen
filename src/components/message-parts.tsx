@@ -599,14 +599,14 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                     .replace(/>/g, "&gt;");
 
                   const leftLogo = "https://bucket-prod.jecreemavitrine.fr/uploads/sites/156/2023/07/logo-sansmarge-webloom-1.svg";
-                  const rightLogo = "/favicon.svg";
+                  const rightLogo = "";
                   const leftName = "webloom";
                   const rightName = "wegen";
 
                   const header = `
                     <div class="brand-row">
                       <div class="brand">${leftLogo ? `<img src="${leftLogo}" alt="${leftName}"/>` : ""}<span class="name">${leftName}</span></div>
-                      <div class="brand">${rightLogo ? `<img src="${rightLogo}" alt="${rightName}"/>` : ""}<span class="name">${rightName}</span></div>
+                      <div class="brand"><span class="name">${rightName}</span></div>
                     </div>
                     <hr/>
                   `;
