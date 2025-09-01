@@ -648,7 +648,7 @@ export const loopNodeExecutor: NodeExecutor<LoopNodeData> = ({ node, state }) =>
   const bodyTargets = outgoing.filter((e) => nodesById.get(e.target)?.kind !== "loopEnd").map((e) => e.target);
   const index = 0;
   const nextNodes: string[] = items.length > 0 && bodyTargets.length > 0 ? bodyTargets : (endTargets.length > 0 ? endTargets : []);
-  return { output: { items, index, item: items[0], nextNodes } };
+  return { output: { items, index, item: items[0], acc: [], nextNodes } };
 };
 
 /**
@@ -669,17 +669,34 @@ export const loopEndNodeExecutor: NodeExecutor<LoopEndNodeData> = ({ node, state
   const items = loopId ? (state.getOutput<any[]>({ nodeId: loopId, path: ["items"] }) || []) : [];
   const length = items.length;
   const index = loopId ? (state.getOutput<number>({ nodeId: loopId, path: ["index"] }) || 0) : 0;
-  let collected: any[] | undefined = undefined;
+
+  // Determine value to accumulate for this iteration
+  let valueToCollect: any = undefined;
   if (node.collect) {
-    const v = state.getOutput<any>({ nodeId: node.collect.nodeId, path: node.collect.path });
-    if (Array.isArray(v)) collected = v;
+    valueToCollect = state.getOutput<any>({ nodeId: node.collect.nodeId, path: node.collect.path });
+  } else if (loopId) {
+    valueToCollect = state.getOutput<any>({ nodeId: loopId, path: ["item"] });
   }
+
+  if (loopId !== undefined) {
+    const acc: any[] = state.getOutput<any[]>({ nodeId: loopId, path: ["acc"] }) || [];
+    if (valueToCollect !== undefined) acc.push(valueToCollect);
+    state.setOutput({ nodeId: loopId, path: ["acc"] }, acc);
+  }
+
   const nextIndex = index + 1;
   let nextNodes: string[] = afterLoopTargets;
   if (loopId && nextIndex < length && bodyTargets.length > 0) {
     state.setOutput({ nodeId: loopId, path: ["index"] }, nextIndex);
     state.setOutput({ nodeId: loopId, path: ["item"] }, items[nextIndex]);
     nextNodes = bodyTargets;
+    return { output: { nextNodes } };
+  }
+
+  // Finalize: emit collected array at loop end
+  let collected: any[] | undefined = undefined;
+  if (loopId) {
+    collected = state.getOutput<any[]>({ nodeId: loopId, path: ["acc"] }) || [];
   }
   return { output: { items: collected, nextNodes } };
 };

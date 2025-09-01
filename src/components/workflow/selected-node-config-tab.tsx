@@ -166,6 +166,39 @@ export function SelectedNodeConfigTab({ node, hasEditAccess }: { node: UINode; h
                 <div className="text-[10px] text-muted-foreground mt-1">Hard cap on iterations. Leave empty for no cap.</div>
               </div>
             </div>
+          ) : node.data.kind === NodeKind.LoopEnd ? (
+            <div className="flex flex-col gap-4 px-4 text-sm">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Collect value (optional)</Label>
+                <div className="flex items-center gap-2">
+                  {(node.data as any).collect ? (
+                    <VariableMentionItem
+                      className="py-[7px] text-sm truncate flex-1"
+                      nodeName={
+                        (
+                          getNodes().find((n) => n.data.id === (node.data as any).collect?.nodeId)?.data
+                            .name as string
+                        ) || "ERROR"
+                      }
+                      path={(node.data as any).collect?.path || []}
+                      notFound={!getNodes().some((n) => n.data.id === (node.data as any).collect?.nodeId)}
+                      onRemove={() => updateNodeData(node.id, { collect: undefined })}
+                    />
+                  ) : (
+                    <div className="flex-1 text-xs text-muted-foreground">Defaults to current loop.item</div>
+                  )}
+                  <VariableSelect
+                    currentNodeId={node.data.id}
+                    onChange={(item) => {
+                      updateNodeData(node.id, { collect: { nodeId: item.nodeId, path: item.path } as any });
+                    }}
+                  >
+                    <Button size="sm" variant={(node.data as any).collect ? "secondary" : "outline"}>Var</Button>
+                  </VariableSelect>
+                </div>
+                <div className="text-[10px] text-muted-foreground">LoopEnd will output an array at items[].</div>
+              </div>
+            </div>
           ) : node.data.kind === NodeKind.Note ? (
             <div className="h-full flex flex-col gap-2 px-4">
               <Label
