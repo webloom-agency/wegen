@@ -386,12 +386,17 @@ export const AssistMessagePart = memo(function AssistMessagePart({
     return [];
   };
 
-  const printToPDF = (htmlBody: string) => {
+  const printToPDF = (htmlBody: string, headerHtml?: string) => {
     const docHtml = `<!doctype html><html><head><meta charset="utf-8"><title>Export</title>
       <style>body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; padding:24px;}
       pre{white-space:pre-wrap;word-break:break-word;}
       h3{margin:0 0 16px 0;}
-      </style></head><body>${htmlBody}</body></html>`;
+      .brand-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+      .brand{display:flex;align-items:center;gap:8px;}
+      .brand img{height:24px;width:auto;object-fit:contain;}
+      .brand .name{font-weight:600;font-size:14px;color:#111827}
+      hr{border:none;border-top:1px solid #E5E7EB;margin:12px 0}
+      </style></head><body>${headerHtml || ""}${htmlBody}</body></html>`;
 
     const iframe = document.createElement("iframe");
     iframe.style.position = "fixed";
@@ -404,12 +409,15 @@ export const AssistMessagePart = memo(function AssistMessagePart({
 
     const handle = () => {
       try {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
+        // Give images a moment to load
+        setTimeout(() => {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        }, 400);
       } finally {
         setTimeout(() => {
           document.body.removeChild(iframe);
-        }, 200);
+        }, 1200);
       }
     };
 
@@ -589,8 +597,22 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                     .replace(/&/g, "&amp;")
                     .replace(/</g, "&lt;")
                     .replace(/>/g, "&gt;");
+
+                  const leftLogo = "https://bucket-prod.jecreemavitrine.fr/uploads/sites/156/2023/07/logo-sansmarge-webloom-1.svg";
+                  const rightLogo = "/favicon.svg";
+                  const leftName = "Webloom";
+                  const rightName = "wegen";
+
+                  const header = `
+                    <div class="brand-row">
+                      <div class="brand">${leftLogo ? `<img src="${leftLogo}" alt="${leftName}"/>` : ""}<span class="name">${leftName}</span></div>
+                      <div class="brand">${rightLogo ? `<img src="${rightLogo}" alt="${rightName}"/>` : ""}<span class="name">${rightName}</span></div>
+                    </div>
+                    <hr/>
+                  `;
+
                   const html = `<h3>Chat Export</h3><pre>${escaped}</pre>`;
-                  printToPDF(html);
+                  printToPDF(html, header);
                 }}
               >
                 <Printer />
