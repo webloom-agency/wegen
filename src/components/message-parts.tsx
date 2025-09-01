@@ -599,7 +599,6 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                     .replace(/>/g, "&gt;");
 
                   const leftLogo = "https://bucket-prod.jecreemavitrine.fr/uploads/sites/156/2023/07/logo-sansmarge-webloom-1.svg";
-                  const rightLogo = "";
                   const leftName = "webloom";
                   const rightName = "wegen";
 
