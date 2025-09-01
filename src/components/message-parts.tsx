@@ -600,7 +600,7 @@ export const AssistMessagePart = memo(function AssistMessagePart({
 
                   const leftLogo = "https://bucket-prod.jecreemavitrine.fr/uploads/sites/156/2023/07/logo-sansmarge-webloom-1.svg";
                   const rightLogo = "/favicon.svg";
-                  const leftName = "Webloom";
+                  const leftName = "webloom";
                   const rightName = "wegen";
 
                   const header = `
