@@ -179,6 +179,26 @@ export const ToolNodeDataConfig = memo(function ({
         />
       </div>
 
+      {/* Raw JSON Args (optional) */}
+      <Separator className="my-4" />
+      <p className="text-sm font-semibold">Raw JSON Args (optional)</p>
+      <div className="w-full bg-secondary rounded-md p-2 min-h-20">
+        <OutputSchemaMentionInput
+          currentNodeId={data.id}
+          nodes={nodes}
+          edges={edges}
+          content={data.rawArgs}
+          editable={editable}
+          onChange={(content) => {
+            updateNodeData(data.id, {
+              rawArgs: content,
+            });
+          }}
+        />
+      </div>
+      <div className="text-[10px] text-muted-foreground">
+        If provided, the tool will be called with this JSON as arguments (mentions resolved) instead of LLM-generated params.
+      </div>
 
     </div>
   );

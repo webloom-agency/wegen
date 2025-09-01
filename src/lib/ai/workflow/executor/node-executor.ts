@@ -211,8 +211,16 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
 
   if (!node.tool) throw new Error("Tool not found");
 
-  // Handle parameter generation
-  if (!node.tool?.parameterSchema) {
+  // If rawArgs is provided, resolve mentions and parse JSON directly
+  if (node.rawArgs) {
+    const argsText = convertTiptapJsonToText({ getOutput: state.getOutput, json: node.rawArgs });
+    try {
+      const parsed = JSON.parse(argsText);
+      result.input = { parameter: parsed, via: "raw" };
+    } catch (e: any) {
+      throw new Error(`Invalid rawArgs JSON: ${e?.message || "parse error"}`);
+    }
+  } else if (!node.tool?.parameterSchema) {
     // Tool doesn't need parameters
     result.input = {
       parameter: undefined,
@@ -246,12 +254,12 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
       parameter: response.toolCalls.find((call) => call.args)?.args,
       prompt,
     };
-    }
+  }
 
   // Record computed input for debugging/history
   state.setInput(node.id, result.input);
- 
-   // Execute the tool based on its type
+
+  // Execute the tool based on its type
   if (node.tool.type == "mcp-tool") {
     let toolResult = (await mcpClientsManager.toolCall(
       node.tool.serverId,
@@ -275,34 +283,23 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
           JSON.stringify(toolResult),
       );
     }
-    result.output = {
-      tool_result: toolResult,
-    };
-  } else if (node.tool.type == "app-tool") {
-    const executor =
-      node.tool.id == DefaultToolName.WebContent
-        ? exaContentsToolForWorkflow.execute
-        : node.tool.id == DefaultToolName.WebSearch
-          ? exaSearchToolForWorkflow.execute
-          : () => "Unknown tool";
 
-    const toolResult = await executor(result.input.parameter, {
-      messages: [],
-      toolCallId: "",
-    });
-    result.output = {
-      tool_result: toolResult,
-    };
-  } else {
-    // Placeholder for future tool types
-    result.output = {
-      tool_result: {
-        error: `Not implemented "${toAny(node.tool)?.type}"`,
-      },
+    return {
+      output: toolResult,
     };
   }
 
-  return result;
+  // Default app tools path
+  const appTool = APP_DEFAULT_TOOL_KIT[DefaultToolName.WebSearch]?.[node.tool.id] ||
+    APP_DEFAULT_TOOL_KIT[DefaultToolName.WebContent]?.[node.tool.id];
+  if (!appTool) throw new Error(`Tool not found: ${node.tool.id}`);
+
+  const res = await appTool.execute(result.input.parameter as any, {
+    toolCallId: `${node.id}:${Date.now()}`,
+    abortSignal: new AbortController().signal,
+    messages: [],
+  });
+  return { output: res };
 };
 
 /**
