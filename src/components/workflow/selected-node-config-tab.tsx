@@ -219,6 +219,23 @@ export function SelectedNodeConfigTab({ node, hasEditAccess }: { node: UINode; h
               />
             </div>
           ) : null}
+
+          {/* Universal Timeout (except Output/Note) */}
+          {![NodeKind.Output, NodeKind.Note].includes(node.data.kind) && (
+            <div className="flex flex-col gap-2 px-4 mt-6 text-sm">
+              <Label>Timeout (ms)</Label>
+              <Input
+                type="number"
+                value={(node.data as any).timeout ?? ""}
+                placeholder="30000"
+                onChange={(e) => {
+                  const v = e.target.value;
+                  updateNodeData(node.id, { timeout: v ? Math.max(0, Number(v)) : undefined });
+                }}
+              />
+              <div className="text-[10px] text-muted-foreground">If reached inside a loop, the iteration will be skipped.</div>
+            </div>
+          )}
         </div>
       )}
 

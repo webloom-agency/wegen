@@ -47,6 +47,11 @@ export type BaseWorkflowNodeDataData<
    * This enables data flow between connected nodes.
    */
   outputSchema: ObjectJsonSchema7;
+  /**
+   * Optional per-node timeout in milliseconds where supported by executors.
+   * Defaults to 30000 if not provided by specific executors.
+   */
+  timeout?: number;
 } & T;
 
 /**
