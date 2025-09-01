@@ -302,7 +302,11 @@ export const AssistMessagePart = memo(function AssistMessagePart({
     if (!Array.isArray(rows) || rows.length === 0) return "";
     const headers = Array.from(
       rows.reduce((set: Set<string>, row: any) => {
-        Object.keys(row || {}).forEach((k) => set.add(k));
+        if (row && typeof row === "object") {
+          Object.keys(row).forEach((k) => set.add(k));
+        } else {
+          set.add("value");
+        }
         return set;
       }, new Set<string>()),
     );
@@ -313,23 +317,109 @@ export const AssistMessagePart = memo(function AssistMessagePart({
     };
     const lines = [headers.join(",")];
     for (const row of rows) {
-      lines.push(headers.map((h) => escape(row?.[h])).join(","));
+      if (row && typeof row === "object") {
+        lines.push(headers.map((h) => escape(row?.[h])).join(","));
+      } else {
+        lines.push(headers.map((h) => (h === "value" ? escape(row) : "")).join(","));
+      }
     }
     return lines.join("\n");
   };
 
-  const printToPDF = (html: string) => {
-    const win = window.open("", "_blank", "noopener,noreferrer,width=900,height=700");
-    if (!win) return;
-    win.document.write(
-      `<!doctype html><html><head><meta charset="utf-8"><title>Export</title>
-       <style>body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; padding:24px;}
-       pre{white-space:pre-wrap;word-break:break-word;}
-       </style></head><body>${html}</body></html>`,
-    );
-    win.document.close();
-    win.focus();
-    win.print();
+  const inferRowsFromText = (text: string): any[] => {
+    const trimmed = (text || "").trim();
+    if (!trimmed) return [];
+
+    // JSON array or object with array inside
+    const parsed = safeJSONParse(trimmed);
+    if (parsed.success) {
+      const v = parsed.value;
+      if (Array.isArray(v)) {
+        return v.map((item: any) =>
+          item && typeof item === "object" ? item : { value: item },
+        );
+      }
+      if (v && typeof v === "object") {
+        for (const val of Object.values(v)) {
+          if (Array.isArray(val)) {
+            return val.map((item: any) =>
+              item && typeof item === "object" ? item : { value: item },
+            );
+          }
+        }
+      }
+    }
+
+    // Newline-delimited values or simple delimited rows
+    const lines = trimmed
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+    if (lines.length > 1) {
+      const hasComma = lines.some((l) => l.includes(","));
+      const hasSemicolon = lines.some((l) => l.includes(";"));
+      const hasTab = lines.some((l) => /\t/.test(l));
+      const delim = hasTab ? "\t" : hasComma ? "," : hasSemicolon ? ";" : null;
+      if (delim) {
+        const header = lines[0].split(delim).map((h) => h.trim());
+        const rows = lines.slice(1).map((line) => {
+          const cols = line.split(delim);
+          const obj: any = {};
+          header.forEach((h, i) => (obj[h || `col${i + 1}`] = cols[i] ?? ""));
+          return obj;
+        });
+        return rows;
+      } else {
+        return lines.map((v) => ({ value: v }));
+      }
+    }
+
+    // Comma-separated list
+    const parts = trimmed
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (parts.length > 1) {
+      return parts.map((v) => ({ value: v }));
+    }
+
+    return [];
+  };
+
+  const printToPDF = (htmlBody: string) => {
+    const docHtml = `<!doctype html><html><head><meta charset="utf-8"><title>Export</title>
+      <style>body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; padding:24px;}
+      pre{white-space:pre-wrap;word-break:break-word;}
+      h3{margin:0 0 16px 0;}
+      </style></head><body>${htmlBody}</body></html>`;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+
+    const handle = () => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } finally {
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 200);
+      }
+    };
+
+    iframe.onload = handle;
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(docHtml);
+      doc.close();
+    }
   };
 
   const deleteMessage = useCallback(() => {
@@ -461,7 +551,7 @@ export const AssistMessagePart = memo(function AssistMessagePart({
             </TooltipTrigger>
             <TooltipContent>Download TXT</TooltipContent>
           </Tooltip>
-          {/* Export CSV when applicable */}
+          {/* Export CSV (auto-detect) */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -469,12 +559,9 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                 size="icon"
                 className="size-3! p-4!"
                 onClick={() => {
-                  const parsed = safeJSONParse(part.text);
-                  const rows = parsed.success && Array.isArray(parsed.value)
-                    ? parsed.value
-                    : []; 
+                  const rows = inferRowsFromText(part.text);
                   if (!rows.length) {
-                    toast.error("This message is not a JSON array; cannot export CSV.");
+                    toast.error("Cannot infer a table from this message.");
                     return;
                   }
                   const csv = toCSV(rows);
@@ -498,7 +585,11 @@ export const AssistMessagePart = memo(function AssistMessagePart({
                 size="icon"
                 className="size-3! p-4!"
                 onClick={() => {
-                  const html = `<h3>Chat Export</h3><pre>${part.text.replace(/</g, "&lt;")}</pre>`;
+                  const escaped = part.text
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;");
+                  const html = `<h3>Chat Export</h3><pre>${escaped}</pre>`;
                   printToPDF(html);
                 }}
               >
