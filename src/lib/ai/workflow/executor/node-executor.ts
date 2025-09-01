@@ -23,11 +23,8 @@ import {
 import { jsonSchemaToZod } from "lib/json-schema-to-zod";
 import { toAny } from "lib/utils";
 import { AppError } from "lib/errors";
-import { DefaultToolName } from "lib/ai/tools";
-import {
-  exaSearchToolForWorkflow,
-  exaContentsToolForWorkflow,
-} from "lib/ai/tools/web/web-search";
+import { AppDefaultToolkit, DefaultToolName } from "lib/ai/tools";
+import { APP_DEFAULT_TOOL_KIT } from "lib/ai/tools/tool-kit";
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 import { safeJsRun } from "lib/code-runner/safe-js-run";
 import { runPythonServer } from "lib/code-runner/python-server-runner";
@@ -290,8 +287,10 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
   }
 
   // Default app tools path
-  const appTool = APP_DEFAULT_TOOL_KIT[DefaultToolName.WebSearch]?.[node.tool.id] ||
-    APP_DEFAULT_TOOL_KIT[DefaultToolName.WebContent]?.[node.tool.id];
+  const appTool = APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.WebSearch]?.[node.tool.id] ||
+    APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.Code]?.[node.tool.id] ||
+    APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.Http]?.[node.tool.id] ||
+    APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.Visualization]?.[node.tool.id];
   if (!appTool) throw new Error(`Tool not found: ${node.tool.id}`);
 
   const res = await appTool.execute(result.input.parameter as any, {
