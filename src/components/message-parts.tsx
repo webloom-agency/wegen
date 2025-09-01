@@ -14,6 +14,8 @@ import {
   ChevronRight,
   TriangleAlert,
   HammerIcon,
+  FileDown,
+  Printer,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { Button } from "ui/button";
@@ -283,6 +285,53 @@ export const AssistMessagePart = memo(function AssistMessagePart({
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
+  // Helpers: export
+  const download = (filename: string, content: string, mime: string) => {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const toCSV = (rows: any[]): string => {
+    if (!Array.isArray(rows) || rows.length === 0) return "";
+    const headers = Array.from(
+      rows.reduce((set: Set<string>, row: any) => {
+        Object.keys(row || {}).forEach((k) => set.add(k));
+        return set;
+      }, new Set<string>()),
+    );
+    const escape = (s: any) => {
+      const v = s === null || s === undefined ? "" : String(s);
+      const needs = /[",\n]/.test(v);
+      return needs ? '"' + v.replace(/"/g, '""') + '"' : v;
+    };
+    const lines = [headers.join(",")];
+    for (const row of rows) {
+      lines.push(headers.map((h) => escape(row?.[h])).join(","));
+    }
+    return lines.join("\n");
+  };
+
+  const printToPDF = (html: string) => {
+    const win = window.open("", "_blank", "noopener,noreferrer,width=900,height=700");
+    if (!win) return;
+    win.document.write(
+      `<!doctype html><html><head><meta charset="utf-8"><title>Export</title>
+       <style>body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; padding:24px;}
+       pre{white-space:pre-wrap;word-break:break-word;}
+       </style></head><body>${html}</body></html>`,
+    );
+    win.document.close();
+    win.focus();
+    win.print();
+  };
+
   const deleteMessage = useCallback(() => {
     safe(() => setIsDeleting(true))
       .ifOk(() => deleteMessageAction(message.id))
@@ -391,6 +440,72 @@ export const AssistMessagePart = memo(function AssistMessagePart({
               </Button>
             </TooltipTrigger>
             <TooltipContent>Copy</TooltipContent>
+          </Tooltip>
+          {/* Export TXT */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-3! p-4!"
+                onClick={() =>
+                  download(
+                    `chat-export-${new Date().toISOString().replace(/[:.]/g, "-")}.txt`,
+                    part.text,
+                    "text/plain;charset=utf-8",
+                  )
+                }
+              >
+                <FileDown />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Download TXT</TooltipContent>
+          </Tooltip>
+          {/* Export CSV when applicable */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-3! p-4!"
+                onClick={() => {
+                  const parsed = safeJSONParse(part.text);
+                  const rows = parsed.success && Array.isArray(parsed.value)
+                    ? parsed.value
+                    : []; 
+                  if (!rows.length) {
+                    toast.error("This message is not a JSON array; cannot export CSV.");
+                    return;
+                  }
+                  const csv = toCSV(rows);
+                  download(
+                    `chat-export-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`,
+                    csv,
+                    "text/csv;charset=utf-8",
+                  );
+                }}
+              >
+                <FileDown />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Download CSV</TooltipContent>
+          </Tooltip>
+          {/* Print to PDF (use browser Save as PDF) */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-3! p-4!"
+                onClick={() => {
+                  const html = `<h3>Chat Export</h3><pre>${part.text.replace(/</g, "&lt;")}</pre>`;
+                  printToPDF(html);
+                }}
+              >
+                <Printer />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Print / Save as PDF</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
