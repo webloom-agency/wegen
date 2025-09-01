@@ -293,7 +293,14 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
     APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.Visualization]?.[node.tool.id];
   if (!appTool) throw new Error(`Tool not found: ${node.tool.id}`);
 
-  const res = await appTool.execute(result.input.parameter as any, {
+  const exec = (appTool as any).execute as
+    | ((args: any, ctx: { toolCallId: string; abortSignal: AbortSignal; messages: any[] }) => Promise<any>)
+    | undefined;
+  if (typeof exec !== "function") {
+    throw new Error(`Tool '${node.tool.id}' is not executable`);
+  }
+
+  const res = await exec(result.input.parameter as any, {
     toolCallId: `${node.id}:${Date.now()}`,
     abortSignal: new AbortController().signal,
     messages: [],
