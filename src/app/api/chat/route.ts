@@ -7,7 +7,6 @@ import {
   formatDataStreamPart,
   appendClientMessage,
   Message,
-  tool as createTool,
 } from "ai";
 
 import { customModelProvider, isToolCallUnsupportedModel } from "lib/ai/models";
