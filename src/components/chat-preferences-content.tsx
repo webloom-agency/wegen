@@ -50,7 +50,7 @@ export function UserInstructionsContent() {
     displayName: "",
     responseStyleExample: "",
     profession: "",
-    botName: "",
+    botName: "wegen",
   });
 
   const {
@@ -62,18 +62,24 @@ export function UserInstructionsContent() {
     fallback: {},
     dedupingInterval: 0,
     onSuccess: (data) => {
-      setPreferences(data);
+      setPreferences({
+        ...data,
+        botName: data.botName || "wegen",
+      });
     },
   });
 
   const [isSaving, setIsSaving] = useState(false);
 
   const savePreferences = async () => {
-    safe(() => setIsSaving(true))
+    setIsSaving(true);
+    safe(() => preferences)
+      .map((p) => ({ ...p, botName: p.botName || "wegen" }))
+      .map(JSON.stringify)
       .ifOk(() =>
         fetch("/api/user/preferences", {
           method: "PUT",
-          body: JSON.stringify(preferences),
+          body: JSON.stringify({ ...preferences, botName: preferences.botName || "wegen" }),
         }),
       )
       .ifOk(() => fetchPreferences())
@@ -95,7 +101,7 @@ export function UserInstructionsContent() {
       (preferences.responseStyleExample || "")
     )
       return true;
-    if ((data?.botName || "") !== (preferences.botName || "")) return true;
+    if ((data?.botName || "wegen") !== (preferences.botName || "wegen")) return true;
     return false;
   }, [preferences, data]);
 
@@ -131,9 +137,9 @@ export function UserInstructionsContent() {
           {isLoading ? (
             <Skeleton className="h-9" />
           ) : (
-                          <Input
-                placeholder="wegen"
-                value={preferences.botName}
+            <Input
+              placeholder="wegen"
+              value={preferences.botName}
               onChange={(e) => {
                 setPreferences({
                   botName: e.target.value,
