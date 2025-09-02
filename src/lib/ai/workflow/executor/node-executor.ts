@@ -258,7 +258,8 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
         toolChoice: "required", // Force the model to call the tool
         tools: {
           parameter: createTool({
-            schema: toAny(node.tool.parameterSchema),
+            description: "Generate parameter JSON matching the tool schema",
+            parameters: jsonSchemaToZod(toAny(node.tool.parameterSchema)),
           }),
         },
         system: `You are a JSON argument generator for tool calls. You must call the 'parameter' tool exactly once with the correct JSON object for the tool's parameter schema. Never include explanations.`,
