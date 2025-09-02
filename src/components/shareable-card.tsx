@@ -36,6 +36,8 @@ interface ShareableCardProps {
   isDeleteLoading?: boolean;
   actionsDisabled?: boolean;
   canManage?: boolean;
+  onDuplicate?: (itemId: string) => void;
+  isDuplicateLoading?: boolean;
 }
 
 export function ShareableCard({
@@ -51,6 +53,8 @@ export function ShareableCard({
   isDeleteLoading,
   actionsDisabled,
   canManage = false,
+  onDuplicate,
+  isDuplicateLoading,
 }: ShareableCardProps) {
   const t = useTranslations();
   const isPublished = (item as WorkflowSummary).isPublished;
@@ -126,9 +130,11 @@ export function ShareableCard({
                     : undefined
                 }
                 onDelete={onDelete ? () => onDelete(item.id) : undefined}
+                onDuplicate={onDuplicate ? () => onDuplicate(item.id) : undefined}
                 isBookmarkToggleLoading={isBookmarkToggleLoading}
                 isVisibilityChangeLoading={isVisibilityChangeLoading}
                 isDeleteLoading={isDeleteLoading}
+                isDuplicateLoading={isDuplicateLoading}
                 disabled={actionsDisabled}
               />
             </div>

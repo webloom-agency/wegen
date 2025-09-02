@@ -38,6 +38,9 @@ export function AgentsList({
   const [visibilityChangeLoading, setVisibilityChangeLoading] = useState<
     string | null
   >(null);
+  const [duplicatingAgentId, setDuplicatingAgentId] = useState<string | null>(
+    null,
+  );
 
   const { data: allAgents } = useSWR(
     "/api/agent?filters=mine,shared",
@@ -107,6 +110,23 @@ export function AgentsList({
       .watch(() => setDeletingAgentLoading(null));
   };
 
+  const duplicateAgent = async (agentId: string) => {
+    try {
+      setDuplicatingAgentId(agentId);
+      const res = await fetch(`/api/agent/${agentId}/duplicate`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const created = await res.json();
+      mutateAgents(created);
+      toast.success(t("Common.success"));
+    } catch (e) {
+      toast.error(t("Common.error"));
+    } finally {
+      setDuplicatingAgentId(null);
+    }
+  };
+
   return (
     <div className="w-full flex flex-col gap-4 p-8">
       <div className="flex justify-between items-center">
@@ -161,6 +181,8 @@ export function AgentsList({
               isVisibilityChangeLoading={visibilityChangeLoading === agent.id}
               isDeleteLoading={deletingAgentLoading === agent.id}
               onDelete={deleteAgent}
+              onDuplicate={duplicateAgent}
+              isDuplicateLoading={duplicatingAgentId === agent.id}
             />
           ))}
         </div>
@@ -183,6 +205,8 @@ export function AgentsList({
               href={`/agent/${agent.id}`}
               onBookmarkToggle={toggleBookmark}
               isBookmarkToggleLoading={isBookmarkLoading(agent.id)}
+              onDuplicate={duplicateAgent}
+              isDuplicateLoading={duplicatingAgentId === agent.id}
             />
           ))}
           {sharedAgents.length === 0 && (

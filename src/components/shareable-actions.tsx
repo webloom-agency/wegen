@@ -8,6 +8,7 @@ import {
   BookmarkCheck,
   Trash2,
   Loader2,
+  Copy,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -73,6 +74,8 @@ interface ShareableActionsProps {
   renderActions?: () => React.ReactNode;
   disabled?: boolean;
   canManage?: boolean;
+  onDuplicate?: () => void;
+  isDuplicateLoading?: boolean;
 }
 
 export function ShareableActions({
@@ -90,14 +93,16 @@ export function ShareableActions({
   isDeleteLoading = false,
   disabled = false,
   canManage = false,
+  onDuplicate,
+  isDuplicateLoading = false,
 }: ShareableActionsProps) {
   const t = useTranslations();
   const router = useRouter();
 
   const isAnyLoading = useMemo(
     () =>
-      isVisibilityChangeLoading || isBookmarkToggleLoading || isDeleteLoading,
-    [isVisibilityChangeLoading, isBookmarkToggleLoading, isDeleteLoading],
+      isVisibilityChangeLoading || isBookmarkToggleLoading || isDeleteLoading || isDuplicateLoading,
+    [isVisibilityChangeLoading, isBookmarkToggleLoading, isDeleteLoading, isDuplicateLoading],
   );
 
   const VisibilityIcon = visibility ? VISIBILITY_ICONS[visibility] : null;
@@ -136,8 +141,8 @@ export function ShareableActions({
                         }}
                       >
                         {isVisibilityChangeLoading ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
+                          <Loader2 className="size-4 animate-spin" />)
+                        : (
                           <VisibilityIcon className="size-4" />
                         )}
                       </Button>
@@ -235,6 +240,32 @@ export function ShareableActions({
             </Button>
           </TooltipTrigger>
           <TooltipContent>{t("Common.edit")}</TooltipContent>
+        </Tooltip>
+      )}
+
+      {/* Duplicate Action */}
+      {onDuplicate && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 text-muted-foreground hover:text-foreground"
+              disabled={isAnyLoading || disabled}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDuplicate();
+              }}
+            >
+              {isDuplicateLoading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Copy className="size-4" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{t("Common.duplicate")}</TooltipContent>
         </Tooltip>
       )}
 

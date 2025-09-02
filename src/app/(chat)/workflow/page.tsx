@@ -70,6 +70,7 @@ export default function WorkflowPage() {
   const [isVisibilityChangeLoading, setIsVisibilityChangeLoading] =
     useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
   const { data: workflows, isLoading } = useSWR<WorkflowSummary[]>(
     "/api/workflow",
@@ -145,6 +146,23 @@ export default function WorkflowPage() {
       toast.error(t("Common.error"));
     } finally {
       setIsDeleteLoading(false);
+    }
+  };
+
+  const duplicateWorkflow = async (workflowId: string) => {
+    try {
+      setDuplicatingId(workflowId);
+      const res = await fetch(`/api/workflow/${workflowId}/duplicate`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const created = await res.json();
+      mutate("/api/workflow");
+      router.push(`/workflow/${created.id}`);
+    } catch (e) {
+      toast.error(t("Common.error"));
+    } finally {
+      setDuplicatingId(null);
     }
   };
 
@@ -231,8 +249,10 @@ export default function WorkflowPage() {
                   href={`/workflow/${workflow.id}`}
                   onVisibilityChange={updateVisibility}
                   onDelete={deleteWorkflow}
+                  onDuplicate={duplicateWorkflow}
                   isVisibilityChangeLoading={isVisibilityChangeLoading}
                   isDeleteLoading={isDeleteLoading}
+                  isDuplicateLoading={duplicatingId === workflow.id}
                 />
               ))}
         </div>
@@ -258,8 +278,10 @@ export default function WorkflowPage() {
                 href={`/workflow/${workflow.id}`}
                 onVisibilityChange={isAdmin ? updateVisibility : undefined}
                 onDelete={isAdmin ? deleteWorkflow : undefined}
+                onDuplicate={duplicateWorkflow}
                 isVisibilityChangeLoading={isAdmin ? isVisibilityChangeLoading : undefined}
                 isDeleteLoading={isAdmin ? isDeleteLoading : undefined}
+                isDuplicateLoading={duplicatingId === workflow.id}
               />
             ))}
           </div>

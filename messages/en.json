@@ -14,6 +14,7 @@
     "generate": "Generate",
     "edit": "Edit",
     "editAgent": "Edit Agent",
+    "duplicate": "Duplicate",
     "search": "Search...",
     "approve": "Approve",
     "reject": "Reject",
