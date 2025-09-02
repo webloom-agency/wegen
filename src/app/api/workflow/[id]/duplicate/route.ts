@@ -24,7 +24,7 @@ export async function POST(
   }
 
   const duplicated = await workflowRepository.save({
-    name: `${source.name}`,
+    name: `${source.name} (copy)`,
     description: source.description,
     icon: source.icon,
     isPublished: false,

@@ -23,7 +23,7 @@ export async function POST(
   }
 
   const duplicated = await agentRepository.insertAgent({
-    name: `${sourceAgent.name}`,
+    name: `${sourceAgent.name} (copy)`,
     description: sourceAgent.description,
     icon: sourceAgent.icon,
     instructions: sourceAgent.instructions,
