@@ -23,7 +23,6 @@ import {
 import { jsonSchemaToZod } from "lib/json-schema-to-zod";
 import { toAny } from "lib/utils";
 import { AppError } from "lib/errors";
-import { APP_DEFAULT_TOOL_KIT } from "lib/ai/tools/tool-kit";
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 import { safeJsRun } from "lib/code-runner/safe-js-run";
 import { runPythonServer } from "lib/code-runner/python-server-runner";
