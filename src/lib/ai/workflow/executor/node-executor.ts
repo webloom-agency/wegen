@@ -213,11 +213,47 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
 
   // If rawArgs is provided and non-empty, resolve mentions and parse JSON directly
   if (node.rawArgs) {
-    const argsText = convertTiptapJsonToText({ getOutput: state.getOutput, json: node.rawArgs }).trim();
-    if (argsText.length > 0) {
+    // Build two variants to support both syntaxes:
+    // 1) Mentions placed inside quoted JSON strings → escape only (no surrounding quotes)
+    // 2) Mentions used as raw JSON values → full JSON.stringify including quotes for strings
+    const renderArgsText = (mode: "escape-only" | "json-value") =>
+      convertTiptapJsonToText({
+        getOutput: state.getOutput,
+        json: node.rawArgs!,
+        mentionParser: (part) => {
+          try {
+            const key = JSON.parse(part.attrs.label);
+            const mentionItem = state.getOutput(key);
+            if (typeof mentionItem === "string") {
+              // Escape control characters safely; optionally include quotes
+              const s = JSON.stringify(mentionItem);
+              return mode === "escape-only" ? s.slice(1, -1) : s;
+            }
+            // For non-strings, always inject as JSON value
+            return JSON.stringify(mentionItem);
+          } catch {
+            return "";
+          }
+        },
+      }).trim();
+
+    const candidates = [renderArgsText("escape-only"), renderArgsText("json-value")].filter((t) => t.length > 0);
+
+    let parsedOk = false;
+    for (const txt of candidates) {
       try {
-        const parsed = JSON.parse(argsText);
+        const parsed = JSON.parse(txt);
         result.input = { parameter: parsed, via: "raw" };
+        parsedOk = true;
+        break;
+      } catch {
+        // try next strategy
+      }
+    }
+    if (!parsedOk && candidates.length > 0) {
+      try {
+        // Throw the last error context for better message
+        JSON.parse(candidates[candidates.length - 1]!);
       } catch (e: any) {
         throw new Error(`Invalid rawArgs JSON: ${e?.message || "parse error"}`);
       }
