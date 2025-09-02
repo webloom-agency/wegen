@@ -64,10 +64,15 @@ export async function POST(
     userId: session.user.id,
   }, true);
 
+  // First pass: build complete old->new node ID map
   const nodeIdMap = new Map<string, string>();
+  for (const node of source.nodes || []) {
+    nodeIdMap.set(node.id, generateUUID());
+  }
+
+  // Second pass: create nodes with remapped mentions using the full map
   const newNodes = (source.nodes || []).map((node) => {
-    const newId = generateUUID();
-    nodeIdMap.set(node.id, newId);
+    const newId = nodeIdMap.get(node.id)!;
     return {
       id: newId,
       workflowId: duplicated.id,
