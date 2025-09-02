@@ -2,6 +2,38 @@ import { getSession } from "auth/server";
 import { workflowRepository } from "lib/db/repository";
 import { generateUUID } from "lib/utils";
 
+function remapMentionsDeep(value: any, nodeIdMap: Map<string, string>): any {
+  if (Array.isArray(value)) {
+    return value.map((v) => remapMentionsDeep(v, nodeIdMap));
+  }
+  if (value && typeof value === "object") {
+    const next: any = {};
+    for (const [k, v] of Object.entries(value)) {
+      next[k] = remapMentionsDeep(v, nodeIdMap);
+    }
+    // If this looks like a TipTap mention part, remap its attrs.label
+    if (
+      typeof next?.type === "string" &&
+      next.type === "mention" &&
+      next.attrs &&
+      typeof next.attrs.label === "string"
+    ) {
+      try {
+        const parsed = JSON.parse(next.attrs.label);
+        if (parsed && typeof parsed === "object" && parsed.nodeId) {
+          const mapped = nodeIdMap.get(parsed.nodeId);
+          if (mapped) {
+            parsed.nodeId = mapped;
+            next.attrs.label = JSON.stringify(parsed);
+          }
+        }
+      } catch {}
+    }
+    return next;
+  }
+  return value;
+}
+
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -42,7 +74,7 @@ export async function POST(
       kind: node.kind,
       name: node.name,
       description: node.description,
-      nodeConfig: node.nodeConfig,
+      nodeConfig: remapMentionsDeep(node.nodeConfig, nodeIdMap),
       uiConfig: node.uiConfig,
       createdAt: new Date(),
       updatedAt: new Date(),
