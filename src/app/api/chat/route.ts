@@ -112,6 +112,9 @@ export async function POST(request: Request) {
 
     const agent = await rememberAgentAction(agentId, session.user.id);
 
+    // Capture client-provided mentions before augmenting with agent mentions
+    const clientMentions = [...mentions];
+
     if (agent?.instructions?.mentions) {
       mentions.push(...agent.instructions.mentions);
     }
@@ -131,35 +134,62 @@ export async function POST(request: Request) {
           `mcp-server count: ${mcpClients.length}, mcp-tools count :${Object.keys(mcpTools).length}`,
         );
 
-        const MCP_TOOLS = await safe()
-          .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
-          .map(() =>
-            loadMcpTools({
-              mentions,
-              allowedMcpServers,
-            }),
-          )
-          .orElse({});
+        // Determine if the user explicitly mentioned workflow(s)
+        const explicitClientWorkflowMentions = (clientMentions || []).filter(
+          (m: any) => m.type === "workflow",
+        );
+        const forceWorkflowOnly =
+          supportToolCall && explicitClientWorkflowMentions.length > 0;
 
-        const WORKFLOW_TOOLS = await safe()
-          .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
-          .map(() =>
-            loadWorkFlowTools({
-              mentions,
-              dataStream,
-            }),
-          )
-          .orElse({});
+        // Load tools (optionally restricted to explicitly mentioned workflows)
+        let MCP_TOOLS: Record<string, any> = {};
+        let WORKFLOW_TOOLS: Record<string, any> = {};
+        let APP_DEFAULT_TOOLS: Record<string, any> = {};
 
-        const APP_DEFAULT_TOOLS = await safe()
-          .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
-          .map(() =>
-            loadAppDefaultTools({
-              mentions,
-              allowedAppDefaultToolkit,
-            }),
-          )
-          .orElse({});
+        if (isToolCallAllowed) {
+          if (forceWorkflowOnly) {
+            WORKFLOW_TOOLS = await safe()
+              .map(() =>
+                loadWorkFlowTools({
+                  mentions: explicitClientWorkflowMentions as any,
+                  dataStream,
+                }),
+              )
+              .orElse({});
+            MCP_TOOLS = {};
+            APP_DEFAULT_TOOLS = {};
+          } else {
+            MCP_TOOLS = await safe()
+              .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
+              .map(() =>
+                loadMcpTools({
+                  mentions,
+                  allowedMcpServers,
+                }),
+              )
+              .orElse({});
+
+            WORKFLOW_TOOLS = await safe()
+              .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
+              .map(() =>
+                loadWorkFlowTools({
+                  mentions,
+                  dataStream,
+                }),
+              )
+              .orElse({});
+
+            APP_DEFAULT_TOOLS = await safe()
+              .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
+              .map(() =>
+                loadAppDefaultTools({
+                  mentions,
+                  allowedAppDefaultToolkit,
+                }),
+              )
+              .orElse({});
+          }
+        }
 
         if (inProgressToolStep) {
           const toolResult = await manualToolExecuteByLastMessage(
@@ -260,8 +290,8 @@ export async function POST(request: Request) {
         );
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
-        // Revert to original behavior: do not force tools, keep auto mode
-        // and default step count
+        // Decide final toolChoice: force required when explicit client workflow(s) were mentioned
+        const toolChoiceForRun: "auto" | "required" = forceWorkflowOnly ? "required" : "auto";
 
         const result = streamText({
           model,
@@ -273,7 +303,7 @@ export async function POST(request: Request) {
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 2,
           tools: vercelAITooles,
-          toolChoice: "auto",
+          toolChoice: toolChoiceForRun,
           abortSignal: request.signal,
           onFinish: async ({ response, usage }) => {
             const appendMessages = appendResponseMessages({
@@ -302,7 +332,7 @@ export async function POST(request: Request) {
               const annotations = appendAnnotations(
                 assistantMessage.annotations,
                 [
-                  { usageTokens: usage.completionTokens, toolChoice },
+                  { usageTokens: usage.completionTokens, toolChoice: toolChoiceForRun },
                   ...mentionedAgentIds.map((id) => ({ agentId: id })),
                 ],
               );
