@@ -11,7 +11,7 @@ function remapMentionsDeep(value: any, nodeIdMap: Map<string, string>): any {
     for (const [k, v] of Object.entries(value)) {
       next[k] = remapMentionsDeep(v, nodeIdMap);
     }
-    // If this looks like a TipTap mention part, remap its attrs.label
+    // Remap TipTap mentions
     if (
       typeof next?.type === "string" &&
       next.type === "mention" &&
@@ -28,6 +28,19 @@ function remapMentionsDeep(value: any, nodeIdMap: Map<string, string>): any {
           }
         }
       } catch {}
+    }
+    // Remap structured OutputSchemaSourceKey objects { nodeId, path }
+    if (
+      typeof next.nodeId === "string" &&
+      Array.isArray(next.path)
+    ) {
+      const mapped = nodeIdMap.get(next.nodeId);
+      if (mapped) next.nodeId = mapped;
+    }
+    // Remap explicit loop pairing: startNodeId
+    if (typeof next.startNodeId === "string") {
+      const mapped = nodeIdMap.get(next.startNodeId);
+      if (mapped) next.startNodeId = mapped;
     }
     return next;
   }
