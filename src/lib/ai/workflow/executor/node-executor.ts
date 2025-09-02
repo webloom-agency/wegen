@@ -208,104 +208,67 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
 
   if (!node.tool) throw new Error("Tool not found");
 
-  // If rawArgs is provided, resolve mentions and parse JSON directly
+  // If rawArgs is provided, resolve mentions and parse JSON directly (only if non-empty)
   if (node.rawArgs) {
     const argsText = convertTiptapJsonToText({ getOutput: state.getOutput, json: node.rawArgs });
-    try {
-      const parsed = JSON.parse(argsText);
-      result.input = { parameter: parsed, via: "raw" };
-    } catch (e: any) {
-      throw new Error(`Invalid rawArgs JSON: ${e?.message || "parse error"}`);
+    const trimmed = (argsText || "").trim();
+    if (trimmed.length > 0) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        result.input = { parameter: parsed, via: "raw" };
+      } catch (e: any) {
+        throw new Error(`Invalid rawArgs JSON: ${e?.message || "parse error"}`);
+      }
     }
-  } else if (!node.tool?.parameterSchema) {
-    // Tool doesn't need parameters
-    result.input = {
-      parameter: undefined,
-    };
-  } else {
-    // Fallback: Use LLM to generate tool parameters from the provided message
-    const prompt: string | undefined = node.message
-      ? toAny(
-          convertTiptapJsonToAiMessage({
-            role: "user",
-            getOutput: state.getOutput, // Access to previous node outputs
-            json: node.message,
+  }
+
+  if (result.input == null) {
+    if (!node.tool?.parameterSchema) {
+      // Tool doesn't need parameters
+      result.input = {
+        parameter: undefined,
+      };
+    } else {
+      // Fallback: Use LLM to generate tool parameters from the provided message
+      const prompt: string | undefined = node.message
+        ? toAny(
+            convertTiptapJsonToAiMessage({
+              role: "user",
+              getOutput: state.getOutput, // Access to previous node outputs
+              json: node.message,
+            }),
+          ).parts[0]?.text
+        : undefined;
+
+      const response = await generateText({
+        model: customModelProvider.getModel(node.model),
+        maxSteps: 1,
+        toolChoice: "required", // Force the model to call the tool
+        tools: {
+          parameter: createTool({
+            schema: toAny(node.tool.parameterSchema),
           }),
-        ).parts[0]?.text
-      : undefined;
-
-    const response = await generateText({
-      model: customModelProvider.getModel(node.model),
-      maxSteps: 1,
-      toolChoice: "required", // Force the model to call the tool
-      prompt,
-      tools: {
-        [node.tool.id]: {
-          description: node.tool.description,
-          parameters: jsonSchemaToZod(node.tool.parameterSchema),
         },
-      },
-    });
+        system: `You are a JSON argument generator for tool calls. You must call the 'parameter' tool exactly once with the correct JSON object for the tool's parameter schema. Never include explanations.`,
+        input: prompt || "",
+      });
 
-    result.input = {
-      parameter: response.toolCalls.find((call) => call.args)?.args,
-      prompt,
-    };
-  }
-
-  // Record computed input for debugging/history
-  state.setInput(node.id, result.input);
-
-  // Execute the tool based on its type
-  if (node.tool.type == "mcp-tool") {
-    let toolResult = (await mcpClientsManager.toolCall(
-      node.tool.serverId,
-      node.tool.id,
-      result.input.parameter,
-    )) as any;
-
-    // Fallback: resolve by serverName if id is stale or not found
-    if (toolResult?.isError && /Client .* not found/i.test(toolResult?.error?.message || "")) {
-      toolResult = (await mcpClientsManager.toolCallByServerName(
-        node.tool.serverName,
-        node.tool.id,
-        result.input.parameter,
-      )) as any;
+      const arg = response.toolResults.find((r) => r.toolName === "parameter");
+      result.input = {
+        parameter: arg?.result || {},
+        via: "llm",
+      };
     }
-
-    if (toolResult.isError) {
-      throw new Error(
-        toolResult.error?.message ||
-          toolResult.error?.name ||
-          JSON.stringify(toolResult),
-      );
-    }
-
-    return {
-      output: { tool_result: toolResult },
-    };
   }
 
-  // Default app tools path
-  const appTool = APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.WebSearch]?.[node.tool.id] ||
-    APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.Code]?.[node.tool.id] ||
-    APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.Http]?.[node.tool.id] ||
-    APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.Visualization]?.[node.tool.id];
-  if (!appTool) throw new Error(`Tool not found: ${node.tool.id}`);
-
-  const exec = (appTool as any).execute as
-    | ((args: any, ctx: { toolCallId: string; abortSignal: AbortSignal; messages: any[] }) => Promise<any>)
-    | undefined;
-  if (typeof exec !== "function") {
-    throw new Error(`Tool '${node.tool.id}' is not executable`);
-  }
-
-  const res = await exec(result.input.parameter as any, {
-    toolCallId: `${node.id}:${Date.now()}`,
-    abortSignal: new AbortController().signal,
-    messages: [],
+  // Execute tool
+  const vercelTool = await resolveWorkflowToolToVercelTool(node.tool, state.dataStream);
+  const output = await vercelTool({
+    parameter: result.input?.parameter,
   });
-  return { output: { tool_result: res } };
+  result.output = output;
+
+  return result;
 };
 
 /**
