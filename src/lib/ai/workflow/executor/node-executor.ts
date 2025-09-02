@@ -263,7 +263,7 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
           }),
         },
         system: `You are a JSON argument generator for tool calls. You must call the 'parameter' tool exactly once with the correct JSON object for the tool's parameter schema. Never include explanations.`,
-        input: prompt || "",
+        prompt: prompt || "",
       });
 
       const arg = response.toolResults.find((r) => r.toolName === "parameter");
