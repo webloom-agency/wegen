@@ -109,6 +109,7 @@ export const llmNodeExecutor: NodeExecutor<LLMNodeData> = async ({
   state,
 }) => {
   const model = customModelProvider.getModel(node.model);
+  const forceTempOne = node.model?.provider === "openai" && node.model?.model === "gpt-5";
 
   // Convert TipTap JSON messages to AI SDK format, resolving mentions to actual data
   const messages: Omit<Message, "id">[] = node.messages.map((message) =>
@@ -133,6 +134,7 @@ export const llmNodeExecutor: NodeExecutor<LLMNodeData> = async ({
       model,
       messages,
       maxSteps: 1,
+      ...(forceTempOne ? { temperature: 1 } : {}),
     });
     return {
       output: {
@@ -147,6 +149,7 @@ export const llmNodeExecutor: NodeExecutor<LLMNodeData> = async ({
     messages,
     schema: jsonSchemaToZod(node.outputSchema.properties.answer),
     maxRetries: 3,
+    ...(forceTempOne ? { temperature: 1 } : {}),
   });
 
   return {
@@ -250,6 +253,7 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
             parameters: jsonSchemaToZod(node.tool.parameterSchema),
           },
         },
+        ...((node.model?.provider === "openai" && node.model?.model === "gpt-5") ? { temperature: 1 } : {}),
       });
 
       result.input = {
