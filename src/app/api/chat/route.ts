@@ -7,6 +7,7 @@ import {
   formatDataStreamPart,
   appendClientMessage,
   Message,
+  tool as createTool,
 } from "ai";
 
 import { customModelProvider, isToolCallUnsupportedModel } from "lib/ai/models";
@@ -238,7 +239,8 @@ export async function POST(request: Request) {
             };
           })
           .map((t) => {
-            if (supportToolCall && thinking) {
+            const allowThinkingTool = supportToolCall && thinking && !forceWorkflowOnly;
+            if (allowThinkingTool) {
               return {
                 ...t,
                 [SequentialThinkingToolName]: sequentialThinkingTool,
@@ -293,16 +295,50 @@ export async function POST(request: Request) {
         // Decide final toolChoice: force required when explicit client workflow(s) were mentioned
         const toolChoiceForRun: "auto" | "required" = forceWorkflowOnly ? "required" : "auto";
 
+        // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
+        const maxStepsForRun = forceWorkflowOnly
+          ? Math.max(1, Math.min(10, explicitClientWorkflowMentions.length))
+          : 10;
+
+        // Per-turn dedup guard: prevent re-invoking the same workflow tool within this run
+        const toolsForRun = (() => {
+          if (!forceWorkflowOnly) return vercelAITooles;
+          const invoked = new Set<string>();
+          return Object.fromEntries(
+            Object.entries(vercelAITooles).map(([name, tool]) => {
+              const originalExecute = (tool as any).execute;
+              if (typeof originalExecute !== "function") return [name, tool];
+              return [
+                name,
+                Object.assign({}, tool as any, {
+                  execute: async (args: any, ctx: any) => {
+                    if (invoked.has(name)) {
+                      return {
+                        error: {
+                          name: "DUPLICATE_TOOL_CALL",
+                          message: `Tool ${name} already invoked once this turn`,
+                        },
+                      };
+                    }
+                    invoked.add(name);
+                    return originalExecute(args, ctx);
+                  },
+                }),
+              ];
+            }),
+          ) as typeof vercelAITooles;
+        })();
+
         const result = streamText({
           model,
           system: systemPrompt,
           messages,
           temperature: 1,
-          maxSteps: 10,
+          maxSteps: maxStepsForRun,
           toolCallStreaming: true,
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 2,
-          tools: vercelAITooles,
+          tools: toolsForRun,
           toolChoice: toolChoiceForRun,
           abortSignal: request.signal,
           onFinish: async ({ response, usage }) => {
