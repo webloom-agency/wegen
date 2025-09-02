@@ -14,7 +14,7 @@ import {
   LoopEndNodeData,
 } from "../workflow.interface";
 import { WorkflowRuntimeState } from "./graph-store";
-import { generateObject, generateText, Message } from "ai";
+import { generateObject, generateText, Message, tool as createTool, Tool } from "ai";
 import { checkConditionBranch } from "../condition";
 import {
   convertTiptapJsonToAiMessage,
@@ -25,6 +25,8 @@ import { toAny } from "lib/utils";
 import { AppError } from "lib/errors";
 import { safeJsRun } from "lib/code-runner/safe-js-run";
 import { runPythonServer } from "lib/code-runner/python-server-runner";
+import { APP_DEFAULT_TOOL_KIT } from "lib/ai/tools/tool-kit";
+import { AppDefaultToolkit } from "lib/ai/tools";
 
 /** Deep-trim whitespace from all string leaves in an object/array */
 function deepTrimStrings<T>(value: T): T {
@@ -38,6 +40,19 @@ function deepTrimStrings<T>(value: T): T {
     return out as unknown as T;
   }
   return value;
+}
+
+/**
+ * Resolve a workflow tool key to a Vercel AI Tool function
+ */
+function resolveWorkflowToolToVercelTool(toolKey: any): Tool | undefined {
+  if (!toolKey) return undefined;
+  const byId =
+    APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.WebSearch]?.[toolKey.id] ||
+    APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.Code]?.[toolKey.id] ||
+    APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.Http]?.[toolKey.id] ||
+    APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.Visualization]?.[toolKey.id];
+  return byId;
 }
 
 /**
@@ -259,7 +274,7 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
   }
 
   // Execute tool
-  const vercelTool = await resolveWorkflowToolToVercelTool(node.tool, state.dataStream);
+  const vercelTool = await resolveWorkflowToolToVercelTool(node.tool);
   const output = await vercelTool({
     parameter: result.input?.parameter,
   });
