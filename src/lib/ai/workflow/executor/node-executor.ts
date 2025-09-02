@@ -208,49 +208,55 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
 
   if (!node.tool) throw new Error("Tool not found");
 
-  // If rawArgs is provided, resolve mentions and parse JSON directly
+  // If rawArgs is provided and non-empty, resolve mentions and parse JSON directly
   if (node.rawArgs) {
-    const argsText = convertTiptapJsonToText({ getOutput: state.getOutput, json: node.rawArgs });
-    try {
-      const parsed = JSON.parse(argsText);
-      result.input = { parameter: parsed, via: "raw" };
-    } catch (e: any) {
-      throw new Error(`Invalid rawArgs JSON: ${e?.message || "parse error"}`);
+    const argsText = convertTiptapJsonToText({ getOutput: state.getOutput, json: node.rawArgs }).trim();
+    if (argsText.length > 0) {
+      try {
+        const parsed = JSON.parse(argsText);
+        result.input = { parameter: parsed, via: "raw" };
+      } catch (e: any) {
+        throw new Error(`Invalid rawArgs JSON: ${e?.message || "parse error"}`);
+      }
     }
-  } else if (!node.tool?.parameterSchema) {
-    // Tool doesn't need parameters
-    result.input = {
-      parameter: undefined,
-    };
-  } else {
-    // Fallback: Use LLM to generate tool parameters from the provided message
-    const prompt: string | undefined = node.message
-      ? toAny(
-          convertTiptapJsonToAiMessage({
-            role: "user",
-            getOutput: state.getOutput, // Access to previous node outputs
-            json: node.message,
-          }),
-        ).parts[0]?.text
-      : undefined;
+  }
 
-    const response = await generateText({
-      model: customModelProvider.getModel(node.model),
-      maxSteps: 1,
-      toolChoice: "required", // Force the model to call the tool
-      prompt,
-      tools: {
-        [node.tool.id]: {
-          description: node.tool.description,
-          parameters: jsonSchemaToZod(node.tool.parameterSchema),
+  if (result.input === undefined) {
+    if (!node.tool?.parameterSchema) {
+      // Tool doesn't need parameters
+      result.input = {
+        parameter: undefined,
+      };
+    } else {
+      // Fallback: Use LLM to generate tool parameters from the provided message
+      const prompt: string | undefined = node.message
+        ? toAny(
+            convertTiptapJsonToAiMessage({
+              role: "user",
+              getOutput: state.getOutput, // Access to previous node outputs
+              json: node.message,
+            }),
+          ).parts[0]?.text
+        : undefined;
+
+      const response = await generateText({
+        model: customModelProvider.getModel(node.model),
+        maxSteps: 1,
+        toolChoice: "required", // Force the model to call the tool
+        prompt,
+        tools: {
+          [node.tool.id]: {
+            description: node.tool.description,
+            parameters: jsonSchemaToZod(node.tool.parameterSchema),
+          },
         },
-      },
-    });
+      });
 
-    result.input = {
-      parameter: response.toolCalls.find((call) => call.args)?.args,
-      prompt,
-    };
+      result.input = {
+        parameter: response.toolCalls.find((call) => call.args)?.args,
+        prompt,
+      };
+    }
   }
 
   // Record computed input for debugging/history
