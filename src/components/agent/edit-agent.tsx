@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -107,6 +107,58 @@ export default function EditAgent({
   const { data: mcpList, isLoading: isMcpLoading } = useMcpList();
   const { data: workflowToolList, isLoading: isWorkflowLoading } =
     useWorkflowToolList();
+
+  // Auto-select all tools by default for new agents or agents without mentions
+  const hasInitializedAllToolsRef = useRef(false);
+  useEffect(() => {
+    if (hasInitializedAllToolsRef.current) return;
+    if (isMcpLoading || isWorkflowLoading) return;
+
+    const currentMentions = agent.instructions?.mentions || [];
+    if (currentMentions.length > 0) return;
+
+    const defaultToolMentions: ChatMention[] = Object.values(DefaultToolName).map(
+      (toolName) => ({
+        type: "defaultTool",
+        name: toolName,
+        label: toolName,
+      }),
+    );
+
+    const mcpServerMentions: ChatMention[] = (mcpList as (MCPServerInfo & {
+      id: string;
+    })[])?.map((server) => ({
+      type: "mcpServer",
+      serverName: server.name,
+      serverId: server.id,
+      name: server.name,
+    })) || [];
+
+    const workflowMentions: ChatMention[] = (workflowToolList as WorkflowSummary[])?.map(
+      (w) => ({
+        type: "workflow",
+        name: w.name,
+        workflowId: w.id,
+        icon: w.icon,
+      }),
+    ) || [];
+
+    const allMentions = [
+      ...defaultToolMentions,
+      ...mcpServerMentions,
+      ...workflowMentions,
+    ];
+
+    if (allMentions.length > 0) {
+      setAgent((prev) => ({
+        instructions: {
+          ...prev.instructions,
+          mentions: allMentions,
+        },
+      }));
+      hasInitializedAllToolsRef.current = true;
+    }
+  }, [isMcpLoading, isWorkflowLoading, mcpList, workflowToolList, agent.instructions?.mentions, setAgent]);
 
   const assignToolsByNames = useCallback(
     (toolNames: string[]) => {
