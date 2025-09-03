@@ -218,9 +218,14 @@ export async function POST(request: Request) {
           .map((v) => filterMcpServerCustomizations(MCP_TOOLS!, v))
           .orElse({});
 
+        const forcedWorkflowHint = forceWorkflowOnly
+          ? "If specific workflows are explicitly mentioned, you MUST invoke each mentioned workflow exactly once, then provide a final assistant answer summarizing the results. Do not re-invoke the same workflow multiple times in the same turn."
+          : undefined;
+
         const systemPrompt = mergeSystemPrompt(
           buildUserSystemPrompt(session.user, userPreferences, agent),
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
+          forcedWorkflowHint,
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
           (!supportToolCall ||
             ["openai", "anthropic"].includes(chatModel?.provider ?? "")) &&
@@ -292,11 +297,11 @@ export async function POST(request: Request) {
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
         // Decide final toolChoice: force required when explicit client workflow(s) were mentioned
-        const toolChoiceForRun: "auto" | "required" = forceWorkflowOnly ? "required" : "auto";
+        const toolChoiceForRun: "auto" | "required" = "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         const maxStepsForRun = forceWorkflowOnly
-          ? Math.max(1, Math.min(10, explicitClientWorkflowMentions.length))
+          ? Math.max(3, Math.min(12, explicitClientWorkflowMentions.length + 2))
           : 10;
 
         // Per-turn dedup guard: prevent re-invoking the same workflow tool within this run
