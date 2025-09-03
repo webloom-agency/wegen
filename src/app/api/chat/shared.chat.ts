@@ -315,15 +315,6 @@ export const workflowToVercelAITool = ({
           }),
         );
       } catch {}
-      // Tiny delay to allow the client to register the tool invocation part before streaming node updates
-      const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
-      // Non-blocking best-effort; ignore errors
-      // @ts-ignore
-      if (typeof setTimeout === "function") {
-        // fire-and-forget micro delay (no await to keep compatibility if the environment disallows timers)
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        delay(15);
-      }
       return safe(id)
         .map((id) =>
           workflowRepository.selectStructureById(id, {
