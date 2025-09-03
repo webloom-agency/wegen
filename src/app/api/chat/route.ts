@@ -303,29 +303,24 @@ export async function POST(request: Request) {
         const toolsForRun = (() => {
           if (!forceWorkflowOnly) return vercelAITooles;
           const invoked = new Set<string>();
-          return Object.fromEntries(
-            Object.entries(vercelAITooles).map(([name, tool]) => {
-              const originalExecute = (tool as any).execute;
-              if (typeof originalExecute !== "function") return [name, tool];
-              return [
-                name,
-                Object.assign({}, tool as any, {
-                  execute: async (args: any, ctx: any) => {
-                    if (invoked.has(name)) {
-                      return {
-                        error: {
-                          name: "DUPLICATE_TOOL_CALL",
-                          message: `Tool ${name} already invoked once this turn`,
-                        },
-                      };
-                    }
-                    invoked.add(name);
-                    return originalExecute(args, ctx);
+          const toolsRef = vercelAITooles as Record<string, any>;
+          for (const [name, tool] of Object.entries(toolsRef)) {
+            const originalExecute = tool?.execute;
+            if (typeof originalExecute !== "function") continue;
+            toolsRef[name].execute = async (args: any, ctx: any) => {
+              if (invoked.has(name)) {
+                return {
+                  error: {
+                    name: "DUPLICATE_TOOL_CALL",
+                    message: `Tool ${name} already invoked once this turn`,
                   },
-                }),
-              ];
-            }),
-          ) as typeof vercelAITooles;
+                };
+              }
+              invoked.add(name);
+              return originalExecute(args, ctx);
+            };
+          }
+          return vercelAITooles;
         })();
 
         const result = streamText({
