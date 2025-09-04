@@ -39,7 +39,6 @@ import { AgentSummary } from "app-types/agent";
 import { EMOJI_DATA } from "lib/const";
 import { toast } from "sonner";
 import Image from "next/image";
-import { upload } from "@vercel/blob/client";
 
 interface PromptInputProps {
   placeholder?: string;
@@ -315,18 +314,13 @@ export default function PromptInput({
           ]);
         } else {
           // Non-text files (including PDFs, images, etc.) → upload to Blob to avoid huge JSON payloads
-          const blobResult: any = await upload(file.name, file, {
-            access: "public",
-            handleUploadUrl: "/api/uploads/generate-token",
-          });
-
           let textContent: string | undefined = undefined;
           if (isPdf) {
             try {
               const res = await fetch("/api/uploads/extract-pdf", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: blobResult.url }),
+                headers: { "Content-Type": "application/pdf" },
+                body: file,
               });
               const data = (await res.json()) as { text?: string; error?: string };
               if (res.ok && data.text) {
@@ -342,8 +336,10 @@ export default function PromptInput({
           setPendingAttachments((prev) => [
             ...prev,
             {
-              url: String(blobResult.url || ""),
-              contentType: file.type || "application/octet-stream",
+              url: isPdf && textContent
+                ? `data:text/plain;base64,${btoa(unescape(encodeURIComponent(textContent)))}`
+                : String(file.name),
+              contentType: isPdf && textContent ? "text/plain" : file.type || "application/octet-stream",
               name: file.name,
               size: file.size,
               ...(textContent ? { textContent } : {}),
@@ -374,7 +370,12 @@ export default function PromptInput({
     for (const att of pendingAttachments) {
       if (att.textContent) {
         const lang = languageFromFilename(att.name);
-        const fenced = lang ? `\n\n\`\`\`${lang}\n${att.textContent}\n\`\`\`` : `\n\n\`\`\`\n${att.textContent}\n\`\`\``;
+        const MAX_INLINE_TEXT_CHARS = 100000;
+        const isTruncated = att.textContent.length > MAX_INLINE_TEXT_CHARS;
+        const inlineText = isTruncated
+          ? att.textContent.slice(0, MAX_INLINE_TEXT_CHARS) + "\n...\n[truncated to avoid large request size]"
+          : att.textContent;
+        const fenced = lang ? `\n\n\`\`\`${lang}\n${inlineText}\n\`\`\`` : `\n\n\`\`\`\n${inlineText}\n\`\`\``;
         parts.push({
           type: "text",
           text: `Attached file: ${att.name}${fenced}`,
