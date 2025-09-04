@@ -239,6 +239,55 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
 
     const candidates = [renderArgsText("escape-only"), renderArgsText("json-value")].filter((t) => t.length > 0);
 
+    // Helper repairs for common JSON authoring issues in rich text
+    const replaceSmartQuotes = (s: string) => s.replace(/[\u201C\u201D]/g, '"').replace(/[\u2018\u2019]/g, "'");
+    const escapeNewlinesInQuotedStrings = (s: string) => {
+      let out = "";
+      let inString = false;
+      let escape = false;
+      let quote: string | null = null;
+      for (let i = 0; i < s.length; i++) {
+        const ch = s[i]!;
+        if (!inString) {
+          if (ch === '"' || ch === "'") {
+            inString = true;
+            quote = ch;
+            out += ch;
+          } else {
+            out += ch;
+          }
+          continue;
+        }
+        if (escape) {
+          out += ch;
+          escape = false;
+          continue;
+        }
+        if (ch === "\\") {
+          out += ch;
+          escape = true;
+          continue;
+        }
+        if (ch === "\n") {
+          out += "\\n";
+          continue;
+        }
+        if (ch === "\r") {
+          out += "\\r";
+          continue;
+        }
+        if (quote && ch === quote) {
+          inString = false;
+          quote = null;
+          out += ch;
+          continue;
+        }
+        out += ch;
+      }
+      return out;
+    };
+    const removeTrailingCommas = (s: string) => s.replace(/,(\s*[}\]])/g, "$1");
+
     let parsedOk = false;
     for (const txt of candidates) {
       try {
@@ -247,7 +296,16 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
         parsedOk = true;
         break;
       } catch {
-        // try next strategy
+        // try repaired parsing: smart quotes → escaped newlines (in strings) → no trailing commas
+        try {
+          const repaired = removeTrailingCommas(escapeNewlinesInQuotedStrings(replaceSmartQuotes(txt)));
+          const parsed = JSON.parse(repaired);
+          result.input = { parameter: parsed, via: "raw-repaired" };
+          parsedOk = true;
+          break;
+        } catch {
+          // try next strategy
+        }
       }
     }
     if (!parsedOk && candidates.length > 0) {
