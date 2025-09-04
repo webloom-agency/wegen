@@ -11,11 +11,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     let buffer: Buffer | null = null;
 
     if (contentType.includes("application/pdf")) {
-      // Raw PDF upload: read body directly
       const arrayBuffer = await request.arrayBuffer();
       buffer = Buffer.from(arrayBuffer);
     } else {
-      // JSON payload with { url }
       const { url } = (await request.json()) as { url?: string };
       if (!url) {
         return NextResponse.json({ error: "Missing url" }, { status: 400 });
@@ -35,11 +33,24 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: "No PDF content" }, { status: 400 });
     }
 
-    // Dynamically import pdf-parse at runtime to avoid bundling issues
-    const { default: pdfParse } = await import("pdf-parse");
-    const data = await pdfParse(buffer);
+    // Dynamically import pdfjs-dist for Node parsing (no filesystem test files)
+    const pdfjsLib: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
 
-    return NextResponse.json({ text: data.text || "" });
+    const loadingTask = pdfjsLib.getDocument({ data: buffer });
+    const pdf = await loadingTask.promise;
+
+    let text = "";
+    const maxPages = Math.min(pdf.numPages || 0, 200); // safety cap
+    for (let i = 1; i <= maxPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const pageText = content.items
+        .map((item: any) => (typeof item.str === "string" ? item.str : ""))
+        .join(" ");
+      text += (i > 1 ? "\n\n" : "") + pageText;
+    }
+
+    return NextResponse.json({ text });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Failed to extract PDF" },
