@@ -1,3 +1,6 @@
+// @ts-expect-error: pdfjs-dist ESM build has no TypeScript types for this path
+import * as pdfjsLib from "pdfjs-dist/build/pdf.mjs";
+
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
@@ -23,15 +26,12 @@ export async function POST(request: Request) {
 		const arrayBuffer = await file.arrayBuffer();
 		const pdfBuffer = new Uint8Array(arrayBuffer);
 
-		const pdfjsLib = await loadPdfJs();
-		if (!pdfjsLib) {
-			return new Response(
-				JSON.stringify({ error: "Failed to load pdfjs-dist" }),
-				{ status: 500, headers: { "content-type": "application/json" } },
-			);
+		// Ensure worker is not required in Node context
+		if ((pdfjsLib as any).GlobalWorkerOptions) {
+			(pdfjsLib as any).GlobalWorkerOptions.workerSrc = undefined as any;
 		}
 
-		const getDocument = pdfjsLib.getDocument || pdfjsLib.default?.getDocument;
+		const getDocument = (pdfjsLib as any).getDocument || (pdfjsLib as any).default?.getDocument;
 		if (typeof getDocument !== "function") {
 			return new Response(
 				JSON.stringify({ error: "Invalid pdfjs-dist import: getDocument not found" }),
@@ -64,29 +64,4 @@ export async function POST(request: Request) {
 			{ status: 500, headers: { "content-type": "application/json" } },
 		);
 	}
-}
-
-async function loadPdfJs(): Promise<any | null> {
-	const candidates = [
-		"pdfjs-dist/legacy/build/pdf.mjs",
-		"pdfjs-dist/build/pdf.mjs",
-		"pdfjs-dist/legacy/build/pdf.js",
-		"pdfjs-dist/build/pdf.js",
-		"pdfjs-dist",
-	];
-	for (const spec of candidates) {
-		try {
-			const mod = await import(spec);
-			const lib = (mod as any)?.default ?? (mod as any);
-			if (lib?.GlobalWorkerOptions) {
-				lib.GlobalWorkerOptions.workerSrc = undefined as any;
-			}
-			if (typeof (lib?.getDocument || lib?.default?.getDocument) === "function") {
-				return lib;
-			}
-		} catch {
-			// try next candidate
-		}
-	}
-	return null;
 } 
