@@ -21,4 +21,10 @@ type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
 
+// Allow importing pdfjs-dist without types
+declare module "pdfjs-dist" {
+  export const GlobalWorkerOptions: any;
+  export function getDocument(src: any): { promise: Promise<any> };
+}
+
 

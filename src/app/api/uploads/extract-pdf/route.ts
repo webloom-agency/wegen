@@ -1,4 +1,3 @@
-// @ts-expect-error: pdfjs-dist ESM build has no TypeScript types for this path
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 
 export const runtime = "nodejs";
