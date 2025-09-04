@@ -296,6 +296,8 @@ export default function PromptInput({
         continue;
       }
 
+      const isPdf = file.type === "application/pdf" || lowerName.endsWith(".pdf");
+
       if (isTextLikeFile(file)) {
         const text = await file.text();
         setPendingAttachments((prev) => [
@@ -308,6 +310,55 @@ export default function PromptInput({
             textContent: text,
           },
         ]);
+      } else if (isPdf) {
+        // Extract text server-side for PDFs
+        try {
+          const form = new FormData();
+          form.append("file", file, file.name);
+          const res = await fetch("/api/uploads/extract-pdf", {
+            method: "POST",
+            body: form,
+          });
+          const data = (await res.json()) as { text?: string; error?: string };
+          const text = data?.text || "";
+
+          // Build a data URL for download/preview link
+          const url = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ""));
+            reader.readAsDataURL(file);
+          });
+
+          setPendingAttachments((prev) => [
+            ...prev,
+            {
+              url,
+              contentType: file.type || "application/pdf",
+              name: file.name,
+              size: file.size,
+              textContent: text || undefined,
+            },
+          ]);
+        } catch (e: any) {
+          toast.error(`Failed to extract text from PDF: ${file.name}`);
+          // Fallback: attach as binary without text
+          await new Promise<void>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              setPendingAttachments((prev) => [
+                ...prev,
+                {
+                  url: String(reader.result || ""),
+                  contentType: file.type || "application/pdf",
+                  name: file.name,
+                  size: file.size,
+                },
+              ]);
+              resolve();
+            };
+            reader.readAsDataURL(file);
+          });
+        }
       } else {
         // Read as data URL for images and other binaries
         await new Promise<void>((resolve) => {
