@@ -40,6 +40,38 @@ import { EMOJI_DATA } from "lib/const";
 import { toast } from "sonner";
 import Image from "next/image";
 
+function loadScript(src: string) {
+  return new Promise<void>((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+    document.head.appendChild(s);
+  });
+}
+
+async function ensurePdfJsFromCdn() {
+  if (typeof window === "undefined") return null as any;
+  const w = window as any;
+  if (w.pdfjsLib) return w.pdfjsLib;
+  const base = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38";
+  await loadScript(`${base}/pdf.min.js`);
+  const lib = (window as any).pdfjsLib;
+  if (lib?.GlobalWorkerOptions) {
+    lib.GlobalWorkerOptions.workerSrc = `${base}/pdf.worker.min.js`;
+  }
+  return lib;
+}
+
+async function ensureTesseractFromCdn() {
+  if (typeof window === "undefined") return null as any;
+  const w = window as any;
+  if (w.Tesseract) return w.Tesseract;
+  await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js");
+  return (window as any).Tesseract || null;
+}
+
 interface PromptInputProps {
   placeholder?: string;
   setInput: (value: string) => void;
@@ -326,6 +358,63 @@ export default function PromptInput({
               textContent = data.text;
             }
           } catch {}
+          if (!textContent || textContent.length === 0) {
+            // Fallback 1: pdf.js text layer
+            try {
+              const pdfjs = await ensurePdfJsFromCdn();
+              if (pdfjs?.getDocument) {
+                const ab = await file.arrayBuffer();
+                const task = pdfjs.getDocument({ data: ab });
+                const pdf = await task.promise;
+                let t = "";
+                const maxPages = Math.min(pdf.numPages || 0, 15);
+                for (let i = 1; i <= maxPages; i++) {
+                  // eslint-disable-next-line no-await-in-loop
+                  const page = await pdf.getPage(i);
+                  // eslint-disable-next-line no-await-in-loop
+                  const content = await page.getTextContent();
+                  const pageText = content.items
+                    .map((item: any) => (typeof item.str === "string" ? item.str : ""))
+                    .join(" ");
+                  t += (i > 1 ? "\n\n" : "") + pageText;
+                }
+                if (t.trim().length > 0) textContent = t;
+              }
+            } catch {}
+          }
+          if (!textContent || textContent.length === 0) {
+            // Fallback 2: OCR first few pages using Tesseract.js (fra+eng)
+            try {
+              const pdfjs = await ensurePdfJsFromCdn();
+              const Tesseract = await ensureTesseractFromCdn();
+              if (pdfjs?.getDocument && Tesseract?.recognize) {
+                const ab = await file.arrayBuffer();
+                const task = pdfjs.getDocument({ data: ab });
+                const pdf = await task.promise;
+                let ocrText = "";
+                const maxPages = Math.min(pdf.numPages || 0, 5); // cap OCR for performance
+                for (let i = 1; i <= maxPages; i++) {
+                  // eslint-disable-next-line no-await-in-loop
+                  const page = await pdf.getPage(i);
+                  const viewport = page.getViewport({ scale: 2 });
+                  const canvas = document.createElement("canvas");
+                  const ctx = canvas.getContext("2d");
+                  if (!ctx) continue;
+                  canvas.width = viewport.width;
+                  canvas.height = viewport.height;
+                  // eslint-disable-next-line no-await-in-loop
+                  await page.render({ canvasContext: ctx, viewport }).promise;
+                  const dataUrl = canvas.toDataURL("image/png");
+                  // eslint-disable-next-line no-await-in-loop
+                  const result = await Tesseract.recognize(dataUrl, "fra+eng");
+                  if (result?.data?.text) {
+                    ocrText += (i > 1 ? "\n\n" : "") + String(result.data.text);
+                  }
+                }
+                if (ocrText.trim().length > 0) textContent = ocrText;
+              }
+            } catch {}
+          }
           if (textContent && textContent.length > 0) {
             setPendingAttachments((prev) => [
               ...prev,
