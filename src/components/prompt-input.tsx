@@ -294,6 +294,7 @@ export default function PromptInput({
 
       const isText = isTextLikeFile(file);
       const isPdf = lowerName.endsWith(".pdf") || file.type === "application/pdf";
+      const isImage = (file.type || "").toLowerCase().startsWith("image/");
 
       try {
         if (isText) {
@@ -312,39 +313,59 @@ export default function PromptInput({
               textContent: text,
             },
           ]);
-        } else {
-          // Non-text files (including PDFs, images, etc.) → upload to Blob to avoid huge JSON payloads
+        } else if (isPdf) {
           let textContent: string | undefined = undefined;
-          if (isPdf) {
-            try {
-              const res = await fetch("/api/uploads/extract-pdf", {
-                method: "POST",
-                headers: { "Content-Type": "application/pdf" },
-                body: file,
-              });
-              const data = (await res.json()) as { text?: string; error?: string };
-              if (res.ok && data.text) {
-                textContent = data.text;
-              } else if (!res.ok) {
-                toast.warning(data.error || `Failed to extract text from ${file.name}`);
-              }
-            } catch (e) {
-              toast.warning(`Failed to extract text from ${file.name}`);
+          try {
+            const res = await fetch("/api/uploads/extract-pdf", {
+              method: "POST",
+              headers: { "Content-Type": "application/pdf" },
+              body: file,
+            });
+            const data = (await res.json()) as { text?: string; error?: string };
+            if (res.ok && data.text) {
+              textContent = data.text;
+            } else if (!res.ok) {
+              toast.warning(data.error || `Failed to extract text from ${file.name}`);
             }
+          } catch (e) {
+            toast.warning(`Failed to extract text from ${file.name}`);
           }
-
-          setPendingAttachments((prev) => [
-            ...prev,
-            {
-              url: isPdf && textContent
-                ? `data:text/plain;base64,${btoa(unescape(encodeURIComponent(textContent)))}`
-                : String(file.name),
-              contentType: isPdf && textContent ? "text/plain" : file.type || "application/octet-stream",
-              name: file.name,
-              size: file.size,
-              ...(textContent ? { textContent } : {}),
-            },
-          ]);
+          if (textContent && textContent.length > 0) {
+            setPendingAttachments((prev) => [
+              ...prev,
+              {
+                url: `data:text/plain;base64,${btoa(unescape(encodeURIComponent(textContent)))}`,
+                contentType: "text/plain",
+                name: file.name,
+                size: file.size,
+                textContent,
+              },
+            ]);
+          } else {
+            // No text extracted; skip adding this file to avoid invalid attachments
+            continue;
+          }
+        } else if (isImage) {
+          await new Promise<void>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              setPendingAttachments((prev) => [
+                ...prev,
+                {
+                  url: String(reader.result || ""),
+                  contentType: file.type || "application/octet-stream",
+                  name: file.name,
+                  size: file.size,
+                },
+              ]);
+              resolve();
+            };
+            reader.readAsDataURL(file);
+          });
+        } else {
+          // Other binaries: skip to avoid large payloads and invalid URLs
+          toast.warning(`Skipping unsupported binary file: ${file.name}`);
+          continue;
         }
       } catch (err) {
         toast.warning(`Failed to process file: ${file.name}`);
@@ -389,11 +410,13 @@ export default function PromptInput({
       role: "user",
       content: "",
       parts,
-      experimental_attachments: pendingAttachments.map((a) => ({
-        url: a.url,
-        contentType: a.contentType,
-        name: a.name,
-      })),
+      experimental_attachments: pendingAttachments
+        .filter((a) => typeof a.url === "string" && (a.url.startsWith("data:") || a.url.startsWith("http")))
+        .map((a) => ({
+          url: a.url,
+          contentType: a.contentType,
+          name: a.name,
+        })),
     });
 
     // Clear pending attachments after sending
