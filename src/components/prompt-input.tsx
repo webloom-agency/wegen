@@ -396,15 +396,23 @@ export default function PromptInput({
     }
 
     // Append inline text contents from text-like attachments so the model can use them
+    // Limit total inline text to prevent provider errors with huge prompts
+    const MAX_INLINE_CHARS_TOTAL = 50000;
+    let remainingInline = MAX_INLINE_CHARS_TOTAL;
     for (const att of pendingAttachments) {
-      if (att.textContent) {
-        const lang = languageFromFilename(att.name);
-        const fenced = lang ? `\n\n\`\`\`${lang}\n${att.textContent}\n\`\`\`` : `\n\n\`\`\`\n${att.textContent}\n\`\`\``;
-        parts.push({
-          type: "text",
-          text: `Attached file: ${att.name}${fenced}`,
-        });
-      }
+      if (!att.textContent) continue;
+      if (remainingInline <= 0) break;
+      const original = att.textContent;
+      const slice = original.slice(0, remainingInline);
+      remainingInline -= slice.length;
+      const isTruncated = slice.length < original.length;
+      const lang = languageFromFilename(att.name);
+      const fenced = lang ? `\n\n\`\`\`${lang}\n${slice}\n\`\`\`` : `\n\n\`\`\`\n${slice}\n\`\`\``;
+      const note = isTruncated ? "\n\n[Truncated for length]" : "";
+      parts.push({
+        type: "text",
+        text: `Attached file: ${att.name}${fenced}${note}`,
+      });
     }
 
     setInput("");
@@ -414,7 +422,8 @@ export default function PromptInput({
       content: "",
       parts,
       experimental_attachments: pendingAttachments.map((a) => ({
-        url: a.url,
+        // Avoid sending huge base64 URLs for large non-image files
+        url: a.contentType?.startsWith("image/") ? a.url : "#",
         contentType: a.contentType,
         name: a.name,
       })),
