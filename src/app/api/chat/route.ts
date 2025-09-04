@@ -156,8 +156,23 @@ export async function POST(request: Request) {
                 }),
               )
               .orElse({});
-            MCP_TOOLS = {};
-            APP_DEFAULT_TOOLS = {};
+            // Keep other tools accessible alongside forced workflows
+            MCP_TOOLS = await safe()
+              .map(() =>
+                loadMcpTools({
+                  mentions, // respect mentions if any
+                  allowedMcpServers,
+                }),
+              )
+              .orElse({});
+            APP_DEFAULT_TOOLS = await safe()
+              .map(() =>
+                loadAppDefaultTools({
+                  mentions, // respect mentions if any
+                  allowedAppDefaultToolkit,
+                }),
+              )
+              .orElse({});
           } else {
             MCP_TOOLS = await safe()
               .map(errorIf(() => !isToolCallAllowed && "Not allowed"))

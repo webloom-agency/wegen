@@ -136,12 +136,9 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
           (requestBody as { model: ChatModel })?.model ??
           latestRef.current.model,
         toolChoice: latestRef.current.toolChoice,
-        allowedAppDefaultToolkit: latestRef.current.mentions?.length
-          ? []
-          : latestRef.current.allowedAppDefaultToolkit,
-        allowedMcpServers: latestRef.current.mentions?.length
-          ? {}
-          : latestRef.current.allowedMcpServers,
+        // Keep allowed toolkits/servers even when mentions exist to allow mixed usage
+        allowedAppDefaultToolkit: latestRef.current.allowedAppDefaultToolkit,
+        allowedMcpServers: latestRef.current.allowedMcpServers,
         mentions: latestRef.current.mentions,
         message: lastMessage,
       };
