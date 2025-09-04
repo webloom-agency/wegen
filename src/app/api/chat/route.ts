@@ -48,6 +48,7 @@ import { colorize } from "consola/utils";
 import { isVercelAIWorkflowTool } from "app-types/workflow";
 import { SequentialThinkingToolName } from "lib/ai/tools";
 import { sequentialThinkingTool } from "lib/ai/tools/thinking/sequential-thinking";
+import { compressPdfAttachmentsIfNeeded } from "lib/pdf/compress";
 
 const logger = globalLogger.withDefaults({
   message: colorize("blackBright", `Chat API: `),
@@ -73,6 +74,18 @@ export async function POST(request: Request) {
       thinking,
       mentions = [],
     } = chatApiSchemaRequestBodySchema.parse(json);
+
+    // Compress large PDF attachments server-side (data URLs)
+    const patchedMessage: UIMessage = await safe()
+      .map(async () => {
+        const atts = (message as any)?.experimental_attachments as any[] | undefined;
+        if (Array.isArray(atts) && atts.length > 0) {
+          const compressed = await compressPdfAttachmentsIfNeeded(atts as any);
+          return { ...(message as any), experimental_attachments: compressed } as UIMessage;
+        }
+        return message as UIMessage;
+      })
+      .orElse(message as UIMessage);
 
     const model = customModelProvider.getModel(chatModel);
 
@@ -100,7 +113,7 @@ export async function POST(request: Request) {
     const messages: Message[] = isLastMessageUserMessage
       ? appendClientMessage({
           messages: previousMessages,
-          message,
+          message: patchedMessage,
         })
       : previousMessages;
 
@@ -209,7 +222,7 @@ export async function POST(request: Request) {
         if (inProgressToolStep) {
           const toolResult = await manualToolExecuteByLastMessage(
             inProgressToolStep,
-            message,
+            patchedMessage,
             { ...MCP_TOOLS, ...WORKFLOW_TOOLS, ...APP_DEFAULT_TOOLS },
             request.signal,
           );
@@ -366,7 +379,7 @@ export async function POST(request: Request) {
                 model: chatModel?.model ?? null,
                 role: "user",
                 parts: message.parts,
-                attachments: message.experimental_attachments,
+                attachments: (patchedMessage as any).experimental_attachments,
                 id: message.id,
                 annotations: appendAnnotations(
                   message.annotations,

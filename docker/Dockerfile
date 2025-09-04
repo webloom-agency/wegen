@@ -23,6 +23,9 @@ ENV NODE_ENV=production
 # disable telemetry during runtime.
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Install Ghostscript for PDF compression at runtime
+RUN apk add --no-cache ghostscript
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
