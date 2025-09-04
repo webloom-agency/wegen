@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import pdfParse from "pdf-parse";
 import { Buffer } from "node:buffer";
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -18,6 +18,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     const arrayBuffer = await res.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
+    // Dynamically import pdf-parse at runtime to avoid bundling test files
+    const { default: pdfParse } = await import("pdf-parse");
     const data = await pdfParse(buffer);
 
     return NextResponse.json({ text: data.text || "" });
