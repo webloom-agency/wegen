@@ -241,6 +241,57 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
 
     // Helper repairs for common JSON authoring issues in rich text
     const replaceSmartQuotes = (s: string) => s.replace(/[\u201C\u201D]/g, '"').replace(/[\u2018\u2019]/g, "'");
+    const normalizeInvisibleSpaces = (s: string) =>
+      s
+        .replace(/[\u00A0]/g, " ") // NBSP → space
+        .replace(/[\u200B-\u200D]/g, "") // zero-width spaces
+        .replace(/\uFEFF/g, ""); // BOM
+    const escapeLineSeparatorsInQuotedStrings = (s: string) => {
+      // Escape U+2028 and U+2029 when inside strings
+      let out = "";
+      let inString = false;
+      let escape = false;
+      let quote: string | null = null;
+      for (let i = 0; i < s.length; i++) {
+        const ch = s[i]!;
+        if (!inString) {
+          if (ch === '"' || ch === "'") {
+            inString = true;
+            quote = ch;
+            out += ch;
+          } else {
+            out += ch;
+          }
+          continue;
+        }
+        if (escape) {
+          out += ch;
+          escape = false;
+          continue;
+        }
+        if (ch === "\\") {
+          out += ch;
+          escape = true;
+          continue;
+        }
+        if (ch === "\u2028") {
+          out += "\\u2028";
+          continue;
+        }
+        if (ch === "\u2029") {
+          out += "\\u2029";
+          continue;
+        }
+        if (quote && ch === quote) {
+          inString = false;
+          quote = null;
+          out += ch;
+          continue;
+        }
+        out += ch;
+      }
+      return out;
+    };
     const escapeNewlinesInQuotedStrings = (s: string) => {
       let out = "";
       let inString = false;
@@ -286,7 +337,7 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
       }
       return out;
     };
-    const removeTrailingCommas = (s: string) => s.replace(/,(\s*[}\]])/g, "$1");
+    const removeTrailingCommas = (s: string) => s.replace(/,(\s*[}[\]])/g, "$1");
 
     let parsedOk = false;
     for (const txt of candidates) {
@@ -298,7 +349,13 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
       } catch {
         // try repaired parsing: smart quotes → escaped newlines (in strings) → no trailing commas
         try {
-          const repaired = removeTrailingCommas(escapeNewlinesInQuotedStrings(replaceSmartQuotes(txt)));
+          const repaired = removeTrailingCommas(
+            escapeLineSeparatorsInQuotedStrings(
+              escapeNewlinesInQuotedStrings(
+                replaceSmartQuotes(normalizeInvisibleSpaces(txt)),
+              ),
+            ),
+          );
           const parsed = JSON.parse(repaired);
           result.input = { parameter: parsed, via: "raw-repaired" };
           parsedOk = true;
