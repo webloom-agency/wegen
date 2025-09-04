@@ -89,20 +89,40 @@ export async function POST(request: Request): Promise<NextResponse> {
       const apiKey = process.env.OCR_SPACE_API_KEY;
       if (apiKey) {
         try {
-          const base64 = Buffer.from(buffer).toString("base64");
-          const params = new URLSearchParams();
-          params.append("language", "eng,fre");
-          params.append("isOverlayRequired", "false");
-          params.append("OCREngine", "2");
-          params.append("detectOrientation", "true");
-          params.append("scale", "true");
-          params.append("base64Image", `data:application/pdf;base64,${base64}`);
+          // Try multipart file upload (best for PDFs)
+          const form = new FormData();
+          const fileBlob = new Blob([new Uint8Array(buffer)], { type: "application/pdf" });
+          form.append("file", fileBlob, "upload.pdf");
+          form.append("filetype", "PDF");
+          form.append("language", "eng,fre");
+          form.append("isOverlayRequired", "false");
+          form.append("OCREngine", "2");
+          form.append("detectOrientation", "true");
+          form.append("scale", "true");
 
-          const resp = await fetch("https://api.ocr.space/parse/image", {
+          let resp = await fetch("https://api.ocr.space/parse/image", {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded", apikey: apiKey },
-            body: params.toString(),
+            headers: { apikey: apiKey },
+            body: form,
           });
+
+          if (!resp.ok) {
+            // Fallback: send base64 PDF if multipart rejected
+            const base64 = Buffer.from(buffer).toString("base64");
+            const params = new URLSearchParams();
+            params.append("language", "eng,fre");
+            params.append("isOverlayRequired", "false");
+            params.append("OCREngine", "2");
+            params.append("detectOrientation", "true");
+            params.append("scale", "true");
+            params.append("base64Image", `data:application/pdf;base64,${base64}`);
+            resp = await fetch("https://api.ocr.space/parse/image", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded", apikey: apiKey },
+              body: params.toString(),
+            });
+          }
+
           const data = (await resp.json()) as any;
           const parts = (data?.ParsedResults || []).map((r: any) => r?.ParsedText || "");
           const ocrText = parts.join("\n\n").trim();

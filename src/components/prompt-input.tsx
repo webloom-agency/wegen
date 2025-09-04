@@ -55,7 +55,7 @@ async function ensurePdfJsFromCdn() {
   if (typeof window === "undefined") return null as any;
   const w = window as any;
   if (w.pdfjsLib) return w.pdfjsLib;
-  const base = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38";
+  const base = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build";
   await loadScript(`${base}/pdf.min.js`);
   const lib = (window as any).pdfjsLib;
   if (lib?.GlobalWorkerOptions) {
