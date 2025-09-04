@@ -120,7 +120,9 @@
     "zod": "^3.25.76",
     "zustand": "^5.0.7",
     "resend": "^4.0.0",
-    "@mondaydotcomorg/monday-api-mcp": "latest"
+    "@mondaydotcomorg/monday-api-mcp": "latest",
+    "@vercel/blob": "^0.27.0",
+    "pdf-parse": "^1.1.1"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

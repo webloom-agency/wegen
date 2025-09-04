@@ -39,6 +39,7 @@ import { AgentSummary } from "app-types/agent";
 import { EMOJI_DATA } from "lib/const";
 import { toast } from "sonner";
 import Image from "next/image";
+import { upload } from "@vercel/blob/client";
 
 interface PromptInputProps {
   placeholder?: string;
@@ -275,7 +276,7 @@ export default function PromptInput({
     if (!files || files.length === 0) return;
 
     const MAX_FILES = 10;
-    const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB each
+    const MAX_TEXT_FILE_SIZE = 15 * 1024 * 1024; // 15MB for text-like files
 
     const selected = Array.from(files);
 
@@ -291,41 +292,66 @@ export default function PromptInput({
         toast.warning(`Unsupported file type: ${file.name}`);
         continue;
       }
-      if (file.size > MAX_FILE_SIZE) {
-        toast.warning(`File too large (max 15MB): ${file.name}`);
-        continue;
-      }
 
-      if (isTextLikeFile(file)) {
-        const text = await file.text();
-        setPendingAttachments((prev) => [
-          ...prev,
-          {
-            url: `data:text/plain;base64,${btoa(unescape(encodeURIComponent(text)))}`,
-            contentType: file.type || "text/plain",
-            name: file.name,
-            size: file.size,
-            textContent: text,
-          },
-        ]);
-      } else {
-        // Read as data URL for images and other binaries
-        await new Promise<void>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            setPendingAttachments((prev) => [
-              ...prev,
-              {
-                url: String(reader.result || ""),
-                contentType: file.type || "application/octet-stream",
-                name: file.name,
-                size: file.size,
-              },
-            ]);
-            resolve();
-          };
-          reader.readAsDataURL(file);
-        });
+      const isText = isTextLikeFile(file);
+      const isPdf = lowerName.endsWith(".pdf") || file.type === "application/pdf";
+
+      try {
+        if (isText) {
+          if (file.size > MAX_TEXT_FILE_SIZE) {
+            toast.warning(`File too large (max 15MB for text files): ${file.name}`);
+            continue;
+          }
+          const text = await file.text();
+          setPendingAttachments((prev) => [
+            ...prev,
+            {
+              url: `data:text/plain;base64,${btoa(unescape(encodeURIComponent(text)))}`,
+              contentType: file.type || "text/plain",
+              name: file.name,
+              size: file.size,
+              textContent: text,
+            },
+          ]);
+        } else {
+          // Non-text files (including PDFs, images, etc.) → upload to Blob to avoid huge JSON payloads
+          const blobResult: any = await upload(file.name, file, {
+            access: "public",
+            handleUploadUrl: "/api/uploads/generate-token",
+          });
+
+          let textContent: string | undefined = undefined;
+          if (isPdf) {
+            try {
+              const res = await fetch("/api/uploads/extract-pdf", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: blobResult.url }),
+              });
+              const data = (await res.json()) as { text?: string; error?: string };
+              if (res.ok && data.text) {
+                textContent = data.text;
+              } else if (!res.ok) {
+                toast.warning(data.error || `Failed to extract text from ${file.name}`);
+              }
+            } catch (e) {
+              toast.warning(`Failed to extract text from ${file.name}`);
+            }
+          }
+
+          setPendingAttachments((prev) => [
+            ...prev,
+            {
+              url: String(blobResult.url || ""),
+              contentType: file.type || "application/octet-stream",
+              name: file.name,
+              size: file.size,
+              ...(textContent ? { textContent } : {}),
+            },
+          ]);
+        }
+      } catch (err) {
+        toast.warning(`Failed to process file: ${file.name}`);
       }
     }
 
