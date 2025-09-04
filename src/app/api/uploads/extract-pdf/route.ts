@@ -33,14 +33,15 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: "No PDF content" }, { status: 400 });
     }
 
-    // Dynamically import pdfjs-dist for Node parsing (no filesystem test files)
-    const pdfjsLib: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    // Dynamically import pdfjs-dist for Node parsing without static type resolution
+    const pdfjsPath = "pdfjs-dist/legacy/build/pdf.js";
+    const pdfjsLib: any = await import(pdfjsPath);
 
     const loadingTask = pdfjsLib.getDocument({ data: buffer });
     const pdf = await loadingTask.promise;
 
     let text = "";
-    const maxPages = Math.min(pdf.numPages || 0, 200); // safety cap
+    const maxPages = Math.min(pdf.numPages || 0, 200);
     for (let i = 1; i <= maxPages; i++) {
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
