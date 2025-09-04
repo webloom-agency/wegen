@@ -1,5 +1,5 @@
 // @ts-expect-error: pdfjs-dist ESM build has no TypeScript types for this path
-import * as pdfjsLib from "pdfjs-dist/build/pdf.mjs";
+import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 
 export const runtime = "nodejs";
 
@@ -27,11 +27,10 @@ export async function POST(request: Request) {
 		const pdfBuffer = new Uint8Array(arrayBuffer);
 
 		// Ensure worker is not required in Node context
-		if ((pdfjsLib as any).GlobalWorkerOptions) {
-			(pdfjsLib as any).GlobalWorkerOptions.workerSrc = undefined as any;
+		if (GlobalWorkerOptions) {
+			(GlobalWorkerOptions as any).workerSrc = undefined as any;
 		}
 
-		const getDocument = (pdfjsLib as any).getDocument || (pdfjsLib as any).default?.getDocument;
 		if (typeof getDocument !== "function") {
 			return new Response(
 				JSON.stringify({ error: "Invalid pdfjs-dist import: getDocument not found" }),
