@@ -33,17 +33,53 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: "No PDF content" }, { status: 400 });
     }
 
-    // Dynamically import pdfjs-dist for Node parsing without static type resolution
-    const pdfjsPath = "pdfjs-dist/legacy/build/pdf.js";
-    const pdfjsLib: any = await import(pdfjsPath);
+    // Try multiple import paths for pdfjs-dist to be robust across environments
+    const importCandidates = [
+      "pdfjs-dist/build/pdf.js",
+      "pdfjs-dist/legacy/build/pdf.js",
+      "pdfjs-dist/legacy/build/pdf.mjs",
+      "pdfjs-dist",
+    ];
+    let pdfjsLib: any = null;
+    for (const p of importCandidates) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const m = await import(/* @vite-ignore */ p);
+        if (m) {
+          pdfjsLib = m;
+          break;
+        }
+      } catch {}
+    }
+    if (!pdfjsLib) {
+      return NextResponse.json(
+        { error: "Failed to load PDF parser library (pdfjs-dist)" },
+        { status: 500 },
+      );
+    }
 
-    const loadingTask = pdfjsLib.getDocument({ data: buffer });
+    const getDocument = pdfjsLib.getDocument || pdfjsLib.default?.getDocument;
+    const GlobalWorkerOptions =
+      pdfjsLib.GlobalWorkerOptions || pdfjsLib.default?.GlobalWorkerOptions;
+    if (GlobalWorkerOptions) {
+      GlobalWorkerOptions.workerSrc = undefined;
+    }
+    if (typeof getDocument !== "function") {
+      return NextResponse.json(
+        { error: "pdfjs getDocument not available" },
+        { status: 500 },
+      );
+    }
+
+    const loadingTask = getDocument({ data: buffer });
     const pdf = await loadingTask.promise;
 
     let text = "";
     const maxPages = Math.min(pdf.numPages || 0, 200);
     for (let i = 1; i <= maxPages; i++) {
+      // eslint-disable-next-line no-await-in-loop
       const page = await pdf.getPage(i);
+      // eslint-disable-next-line no-await-in-loop
       const content = await page.getTextContent();
       const pageText = content.items
         .map((item: any) => (typeof item.str === "string" ? item.str : ""))
