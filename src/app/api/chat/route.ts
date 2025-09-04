@@ -346,13 +346,7 @@ export async function POST(request: Request) {
         const result = streamText({
           model,
           system: systemPrompt,
-          // Sanitize attachments to avoid provider errors with non-image files
-          messages: messages.map((m) => ({
-            ...m,
-            experimental_attachments: (m as any).experimental_attachments?.filter(
-              (a: any) => typeof a?.contentType === "string" && a.contentType.startsWith("image/"),
-            ),
-          })),
+          messages,
           temperature: 1,
           maxSteps: maxStepsForRun,
           toolCallStreaming: true,

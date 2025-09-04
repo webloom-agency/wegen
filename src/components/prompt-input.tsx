@@ -296,8 +296,6 @@ export default function PromptInput({
         continue;
       }
 
-      const isPdf = file.type === "application/pdf" || lowerName.endsWith(".pdf");
-
       if (isTextLikeFile(file)) {
         const text = await file.text();
         setPendingAttachments((prev) => [
@@ -310,83 +308,24 @@ export default function PromptInput({
             textContent: text,
           },
         ]);
-      } else if (isPdf) {
-        // Extract text client-side for PDFs to avoid server timeouts
-        try {
-          const { getDocument, GlobalWorkerOptions } = await import("pdfjs-dist/build/pdf");
-          if (GlobalWorkerOptions) {
-            (GlobalWorkerOptions as any).workerSrc = undefined as any;
-          }
-          const pdfData = new Uint8Array(await file.arrayBuffer());
-          const loadingTask = (getDocument as any)({ data: pdfData, disableWorker: true });
-          const pdf = await loadingTask.promise;
-
-          let text = "";
-          for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-            const page = await pdf.getPage(pageNum);
-            const textContent = await page.getTextContent();
-            const pageText = (textContent.items || [])
-              .map((item: any) => (typeof item?.str === "string" ? item.str : ""))
-              .join(" ")
-              .trim();
-            if (pageText) {
-              text += (text ? "\n\n" : "") + pageText;
-            }
-          }
-
-          setPendingAttachments((prev) => [
-            ...prev,
-            {
-              url: "",
-              contentType: file.type || "application/pdf",
-              name: file.name,
-              size: file.size,
-              textContent: text || undefined,
-            },
-          ]);
-        } catch (e: any) {
-          toast.error(`Failed to extract text from PDF: ${file.name}`);
-          // Fallback: attach stub without URL
-          setPendingAttachments((prev) => [
-            ...prev,
-            {
-              url: "",
-              contentType: file.type || "application/pdf",
-              name: file.name,
-              size: file.size,
-            },
-          ]);
-        }
       } else {
-        // For images, read as data URL for preview; for other binaries, avoid large base64
-        if (file.type.startsWith("image/")) {
-          await new Promise<void>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              setPendingAttachments((prev) => [
-                ...prev,
-                {
-                  url: String(reader.result || ""),
-                  contentType: file.type || "image/*",
-                  name: file.name,
-                  size: file.size,
-                },
-              ]);
-              resolve();
-            };
-            reader.readAsDataURL(file);
-          });
-        } else {
-          setPendingAttachments((prev) => [
-            ...prev,
-            {
-              url: "",
-              contentType: file.type || "application/octet-stream",
-              name: file.name,
-              size: file.size,
-            },
-          ]);
-        }
+        // Read as data URL for images and other binaries
+        await new Promise<void>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            setPendingAttachments((prev) => [
+              ...prev,
+              {
+                url: String(reader.result || ""),
+                contentType: file.type || "application/octet-stream",
+                name: file.name,
+                size: file.size,
+              },
+            ]);
+            resolve();
+          };
+          reader.readAsDataURL(file);
+        });
       }
     }
 
@@ -406,23 +345,15 @@ export default function PromptInput({
     }
 
     // Append inline text contents from text-like attachments so the model can use them
-    // Limit total inline text to prevent provider errors with huge prompts
-    const MAX_INLINE_CHARS_TOTAL = 50000;
-    let remainingInline = MAX_INLINE_CHARS_TOTAL;
     for (const att of pendingAttachments) {
-      if (!att.textContent) continue;
-      if (remainingInline <= 0) break;
-      const original = att.textContent;
-      const slice = original.slice(0, remainingInline);
-      remainingInline -= slice.length;
-      const isTruncated = slice.length < original.length;
-      const lang = languageFromFilename(att.name);
-      const fenced = lang ? `\n\n\`\`\`${lang}\n${slice}\n\`\`\`` : `\n\n\`\`\`\n${slice}\n\`\`\``;
-      const note = isTruncated ? "\n\n[Truncated for length]" : "";
-      parts.push({
-        type: "text",
-        text: `Attached file: ${att.name}${fenced}${note}`,
-      });
+      if (att.textContent) {
+        const lang = languageFromFilename(att.name);
+        const fenced = lang ? `\n\n\`\`\`${lang}\n${att.textContent}\n\`\`\`` : `\n\n\`\`\`\n${att.textContent}\n\`\`\``;
+        parts.push({
+          type: "text",
+          text: `Attached file: ${att.name}${fenced}`,
+        });
+      }
     }
 
     setInput("");
@@ -432,7 +363,7 @@ export default function PromptInput({
       content: "",
       parts,
       experimental_attachments: pendingAttachments.map((a) => ({
-        url: a.contentType?.startsWith("image/") && a.url ? a.url : "data:",
+        url: a.url,
         contentType: a.contentType,
         name: a.name,
       })),

@@ -70,7 +70,7 @@ const PurePreviewMessage = ({
                   "image/",
                 );
                 const name = (attachment as any).name as string | undefined;
-                const url = (attachment as any).url as string | undefined;
+                const url = (attachment as any).url as string;
                 return isImage ? (
                   <a
                     key={`${url}-${idx}`}
@@ -88,13 +88,17 @@ const PurePreviewMessage = ({
                     />
                   </a>
                 ) : (
-                  <div
-                    key={`${name || "attachment"}-${idx}`}
-                    className="px-2 py-1 text-xs rounded-md border bg-muted/70"
+                  <a
+                    key={`${url}-${idx}`}
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    download={name || true}
+                    className="px-2 py-1 text-xs rounded-md border bg-muted/70 hover:bg-muted transition-colors"
                     title={name || "attachment"}
                   >
                     {name || "attachment"}
-                  </div>
+                  </a>
                 );
               })}
             </div>
