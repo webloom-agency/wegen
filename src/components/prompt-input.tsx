@@ -40,6 +40,33 @@ import { EMOJI_DATA } from "lib/const";
 import { toast } from "sonner";
 import Image from "next/image";
 
+async function extractPdfTextClient(file: File): Promise<string> {
+  try {
+    const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf");
+    if (pdfjs?.GlobalWorkerOptions) {
+      pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.js";
+    }
+    const ab = await file.arrayBuffer();
+    const loadingTask = pdfjs.getDocument({ data: ab });
+    const pdf = await loadingTask.promise;
+    let text = "";
+    const maxPages = Math.min(pdf.numPages || 0, 200);
+    for (let i = 1; i <= maxPages; i++) {
+      // eslint-disable-next-line no-await-in-loop
+      const page = await pdf.getPage(i);
+      // eslint-disable-next-line no-await-in-loop
+      const content = await page.getTextContent();
+      const pageText = content.items
+        .map((item: any) => (typeof item.str === "string" ? item.str : ""))
+        .join(" ");
+      text += (i > 1 ? "\n\n" : "") + pageText;
+    }
+    return text;
+  } catch {
+    return "";
+  }
+}
+
 interface PromptInputProps {
   placeholder?: string;
   setInput: (value: string) => void;
@@ -324,11 +351,12 @@ export default function PromptInput({
             const data = (await res.json()) as { text?: string; error?: string };
             if (res.ok && data.text) {
               textContent = data.text;
-            } else if (!res.ok) {
-              toast.warning(data.error || `Failed to extract text from ${file.name}`);
             }
-          } catch (e) {
-            toast.warning(`Failed to extract text from ${file.name}`);
+          } catch {}
+          if (!textContent || textContent.length === 0) {
+            // Fallback to client-side extraction
+            const fallback = await extractPdfTextClient(file);
+            if (fallback && fallback.length > 0) textContent = fallback;
           }
           if (textContent && textContent.length > 0) {
             setPendingAttachments((prev) => [
@@ -342,7 +370,7 @@ export default function PromptInput({
               },
             ]);
           } else {
-            // No text extracted; skip adding this file to avoid invalid attachments
+            toast.warning(`Could not extract text from ${file.name}`);
             continue;
           }
         } else if (isImage) {
