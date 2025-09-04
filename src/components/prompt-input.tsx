@@ -311,16 +311,28 @@ export default function PromptInput({
           },
         ]);
       } else if (isPdf) {
-        // Extract text server-side for PDFs
+        // Extract text client-side for PDFs to avoid server timeouts
         try {
-          const form = new FormData();
-          form.append("file", file, file.name);
-          const res = await fetch("/api/uploads/extract-pdf", {
-            method: "POST",
-            body: form,
-          });
-          const data = (await res.json()) as { text?: string; error?: string };
-          const text = data?.text || "";
+          const { getDocument, GlobalWorkerOptions } = await import("pdfjs-dist/build/pdf");
+          if (GlobalWorkerOptions) {
+            (GlobalWorkerOptions as any).workerSrc = undefined as any;
+          }
+          const pdfData = new Uint8Array(await file.arrayBuffer());
+          const loadingTask = (getDocument as any)({ data: pdfData, disableWorker: true });
+          const pdf = await loadingTask.promise;
+
+          let text = "";
+          for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const textContent = await page.getTextContent();
+            const pageText = (textContent.items || [])
+              .map((item: any) => (typeof item?.str === "string" ? item.str : ""))
+              .join(" ")
+              .trim();
+            if (pageText) {
+              text += (text ? "\n\n" : "") + pageText;
+            }
+          }
 
           setPendingAttachments((prev) => [
             ...prev,

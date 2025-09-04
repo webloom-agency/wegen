@@ -27,4 +27,10 @@ declare module "pdfjs-dist" {
   export function getDocument(src: any): { promise: Promise<any> };
 }
 
+// Allow dynamic client import of pdfjs-dist/build/pdf without types
+declare module "pdfjs-dist/build/pdf" {
+  export const GlobalWorkerOptions: any;
+  export function getDocument(src: any): { promise: Promise<any> } | any;
+}
+
 

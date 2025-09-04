@@ -88,18 +88,6 @@ const PurePreviewMessage = ({
                       className="h-24 w-24 object-cover"
                     />
                   </a>
-                ) : hasUrl ? (
-                  <a
-                    key={`${url}-${idx}`}
-                    href={url}
-                    target="_blank"
-                    rel="noreferrer"
-                    download={name || true}
-                    className="px-2 py-1 text-xs rounded-md border bg-muted/70 hover:bg-muted transition-colors"
-                    title={name || "attachment"}
-                  >
-                    {name || "attachment"}
-                  </a>
                 ) : (
                   <div
                     key={`${name || "attachment"}-${idx}`}
