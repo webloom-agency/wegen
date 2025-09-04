@@ -420,7 +420,7 @@ export default function PromptInput({
       content: "",
       parts,
       experimental_attachments: pendingAttachments.map((a) => ({
-        ...(a.contentType?.startsWith("image/") && a.url ? { url: a.url } : {}),
+        url: a.contentType?.startsWith("image/") && a.url ? a.url : "data:",
         contentType: a.contentType,
         name: a.name,
       })),
