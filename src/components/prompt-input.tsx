@@ -421,12 +421,13 @@ export default function PromptInput({
       role: "user",
       content: "",
       parts,
-      experimental_attachments: pendingAttachments.map((a) => ({
-        // Avoid sending huge base64 URLs for large non-image files; use a tiny valid data URL stub
-        url: a.contentType?.startsWith("image/") ? a.url : "data:text/plain,",
-        contentType: a.contentType,
-        name: a.name,
-      })),
+      experimental_attachments: pendingAttachments
+        .filter((a) => a.contentType?.startsWith("image/"))
+        .map((a) => ({
+          url: a.url,
+          contentType: a.contentType,
+          name: a.name,
+        })),
     });
 
     // Clear pending attachments after sending
