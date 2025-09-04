@@ -40,38 +40,6 @@ import { EMOJI_DATA } from "lib/const";
 import { toast } from "sonner";
 import Image from "next/image";
 
-function loadScript(src: string) {
-  return new Promise<void>((resolve, reject) => {
-    const s = document.createElement("script");
-    s.src = src;
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error(`Failed to load script: ${src}`));
-    document.head.appendChild(s);
-  });
-}
-
-async function ensurePdfJsFromCdn() {
-  if (typeof window === "undefined") return null as any;
-  const w = window as any;
-  if (w.pdfjsLib) return w.pdfjsLib;
-  const base = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build";
-  await loadScript(`${base}/pdf.min.js`);
-  const lib = (window as any).pdfjsLib;
-  if (lib?.GlobalWorkerOptions) {
-    lib.GlobalWorkerOptions.workerSrc = `${base}/pdf.worker.min.js`;
-  }
-  return lib;
-}
-
-async function ensureTesseractFromCdn() {
-  if (typeof window === "undefined") return null as any;
-  const w = window as any;
-  if (w.Tesseract) return w.Tesseract;
-  await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js");
-  return (window as any).Tesseract || null;
-}
-
 interface PromptInputProps {
   placeholder?: string;
   setInput: (value: string) => void;
@@ -307,7 +275,7 @@ export default function PromptInput({
     if (!files || files.length === 0) return;
 
     const MAX_FILES = 10;
-    const MAX_TEXT_FILE_SIZE = 15 * 1024 * 1024; // 15MB for text-like files
+    const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB each
 
     const selected = Array.from(files);
 
@@ -323,137 +291,41 @@ export default function PromptInput({
         toast.warning(`Unsupported file type: ${file.name}`);
         continue;
       }
+      if (file.size > MAX_FILE_SIZE) {
+        toast.warning(`File too large (max 15MB): ${file.name}`);
+        continue;
+      }
 
-      const isText = isTextLikeFile(file);
-      const isPdf = lowerName.endsWith(".pdf") || file.type === "application/pdf";
-      const isImage = (file.type || "").toLowerCase().startsWith("image/");
-
-      try {
-        if (isText) {
-          if (file.size > MAX_TEXT_FILE_SIZE) {
-            toast.warning(`File too large (max 15MB for text files): ${file.name}`);
-            continue;
-          }
-          const text = await file.text();
-          setPendingAttachments((prev) => [
-            ...prev,
-            {
-              url: `data:text/plain;base64,${btoa(unescape(encodeURIComponent(text)))}`,
-              contentType: file.type || "text/plain",
-              name: file.name,
-              size: file.size,
-              textContent: text,
-            },
-          ]);
-        } else if (isPdf) {
-          let textContent: string | undefined = undefined;
-          try {
-            const res = await fetch("/api/uploads/extract-pdf", {
-              method: "POST",
-              headers: { "Content-Type": "application/pdf" },
-              body: file,
-            });
-            const data = (await res.json()) as { text?: string; error?: string };
-            if (res.ok && data.text) {
-              textContent = data.text;
-            }
-          } catch {}
-          if (!textContent || textContent.length === 0) {
-            // Fallback 1: pdf.js text layer
-            try {
-              const pdfjs = await ensurePdfJsFromCdn();
-              if (pdfjs?.getDocument) {
-                const ab = await file.arrayBuffer();
-                const task = pdfjs.getDocument({ data: ab });
-                const pdf = await task.promise;
-                let t = "";
-                const maxPages = Math.min(pdf.numPages || 0, 15);
-                for (let i = 1; i <= maxPages; i++) {
-                  // eslint-disable-next-line no-await-in-loop
-                  const page = await pdf.getPage(i);
-                  // eslint-disable-next-line no-await-in-loop
-                  const content = await page.getTextContent();
-                  const pageText = content.items
-                    .map((item: any) => (typeof item.str === "string" ? item.str : ""))
-                    .join(" ");
-                  t += (i > 1 ? "\n\n" : "") + pageText;
-                }
-                if (t.trim().length > 0) textContent = t;
-              }
-            } catch {}
-          }
-          if (!textContent || textContent.length === 0) {
-            // Fallback 2: OCR first few pages using Tesseract.js (fra+eng)
-            try {
-              const pdfjs = await ensurePdfJsFromCdn();
-              const Tesseract = await ensureTesseractFromCdn();
-              if (pdfjs?.getDocument && Tesseract?.recognize) {
-                const ab = await file.arrayBuffer();
-                const task = pdfjs.getDocument({ data: ab });
-                const pdf = await task.promise;
-                let ocrText = "";
-                const maxPages = Math.min(pdf.numPages || 0, 5); // cap OCR for performance
-                for (let i = 1; i <= maxPages; i++) {
-                  // eslint-disable-next-line no-await-in-loop
-                  const page = await pdf.getPage(i);
-                  const viewport = page.getViewport({ scale: 2 });
-                  const canvas = document.createElement("canvas");
-                  const ctx = canvas.getContext("2d");
-                  if (!ctx) continue;
-                  canvas.width = viewport.width;
-                  canvas.height = viewport.height;
-                  // eslint-disable-next-line no-await-in-loop
-                  await page.render({ canvasContext: ctx, viewport }).promise;
-                  const dataUrl = canvas.toDataURL("image/png");
-                  // eslint-disable-next-line no-await-in-loop
-                  const result = await Tesseract.recognize(dataUrl, "fra+eng");
-                  if (result?.data?.text) {
-                    ocrText += (i > 1 ? "\n\n" : "") + String(result.data.text);
-                  }
-                }
-                if (ocrText.trim().length > 0) textContent = ocrText;
-              }
-            } catch {}
-          }
-          if (textContent && textContent.length > 0) {
+      if (isTextLikeFile(file)) {
+        const text = await file.text();
+        setPendingAttachments((prev) => [
+          ...prev,
+          {
+            url: `data:text/plain;base64,${btoa(unescape(encodeURIComponent(text)))}`,
+            contentType: file.type || "text/plain",
+            name: file.name,
+            size: file.size,
+            textContent: text,
+          },
+        ]);
+      } else {
+        // Read as data URL for images and other binaries
+        await new Promise<void>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => {
             setPendingAttachments((prev) => [
               ...prev,
               {
-                url: `data:text/plain;base64,${btoa(unescape(encodeURIComponent(textContent)))}`,
-                contentType: "text/plain",
+                url: String(reader.result || ""),
+                contentType: file.type || "application/octet-stream",
                 name: file.name,
                 size: file.size,
-                textContent,
               },
             ]);
-          } else {
-            toast.warning(`Could not extract text from ${file.name}`);
-            continue;
-          }
-        } else if (isImage) {
-          await new Promise<void>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              setPendingAttachments((prev) => [
-                ...prev,
-                {
-                  url: String(reader.result || ""),
-                  contentType: file.type || "application/octet-stream",
-                  name: file.name,
-                  size: file.size,
-                },
-              ]);
-              resolve();
-            };
-            reader.readAsDataURL(file);
-          });
-        } else {
-          // Other binaries: skip to avoid large payloads and invalid URLs
-          toast.warning(`Skipping unsupported binary file: ${file.name}`);
-          continue;
-        }
-      } catch (err) {
-        toast.warning(`Failed to process file: ${file.name}`);
+            resolve();
+          };
+          reader.readAsDataURL(file);
+        });
       }
     }
 
@@ -476,12 +348,7 @@ export default function PromptInput({
     for (const att of pendingAttachments) {
       if (att.textContent) {
         const lang = languageFromFilename(att.name);
-        const MAX_INLINE_TEXT_CHARS = 100000;
-        const isTruncated = att.textContent.length > MAX_INLINE_TEXT_CHARS;
-        const inlineText = isTruncated
-          ? att.textContent.slice(0, MAX_INLINE_TEXT_CHARS) + "\n...\n[truncated to avoid large request size]"
-          : att.textContent;
-        const fenced = lang ? `\n\n\`\`\`${lang}\n${inlineText}\n\`\`\`` : `\n\n\`\`\`\n${inlineText}\n\`\`\``;
+        const fenced = lang ? `\n\n\`\`\`${lang}\n${att.textContent}\n\`\`\`` : `\n\n\`\`\`\n${att.textContent}\n\`\`\``;
         parts.push({
           type: "text",
           text: `Attached file: ${att.name}${fenced}`,
@@ -495,13 +362,11 @@ export default function PromptInput({
       role: "user",
       content: "",
       parts,
-      experimental_attachments: pendingAttachments
-        .filter((a) => typeof a.url === "string" && (a.url.startsWith("data:") || a.url.startsWith("http")))
-        .map((a) => ({
-          url: a.url,
-          contentType: a.contentType,
-          name: a.name,
-        })),
+      experimental_attachments: pendingAttachments.map((a) => ({
+        url: a.url,
+        contentType: a.contentType,
+        name: a.name,
+      })),
     });
 
     // Clear pending attachments after sending
