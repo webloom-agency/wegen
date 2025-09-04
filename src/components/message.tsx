@@ -71,7 +71,6 @@ const PurePreviewMessage = ({
                 );
                 const name = (attachment as any).name as string | undefined;
                 const url = (attachment as any).url as string | undefined;
-                const hasUrl = typeof url === "string" && url.length > 0;
                 return isImage ? (
                   <a
                     key={`${url}-${idx}`}
