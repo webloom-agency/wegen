@@ -322,17 +322,10 @@ export default function PromptInput({
           const data = (await res.json()) as { text?: string; error?: string };
           const text = data?.text || "";
 
-          // Build a data URL for download/preview link
-          const url = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(String(reader.result || ""));
-            reader.readAsDataURL(file);
-          });
-
           setPendingAttachments((prev) => [
             ...prev,
             {
-              url,
+              url: "",
               contentType: file.type || "application/pdf",
               name: file.name,
               size: file.size,
@@ -341,7 +334,20 @@ export default function PromptInput({
           ]);
         } catch (e: any) {
           toast.error(`Failed to extract text from PDF: ${file.name}`);
-          // Fallback: attach as binary without text
+          // Fallback: attach stub without URL
+          setPendingAttachments((prev) => [
+            ...prev,
+            {
+              url: "",
+              contentType: file.type || "application/pdf",
+              name: file.name,
+              size: file.size,
+            },
+          ]);
+        }
+      } else {
+        // For images, read as data URL for preview; for other binaries, avoid large base64
+        if (file.type.startsWith("image/")) {
           await new Promise<void>((resolve) => {
             const reader = new FileReader();
             reader.onload = () => {
@@ -349,7 +355,7 @@ export default function PromptInput({
                 ...prev,
                 {
                   url: String(reader.result || ""),
-                  contentType: file.type || "application/pdf",
+                  contentType: file.type || "image/*",
                   name: file.name,
                   size: file.size,
                 },
@@ -358,25 +364,17 @@ export default function PromptInput({
             };
             reader.readAsDataURL(file);
           });
+        } else {
+          setPendingAttachments((prev) => [
+            ...prev,
+            {
+              url: "",
+              contentType: file.type || "application/octet-stream",
+              name: file.name,
+              size: file.size,
+            },
+          ]);
         }
-      } else {
-        // Read as data URL for images and other binaries
-        await new Promise<void>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            setPendingAttachments((prev) => [
-              ...prev,
-              {
-                url: String(reader.result || ""),
-                contentType: file.type || "application/octet-stream",
-                name: file.name,
-                size: file.size,
-              },
-            ]);
-            resolve();
-          };
-          reader.readAsDataURL(file);
-        });
       }
     }
 
@@ -421,13 +419,11 @@ export default function PromptInput({
       role: "user",
       content: "",
       parts,
-      experimental_attachments: pendingAttachments
-        .filter((a) => a.contentType?.startsWith("image/"))
-        .map((a) => ({
-          url: a.url,
-          contentType: a.contentType,
-          name: a.name,
-        })),
+      experimental_attachments: pendingAttachments.map((a) => ({
+        ...(a.contentType?.startsWith("image/") && a.url ? { url: a.url } : {}),
+        contentType: a.contentType,
+        name: a.name,
+      })),
     });
 
     // Clear pending attachments after sending
