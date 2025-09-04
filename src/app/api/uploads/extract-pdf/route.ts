@@ -57,38 +57,63 @@ export async function POST(request: Request): Promise<NextResponse> {
       } catch {}
     }
 
-    if (!pdfjsLib) {
-      // Graceful degradation: return empty text so client can proceed without errors
-      return NextResponse.json({ text: "" });
-    }
-
-    const getDocument = pdfjsLib.getDocument || pdfjsLib.default?.getDocument;
-    const GlobalWorkerOptions =
-      pdfjsLib.GlobalWorkerOptions || pdfjsLib.default?.GlobalWorkerOptions;
-    if (GlobalWorkerOptions) {
-      GlobalWorkerOptions.workerSrc = undefined;
-    }
-    if (typeof getDocument !== "function") {
-      return NextResponse.json({ text: "" });
-    }
-
-    const loadingTask = getDocument({ data: buffer });
-    const pdf = await loadingTask.promise;
-
     let text = "";
-    const maxPages = Math.min(pdf.numPages || 0, 200);
-    for (let i = 1; i <= maxPages; i++) {
-      // eslint-disable-next-line no-await-in-loop
-      const page = await pdf.getPage(i);
-      // eslint-disable-next-line no-await-in-loop
-      const content = await page.getTextContent();
-      const pageText = content.items
-        .map((item: any) => (typeof item.str === "string" ? item.str : ""))
-        .join(" ");
-      text += (i > 1 ? "\n\n" : "") + pageText;
+    if (pdfjsLib) {
+      const getDocument = pdfjsLib.getDocument || pdfjsLib.default?.getDocument;
+      const GlobalWorkerOptions =
+        pdfjsLib.GlobalWorkerOptions || pdfjsLib.default?.GlobalWorkerOptions;
+      if (GlobalWorkerOptions) {
+        GlobalWorkerOptions.workerSrc = undefined;
+      }
+      if (typeof getDocument === "function") {
+        try {
+          const loadingTask = getDocument({ data: buffer });
+          const pdf = await loadingTask.promise;
+          const maxPages = Math.min(pdf.numPages || 0, 200);
+          for (let i = 1; i <= maxPages; i++) {
+            // eslint-disable-next-line no-await-in-loop
+            const page = await pdf.getPage(i);
+            // eslint-disable-next-line no-await-in-loop
+            const content = await page.getTextContent();
+            const pageText = content.items
+              .map((item: any) => (typeof item.str === "string" ? item.str : ""))
+              .join(" ");
+            text += (i > 1 ? "\n\n" : "") + pageText;
+          }
+        } catch {}
+      }
     }
 
-    return NextResponse.json({ text });
+    // OCR fallback via OCR.space if still empty and API key provided
+    if (!text || text.trim().length === 0) {
+      const apiKey = process.env.OCR_SPACE_API_KEY;
+      if (apiKey) {
+        try {
+          const form = new FormData();
+          const blob = new Blob([buffer], { type: "application/pdf" });
+          form.append("file", blob, "upload.pdf");
+          form.append("language", "eng,fre");
+          form.append("isOverlayRequired", "false");
+          form.append("OCREngine", "2");
+          form.append("detectOrientation", "true");
+          form.append("scale", "true");
+
+          const resp = await fetch("https://api.ocr.space/parse/image", {
+            method: "POST",
+            headers: { apikey: apiKey },
+            body: form,
+          });
+          const data = (await resp.json()) as any;
+          const parts = (data?.ParsedResults || []).map((r: any) => r?.ParsedText || "");
+          const ocrText = parts.join("\n\n").trim();
+          if (ocrText.length > 0) {
+            text = ocrText;
+          }
+        } catch {}
+      }
+    }
+
+    return NextResponse.json({ text: text || "" });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Failed to extract PDF" },
