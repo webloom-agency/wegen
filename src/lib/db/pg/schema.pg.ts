@@ -253,15 +253,22 @@ export const McpOAuthSessionSchema = pgTable(
   "mcp_oauth_session",
   {
     id: uuid("id").primaryKey().notNull().defaultRandom(),
-    state: text("state").notNull(),
-    codeVerifier: text("code_verifier").notNull(),
-    serverId: uuid("server_id")
+    mcpServerId: uuid("mcp_server_id")
       .notNull()
       .references(() => McpServerSchema.id, { onDelete: "cascade" }),
+    serverUrl: text("server_url").notNull(),
+    clientInfo: json("client_info"),
+    tokens: json("tokens"),
+    codeVerifier: text("code_verifier"),
+    state: text("state").unique(),
     createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: timestamp("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   },
-  (t) => [index("mcp_oauth_session_state_idx").on(t.state)],
+  (t) => [
+    index("mcp_oauth_session_server_id_idx").on(t.mcpServerId),
+    index("mcp_oauth_session_state_idx").on(t.state),
+    index("mcp_oauth_session_tokens_idx").on(t.mcpServerId).where(isNotNull(t.tokens)),
+  ],
 );
 
 // BEGIN: Archive schemas (will be surfaced as Categories)
