@@ -249,6 +249,22 @@ export const WorkflowEdgeSchema = pgTable("workflow_edge", {
   createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const McpOAuthSessionSchema = pgTable(
+  "mcp_oauth_session",
+  {
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    state: text("state").notNull(),
+    codeVerifier: text("code_verifier").notNull(),
+    serverId: uuid("server_id")
+      .notNull()
+      .references(() => McpServerSchema.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => [index("mcp_oauth_session_state_idx").on(t.state)],
+);
+
+// BEGIN: Archive schemas (will be surfaced as Categories)
 export const ArchiveSchema = pgTable("archive", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   name: text("name").notNull(),
@@ -256,6 +272,11 @@ export const ArchiveSchema = pgTable("archive", {
   userId: uuid("user_id")
     .notNull()
     .references(() => UserSchema.id, { onDelete: "cascade" }),
+  visibility: varchar("visibility", {
+    enum: ["public", "private", "readonly"],
+  })
+    .notNull()
+    .default("private"),
   createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
@@ -275,35 +296,7 @@ export const ArchiveItemSchema = pgTable(
   },
   (t) => [index("archive_item_item_id_idx").on(t.itemId)],
 );
-
-export const McpOAuthSessionSchema = pgTable(
-  "mcp_oauth_session",
-  {
-    id: uuid("id").primaryKey().notNull().defaultRandom(),
-    mcpServerId: uuid("mcp_server_id")
-      .notNull()
-      .references(() => McpServerSchema.id, { onDelete: "cascade" }),
-    serverUrl: text("server_url").notNull(),
-    clientInfo: json("client_info"),
-    tokens: json("tokens"),
-    codeVerifier: text("code_verifier"),
-    state: text("state").unique(), // OAuth state parameter for current flow (unique for security)
-    createdAt: timestamp("created_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-    updatedAt: timestamp("updated_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-  },
-  (t) => [
-    index("mcp_oauth_session_server_id_idx").on(t.mcpServerId),
-    index("mcp_oauth_session_state_idx").on(t.state),
-    // Partial index for sessions with tokens for better performance
-    index("mcp_oauth_session_tokens_idx")
-      .on(t.mcpServerId)
-      .where(isNotNull(t.tokens)),
-  ],
-);
+// END: Archive schemas
 
 export type McpServerEntity = typeof McpServerSchema.$inferSelect;
 export type ChatThreadEntity = typeof ChatThreadSchema.$inferSelect;
@@ -318,4 +311,3 @@ export type McpServerCustomizationEntity =
 
 export type ArchiveEntity = typeof ArchiveSchema.$inferSelect;
 export type ArchiveItemEntity = typeof ArchiveItemSchema.$inferSelect;
-export type BookmarkEntity = typeof BookmarkSchema.$inferSelect;

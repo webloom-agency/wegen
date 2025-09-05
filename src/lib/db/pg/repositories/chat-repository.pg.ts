@@ -5,7 +5,7 @@ import {
   ChatMessageSchema,
   ChatThreadSchema,
   UserSchema,
-  ArchiveItemSchema,
+  CategoryItemSchema,
   AgentSchema,
 } from "../schema.pg";
 
@@ -294,8 +294,10 @@ export const pgChatRepository: ChatRepository = {
       .delete(ChatMessageSchema)
       .where(eq(ChatMessageSchema.threadId, id));
 
-    // 2. Remove thread from all archives
-    await db.delete(ArchiveItemSchema).where(eq(ArchiveItemSchema.itemId, id));
+    // 2. Remove thread from all categories
+    await db
+      .delete(CategoryItemSchema)
+      .where(eq(CategoryItemSchema.itemId, id));
 
     // 3. Delete the thread itself
     await db.delete(ChatThreadSchema).where(eq(ChatThreadSchema.id, id));
@@ -370,13 +372,13 @@ export const pgChatRepository: ChatRepository = {
       .select({ id: ChatThreadSchema.id })
       .from(ChatThreadSchema)
       .leftJoin(
-        ArchiveItemSchema,
-        eq(ChatThreadSchema.id, ArchiveItemSchema.itemId),
+        CategoryItemSchema,
+        eq(ChatThreadSchema.id, CategoryItemSchema.itemId),
       )
       .where(
         and(
           eq(ChatThreadSchema.userId, userId),
-          sql`${ArchiveItemSchema.id} IS NULL`,
+          sql`${CategoryItemSchema.id} IS NULL`,
         ),
       );
 
