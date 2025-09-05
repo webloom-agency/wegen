@@ -295,9 +295,7 @@ export const pgChatRepository: ChatRepository = {
       .where(eq(ChatMessageSchema.threadId, id));
 
     // 2. Remove thread from all archives
-    await db
-      .delete(ArchiveItemSchema)
-      .where(eq(ArchiveItemSchema.itemId, id));
+    await db.delete(ArchiveItemSchema).where(eq(ArchiveItemSchema.itemId, id));
 
     // 3. Delete the thread itself
     await db.delete(ChatThreadSchema).where(eq(ChatThreadSchema.id, id));
