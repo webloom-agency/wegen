@@ -180,11 +180,47 @@ export async function POST(request: Request) {
           return noSpaceMsg.includes(noSpaceName);
         };
 
+        const STOPWORDS = new Set<string>([
+          // EN
+          "the","a","an","and","or","of","for","to","in","on","with","by","at","from","as","is","are","be","this","that","it",
+          // FR
+          "le","la","les","un","une","des","et","ou","de","du","des","pour","dans","sur","avec","par","au","aux","est","ce","cet","cette","ces"
+        ]);
+        const tokenize = (s: string) => getNormalized(s).split(" ").filter(Boolean);
+        const bigramSim = (a: string, b: string) => {
+          const A = a.replace(/\s+/g, "");
+          const B = b.replace(/\s+/g, "");
+          let c = 0;
+          for (let i = 0; i < A.length - 1; i++) {
+            const bg = A.slice(i, i + 2);
+            if (B.includes(bg)) c++;
+          }
+          return c;
+        };
+
         // Fetch visible workflows and agents
         const [wfList, agentList] = await Promise.all([
           workflowRepository.selectExecuteAbility(session.user.id),
           agentRepository.selectAgents(session.user.id, ["all"], 100),
         ]);
+
+        // Build token frequency maps for uniqueness checks (workflows & agents)
+        const wfTokenCounts = (() => {
+          const map = new Map<string, number>();
+          for (const wf of wfList || []) {
+            const tokens = tokenize((wf as any).name).filter((t) => !STOPWORDS.has(t));
+            for (const t of tokens) map.set(t, (map.get(t) || 0) + 1);
+          }
+          return map;
+        })();
+        const agentTokenCounts = (() => {
+          const map = new Map<string, number>();
+          for (const a of agentList || []) {
+            const tokens = tokenize((a as any).name).filter((t) => !STOPWORDS.has(t));
+            for (const t of tokens) map.set(t, (map.get(t) || 0) + 1);
+          }
+          return map;
+        })();
 
         // Detect workflows by name
         for (const wf of wfList || []) {
@@ -202,6 +238,26 @@ export async function POST(request: Request) {
             } as any);
             existingWorkflowIds.add((wf as any).id);
             if (strong) forceWorkflowAuto = true;
+            continue;
+          }
+          // relaxed matching: one significant token with some uniqueness or similarity
+          const tokens = tokenize(wfName).filter((t) => !STOPWORDS.has(t));
+          const matched = tokens.filter((t) => userText.includes(t));
+          if (matched.length > 0) {
+            const hasUnique = matched.some((t) => (wfTokenCounts.get(t) || 0) === 1);
+            const sim = bigramSim(n, userText);
+            let score = matched.length * 30 + (hasUnique ? 20 : 0) + Math.min(sim, 10);
+            if (tokens.length === 1 && matched.length === 1) score += 10;
+            if (score >= 30) {
+              mentions.push({
+                type: "workflow",
+                name: wfName,
+                description: (wf as any).description ?? null,
+                workflowId: (wf as any).id,
+                icon: (wf as any).icon ?? null,
+              } as any);
+              existingWorkflowIds.add((wf as any).id);
+            }
           }
         }
 
@@ -219,6 +275,31 @@ export async function POST(request: Request) {
             existingAgentIds.add((a as any).id);
             if (!autoDetectedAgent) {
               autoDetectedAgent = a as any;
+            }
+            continue;
+          }
+          // relaxed agent matching
+          const aName = (a as any).name as string;
+          const aNorm = getNormalized(aName);
+          const tokens = tokenize(aName).filter((t) => !STOPWORDS.has(t));
+          const matched = tokens.filter((t) => userText.includes(t));
+          if (matched.length > 0) {
+            const hasUnique = matched.some((t) => (agentTokenCounts.get(t) || 0) === 1);
+            const sim = bigramSim(aNorm, userText);
+            let score = matched.length * 25 + (hasUnique ? 15 : 0) + Math.min(sim, 8);
+            if (tokens.length === 1 && matched.length === 1) score += 10;
+            if (score >= 30) {
+              mentions.push({
+                type: "agent",
+                name: (a as any).name,
+                description: (a as any).description ?? null,
+                agentId: (a as any).id,
+                icon: (a as any).icon ?? null,
+              } as any);
+              existingAgentIds.add((a as any).id);
+              if (!autoDetectedAgent) {
+                autoDetectedAgent = a as any;
+              }
             }
           }
         }
