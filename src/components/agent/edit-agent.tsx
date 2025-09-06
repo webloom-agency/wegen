@@ -90,6 +90,7 @@ export default function EditAgent({
     useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Initialize agent state with initial data or defaults
   const [agent, setAgent] = useObjectState(initialAgent || defaultConfig());
@@ -474,6 +475,140 @@ export default function EditAgent({
               onChange={(icon) => setAgent({ icon })}
             />
           )}
+        </div>
+
+        {/* Attachments Section */}
+        <div className="flex gap-2 flex-col">
+          <Label className="text-base">Attachments (PDF, CSV, TXT)</Label>
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".pdf,.csv,.txt"
+              className="hidden"
+              onChange={(e) => {
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+
+                const MAX_FILES = 10;
+                const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
+
+                const current = agent.instructions?.attachments?.length || 0;
+                if (current + files.length > MAX_FILES) {
+                  toast.warning(`You can attach up to ${MAX_FILES} files.`);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                  return;
+                }
+
+                const isTextLikeFile = (file: File) => {
+                  const type = file.type.toLowerCase();
+                  const name = file.name.toLowerCase();
+                  return (
+                    type.startsWith("text/") ||
+                    name.endsWith(".txt") ||
+                    name.endsWith(".csv")
+                  );
+                };
+
+                (async () => {
+                  for (const file of Array.from(files)) {
+                    if (file.size > MAX_FILE_SIZE) {
+                      toast.warning(`File too large (max 15MB): ${file.name}`);
+                      continue;
+                    }
+
+                    if (isTextLikeFile(file)) {
+                      const text = await file.text();
+                      setAgent((prev) => ({
+                        instructions: {
+                          ...prev.instructions,
+                          attachments: [
+                            ...((prev.instructions?.attachments as any[]) || []),
+                            {
+                              url: `data:text/plain;base64,${btoa(unescape(encodeURIComponent(text)))}`,
+                              contentType:
+                                file.type || (file.name.endsWith(".csv") ? "text/csv" : "text/plain"),
+                              name: file.name,
+                              size: file.size,
+                              textContent: text,
+                            },
+                          ],
+                        },
+                      }));
+                    } else {
+                      await new Promise<void>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          setAgent((prev) => ({
+                            instructions: {
+                              ...prev.instructions,
+                              attachments: [
+                                ...((prev.instructions?.attachments as any[]) || []),
+                                {
+                                  url: String(reader.result || ""),
+                                  contentType: file.type || "application/octet-stream",
+                                  name: file.name,
+                                  size: file.size,
+                                },
+                              ],
+                            },
+                          }));
+                          resolve();
+                        };
+                        reader.readAsDataURL(file);
+                      });
+                    }
+                  }
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                })();
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isLoading || !hasEditAccess}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Add attachments
+            </Button>
+          </div>
+
+          {/* Attachment List */}
+          <div className="flex flex-col gap-2">
+            {(agent.instructions?.attachments || []).length === 0 ? (
+              <p className="text-xs text-muted-foreground">No attachments</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {(agent.instructions?.attachments || []).map((att: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between rounded-md border p-2 bg-secondary/40">
+                    <div className="flex flex-col text-xs">
+                      <span className="font-medium break-all">{att.name || att.contentType || "Attachment"}</span>
+                      <span className="text-muted-foreground">{att.contentType || "unknown"}{att.size ? ` • ${(att.size / 1024).toFixed(1)} KB` : ""}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="hover:text-destructive"
+                        disabled={isLoading || !hasEditAccess}
+                        onClick={() =>
+                          setAgent((prev) => ({
+                            instructions: {
+                              ...prev.instructions,
+                              attachments: (prev.instructions?.attachments || []).filter((_: any, i: number) => i !== idx),
+                            },
+                          }))
+                        }
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col gap-2">

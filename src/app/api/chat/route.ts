@@ -108,12 +108,31 @@ export async function POST(request: Request) {
     // if is false, it means the last message is manual tool execution
     const isLastMessageUserMessage = message.role == "user";
 
+    // Load agent and merge its attachments into the user message for richer context
+    const agentId = mentions.find((m) => m.type === "agent")?.agentId;
+    const agent = await rememberAgentAction(agentId, session.user.id);
+
+    const agentAttachments = (agent?.instructions as any)?.attachments as any[] | undefined;
+    const mergedAttachments = Array.isArray(agentAttachments)
+      ? [
+          ...(((patchedMessage as any).experimental_attachments as any[]) || []),
+          ...agentAttachments,
+        ]
+      : ((patchedMessage as any).experimental_attachments as any[] | undefined);
+
+    const finalPatchedMessage: UIMessage = mergedAttachments && mergedAttachments.length > 0
+      ? {
+          ...(patchedMessage as any),
+          experimental_attachments: await compressPdfAttachmentsIfNeeded(mergedAttachments as any),
+        }
+      : patchedMessage;
+
     const previousMessages = (thread?.messages ?? []).map(convertToMessage);
 
     const messages: Message[] = isLastMessageUserMessage
       ? appendClientMessage({
           messages: previousMessages,
-          message: patchedMessage,
+          message: finalPatchedMessage,
         })
       : previousMessages;
 
@@ -121,9 +140,7 @@ export async function POST(request: Request) {
 
     const supportToolCall = !isToolCallUnsupportedModel(model);
 
-    const agentId = mentions.find((m) => m.type === "agent")?.agentId;
-
-    const agent = await rememberAgentAction(agentId, session.user.id);
+    // agent already loaded above
 
     // Capture client-provided mentions before augmenting with agent mentions
     const clientMentions = [...mentions];

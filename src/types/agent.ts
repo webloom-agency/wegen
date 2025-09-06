@@ -12,6 +12,17 @@ export const AgentInstructionsSchema = z.object({
   role: z.string().optional(),
   systemPrompt: z.string().optional(),
   mentions: z.array(ChatMentionSchema).optional(),
+  attachments: z
+    .array(
+      z.object({
+        url: z.string(),
+        contentType: z.string().optional(),
+        name: z.string().optional(),
+        size: z.number().optional(),
+        textContent: z.string().optional(),
+      }),
+    )
+    .optional(),
 });
 
 export const AgentCreateSchema = z

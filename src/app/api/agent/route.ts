@@ -4,6 +4,7 @@ import { z } from "zod";
 import { serverCache } from "lib/cache";
 import { CacheKeys } from "lib/cache/cache-keys";
 import { AgentCreateSchema, AgentQuerySchema } from "app-types/agent";
+import { compressPdfAttachmentsIfNeeded } from "lib/pdf/compress";
 
 export async function GET(request: Request) {
   const session = await getSession();
@@ -61,8 +62,17 @@ export async function POST(request: Request): Promise<Response> {
     const body = await request.json();
     const data = AgentCreateSchema.parse(body);
 
+    // Compress large PDF attachments in agent instructions, if any
+    const compressedInstructions = {
+      ...data.instructions,
+      attachments: data.instructions?.attachments
+        ? await compressPdfAttachmentsIfNeeded(data.instructions.attachments as any)
+        : data.instructions?.attachments,
+    } as any;
+
     const agent = await agentRepository.insertAgent({
       ...data,
+      instructions: compressedInstructions,
       userId: session.user.id,
     });
     serverCache.delete(CacheKeys.agentInstructions(agent.id));
