@@ -55,81 +55,84 @@ async function getArchiveWithThreads(
   const threadIds = archiveItems.map((item) => item.itemId);
 
   if (threadIds.length === 0) {
-    return { ...archive, threads: [] } as ArchiveWithThreads;
+    return { ...(archive as any), threads: [] } as ArchiveWithThreads;
   }
 
-  const visibleThreads: Array<{
+  const agentVisibilityCache = new Map<string, boolean>();
+  const isAgentVisible = async (agentId: string, userId: string) => {
+    if (agentVisibilityCache.has(agentId)) {
+      return agentVisibilityCache.get(agentId)!;
+    }
+    const agent = await agentRepository.selectAgentById(agentId, userId);
+    const visible = !!agent;
+    agentVisibilityCache.set(agentId, visible);
+    return visible;
+  };
+
+  const processed = await Promise.all(
+    threadIds.map(async (threadId) => {
+      const thread = await chatRepository.selectThread(threadId);
+      if (!thread) return null;
+
+      // Owner can always view
+      if (thread.userId === session.user.id) {
+        const msgs = await chatRepository.selectMessagesByThreadId(threadId);
+        const lastAt = msgs.length
+          ? new Date((msgs[msgs.length - 1] as any).createdAt).getTime()
+          : 0;
+        return {
+          id: thread.id,
+          title: thread.title,
+          createdAt: thread.createdAt,
+          lastMessageAt: lastAt,
+          userId: thread.userId,
+        } as const;
+      }
+
+      // Non-owner: only allow if thread references a visible agent
+      const messages = await chatRepository.selectMessagesByThreadId(threadId);
+      const agentIds = new Set<string>();
+      for (const m of messages) {
+        const anns = (m as any).annotations as any[] | undefined;
+        if (!anns || !Array.isArray(anns)) continue;
+        for (const ann of anns) {
+          const a = ann as any;
+          if (a && typeof a === "object" && typeof a.agentId === "string") {
+            agentIds.add(a.agentId);
+          }
+        }
+      }
+      if (agentIds.size === 0) return null;
+
+      let allowed = false;
+      for (const agentId of agentIds) {
+        if (await isAgentVisible(agentId, session.user.id)) {
+          allowed = true;
+          break;
+        }
+      }
+      if (!allowed) return null;
+
+      const lastAt = messages.length
+        ? new Date((messages[messages.length - 1] as any).createdAt).getTime()
+        : 0;
+      return {
+        id: thread.id,
+        title: thread.title,
+        createdAt: thread.createdAt,
+        lastMessageAt: lastAt,
+        userId: thread.userId,
+      } as const;
+    }),
+  );
+
+  const threads = (processed.filter(Boolean) as Array<{
     id: string;
     title: string;
     createdAt: Date;
     lastMessageAt: number;
     userId: string;
-  }> = [];
-
-  // Evaluate visibility per thread using existing rules
-  for (const threadId of threadIds) {
-    const thread = await chatRepository.selectThread(threadId);
-    if (!thread) continue;
-
-    // Owner can always view
-    if (thread.userId === session.user.id) {
-      const msgs = await chatRepository.selectMessagesByThreadId(threadId);
-      const lastAt = msgs.length
-        ? new Date(msgs[msgs.length - 1].createdAt as any).getTime()
-        : 0;
-      visibleThreads.push({
-        id: thread.id,
-        title: thread.title,
-        createdAt: thread.createdAt,
-        lastMessageAt: lastAt,
-        userId: thread.userId,
-      });
-      continue;
-    }
-
-    // Non-owner: only allow if thread references an agent visible to current user
-    const messages = await chatRepository.selectMessagesByThreadId(threadId);
-    const agentIds = new Set<string>();
-    for (const m of messages) {
-      const anns = (m as any).annotations as any[] | undefined;
-      if (!anns || !Array.isArray(anns)) continue;
-      for (const ann of anns) {
-        const a = ann as any;
-        if (a && typeof a === "object" && typeof a.agentId === "string") {
-          agentIds.add(a.agentId);
-        }
-      }
-    }
-
-    let allowed = false;
-    for (const agentId of agentIds) {
-      const agent = await agentRepository.selectAgentById(
-        agentId,
-        session.user.id,
-      );
-      if (agent) {
-        allowed = true;
-        break;
-      }
-    }
-
-    if (allowed) {
-      const lastAt = messages.length
-        ? new Date(messages[messages.length - 1].createdAt as any).getTime()
-        : 0;
-      visibleThreads.push({
-        id: thread.id,
-        title: thread.title,
-        createdAt: thread.createdAt,
-        lastMessageAt: lastAt,
-        userId: thread.userId,
-      });
-    }
-  }
-
-  const threads = visibleThreads.sort(
-    (a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0),
-  );
+  }>).sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0));
 
   return { ...(archive as any), threads } as ArchiveWithThreads;
 }
