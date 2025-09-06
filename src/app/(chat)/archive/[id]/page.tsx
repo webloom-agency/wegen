@@ -1,4 +1,4 @@
-import { archiveRepository, chatRepository, agentRepository } from "lib/db/repository";
+import { archiveRepository, chatRepository } from "lib/db/repository";
 import { getSession } from "auth/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
