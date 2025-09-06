@@ -65,12 +65,6 @@ export async function addItemToArchiveAction(
 ) {
   const userId = await getUserId();
 
-  // Check if user owns the archive
-  const existingArchive = await archiveRepository.getArchiveById(archiveId);
-  if (!existingArchive || existingArchive.userId !== userId) {
-    throw new Error("Archive not found or access denied");
-  }
-
   return await archiveRepository.addItemToArchive(archiveId, itemId, userId);
 }
 

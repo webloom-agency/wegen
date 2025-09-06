@@ -51,15 +51,11 @@ export async function POST(
   const { id } = await params;
 
   try {
-    // Check if archive exists and user owns it
+    // Check if archive exists
     const archive = await archiveRepository.getArchiveById(id);
 
     if (!archive) {
       return Response.json({ error: "Archive not found" }, { status: 404 });
-    }
-
-    if (archive.userId !== session.user.id) {
-      return new Response("Forbidden", { status: 403 });
     }
 
     const body = await request.json();
