@@ -13,7 +13,8 @@ import { customModelProvider, isToolCallUnsupportedModel } from "lib/ai/models";
 
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 
-import { agentRepository, chatRepository } from "lib/db/repository";
+import { agentRepository, chatRepository, workflowRepository } from "lib/db/repository";
+import type { AllowedMCPServer } from "app-types/mcp";
 import globalLogger from "logger";
 import {
   buildMcpServerCustomizationsSystemPrompt,
@@ -120,12 +121,131 @@ export async function POST(request: Request) {
         ]
       : ((patchedMessage as any).experimental_attachments as any[] | undefined);
 
-    const finalPatchedMessage: UIMessage = mergedAttachments && mergedAttachments.length > 0
+    let finalPatchedMessage: UIMessage = mergedAttachments && mergedAttachments.length > 0
       ? {
           ...(patchedMessage as any),
           experimental_attachments: await compressPdfAttachmentsIfNeeded(mergedAttachments as any),
         }
       : patchedMessage;
+
+    // Auto-detect mentions (agents/workflows) from user text when not explicitly tagged
+    let autoDetectedAgent: any | undefined;
+    let forceWorkflowAuto = false;
+    try {
+      const getNormalized = (s: string) =>
+        s
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9\s]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+
+      const extractUserText = (msg: UIMessage): string => {
+        const parts = (msg as any)?.parts as any[] | undefined;
+        if (!Array.isArray(parts)) return "";
+        return parts
+          .map((p) => (typeof p?.text === "string" ? p.text : ""))
+          .filter(Boolean)
+          .join(" ");
+      };
+
+      const userTextRaw = extractUserText(finalPatchedMessage);
+      const userText = getNormalized(userTextRaw);
+
+      if (userText && userText.length >= 3) {
+        const existingWorkflowIds = new Set(
+          mentions
+            .filter((m: any) => m.type === "workflow")
+            .map((m: any) => m.workflowId),
+        );
+        const existingAgentIds = new Set(
+          mentions
+            .filter((m: any) => m.type === "agent")
+            .map((m: any) => m.agentId),
+        );
+
+        const containsCandidate = (name: string) => {
+          const n = getNormalized(name);
+          if (!n) return false;
+          if (userText.includes(n)) return true;
+          // token-wise containment (near-exact)
+          const tokens = n.split(" ").filter(Boolean);
+          if (tokens.length >= 2 && tokens.every((t) => userText.includes(t))) {
+            return true;
+          }
+          // space-insensitive containment
+          const noSpaceMsg = userText.replace(/\s+/g, "");
+          const noSpaceName = n.replace(/\s+/g, "");
+          return noSpaceMsg.includes(noSpaceName);
+        };
+
+        // Fetch visible workflows and agents
+        const [wfList, agentList] = await Promise.all([
+          workflowRepository.selectExecuteAbility(session.user.id),
+          agentRepository.selectAgents(session.user.id, ["all"], 100),
+        ]);
+
+        // Detect workflows by name
+        for (const wf of wfList || []) {
+          if (existingWorkflowIds.has((wf as any).id)) continue;
+          const wfName = (wf as any).name as string;
+          const n = getNormalized(wfName);
+          const strong = !!n && userText.includes(n);
+          if (containsCandidate(wfName)) {
+            mentions.push({
+              type: "workflow",
+              name: wfName,
+              description: (wf as any).description ?? null,
+              workflowId: (wf as any).id,
+              icon: (wf as any).icon ?? null,
+            } as any);
+            existingWorkflowIds.add((wf as any).id);
+            if (strong) forceWorkflowAuto = true;
+          }
+        }
+
+        // Detect agents by name
+        for (const a of agentList || []) {
+          if (existingAgentIds.has((a as any).id)) continue;
+          if (containsCandidate((a as any).name)) {
+            mentions.push({
+              type: "agent",
+              name: (a as any).name,
+              description: (a as any).description ?? null,
+              agentId: (a as any).id,
+              icon: (a as any).icon ?? null,
+            } as any);
+            existingAgentIds.add((a as any).id);
+            if (!autoDetectedAgent) {
+              autoDetectedAgent = a as any;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // ignore detection errors; proceed without auto-mentions
+    }
+
+    // If no agent was initially selected but one was auto-detected, load it and merge attachments
+    if (!agent && autoDetectedAgent?.id) {
+      const detectedAgent = await rememberAgentAction(autoDetectedAgent.id, session.user.id);
+      if (detectedAgent) {
+        const detAgentAtts = (detectedAgent.instructions as any)?.attachments as any[] | undefined;
+        const merged = Array.isArray(detAgentAtts)
+          ? [
+              ...(((patchedMessage as any).experimental_attachments as any[]) || []),
+              ...detAgentAtts,
+            ]
+          : ((patchedMessage as any).experimental_attachments as any[] | undefined);
+        finalPatchedMessage = merged && merged.length > 0
+          ? {
+              ...(patchedMessage as any),
+              experimental_attachments: await compressPdfAttachmentsIfNeeded(merged as any),
+            }
+          : patchedMessage;
+      }
+    }
 
     const previousMessages = (thread?.messages ?? []).map(convertToMessage);
 
@@ -263,12 +383,13 @@ export async function POST(request: Request) {
           .map((v) => filterMcpServerCustomizations(MCP_TOOLS!, v))
           .orElse({});
 
-        const forcedWorkflowHint = forceWorkflowOnly
+        const forcedWorkflowHint = (forceWorkflowOnly || forceWorkflowAuto)
           ? "If specific workflows are explicitly mentioned, you MUST invoke each mentioned workflow exactly once, then provide a final assistant answer summarizing the results. Do not re-invoke the same workflow multiple times in the same turn."
           : undefined;
 
+        const effectiveAgent = agent || autoDetectedAgent || undefined;
         const systemPrompt = mergeSystemPrompt(
-          buildUserSystemPrompt(session.user, userPreferences, agent),
+          buildUserSystemPrompt(session.user, userPreferences, effectiveAgent),
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
           forcedWorkflowHint,
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
@@ -326,11 +447,11 @@ export async function POST(request: Request) {
           .unwrap();
 
         const allowedMcpTools = Object.values(allowedMcpServers ?? {})
-          .map((t) => t.tools)
+          .map((t: AllowedMCPServer) => t.tools)
           .flat();
 
         logger.info(
-          `${agent ? `agent: ${agent.name}, ` : ""}tool mode: ${toolChoice}, mentions: ${mentions.length}, thinking: ${thinking}`,
+          `${effectiveAgent ? `agent: ${effectiveAgent.name}, ` : ""}tool mode: ${toolChoice}, mentions: ${mentions.length}, thinking: ${thinking}`,
         );
 
         logger.info(
@@ -342,16 +463,16 @@ export async function POST(request: Request) {
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
         // Decide final toolChoice: force required when explicit client workflow(s) were mentioned
-        const toolChoiceForRun: "auto" | "required" = "auto";
+        const toolChoiceForRun: "auto" | "required" = (forceWorkflowOnly || forceWorkflowAuto) ? "required" : "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
-        const maxStepsForRun = forceWorkflowOnly
+        const maxStepsForRun = (forceWorkflowOnly || forceWorkflowAuto)
           ? Math.max(3, Math.min(12, explicitClientWorkflowMentions.length + 2))
           : 10;
 
         // Per-turn dedup guard: prevent re-invoking the same workflow tool within this run
         const toolsForRun = (() => {
-          if (!forceWorkflowOnly) return vercelAITooles;
+          if (!(forceWorkflowOnly || forceWorkflowAuto)) return vercelAITooles;
           const invoked = new Set<string>();
           const toolsRef = vercelAITooles as Record<string, any>;
           for (const [name, tool] of Object.entries(toolsRef)) {
@@ -467,8 +588,8 @@ export async function POST(request: Request) {
                 annotations,
               });
             }
-            if (agent) {
-              await agentRepository.updateAgent(agent.id, session.user.id, {
+            if (effectiveAgent) {
+              await agentRepository.updateAgent(effectiveAgent.id, session.user.id, {
                 updatedAt: new Date(),
               } as any);
             }
