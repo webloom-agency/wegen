@@ -186,16 +186,18 @@ export default async function ArchivePage({
             <div className="h-4">
               <Separator orientation="vertical" />
             </div>
-            <ArchiveActionsClient
-              archive={{
-                id: archive.id,
-                name: archive.name,
-                description: archive.description,
-                userId: session.user.id,
-                createdAt: archive.createdAt,
-                updatedAt: archive.updatedAt,
-              }}
-            />
+            {archive.userId === session.user.id && (
+              <ArchiveActionsClient
+                archive={{
+                  id: archive.id,
+                  name: archive.name,
+                  description: archive.description,
+                  userId: session.user.id,
+                  createdAt: archive.createdAt,
+                  updatedAt: archive.updatedAt,
+                }}
+              />
+            )}
           </div>
           {archive.description && (
             <p className="text-muted-foreground text-sm mt-4">

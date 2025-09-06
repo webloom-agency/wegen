@@ -36,6 +36,7 @@ export type ArchiveRepository = {
     archive: Omit<Archive, "id" | "createdAt" | "updatedAt">,
   ): Promise<Archive>;
   getArchivesByUserId(userId: string): Promise<ArchiveWithItemCount[]>;
+  getAllArchivesWithCount(): Promise<ArchiveWithItemCount[]>;
   getArchiveById(id: string): Promise<Archive | null>;
   updateArchive(
     id: string,

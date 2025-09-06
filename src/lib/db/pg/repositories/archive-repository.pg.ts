@@ -51,6 +51,31 @@ export const pgArchiveRepository: ArchiveRepository = {
     })) as ArchiveWithItemCount[];
   },
 
+  async getAllArchivesWithCount() {
+    const result = await db
+      .select({
+        id: ArchiveSchema.id,
+        name: ArchiveSchema.name,
+        description: ArchiveSchema.description,
+        userId: ArchiveSchema.userId,
+        createdAt: ArchiveSchema.createdAt,
+        updatedAt: ArchiveSchema.updatedAt,
+        itemCount: count(ArchiveItemSchema.id),
+      })
+      .from(ArchiveSchema)
+      .leftJoin(
+        ArchiveItemSchema,
+        eq(ArchiveSchema.id, ArchiveItemSchema.archiveId),
+      )
+      .groupBy(ArchiveSchema.id)
+      .orderBy(ArchiveSchema.updatedAt);
+
+    return result.map((row) => ({
+      ...row,
+      itemCount: Number(row.itemCount),
+    })) as ArchiveWithItemCount[];
+  },
+
   async getArchiveById(id) {
     const [result] = await db
       .select()

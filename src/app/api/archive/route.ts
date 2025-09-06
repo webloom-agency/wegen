@@ -11,9 +11,7 @@ export async function GET() {
   }
 
   try {
-    const archives = await archiveRepository.getArchivesByUserId(
-      session.user.id,
-    );
+    const archives = await archiveRepository.getAllArchivesWithCount();
     return Response.json(archives);
   } catch (error) {
     console.error("Failed to fetch archives:", error);
