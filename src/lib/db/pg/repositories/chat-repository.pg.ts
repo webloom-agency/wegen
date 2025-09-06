@@ -146,6 +146,66 @@ export const pgChatRepository: ChatRepository = {
     }));
   },
 
+  selectThreadsByIdsVisibleToUser: async (
+    userId: string,
+    threadIds: string[],
+  ) => {
+    if (!threadIds.length) return [] as any;
+
+    const rows = await db
+      .select({
+        threadId: ChatThreadSchema.id,
+        title: ChatThreadSchema.title,
+        createdAt: ChatThreadSchema.createdAt,
+        creatorUserId: ChatThreadSchema.userId,
+        lastMessageAt: sql<string>`MAX(${ChatMessageSchema.createdAt})`.as(
+          "last_message_at",
+        ),
+      })
+      .from(ChatThreadSchema)
+      .leftJoin(
+        ChatMessageSchema,
+        eq(ChatThreadSchema.id, ChatMessageSchema.threadId),
+      )
+      .where(
+        and(
+          // limit by provided ids
+          sql`${ChatThreadSchema.id} = ANY(${sql.array(threadIds)})`,
+          // visible if owner or references an agent visible to current user
+          sql`(
+            ${ChatThreadSchema.userId} = ${userId}
+            OR EXISTS (
+              SELECT 1
+              FROM ${ChatMessageSchema} cm2
+              WHERE cm2.thread_id = ${ChatThreadSchema.id}
+                AND EXISTS (
+                  SELECT 1
+                  FROM unnest(cm2.annotations) AS ann
+                  WHERE (ann)::jsonb ->> 'agentId' IN (
+                    SELECT a.id::text
+                    FROM ${AgentSchema} a
+                    WHERE a.user_id = ${userId}
+                       OR a.visibility IN ('public','readonly')
+                  )
+                )
+            )
+          )`,
+        ),
+      )
+      .groupBy(ChatThreadSchema.id)
+      .orderBy(desc(sql`last_message_at`));
+
+    return rows.map((row) => ({
+      id: row.threadId,
+      title: row.title,
+      userId: row.creatorUserId,
+      createdAt: row.createdAt,
+      lastMessageAt: row.lastMessageAt
+        ? new Date(row.lastMessageAt).getTime()
+        : 0,
+    }));
+  },
+
   selectThreadsByUserIdAndAgentId: async (
     userId: string,
     agentId: string,

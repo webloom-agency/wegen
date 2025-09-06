@@ -58,81 +58,19 @@ async function getArchiveWithThreads(
     return { ...(archive as any), threads: [] } as ArchiveWithThreads;
   }
 
-  const agentVisibilityCache = new Map<string, boolean>();
-  const isAgentVisible = async (agentId: string, userId: string) => {
-    if (agentVisibilityCache.has(agentId)) {
-      return agentVisibilityCache.get(agentId)!;
-    }
-    const agent = await agentRepository.selectAgentById(agentId, userId);
-    const visible = !!agent;
-    agentVisibilityCache.set(agentId, visible);
-    return visible;
-  };
-
-  const processed = await Promise.all(
-    threadIds.map(async (threadId) => {
-      const thread = await chatRepository.selectThread(threadId);
-      if (!thread) return null;
-
-      // Owner can always view
-      if (thread.userId === session.user.id) {
-        const msgs = await chatRepository.selectMessagesByThreadId(threadId);
-        const lastAt = msgs.length
-          ? new Date((msgs[msgs.length - 1] as any).createdAt).getTime()
-          : 0;
-        return {
-          id: thread.id,
-          title: thread.title,
-          createdAt: thread.createdAt,
-          lastMessageAt: lastAt,
-          userId: thread.userId,
-        } as const;
-      }
-
-      // Non-owner: only allow if thread references a visible agent
-      const messages = await chatRepository.selectMessagesByThreadId(threadId);
-      const agentIds = new Set<string>();
-      for (const m of messages) {
-        const anns = (m as any).annotations as any[] | undefined;
-        if (!anns || !Array.isArray(anns)) continue;
-        for (const ann of anns) {
-          const a = ann as any;
-          if (a && typeof a === "object" && typeof a.agentId === "string") {
-            agentIds.add(a.agentId);
-          }
-        }
-      }
-      if (agentIds.size === 0) return null;
-
-      let allowed = false;
-      for (const agentId of agentIds) {
-        if (await isAgentVisible(agentId, session.user.id)) {
-          allowed = true;
-          break;
-        }
-      }
-      if (!allowed) return null;
-
-      const lastAt = messages.length
-        ? new Date((messages[messages.length - 1] as any).createdAt).getTime()
-        : 0;
-      return {
-        id: thread.id,
-        title: thread.title,
-        createdAt: thread.createdAt,
-        lastMessageAt: lastAt,
-        userId: thread.userId,
-      } as const;
-    }),
+  const rows = await chatRepository.selectThreadsByIdsVisibleToUser(
+    session.user.id,
+    threadIds,
   );
 
-  const threads = (processed.filter(Boolean) as Array<{
-    id: string;
-    title: string;
-    createdAt: Date;
-    lastMessageAt: number;
-    userId: string;
-  }>).sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0));
+  const threads = rows
+    .map((row) => ({
+      id: row.id,
+      title: row.title,
+      createdAt: row.createdAt,
+      lastMessageAt: row.lastMessageAt,
+    }))
+    .sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0));
 
   return { ...(archive as any), threads } as ArchiveWithThreads;
 }

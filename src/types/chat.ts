@@ -156,6 +156,15 @@ export type ChatRepository = {
     })[]
   >;
 
+  selectThreadsByIdsVisibleToUser(
+    userId: string,
+    threadIds: string[],
+  ): Promise<
+    (ChatThread & {
+      lastMessageAt: number;
+    })[]
+  >;
+
   updateThread(
     id: string,
     thread: Partial<Omit<ChatThread, "id" | "createdAt">>,
