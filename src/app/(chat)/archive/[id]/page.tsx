@@ -30,6 +30,7 @@ interface ArchiveWithThreads {
   description: string | null;
   createdAt: Date;
   updatedAt: Date;
+  userId: string;
   threads: Array<{
     id: string;
     title: string;
