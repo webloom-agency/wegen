@@ -9,7 +9,7 @@ import {
   AgentSchema,
 } from "../schema.pg";
 
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 
 export const pgChatRepository: ChatRepository = {
   insertThread: async (
@@ -170,7 +170,7 @@ export const pgChatRepository: ChatRepository = {
       .where(
         and(
           // limit by provided ids
-          sql`${ChatThreadSchema.id} = ANY(${sql.array(threadIds)})`,
+          inArray(ChatThreadSchema.id, threadIds),
           // visible if owner or references an agent visible to current user
           sql`(
             ${ChatThreadSchema.userId} = ${userId}
