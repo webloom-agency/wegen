@@ -22,12 +22,7 @@ export async function GET(
       return Response.json({ error: "Archive not found" }, { status: 404 });
     }
 
-    // Check if user owns this archive
-    if (archive.userId !== session.user.id) {
-      return new Response("Forbidden", { status: 403 });
-    }
-
-    // Get archive items
+    // Public read: anyone signed-in can view archive meta and items
     const items = await archiveRepository.getArchiveItems(id);
 
     return Response.json({

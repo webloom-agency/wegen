@@ -1,4 +1,4 @@
-import { archiveRepository, chatRepository } from "lib/db/repository";
+import { archiveRepository, chatRepository, agentRepository } from "lib/db/repository";
 import { getSession } from "auth/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -49,22 +49,88 @@ async function getArchiveWithThreads(
     archiveRepository.getArchiveItems(archiveId),
   ]);
 
-  if (!archive || archive.userId !== session.user.id) return null;
+  if (!archive) return null;
 
   const threadIds = archiveItems.map((item) => item.itemId);
 
   if (threadIds.length === 0) {
-    return { ...archive, threads: [] };
+    return { ...archive, threads: [] } as ArchiveWithThreads;
   }
 
-  const allThreads = await chatRepository.selectThreadsByUserId(
-    session.user.id,
-  );
-  const threads = allThreads
-    .filter((thread) => threadIds.includes(thread.id))
-    .sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0));
+  const visibleThreads: Array<{
+    id: string;
+    title: string;
+    createdAt: Date;
+    lastMessageAt: number;
+    userId: string;
+  }> = [];
 
-  return { ...archive, threads };
+  // Evaluate visibility per thread using existing rules
+  for (const threadId of threadIds) {
+    const thread = await chatRepository.selectThread(threadId);
+    if (!thread) continue;
+
+    // Owner can always view
+    if (thread.userId === session.user.id) {
+      const msgs = await chatRepository.selectMessagesByThreadId(threadId);
+      const lastAt = msgs.length
+        ? new Date(msgs[msgs.length - 1].createdAt as any).getTime()
+        : 0;
+      visibleThreads.push({
+        id: thread.id,
+        title: thread.title,
+        createdAt: thread.createdAt,
+        lastMessageAt: lastAt,
+        userId: thread.userId,
+      });
+      continue;
+    }
+
+    // Non-owner: only allow if thread references an agent visible to current user
+    const messages = await chatRepository.selectMessagesByThreadId(threadId);
+    const agentIds = new Set<string>();
+    for (const m of messages) {
+      const anns = (m as any).annotations as any[] | undefined;
+      if (!anns || !Array.isArray(anns)) continue;
+      for (const ann of anns) {
+        const a = ann as any;
+        if (a && typeof a === "object" && typeof a.agentId === "string") {
+          agentIds.add(a.agentId);
+        }
+      }
+    }
+
+    let allowed = false;
+    for (const agentId of agentIds) {
+      const agent = await agentRepository.selectAgentById(
+        agentId,
+        session.user.id,
+      );
+      if (agent) {
+        allowed = true;
+        break;
+      }
+    }
+
+    if (allowed) {
+      const lastAt = messages.length
+        ? new Date(messages[messages.length - 1].createdAt as any).getTime()
+        : 0;
+      visibleThreads.push({
+        id: thread.id,
+        title: thread.title,
+        createdAt: thread.createdAt,
+        lastMessageAt: lastAt,
+        userId: thread.userId,
+      });
+    }
+  }
+
+  const threads = visibleThreads.sort(
+    (a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0),
+  );
+
+  return { ...(archive as any), threads } as ArchiveWithThreads;
 }
 
 export default async function ArchivePage({
@@ -109,7 +175,7 @@ export default async function ArchivePage({
         </div>
       </>
       <div className="container mx-auto p-6 max-w-4xl z-40">
-        {/* Archive Header */}
+        {/* Category Header */}
         <div className="mb-8 z-50">
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-2xl font-bold">{archive.name}</h1>
@@ -146,10 +212,10 @@ export default async function ArchivePage({
                 <div className="text-center">
                   <MessageCircleXIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-medium mb-2">
-                    No threads in this archive
+                    No threads in this category
                   </h3>
                   <p className="text-muted-foreground">
-                    Add some chat threads to this archive to see them here.
+                    Add some chat threads to this category to see them here.
                   </p>
                 </div>
               </CardContent>
