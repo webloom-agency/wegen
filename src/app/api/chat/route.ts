@@ -553,12 +553,16 @@ export async function POST(request: Request) {
           ? "If multiple workflows or MCP servers could match and none is an exact name match, ask the user to confirm which to use before calling any tools."
           : undefined;
 
+        const postToolSummaryHint =
+          "After completing any tool invocation, provide a concise natural-language summary of the key findings in the user's language. Do not invoke any additional tools in the summary step.";
+
         const systemPrompt = mergeSystemPrompt(
           buildUserSystemPrompt(session.user, userPreferences, effectiveAgent),
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
           forcedWorkflowHint,
           disambiguationHint,
           forcedMcpHint,
+          postToolSummaryHint,
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
           (!supportToolCall ||
             ["openai", "anthropic"].includes(chatModel?.provider ?? "")) &&
