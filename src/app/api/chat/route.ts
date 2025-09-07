@@ -646,14 +646,22 @@ export async function POST(request: Request) {
         const preferMcp = !preferWorkflow && (clientMcpMentions.length > 0 || forceMcpAuto);
         const toolChoiceForRun: "auto" | "required" = preferWorkflow || preferMcp ? "required" : "auto";
 
-        // Keep steps tight to avoid loops: workflows run once unless multiple are explicitly mentioned
-        const maxStepsForRun = preferWorkflow
-          ? (explicitClientWorkflowMentions.length > 0
-              ? Math.min(3, explicitClientWorkflowMentions.length)
-              : 1)
-          : preferMcp
-            ? 3
-            : 10;
+        // Ensure at least one post-tool step for an assistant summary
+        const maxStepsForRun = (() => {
+          if (preferWorkflow) {
+            const wfCount = Math.max(
+              1,
+              explicitClientWorkflowMentions.length || 1,
+            );
+            // one step per workflow (capped) + 1 for summary
+            return Math.min(5, wfCount + 1);
+          }
+          if (preferMcp) {
+            // one tool call + one summary step
+            return 2;
+          }
+          return 10;
+        })();
 
         // Per-turn dedup guard: prevent re-invoking the same workflow tool within this run
         const toolsForRun = (() => {
