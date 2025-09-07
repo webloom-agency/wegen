@@ -109,6 +109,8 @@ const PurePreviewMessage = ({
             // - Prefer the last 'result' per tool if present
             // - If no 'result' exists for a tool, keep only the FIRST 'call' for that tool and drop subsequent queued calls
             const parts = (message.parts as UIMessage["parts"]) || [];
+            // Early-out for user messages: don't run tool filtering and avoid hook-order confusion warnings
+            if (message.role === "user") return parts;
             const resultExists = new Set<string>();
             const firstCallIndex = new Map<string, number>();
             for (let i = 0; i < parts.length; i++) {

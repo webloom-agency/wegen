@@ -995,11 +995,8 @@ export const ToolMessagePart = memo(
     );
 
     // Heuristic: Workflow tools are generated with uppercase kebab-case names (e.g., BRIEF-SEO)
-    // Hide transient 'call' entries for such tools to avoid double-rows (call + running result)
+    // We'll conditionally hide transient 'call' entries later, after all hooks are declared
     const isLikelyWorkflowToolName = useMemo(() => /^(?:[A-Z0-9]+-)*[A-Z0-9]{2,}$/.test(toolName), [toolName]);
-    if (isLikelyWorkflowToolName && state !== "result") {
-      return null;
-    }
 
     const { serverName: mcpServerName, toolName: mcpToolName } = useMemo(() => {
       return extractMCPToolId(toolName);
@@ -1013,6 +1010,11 @@ export const ToolMessagePart = memo(
       if (isWorkflowTool) return result?.status == "running";
       return state !== "result" && (isLast || !!onPoxyToolCall);
     }, [isWorkflowTool, result, state, isLast, !!onPoxyToolCall]);
+
+    // After all hooks are declared, apply the transient hide for workflow-like tool names
+    if (isLikelyWorkflowToolName && state !== "result") {
+      return null;
+    }
 
     return (
       <div className="group w-full">
