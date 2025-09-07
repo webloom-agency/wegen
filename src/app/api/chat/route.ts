@@ -569,7 +569,7 @@ export async function POST(request: Request) {
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         const maxStepsForRun = (forceWorkflowOnly || forceWorkflowAuto)
-          ? Math.max(3, Math.min(6, (explicitClientWorkflowMentions.length || 1) + 2))
+          ? 1 // Exactly one tool call when workflows are forced/auto-detected
           : 10;
 
         // Per-turn dedup guard and restriction: if forcing workflows, expose only workflow tools and prevent duplicate calls
@@ -635,21 +635,38 @@ export async function POST(request: Request) {
             }
             const assistantMessage = appendMessages.at(-1);
             if (assistantMessage) {
-              // Deduplicate tool-invocation parts by tool name (keep the last result per tool)
+              // Deduplicate tool-invocation parts by tool name
+              // - Keep only the last 'result' per tool
+              // - Drop earlier 'call' entries for tools that have a 'result' later in the same message
               const dedupParts = (() => {
                 const parts = (assistantMessage.parts as UIMessage["parts"]) || [];
+                const resultToolNames = new Set<string>();
+                for (const p of parts) {
+                  const pv: any = p;
+                  if (
+                    pv?.type === "tool-invocation" &&
+                    pv?.toolInvocation?.state === "result" &&
+                    typeof pv?.toolInvocation?.toolName === "string"
+                  ) {
+                    resultToolNames.add(pv.toolInvocation.toolName);
+                  }
+                }
                 const seen = new Set<string>();
                 const result: typeof parts = [];
                 for (let i = parts.length - 1; i >= 0; i--) {
                   const p = parts[i] as any;
                   if (
                     p?.type === "tool-invocation" &&
-                    p?.toolInvocation?.state === "result" &&
                     typeof p?.toolInvocation?.toolName === "string"
                   ) {
                     const key = p.toolInvocation.toolName;
-                    if (seen.has(key)) continue;
-                    seen.add(key);
+                    if (p?.toolInvocation?.state !== "result" && resultToolNames.has(key)) {
+                      continue; // drop earlier 'call' when a 'result' exists later
+                    }
+                    if (p?.toolInvocation?.state === "result") {
+                      if (seen.has(key)) continue;
+                      seen.add(key);
+                    }
                   }
                   result.push(parts[i]);
                 }
