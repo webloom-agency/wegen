@@ -644,69 +644,15 @@ export async function POST(request: Request) {
         // Decide final toolChoice: force required when explicit client workflow(s) were mentioned
         const preferWorkflow = forceWorkflowOnly || forceWorkflowAuto;
         const preferMcp = !preferWorkflow && (clientMcpMentions.length > 0 || forceMcpAuto);
-        const toolChoiceForRun: "auto" | "required" = preferWorkflow || preferMcp ? "required" : "auto";
+        // Always use auto; rely on prompt to invoke tool exactly once, then summarize
+        const toolChoiceForRun: "auto" | "required" = "auto";
 
         // Ensure at least one post-tool step for an assistant summary
-        const maxStepsForRun = (() => {
-          if (preferWorkflow) {
-            const wfCount = Math.max(
-              1,
-              explicitClientWorkflowMentions.length || 1,
-            );
-            // one step per workflow (capped) + 1 for summary
-            return Math.min(5, wfCount + 1);
-          }
-          if (preferMcp) {
-            // one tool call + one summary step
-            return 2;
-          }
-          return 10;
-        })();
+        // One tool step + one assistant summary step
+        const maxStepsForRun = 2;
 
         // Per-turn dedup guard: prevent re-invoking the same workflow tool within this run
-        const DUP_NOTE =
-          "Le workflow a déjà été exécuté pour cette requête. J'ai inclus le résultat ci-dessus. Dites-moi si vous souhaitez relancer avec des paramètres différents.";
-
-        const toolsForRun = (() => {
-          if (preferWorkflow) {
-            const onlyWorkflows = Object.fromEntries(
-              Object.entries(vercelAITooles as Record<string, any>).filter(
-                ([, tool]: any) => tool?.__$ref__ === "workflow",
-              ),
-            );
-            const invoked = new Set<string>();
-            const toolsRef = onlyWorkflows as Record<string, any>;
-            for (const [name, tool] of Object.entries(toolsRef)) {
-              const originalExecute = tool?.execute;
-              if (typeof originalExecute !== "function") continue;
-              toolsRef[name].execute = async (args: any, ctx: any) => {
-                if (invoked.has(name)) {
-                  // On duplicate attempt, short-circuit with a friendly text result
-                  return {
-                    content: [
-                      {
-                        type: "text",
-                        text: DUP_NOTE,
-                      },
-                    ],
-                  } as any;
-                }
-                invoked.add(name);
-                return originalExecute(args, ctx);
-              };
-            }
-            return toolsRef;
-          }
-          if (preferMcp) {
-            const onlyMcp = Object.fromEntries(
-              Object.entries(vercelAITooles as Record<string, any>).filter(
-                ([, tool]: any) => tool?.__$ref__ === "mcp",
-              ),
-            );
-            return onlyMcp as Record<string, any>;
-          }
-          return vercelAITooles;
-        })();
+        const toolsForRun = vercelAITooles;
 
         const result = streamText({
           model,
