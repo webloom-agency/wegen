@@ -483,7 +483,7 @@ export async function POST(request: Request) {
                 return `${human}${toolKey ? ` (tool: ${toolKey})` : ""}`.trim();
               });
               const list = items.length > 0 ? items.join(", ") : "the detected workflow(s)";
-              return `You MUST invoke the following workflow(s) exactly once this turn: ${list}. Prefer these workflow tools over other tools. After invoking, provide a concise final answer summarizing the results. Do not invoke the same workflow multiple times in the same turn.`;
+              return `Invoke the following workflow(s) exactly once this turn: ${list}. After the workflow completes, produce a brief assistant summary in the chat: highlight key findings, actionable next steps, and link to any generated artifacts. Do not re-invoke the same workflow in this turn.`;
             })()
           : undefined;
 
@@ -562,14 +562,12 @@ export async function POST(request: Request) {
         );
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
-        // Decide final toolChoice: force required when explicit client workflow(s) were mentioned
-        // Only require tool calls when the user explicitly mentioned workflows. For auto-detected workflows, keep "auto"
-        // so the model can still produce a natural-language summary after the tool call.
-        const toolChoiceForRun: "auto" | "required" = forceWorkflowOnly ? "required" : "auto";
+        // Always keep AUTO so the model can produce a natural-language summary after tool use
+        const toolChoiceForRun: "auto" | "required" = "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         const maxStepsForRun = (forceWorkflowOnly || forceWorkflowAuto)
-          ? 2 // Allow one workflow tool call and room for follow-up assistant summary
+          ? 3 // Allow tool call + optional internal retry + final assistant summary
           : 10;
 
         // Per-turn dedup guard and restriction: if forcing workflows, expose only workflow tools and prevent duplicate calls
