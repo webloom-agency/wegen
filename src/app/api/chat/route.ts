@@ -130,7 +130,6 @@ export async function POST(request: Request) {
 
     // Auto-detect mentions (agents/workflows) from user text when not explicitly tagged
     let autoDetectedAgent: any | undefined;
-    let forceWorkflowAuto = false;
     try {
       const getNormalized = (s: string) =>
         s
@@ -237,7 +236,6 @@ export async function POST(request: Request) {
               icon: (wf as any).icon ?? null,
             } as any);
             existingWorkflowIds.add((wf as any).id);
-            if (strong) forceWorkflowAuto = true;
             continue;
           }
           // relaxed matching: one significant token with some uniqueness or similarity
@@ -523,9 +521,7 @@ export async function POST(request: Request) {
           (m: any) => m.type === "mcpServer" || m.type === "mcpTool",
         );
 
-        const strongMcpServerIds: Set<string> = (request as any)
-          ?._strongMcpServerIds || new Set<string>();
-        const forceMcpAuto = strongMcpServerIds.size > 0;
+        // strong MCP server ids reserved (no longer used to force behavior)
 
         // Presence flags (reserved for future prioritization logic)
         // const hasWorkflowMention = (mentions || []).some(
