@@ -641,8 +641,6 @@ export async function POST(request: Request) {
         );
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
-        // Decide preference to bias prompts (no longer used in code below)
-        const preferWorkflow = forceWorkflowOnly || forceWorkflowAuto;
         // Always use auto; rely on prompt to invoke tool exactly once, then summarize
         const toolChoiceForRun: "auto" | "required" = "auto";
 
