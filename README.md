@@ -270,7 +270,9 @@ OLLAMA_BASE_URL=http://localhost:11434/api
 BETTER_AUTH_SECRET=****
 
 # (Optional)
-# URL for Better Auth (the URL you access the app from)
+# Public base URL of the app (used for auth callbacks, links, etc.)
+NEXT_PUBLIC_BASE_URL=
+# (Optional) Legacy env for auth base URL; used as fallback
 BETTER_AUTH_URL=
 
 # === Database ===

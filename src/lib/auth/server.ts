@@ -23,9 +23,12 @@ const {
   socialAuthenticationProviders,
 } = getAuthConfig();
 
+const resolvedBaseURL =
+  process.env.NEXT_PUBLIC_BASE_URL || process.env.BETTER_AUTH_URL || undefined;
+
 export const auth = betterAuth({
   plugins: [nextCookies()],
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL,
+  ...(resolvedBaseURL ? { baseURL: resolvedBaseURL } : {}),
   database: drizzleAdapter(pgDb, {
     provider: "pg",
     schema: {

@@ -16,20 +16,45 @@ export const FILE_BASED_MCP_CONFIG =
 export const COOKIE_KEY_SIDEBAR_STATE = "sidebar:state";
 export const COOKIE_KEY_LOCALE = "i18n:locale";
 
-export const BASE_URL = (() => {
+const resolvePrimaryBaseUrl = (): string => {
+  if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
   if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
-
   if (IS_VERCEL_ENV) {
     const vercelDomain =
       (process.env.VERCEL_ENV == "production"
         ? process.env.VERCEL_PROJECT_PRODUCTION_URL
         : process.env.VERCEL_URL) || process.env.VERCEL_URL;
-
     if (vercelDomain) return `https://${vercelDomain}`;
   }
-
   return `http://localhost:${process.env.PORT || 3000}`;
-})().replace(/\/+$/, "");
+};
+
+const normalizeUrl = (u: string) => u.replace(/\/+$/, "");
+
+export const BASE_URLS = (() => {
+  const list: string[] = [];
+  const pushMaybe = (v?: string) => v && list.push(v);
+  // Primary candidates first so they end up earlier in the list
+  pushMaybe(process.env.NEXT_PUBLIC_BASE_URL);
+  pushMaybe(process.env.BETTER_AUTH_URL);
+  // Additional comma-separated list support
+  const extra =
+    process.env.NEXT_PUBLIC_BASE_URLS || process.env.BETTER_AUTH_URLS || "";
+  extra
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .forEach((u) => list.push(u));
+
+  const primary = resolvePrimaryBaseUrl();
+  list.push(primary);
+
+  // normalize, dedupe, and strip trailing slashes
+  const deduped = Array.from(new Set(list.map(normalizeUrl)));
+  return deduped;
+})();
+
+export const BASE_URL = BASE_URLS[0];
 
 export const BASE_THEMES = [
   "default",

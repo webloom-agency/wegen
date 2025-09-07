@@ -24,7 +24,7 @@ import {
 } from "lib/utils";
 
 import { safe } from "ts-safe";
-import { BASE_URL, IS_MCP_SERVER_REMOTE_ONLY, IS_VERCEL_ENV } from "lib/const";
+import { BASE_URLS, IS_MCP_SERVER_REMOTE_ONLY, IS_VERCEL_ENV } from "lib/const";
 import { UnauthorizedError } from "@modelcontextprotocol/sdk/client/auth.js";
 import { PgOAuthClientProvider } from "./pg-oauth-provider";
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
@@ -129,7 +129,7 @@ export class MCPClient {
       const redirectUris =
         oauthMode === "server" && remote.oauth?.redirectUri
           ? [remote.oauth.redirectUri]
-          : [`${BASE_URL}/api/mcp/oauth/callback`];
+          : BASE_URLS.map((u) => `${u}/api/mcp/oauth/callback`);
 
       this.oauthProvider = new PgOAuthClientProvider({
         name: this.name,
