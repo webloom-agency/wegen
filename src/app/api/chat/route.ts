@@ -655,8 +655,7 @@ export async function POST(request: Request) {
 
         // Ensure at least one post-tool step for an assistant summary
         // Steps: allow multiple MCP tool hops (e.g., find_account -> get_campaign_performance) + one summary
-        // No hard cap: let the model chain tools naturally
-        const maxStepsForRun = undefined as unknown as number;
+        // No hard step limit: allow the model to chain tools as needed
 
         // Per-turn dedup guard: prevent re-invoking the same workflow tool within this run
 
@@ -665,8 +664,7 @@ export async function POST(request: Request) {
           system: systemPrompt,
           messages,
           temperature: 1,
-          // Let the model decide steps; prompt enforces final summary
-          maxSteps: maxStepsForRun,
+          // No explicit maxSteps to allow unrestricted chaining
           toolCallStreaming: true,
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 2,
