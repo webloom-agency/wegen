@@ -650,12 +650,6 @@ export async function POST(request: Request) {
 
         // Ensure at least one post-tool step for an assistant summary
         // Steps: allow multiple MCP tool hops (e.g., find_account -> get_campaign_performance) + one summary
-        const hasWorkflowMention = (mentions || []).some(
-          (m: any) => m.type === "workflow",
-        );
-        const hasMcpMention = (mentions || []).some(
-          (m: any) => m.type === "mcpServer" || m.type === "mcpTool",
-        );
         // No hard cap: let the model chain tools naturally
         const maxStepsForRun = undefined as unknown as number;
 
