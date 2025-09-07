@@ -586,14 +586,11 @@ export async function POST(request: Request) {
             };
           })
           .map((t) => {
-            const allowThinkingTool = supportToolCall && thinking && !forceWorkflowOnly;
-            if (allowThinkingTool) {
-              return {
-                ...t,
-                [SequentialThinkingToolName]: sequentialThinkingTool,
-              };
-            }
-            return t;
+            // Always provide planning tool to enable multi-step orchestration
+            return {
+              ...t,
+              [SequentialThinkingToolName]: sequentialThinkingTool,
+            };
           })
           .map((allTools) => {
             // Hard cap per provider limitation: 128 tools max
