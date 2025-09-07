@@ -554,7 +554,7 @@ export async function POST(request: Request) {
           : undefined;
 
         const postToolSummaryHint =
-          "After completing any tool invocation, provide a concise natural-language summary of the key findings in the user's language. Do not invoke any additional tools in the summary step.";
+          "Perform as many tool invocations as necessary to fully answer the user's request. Only after completing all necessary tool calls, provide one concise natural-language summary in the user's language. Do not summarize mid-run if additional tool calls are clearly needed, and do not invoke tools in the summary step.";
 
         const systemPrompt = mergeSystemPrompt(
           buildUserSystemPrompt(session.user, userPreferences, effectiveAgent),
