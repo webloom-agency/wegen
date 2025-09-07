@@ -104,9 +104,55 @@ const PurePreviewMessage = ({
             </div>
           )}
 
-          {message.parts?.map((part, index) => {
+          {useMemo(() => {
+            // Deduplicate tool-invocation parts:
+            // - Prefer the last 'result' per tool if present
+            // - If no 'result' exists for a tool, keep only the FIRST 'call' for that tool and drop subsequent queued calls
+            const parts = (message.parts as UIMessage["parts"]) || [];
+            const resultExists = new Set<string>();
+            const firstCallIndex = new Map<string, number>();
+            for (let i = 0; i < parts.length; i++) {
+              const pv: any = parts[i];
+              if (pv?.type === "tool-invocation" && typeof pv?.toolInvocation?.toolName === "string") {
+                const key = pv.toolInvocation.toolName as string;
+                if (pv.toolInvocation.state === "result") {
+                  resultExists.add(key);
+                } else if (!firstCallIndex.has(key)) {
+                  firstCallIndex.set(key, i);
+                }
+              }
+            }
+            const includedResult = new Set<string>();
+            const includedCall = new Set<string>();
+            const filtered: UIMessage["parts"] = [];
+            for (let i = 0; i < parts.length; i++) {
+              const p: any = parts[i];
+              if (p?.type === "tool-invocation" && typeof p?.toolInvocation?.toolName === "string") {
+                const key = p.toolInvocation.toolName as string;
+                if (p.toolInvocation.state === "result") {
+                  if (includedResult.has(key)) continue;
+                  includedResult.add(key);
+                  filtered.push(parts[i] as any);
+                  continue;
+                }
+                // state !== 'result'
+                if (resultExists.has(key)) {
+                  // A result will appear or already appeared; hide interim queued calls
+                  continue;
+                }
+                // Keep only the first call per tool
+                if (firstCallIndex.get(key) !== i) continue;
+                if (includedCall.has(key)) continue;
+                includedCall.add(key);
+                filtered.push(parts[i] as any);
+                continue;
+              }
+              filtered.push(parts[i] as any);
+            }
+            return filtered;
+          }, [message.parts])?.map((part, index, arr) => {
             const key = `message-${messageIndex}-part-${part.type}-${index}`;
-            const isLastPart = index === message.parts.length - 1;
+            const isLastPart = index === arr.length - 1;
 
             if (part.type === "reasoning") {
               return (

@@ -994,6 +994,13 @@ export const ToolMessagePart = memo(
       [result],
     );
 
+    // Heuristic: Workflow tools are generated with uppercase kebab-case names (e.g., BRIEF-SEO)
+    // Hide transient 'call' entries for such tools to avoid double-rows (call + running result)
+    const isLikelyWorkflowToolName = useMemo(() => /^(?:[A-Z0-9]+-)*[A-Z0-9]{2,}$/.test(toolName), [toolName]);
+    if (isLikelyWorkflowToolName && state !== "result") {
+      return null;
+    }
+
     const { serverName: mcpServerName, toolName: mcpToolName } = useMemo(() => {
       return extractMCPToolId(toolName);
     }, [toolName]);

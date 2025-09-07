@@ -569,7 +569,7 @@ export async function POST(request: Request) {
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         const maxStepsForRun = (forceWorkflowOnly || forceWorkflowAuto)
-          ? 1 // Exactly one tool call when workflows are forced/auto-detected
+          ? 2 // Allow one workflow tool call and room for follow-up assistant summary
           : 10;
 
         // Per-turn dedup guard and restriction: if forcing workflows, expose only workflow tools and prevent duplicate calls
