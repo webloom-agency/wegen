@@ -664,6 +664,9 @@ export async function POST(request: Request) {
         })();
 
         // Per-turn dedup guard: prevent re-invoking the same workflow tool within this run
+        const DUP_NOTE =
+          "Le workflow a déjà été exécuté pour cette requête. J'ai inclus le résultat ci-dessus. Dites-moi si vous souhaitez relancer avec des paramètres différents.";
+
         const toolsForRun = (() => {
           if (preferWorkflow) {
             const onlyWorkflows = Object.fromEntries(
@@ -683,8 +686,7 @@ export async function POST(request: Request) {
                     content: [
                       {
                         type: "text",
-                        text:
-                          "Le workflow a déjà été exécuté pour cette requête. J'ai inclus le résultat ci-dessus. Dites-moi si vous souhaitez relancer avec des paramètres différents.",
+                        text: DUP_NOTE,
                       },
                     ],
                   } as any;
