@@ -580,8 +580,8 @@ export async function POST(request: Request) {
               toolChoice === "manual" ? excludeToolExecution(t) : t;
             return {
               ...bindingTools,
-              // Include App Default tools only when no workflow/MCP mentions exist
-              ...(!hasWorkflowMention && !hasMcpMention ? APP_DEFAULT_TOOLS : {}),
+              // Always include App Default tools to preserve natural chaining
+              ...APP_DEFAULT_TOOLS,
             };
           })
           .map((t) => {
@@ -633,6 +633,9 @@ export async function POST(request: Request) {
           })
           .unwrap();
 
+        // Use original tools; rely on model and hints for orchestration
+        const boundTools = vercelAITooles;
+
         const allowedMcpTools = Object.values(allowedMcpServers ?? {})
           .map((t: AllowedMCPServer) => t.tools)
           .flat();
@@ -670,7 +673,7 @@ export async function POST(request: Request) {
           toolCallStreaming: true,
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 2,
-          tools: toolsForRun,
+          tools: boundTools,
           toolChoice: toolChoiceForRun,
           abortSignal: request.signal,
           onFinish: async ({ response, usage }) => {
