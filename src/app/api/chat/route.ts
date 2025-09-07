@@ -691,35 +691,49 @@ export async function POST(request: Request) {
             }
             const assistantMessage = appendMessages.at(-1);
             if (assistantMessage) {
-              // If model didn't produce a text answer, synthesize one from workflow result(s)
+              // If model didn't produce a text answer, synthesize one from tool result(s)
               const partsArray = (assistantMessage.parts as UIMessage["parts"]) as any[];
               const hasAssistantText = Array.isArray(partsArray)
                 ? partsArray.some((p) => p?.type === "text" && typeof p?.text === "string" && p.text.trim().length > 0)
                 : false;
-              let workflowText: string | undefined;
               if (!hasAssistantText && Array.isArray(partsArray)) {
-                const wfResults: string[] = partsArray
+                const toolTexts: string[] = partsArray
                   .filter(
-                    (p) =>
-                      p?.type === "tool-invocation" &&
-                      p?.toolInvocation?.state === "result" &&
-                      isVercelAIWorkflowTool(p?.toolInvocation?.result),
+                    (p) => p?.type === "tool-invocation" && p?.toolInvocation?.state === "result",
                   )
                   .map((p) => {
-                    const r = p.toolInvocation.result?.result;
-                    if (typeof r === "string") return r;
+                    const res = p.toolInvocation.result as any;
+                    // Workflow result normalization
+                    if (isVercelAIWorkflowTool(res)) {
+                      const r = res?.result;
+                      if (typeof r === "string") return r;
+                      try {
+                        return JSON.stringify(r, null, 2);
+                      } catch {
+                        return String(r ?? "");
+                      }
+                    }
+                    // MCP or generic tool result normalization
+                    const content = res?.content;
+                    if (Array.isArray(content)) {
+                      const texts = content
+                        .map((c: any) => (c?.type === "text" && typeof c?.text === "string" ? c.text : ""))
+                        .filter((t: string) => t);
+                      if (texts.length) return texts.join("\n");
+                    }
                     try {
-                      return JSON.stringify(r, null, 2);
+                      return JSON.stringify(res, null, 2);
                     } catch {
-                      return String(r ?? "");
+                      return String(res ?? "");
                     }
                   })
                   .filter((t) => t && t.trim().length > 0);
-                if (wfResults.length > 0) {
-                  workflowText = wfResults.join("\n\n");
+
+                if (toolTexts.length > 0) {
+                  const combined = toolTexts.join("\n\n").slice(0, 4000);
                   (assistantMessage as any).parts = [
                     ...partsArray,
-                    { type: "text", text: workflowText },
+                    { type: "text", text: combined },
                   ];
                 }
               }
