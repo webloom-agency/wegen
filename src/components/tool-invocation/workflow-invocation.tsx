@@ -129,9 +129,8 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
     );
   }, [result.status, result.error, result.result, copied]);
   useEffect(() => {
-    if (result.status == "running") {
-      savedResult.current = result;
-    }
+    // Always keep the latest snapshot so that final statuses (success/fail) replace any prior 'running' state
+    savedResult.current = result;
   }, [result]);
 
   return (
