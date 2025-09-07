@@ -563,11 +563,13 @@ export async function POST(request: Request) {
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
         // Decide final toolChoice: force required when explicit client workflow(s) were mentioned
-        const toolChoiceForRun: "auto" | "required" = (forceWorkflowOnly || forceWorkflowAuto) ? "required" : "auto";
+        // Only require tool calls when the user explicitly mentioned workflows. For auto-detected workflows, keep "auto"
+        // so the model can still produce a natural-language summary after the tool call.
+        const toolChoiceForRun: "auto" | "required" = forceWorkflowOnly ? "required" : "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         const maxStepsForRun = (forceWorkflowOnly || forceWorkflowAuto)
-          ? Math.max(3, Math.min(12, explicitClientWorkflowMentions.length + 2))
+          ? Math.max(3, Math.min(6, (explicitClientWorkflowMentions.length || 1) + 2))
           : 10;
 
         // Per-turn dedup guard and restriction: if forcing workflows, expose only workflow tools and prevent duplicate calls
@@ -633,6 +635,27 @@ export async function POST(request: Request) {
             }
             const assistantMessage = appendMessages.at(-1);
             if (assistantMessage) {
+              // Deduplicate tool-invocation parts by tool name (keep the last result per tool)
+              const dedupParts = (() => {
+                const parts = (assistantMessage.parts as UIMessage["parts"]) || [];
+                const seen = new Set<string>();
+                const result: typeof parts = [];
+                for (let i = parts.length - 1; i >= 0; i--) {
+                  const p = parts[i] as any;
+                  if (
+                    p?.type === "tool-invocation" &&
+                    p?.toolInvocation?.state === "result" &&
+                    typeof p?.toolInvocation?.toolName === "string"
+                  ) {
+                    const key = p.toolInvocation.toolName;
+                    if (seen.has(key)) continue;
+                    seen.add(key);
+                  }
+                  result.push(parts[i]);
+                }
+                return result.reverse();
+              })();
+
               const annotations = appendAnnotations(
                 assistantMessage.annotations,
                 [
@@ -646,7 +669,7 @@ export async function POST(request: Request) {
                 threadId: thread!.id,
                 role: assistantMessage.role,
                 id: assistantMessage.id,
-                parts: (assistantMessage.parts as UIMessage["parts"]).map(
+                parts: (dedupParts as UIMessage["parts"]).map(
                   (v) => {
                     if (
                       v.type == "tool-invocation" &&
