@@ -556,12 +556,16 @@ export async function POST(request: Request) {
         const postToolSummaryHint =
           "Perform as many tool invocations as necessary to fully answer the user's request. Only after completing all necessary tool calls, provide one concise natural-language summary in the user's language. Do not summarize mid-run if additional tool calls are clearly needed, and do not invoke tools in the summary step.";
 
+        const mcpOrchestrationHint =
+          "MCP orchestration policy: Do not stop at listing resources. If the user requests metrics/performances/reports, select the most relevant resource from the list and invoke the appropriate data-retrieval tool(s) in the same turn to produce results. If multiple candidates exist and you cannot infer the correct one from the user's text (e.g., a domain or client name), ask one brief clarifying question, then proceed. For Google Ads: when asked for 'performances' or 'performance', after finding or listing accounts, pick the account that matches the user's organization/domain if mentioned, then call get_campaign_performance (or similar) with a reasonable default time window (e.g., 7 days for 'this week').";
+
         const systemPrompt = mergeSystemPrompt(
           buildUserSystemPrompt(session.user, userPreferences, effectiveAgent),
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
           forcedWorkflowHint,
           disambiguationHint,
           forcedMcpHint,
+          mcpOrchestrationHint,
           postToolSummaryHint,
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
           (!supportToolCall ||
