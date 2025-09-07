@@ -104,12 +104,9 @@ const PurePreviewMessage = ({
             </div>
           )}
 
-          {useMemo(() => {
+          {(() => {
             // Deduplicate tool-invocation parts:
-            // - Prefer the last 'result' per tool if present
-            // - If no 'result' exists for a tool, keep only the FIRST 'call' for that tool and drop subsequent queued calls
             const parts = (message.parts as UIMessage["parts"]) || [];
-            // Early-out for user messages: don't run tool filtering and avoid hook-order confusion warnings
             if (message.role === "user") return parts;
             const resultExists = new Set<string>();
             const firstCallIndex = new Map<string, number>();
@@ -137,12 +134,9 @@ const PurePreviewMessage = ({
                   filtered.push(parts[i] as any);
                   continue;
                 }
-                // state !== 'result'
                 if (resultExists.has(key)) {
-                  // A result will appear or already appeared; hide interim queued calls
                   continue;
                 }
-                // Keep only the first call per tool
                 if (firstCallIndex.get(key) !== i) continue;
                 if (includedCall.has(key)) continue;
                 includedCall.add(key);
@@ -152,7 +146,7 @@ const PurePreviewMessage = ({
               filtered.push(parts[i] as any);
             }
             return filtered;
-          }, [message.parts])?.map((part, index, arr) => {
+          })()?.map((part, index, arr) => {
             const key = `message-${messageIndex}-part-${part.type}-${index}`;
             const isLastPart = index === arr.length - 1;
 
