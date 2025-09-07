@@ -130,6 +130,7 @@ export async function POST(request: Request) {
 
     // Auto-detect mentions (agents/workflows) from user text when not explicitly tagged
     let autoDetectedAgent: any | undefined;
+    let forceWorkflowAuto = false;
     try {
       const getNormalized = (s: string) =>
         s
@@ -226,6 +227,7 @@ export async function POST(request: Request) {
           if (existingWorkflowIds.has((wf as any).id)) continue;
           const wfName = (wf as any).name as string;
           const n = getNormalized(wfName);
+          const strong = !!n && userText.includes(n);
           if (containsCandidate(wfName)) {
             mentions.push({
               type: "workflow",
@@ -235,6 +237,7 @@ export async function POST(request: Request) {
               icon: (wf as any).icon ?? null,
             } as any);
             existingWorkflowIds.add((wf as any).id);
+            if (strong) forceWorkflowAuto = true;
             continue;
           }
           // relaxed matching: one significant token with some uniqueness or similarity
@@ -362,72 +365,6 @@ export async function POST(request: Request) {
           `mcp-server count: ${mcpClients.length}, mcp-tools count :${Object.keys(mcpTools).length}`,
         );
 
-        // Auto-detect MCP servers (and tools) from user text to create mentions
-        try {
-          const getNormalized = (s: string) =>
-            (s || "")
-              .toLowerCase()
-              .normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "")
-              .replace(/[^a-z0-9\s]/g, " ")
-              .replace(/\s+/g, " ")
-              .trim();
-          const STOPWORDS = new Set<string>([
-            "the","a","an","and","or","of","for","to","in","on","with","by","at","from","as","is","are","be","this","that","it",
-            "le","la","les","un","une","des","et","ou","de","du","pour","dans","sur","avec","par","au","aux","est","ce","cet","cette","ces",
-          ]);
-          const tokenize = (s: string) => getNormalized(s).split(" ").filter(Boolean).filter((t) => !STOPWORDS.has(t));
-          const userTextParts = ((finalPatchedMessage as any)?.parts as any[]) || [];
-          const userTextRaw = userTextParts
-            .map((p) => (typeof p?.text === "string" ? p.text : ""))
-            .filter(Boolean)
-            .join(" ");
-          const userText = getNormalized(userTextRaw);
-          const strongMcpServerIds = new Set<string>();
-          if (userText && userText.length >= 3) {
-            const existingServers = new Set(
-              (mentions || [])
-                .filter((m: any) => m.type === "mcpServer")
-                .map((m: any) => m.serverId),
-            );
-            // Index servers from tools
-            const servers: Record<string, { id: string; name: string }> = {};
-            Object.values(mcpTools || {}).forEach((tool: any) => {
-              if (!tool?._mcpServerId) return;
-              if (!servers[tool._mcpServerId]) {
-                servers[tool._mcpServerId] = {
-                  id: tool._mcpServerId,
-                  name: tool._mcpServerName || "",
-                };
-              }
-            });
-            // Simple scoring per server based on name token overlap
-            for (const srv of Object.values(servers)) {
-              if (!srv?.id) continue;
-              if (existingServers.has(srv.id)) continue;
-              const tokens = tokenize(srv.name);
-              if (tokens.length === 0) continue;
-              const matched = tokens.filter((t) => userText.includes(t));
-              if (matched.length === 0) continue;
-              // Require at least 2 tokens, or 1 if server name is single-token
-              const ok = matched.length >= Math.min(2, tokens.length);
-              if (!ok) continue;
-              const fullIncluded = userText.includes(getNormalized(srv.name));
-              mentions.push({
-                type: "mcpServer",
-                name: srv.name,
-                description: undefined,
-                toolCount: undefined,
-                serverId: srv.id,
-              } as any);
-              existingServers.add(srv.id);
-              if (fullIncluded) strongMcpServerIds.add(srv.id);
-            }
-          }
-          // attach strong server ids to request for later hinting/forcing
-          (request as any)._strongMcpServerIds = strongMcpServerIds;
-        } catch {}
-
         // Determine if the user explicitly mentioned workflow(s)
         const explicitClientWorkflowMentions = (clientMentions || []).filter(
           (m: any) => m.type === "workflow",
@@ -440,10 +377,7 @@ export async function POST(request: Request) {
         let WORKFLOW_TOOLS: Record<string, any> = {};
         let APP_DEFAULT_TOOLS: Record<string, any> = {};
 
-        // Re-evaluate allowance after auto-mention detection
-        const toolAllowed = isToolCallAllowed || (mentions?.length ?? 0) > 0;
-
-        if (toolAllowed) {
+        if (isToolCallAllowed) {
           if (forceWorkflowOnly) {
             WORKFLOW_TOOLS = await safe()
               .map(() =>
@@ -453,9 +387,23 @@ export async function POST(request: Request) {
                 }),
               )
               .orElse({});
-            // When forcing workflows, do not bind other tools
-            MCP_TOOLS = {};
-            APP_DEFAULT_TOOLS = {};
+            // Keep other tools accessible alongside forced workflows
+            MCP_TOOLS = await safe()
+              .map(() =>
+                loadMcpTools({
+                  mentions, // respect mentions if any
+                  allowedMcpServers,
+                }),
+              )
+              .orElse({});
+            APP_DEFAULT_TOOLS = await safe()
+              .map(() =>
+                loadAppDefaultTools({
+                  mentions, // respect mentions if any
+                  allowedAppDefaultToolkit,
+                }),
+              )
+              .orElse({});
           } else {
             MCP_TOOLS = await safe()
               .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
@@ -516,24 +464,15 @@ export async function POST(request: Request) {
           .map((v) => filterMcpServerCustomizations(MCP_TOOLS!, v))
           .orElse({});
 
-        // strong MCP server ids reserved (no longer used to force behavior)
-
-        // Presence flags (reserved for future prioritization logic)
-        // const hasWorkflowMention = (mentions || []).some(
-        //   (m: any) => m.type === "workflow",
-        // );
-        // const hasMcpMention = (mentions || []).some(
-        //   (m: any) => m.type === "mcpServer" || m.type === "mcpTool",
-        // );
+        const forcedWorkflowHint = (forceWorkflowOnly || forceWorkflowAuto)
+          ? "If specific workflows are explicitly mentioned, you MUST invoke each mentioned workflow exactly once, then provide a final assistant answer summarizing the results. Do not re-invoke the same workflow multiple times in the same turn."
+          : undefined;
 
         const effectiveAgent = agent || autoDetectedAgent || undefined;
-        const postToolSummaryHint =
-          "Perform as many tool invocations as necessary to fully answer the user's request. Only after completing all necessary tool calls, provide one concise natural-language summary in the user's language. Do not summarize mid-run if additional tool calls are clearly needed, and do not invoke tools in the summary step.";
-
         const systemPrompt = mergeSystemPrompt(
           buildUserSystemPrompt(session.user, userPreferences, effectiveAgent),
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
-          postToolSummaryHint,
+          forcedWorkflowHint,
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
           (!supportToolCall ||
             ["openai", "anthropic"].includes(chatModel?.provider ?? "")) &&
@@ -547,16 +486,18 @@ export async function POST(request: Request) {
               toolChoice === "manual" ? excludeToolExecution(t) : t;
             return {
               ...bindingTools,
-              // Always include App Default tools to preserve natural chaining
-              ...APP_DEFAULT_TOOLS,
+              ...APP_DEFAULT_TOOLS, // APP_DEFAULT_TOOLS Not Supported Manual
             };
           })
           .map((t) => {
-            // Always provide planning tool to enable multi-step orchestration
-            return {
-              ...t,
-              [SequentialThinkingToolName]: sequentialThinkingTool,
-            };
+            const allowThinkingTool = supportToolCall && thinking && !forceWorkflowOnly;
+            if (allowThinkingTool) {
+              return {
+                ...t,
+                [SequentialThinkingToolName]: sequentialThinkingTool,
+              };
+            }
+            return t;
           })
           .map((allTools) => {
             // Hard cap per provider limitation: 128 tools max
@@ -564,27 +505,16 @@ export async function POST(request: Request) {
             const toolEntries = Object.entries(allTools);
             if (toolEntries.length <= MAX_TOOLS) return allTools;
 
-            // Prioritize mentioned tools and MCP servers first, then app default tools, then others
+            // Prioritize mentioned tools first, then app default tools, then others
             const mentionedNames = new Set(
               (mentions || [])
                 .filter((m) => m.type === "mcpTool" || m.type === "workflow" || m.type === "defaultTool")
                 .map((m: any) => m.name)
                 .filter(Boolean),
             );
-            const mentionedServerIds = new Set(
-              (mentions || [])
-                .filter((m) => m.type === "mcpServer")
-                .map((m: any) => m.serverId)
-                .filter(Boolean),
-            );
             const appDefaultNames = new Set(Object.keys(APP_DEFAULT_TOOLS));
 
-            const mentioned = toolEntries.filter(([name, tool]: any) => {
-              return (
-                mentionedNames.has(name) ||
-                (tool && mentionedServerIds.has(tool._mcpServerId))
-              );
-            });
+            const mentioned = toolEntries.filter(([name]) => mentionedNames.has(name));
             const appDefaults = toolEntries.filter(
               ([name]) => !mentionedNames.has(name) && appDefaultNames.has(name),
             );
@@ -596,9 +526,6 @@ export async function POST(request: Request) {
             return Object.fromEntries(prioritized);
           })
           .unwrap();
-
-        // Use original tools; rely on model and hints for orchestration
-        const boundTools = vercelAITooles;
 
         const allowedMcpTools = Object.values(allowedMcpServers ?? {})
           .map((t: AllowedMCPServer) => t.tools)
@@ -616,25 +543,48 @@ export async function POST(request: Request) {
         );
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
-        // Always use auto; rely on prompt to invoke tool exactly once, then summarize
-        const toolChoiceForRun: "auto" | "required" = "auto";
+        // Decide final toolChoice: force required when explicit client workflow(s) were mentioned
+        const toolChoiceForRun: "auto" | "required" = (forceWorkflowOnly || forceWorkflowAuto) ? "required" : "auto";
 
-        // Ensure at least one post-tool step for an assistant summary
-        // Steps: allow multiple MCP tool hops (e.g., find_account -> get_campaign_performance) + one summary
-        // No hard step limit: allow the model to chain tools as needed
+        // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
+        const maxStepsForRun = (forceWorkflowOnly || forceWorkflowAuto)
+          ? Math.max(3, Math.min(12, explicitClientWorkflowMentions.length + 2))
+          : 10;
 
         // Per-turn dedup guard: prevent re-invoking the same workflow tool within this run
+        const toolsForRun = (() => {
+          if (!(forceWorkflowOnly || forceWorkflowAuto)) return vercelAITooles;
+          const invoked = new Set<string>();
+          const toolsRef = vercelAITooles as Record<string, any>;
+          for (const [name, tool] of Object.entries(toolsRef)) {
+            const originalExecute = tool?.execute;
+            if (typeof originalExecute !== "function") continue;
+            toolsRef[name].execute = async (args: any, ctx: any) => {
+              if (invoked.has(name)) {
+                return {
+                  error: {
+                    name: "DUPLICATE_TOOL_CALL",
+                    message: `Tool ${name} already invoked once this turn`,
+                  },
+                };
+              }
+              invoked.add(name);
+              return originalExecute(args, ctx);
+            };
+          }
+          return vercelAITooles;
+        })();
 
         const result = streamText({
           model,
           system: systemPrompt,
           messages,
           temperature: 1,
-          // No explicit maxSteps to allow unrestricted chaining
+          maxSteps: maxStepsForRun,
           toolCallStreaming: true,
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 2,
-          tools: boundTools,
+          tools: toolsForRun,
           toolChoice: toolChoiceForRun,
           abortSignal: request.signal,
           onFinish: async ({ response, usage }) => {
@@ -661,52 +611,6 @@ export async function POST(request: Request) {
             }
             const assistantMessage = appendMessages.at(-1);
             if (assistantMessage) {
-              // If model didn't produce a text answer, synthesize one from tool result(s)
-              const partsArray = (assistantMessage.parts as UIMessage["parts"]) as any[];
-              const hasAssistantText = Array.isArray(partsArray)
-                ? partsArray.some((p) => p?.type === "text" && typeof p?.text === "string" && p.text.trim().length > 0)
-                : false;
-              if (!hasAssistantText && Array.isArray(partsArray)) {
-                const toolTexts: string[] = partsArray
-                  .filter(
-                    (p) => p?.type === "tool-invocation" && p?.toolInvocation?.state === "result",
-                  )
-                  .map((p) => {
-                    const res = p.toolInvocation.result as any;
-                    // Workflow result normalization
-                    if (isVercelAIWorkflowTool(res)) {
-                      const r = res?.result;
-                      if (typeof r === "string") return r;
-                      try {
-                        return JSON.stringify(r, null, 2);
-                      } catch {
-                        return String(r ?? "");
-                      }
-                    }
-                    // MCP or generic tool result normalization
-                    const content = res?.content;
-                    if (Array.isArray(content)) {
-                      const texts = content
-                        .map((c: any) => (c?.type === "text" && typeof c?.text === "string" ? c.text : ""))
-                        .filter((t: string) => t);
-                      if (texts.length) return texts.join("\n");
-                    }
-                    try {
-                      return JSON.stringify(res, null, 2);
-                    } catch {
-                      return String(res ?? "");
-                    }
-                  })
-                  .filter((t) => t && t.trim().length > 0);
-
-                if (toolTexts.length > 0) {
-                  const combined = toolTexts.join("\n\n").slice(0, 4000);
-                  (assistantMessage as any).parts = [
-                    ...partsArray,
-                    { type: "text", text: combined },
-                  ];
-                }
-              }
               const annotations = appendAnnotations(
                 assistantMessage.annotations,
                 [

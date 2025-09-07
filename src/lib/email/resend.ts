@@ -9,26 +9,12 @@ export async function sendEmail(options: {
   html?: string;
   from?: string;
 }) {
-  const from =
-    options.from ||
-    process.env.RESEND_FROM ||
-    // Use Resend's onboarding sender by default for better deliverability without domain setup
-    "Wegen <onboarding@resend.dev>";
-  try {
-    return await resend.emails.send({
-      from,
-      to: options.to,
-      subject: options.subject,
-      text: options.text,
-      html: options.html,
-    } as any);
-  } catch (err) {
-    // Soft-fail with structured error for server logs/observability
-    return {
-      error: {
-        name: (err as any)?.name || "RESEND_ERROR",
-        message: (err as any)?.message || String(err),
-      },
-    } as any;
-  }
+  const from = options.from || process.env.RESEND_FROM || "Wegen <noreply@resend.dev>";
+  return resend.emails.send({
+    from,
+    to: options.to,
+    subject: options.subject,
+    text: options.text,
+    html: options.html,
+  } as any);
 } 
