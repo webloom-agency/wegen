@@ -467,8 +467,24 @@ export async function POST(request: Request) {
           .map((v) => filterMcpServerCustomizations(MCP_TOOLS!, v))
           .orElse({});
 
+        const allWorkflowMentions = (mentions || []).filter(
+          (m: any) => m.type === "workflow",
+        ) as any[];
         const forcedWorkflowHint = (forceWorkflowOnly || forceWorkflowAuto)
-          ? "If specific workflows are explicitly mentioned, you MUST invoke each mentioned workflow exactly once, then provide a final assistant answer summarizing the results. Do not re-invoke the same workflow multiple times in the same turn."
+          ? (() => {
+              const items = allWorkflowMentions.map((m) => {
+                const human = m.name || m.description || "";
+                // Mirror how workflow tool names are generated in workflowToVercelAITool
+                const toolKey = String(human)
+                  .replace(/[^a-zA-Z0-9\s]/g, "")
+                  .trim()
+                  .replace(/\s+/g, "-")
+                  .toUpperCase();
+                return `${human}${toolKey ? ` (tool: ${toolKey})` : ""}`.trim();
+              });
+              const list = items.length > 0 ? items.join(", ") : "the detected workflow(s)";
+              return `You MUST invoke the following workflow(s) exactly once this turn: ${list}. Prefer these workflow tools over other tools. After invoking, provide a concise final answer summarizing the results. Do not invoke the same workflow multiple times in the same turn.`;
+            })()
           : undefined;
 
         const effectiveAgent = agent || autoDetectedAgent || undefined;
@@ -554,15 +570,18 @@ export async function POST(request: Request) {
           ? Math.max(3, Math.min(12, explicitClientWorkflowMentions.length + 2))
           : 10;
 
-        // Per-turn dedup guard: prevent re-invoking the same workflow tool within this run
+        // Per-turn dedup guard and restriction: if forcing workflows, expose only workflow tools and prevent duplicate calls
         const toolsForRun = (() => {
-          if (!(forceWorkflowOnly || forceWorkflowAuto)) return vercelAITooles;
+          const isForcing = forceWorkflowOnly || forceWorkflowAuto;
+          const base: Record<string, any> = isForcing
+            ? (WORKFLOW_TOOLS as Record<string, any>)
+            : (vercelAITooles as Record<string, any>);
+          if (!isForcing) return base;
           const invoked = new Set<string>();
-          const toolsRef = vercelAITooles as Record<string, any>;
-          for (const [name, tool] of Object.entries(toolsRef)) {
+          for (const [name, tool] of Object.entries(base)) {
             const originalExecute = tool?.execute;
             if (typeof originalExecute !== "function") continue;
-            toolsRef[name].execute = async (args: any, ctx: any) => {
+            base[name].execute = async (args: any, ctx: any) => {
               if (invoked.has(name)) {
                 return {
                   error: {
@@ -575,7 +594,7 @@ export async function POST(request: Request) {
               return originalExecute(args, ctx);
             };
           }
-          return vercelAITooles;
+          return base;
         })();
 
         const result = streamText({
