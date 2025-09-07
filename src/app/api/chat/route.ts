@@ -662,7 +662,6 @@ export async function POST(request: Request) {
         const maxStepsForRun = undefined as unknown as number;
 
         // Per-turn dedup guard: prevent re-invoking the same workflow tool within this run
-        const toolsForRun = vercelAITooles;
 
         const result = streamText({
           model,
