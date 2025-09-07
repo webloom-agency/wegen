@@ -541,6 +541,13 @@ export async function POST(request: Request) {
           ?._strongMcpServerIds || new Set<string>();
         const forceMcpAuto = strongMcpServerIds.size > 0;
 
+        const hasWorkflowMention = (mentions || []).some(
+          (m: any) => m.type === "workflow",
+        );
+        const hasMcpMention = (mentions || []).some(
+          (m: any) => m.type === "mcpServer" || m.type === "mcpTool",
+        );
+
         const forcedWorkflowHint = (forceWorkflowOnly || forceWorkflowAuto)
           ? "If specific workflows are explicitly mentioned, you MUST invoke each mentioned workflow exactly once, then provide a final assistant answer summarizing the results. Do not re-invoke the same workflow multiple times in the same turn."
           : undefined;
@@ -550,10 +557,21 @@ export async function POST(request: Request) {
           ? "If specific MCP servers or tools are mentioned, you MUST invoke at least one most relevant tool from those servers to answer the user's question before responding. Prefer one call per server unless clearly necessary."
           : undefined;
 
+        // Ask confirmation if ambiguous (multiple relaxed mentions without a strong exact match)
+        const ambiguous = !forceWorkflowAuto && !forceMcpAuto && (
+          ((mentions || []).filter((m: any) => m.type === "workflow").length > 1) ||
+          (((mentions || []).filter((m: any) => m.type === "workflow").length >= 1) &&
+            ((mentions || []).filter((m: any) => m.type === "mcpServer" || m.type === "mcpTool").length >= 1))
+        );
+        const disambiguationHint = ambiguous
+          ? "If multiple workflows or MCP servers could match and none is an exact name match, ask the user to confirm which to use before calling any tools."
+          : undefined;
+
         const systemPrompt = mergeSystemPrompt(
           buildUserSystemPrompt(session.user, userPreferences, effectiveAgent),
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
           forcedWorkflowHint,
+          disambiguationHint,
           forcedMcpHint,
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
           (!supportToolCall ||
@@ -568,7 +586,8 @@ export async function POST(request: Request) {
               toolChoice === "manual" ? excludeToolExecution(t) : t;
             return {
               ...bindingTools,
-              ...APP_DEFAULT_TOOLS, // APP_DEFAULT_TOOLS Not Supported Manual
+              // Include App Default tools only when no workflow/MCP mentions exist
+              ...(!hasWorkflowMention && !hasMcpMention ? APP_DEFAULT_TOOLS : {}),
             };
           })
           .map((t) => {
@@ -637,7 +656,9 @@ export async function POST(request: Request) {
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
         // Decide final toolChoice: force required when explicit client workflow(s) were mentioned
-        const toolChoiceForRun: "auto" | "required" = (forceWorkflowOnly || forceWorkflowAuto || clientMcpMentions.length > 0 || forceMcpAuto) ? "required" : "auto";
+        const preferWorkflow = forceWorkflowOnly || forceWorkflowAuto;
+        const preferMcp = !preferWorkflow && (clientMcpMentions.length > 0 || forceMcpAuto);
+        const toolChoiceForRun: "auto" | "required" = preferWorkflow || preferMcp ? "required" : "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         const maxStepsForRun = (forceWorkflowOnly || forceWorkflowAuto)
@@ -646,24 +667,39 @@ export async function POST(request: Request) {
 
         // Per-turn dedup guard: prevent re-invoking the same workflow tool within this run
         const toolsForRun = (() => {
-          if (!(forceWorkflowOnly || forceWorkflowAuto)) return vercelAITooles;
-          const invoked = new Set<string>();
-          const toolsRef = vercelAITooles as Record<string, any>;
-          for (const [name, tool] of Object.entries(toolsRef)) {
-            const originalExecute = tool?.execute;
-            if (typeof originalExecute !== "function") continue;
-            toolsRef[name].execute = async (args: any, ctx: any) => {
-              if (invoked.has(name)) {
-                return {
-                  error: {
-                    name: "DUPLICATE_TOOL_CALL",
-                    message: `Tool ${name} already invoked once this turn`,
-                  },
-                };
-              }
-              invoked.add(name);
-              return originalExecute(args, ctx);
-            };
+          if (preferWorkflow) {
+            const onlyWorkflows = Object.fromEntries(
+              Object.entries(vercelAITooles as Record<string, any>).filter(
+                ([, tool]: any) => tool?.__$ref__ === "workflow",
+              ),
+            );
+            const invoked = new Set<string>();
+            const toolsRef = onlyWorkflows as Record<string, any>;
+            for (const [name, tool] of Object.entries(toolsRef)) {
+              const originalExecute = tool?.execute;
+              if (typeof originalExecute !== "function") continue;
+              toolsRef[name].execute = async (args: any, ctx: any) => {
+                if (invoked.has(name)) {
+                  return {
+                    error: {
+                      name: "DUPLICATE_TOOL_CALL",
+                      message: `Tool ${name} already invoked once this turn`,
+                    },
+                  };
+                }
+                invoked.add(name);
+                return originalExecute(args, ctx);
+              };
+            }
+            return toolsRef;
+          }
+          if (preferMcp) {
+            const onlyMcp = Object.fromEntries(
+              Object.entries(vercelAITooles as Record<string, any>).filter(
+                ([, tool]: any) => tool?.__$ref__ === "mcp",
+              ),
+            );
+            return onlyMcp as Record<string, any>;
           }
           return vercelAITooles;
         })();
