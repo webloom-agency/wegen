@@ -649,8 +649,15 @@ export async function POST(request: Request) {
         const toolChoiceForRun: "auto" | "required" = "auto";
 
         // Ensure at least one post-tool step for an assistant summary
-        // One tool step + one assistant summary step
-        const maxStepsForRun = 2;
+        // Steps: allow multiple MCP tool hops (e.g., find_account -> get_campaign_performance) + one summary
+        const hasWorkflowMention = (mentions || []).some(
+          (m: any) => m.type === "workflow",
+        );
+        const hasMcpMention = (mentions || []).some(
+          (m: any) => m.type === "mcpServer" || m.type === "mcpTool",
+        );
+        // No hard cap: let the model chain tools naturally
+        const maxStepsForRun = undefined as unknown as number;
 
         // Per-turn dedup guard: prevent re-invoking the same workflow tool within this run
         const toolsForRun = vercelAITooles;
@@ -660,6 +667,7 @@ export async function POST(request: Request) {
           system: systemPrompt,
           messages,
           temperature: 1,
+          // Let the model decide steps; prompt enforces final summary
           maxSteps: maxStepsForRun,
           toolCallStreaming: true,
           experimental_transform: smoothStream({ chunking: "word" }),
