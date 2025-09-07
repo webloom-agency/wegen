@@ -143,11 +143,14 @@ export async function POST(request: Request) {
 
       const extractUserText = (msg: UIMessage): string => {
         const parts = (msg as any)?.parts as any[] | undefined;
-        if (!Array.isArray(parts)) return "";
-        return parts
-          .map((p) => (typeof p?.text === "string" ? p.text : ""))
-          .filter(Boolean)
-          .join(" ");
+        if (Array.isArray(parts) && parts.length > 0) {
+          return parts
+            .map((p) => (typeof (p as any)?.text === "string" ? (p as any).text : ""))
+            .filter(Boolean)
+            .join(" ");
+        }
+        const content = (msg as any)?.content;
+        return typeof content === "string" ? content : "";
       };
 
       const userTextRaw = extractUserText(finalPatchedMessage);
