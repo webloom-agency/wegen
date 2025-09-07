@@ -527,12 +527,13 @@ export async function POST(request: Request) {
           ?._strongMcpServerIds || new Set<string>();
         const forceMcpAuto = strongMcpServerIds.size > 0;
 
-        const hasWorkflowMention = (mentions || []).some(
-          (m: any) => m.type === "workflow",
-        );
-        const hasMcpMention = (mentions || []).some(
-          (m: any) => m.type === "mcpServer" || m.type === "mcpTool",
-        );
+        // Presence flags (reserved for future prioritization logic)
+        // const hasWorkflowMention = (mentions || []).some(
+        //   (m: any) => m.type === "workflow",
+        // );
+        // const hasMcpMention = (mentions || []).some(
+        //   (m: any) => m.type === "mcpServer" || m.type === "mcpTool",
+        // );
 
         const forcedWorkflowHint = (forceWorkflowOnly || forceWorkflowAuto)
           ? "If specific workflows are explicitly mentioned, you MUST invoke each mentioned workflow exactly once, then provide a final assistant answer summarizing the results. Do not re-invoke the same workflow multiple times in the same turn."
