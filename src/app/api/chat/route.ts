@@ -646,10 +646,14 @@ export async function POST(request: Request) {
         const preferMcp = !preferWorkflow && (clientMcpMentions.length > 0 || forceMcpAuto);
         const toolChoiceForRun: "auto" | "required" = preferWorkflow || preferMcp ? "required" : "auto";
 
-        // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
-        const maxStepsForRun = (forceWorkflowOnly || forceWorkflowAuto)
-          ? Math.max(3, Math.min(12, explicitClientWorkflowMentions.length + 2))
-          : 10;
+        // Keep steps tight to avoid loops: workflows run once unless multiple are explicitly mentioned
+        const maxStepsForRun = preferWorkflow
+          ? (explicitClientWorkflowMentions.length > 0
+              ? Math.min(3, explicitClientWorkflowMentions.length)
+              : 1)
+          : preferMcp
+            ? 3
+            : 10;
 
         // Per-turn dedup guard: prevent re-invoking the same workflow tool within this run
         const toolsForRun = (() => {
@@ -666,12 +670,16 @@ export async function POST(request: Request) {
               if (typeof originalExecute !== "function") continue;
               toolsRef[name].execute = async (args: any, ctx: any) => {
                 if (invoked.has(name)) {
+                  // On duplicate attempt, short-circuit with a friendly text result
                   return {
-                    error: {
-                      name: "DUPLICATE_TOOL_CALL",
-                      message: `Tool ${name} already invoked once this turn`,
-                    },
-                  };
+                    content: [
+                      {
+                        type: "text",
+                        text:
+                          "Le workflow a déjà été exécuté pour cette requête. J'ai inclus le résultat ci-dessus. Dites-moi si vous souhaitez relancer avec des paramètres différents.",
+                      },
+                    ],
+                  } as any;
                 }
                 invoked.add(name);
                 return originalExecute(args, ctx);
@@ -726,6 +734,38 @@ export async function POST(request: Request) {
             }
             const assistantMessage = appendMessages.at(-1);
             if (assistantMessage) {
+              // If model didn't produce a text answer, synthesize one from workflow result(s)
+              const partsArray = (assistantMessage.parts as UIMessage["parts"]) as any[];
+              const hasAssistantText = Array.isArray(partsArray)
+                ? partsArray.some((p) => p?.type === "text" && typeof p?.text === "string" && p.text.trim().length > 0)
+                : false;
+              let workflowText: string | undefined;
+              if (!hasAssistantText && Array.isArray(partsArray)) {
+                const wfResults: string[] = partsArray
+                  .filter(
+                    (p) =>
+                      p?.type === "tool-invocation" &&
+                      p?.toolInvocation?.state === "result" &&
+                      isVercelAIWorkflowTool(p?.toolInvocation?.result),
+                  )
+                  .map((p) => {
+                    const r = p.toolInvocation.result?.result;
+                    if (typeof r === "string") return r;
+                    try {
+                      return JSON.stringify(r, null, 2);
+                    } catch {
+                      return String(r ?? "");
+                    }
+                  })
+                  .filter((t) => t && t.trim().length > 0);
+                if (wfResults.length > 0) {
+                  workflowText = wfResults.join("\n\n");
+                  (assistantMessage as any).parts = [
+                    ...partsArray,
+                    { type: "text", text: workflowText },
+                  ];
+                }
+              }
               const annotations = appendAnnotations(
                 assistantMessage.annotations,
                 [
