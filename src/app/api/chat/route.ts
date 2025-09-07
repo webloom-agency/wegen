@@ -365,6 +365,72 @@ export async function POST(request: Request) {
           `mcp-server count: ${mcpClients.length}, mcp-tools count :${Object.keys(mcpTools).length}`,
         );
 
+        // Auto-detect MCP servers (and tools) from user text to create mentions
+        try {
+          const getNormalized = (s: string) =>
+            (s || "")
+              .toLowerCase()
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, "")
+              .replace(/[^a-z0-9\s]/g, " ")
+              .replace(/\s+/g, " ")
+              .trim();
+          const STOPWORDS = new Set<string>([
+            "the","a","an","and","or","of","for","to","in","on","with","by","at","from","as","is","are","be","this","that","it",
+            "le","la","les","un","une","des","et","ou","de","du","pour","dans","sur","avec","par","au","aux","est","ce","cet","cette","ces",
+          ]);
+          const tokenize = (s: string) => getNormalized(s).split(" ").filter(Boolean).filter((t) => !STOPWORDS.has(t));
+          const userTextParts = ((finalPatchedMessage as any)?.parts as any[]) || [];
+          const userTextRaw = userTextParts
+            .map((p) => (typeof p?.text === "string" ? p.text : ""))
+            .filter(Boolean)
+            .join(" ");
+          const userText = getNormalized(userTextRaw);
+          const strongMcpServerIds = new Set<string>();
+          if (userText && userText.length >= 3) {
+            const existingServers = new Set(
+              (mentions || [])
+                .filter((m: any) => m.type === "mcpServer")
+                .map((m: any) => m.serverId),
+            );
+            // Index servers from tools
+            const servers: Record<string, { id: string; name: string }> = {};
+            Object.values(mcpTools || {}).forEach((tool: any) => {
+              if (!tool?._mcpServerId) return;
+              if (!servers[tool._mcpServerId]) {
+                servers[tool._mcpServerId] = {
+                  id: tool._mcpServerId,
+                  name: tool._mcpServerName || "",
+                };
+              }
+            });
+            // Simple scoring per server based on name token overlap
+            for (const srv of Object.values(servers)) {
+              if (!srv?.id) continue;
+              if (existingServers.has(srv.id)) continue;
+              const tokens = tokenize(srv.name);
+              if (tokens.length === 0) continue;
+              const matched = tokens.filter((t) => userText.includes(t));
+              if (matched.length === 0) continue;
+              // Require at least 2 tokens, or 1 if server name is single-token
+              const ok = matched.length >= Math.min(2, tokens.length);
+              if (!ok) continue;
+              const fullIncluded = userText.includes(getNormalized(srv.name));
+              mentions.push({
+                type: "mcpServer",
+                name: srv.name,
+                description: undefined,
+                toolCount: undefined,
+                serverId: srv.id,
+              } as any);
+              existingServers.add(srv.id);
+              if (fullIncluded) strongMcpServerIds.add(srv.id);
+            }
+          }
+          // attach strong server ids to request for later hinting/forcing
+          (request as any)._strongMcpServerIds = strongMcpServerIds;
+        } catch {}
+
         // Determine if the user explicitly mentioned workflow(s)
         const explicitClientWorkflowMentions = (clientMentions || []).filter(
           (m: any) => m.type === "workflow",
@@ -377,7 +443,10 @@ export async function POST(request: Request) {
         let WORKFLOW_TOOLS: Record<string, any> = {};
         let APP_DEFAULT_TOOLS: Record<string, any> = {};
 
-        if (isToolCallAllowed) {
+        // Re-evaluate allowance after auto-mention detection
+        const toolAllowed = isToolCallAllowed || (mentions?.length ?? 0) > 0;
+
+        if (toolAllowed) {
           if (forceWorkflowOnly) {
             WORKFLOW_TOOLS = await safe()
               .map(() =>
@@ -464,15 +533,28 @@ export async function POST(request: Request) {
           .map((v) => filterMcpServerCustomizations(MCP_TOOLS!, v))
           .orElse({});
 
+        const clientMcpMentions = (clientMentions || []).filter(
+          (m: any) => m.type === "mcpServer" || m.type === "mcpTool",
+        );
+
+        const strongMcpServerIds: Set<string> = (request as any)
+          ?._strongMcpServerIds || new Set<string>();
+        const forceMcpAuto = strongMcpServerIds.size > 0;
+
         const forcedWorkflowHint = (forceWorkflowOnly || forceWorkflowAuto)
           ? "If specific workflows are explicitly mentioned, you MUST invoke each mentioned workflow exactly once, then provide a final assistant answer summarizing the results. Do not re-invoke the same workflow multiple times in the same turn."
           : undefined;
 
         const effectiveAgent = agent || autoDetectedAgent || undefined;
+        const forcedMcpHint = (clientMcpMentions.length > 0 || forceMcpAuto)
+          ? "If specific MCP servers or tools are mentioned, you MUST invoke at least one most relevant tool from those servers to answer the user's question before responding. Prefer one call per server unless clearly necessary."
+          : undefined;
+
         const systemPrompt = mergeSystemPrompt(
           buildUserSystemPrompt(session.user, userPreferences, effectiveAgent),
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
           forcedWorkflowHint,
+          forcedMcpHint,
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
           (!supportToolCall ||
             ["openai", "anthropic"].includes(chatModel?.provider ?? "")) &&
@@ -505,16 +587,27 @@ export async function POST(request: Request) {
             const toolEntries = Object.entries(allTools);
             if (toolEntries.length <= MAX_TOOLS) return allTools;
 
-            // Prioritize mentioned tools first, then app default tools, then others
+            // Prioritize mentioned tools and MCP servers first, then app default tools, then others
             const mentionedNames = new Set(
               (mentions || [])
                 .filter((m) => m.type === "mcpTool" || m.type === "workflow" || m.type === "defaultTool")
                 .map((m: any) => m.name)
                 .filter(Boolean),
             );
+            const mentionedServerIds = new Set(
+              (mentions || [])
+                .filter((m) => m.type === "mcpServer")
+                .map((m: any) => m.serverId)
+                .filter(Boolean),
+            );
             const appDefaultNames = new Set(Object.keys(APP_DEFAULT_TOOLS));
 
-            const mentioned = toolEntries.filter(([name]) => mentionedNames.has(name));
+            const mentioned = toolEntries.filter(([name, tool]: any) => {
+              return (
+                mentionedNames.has(name) ||
+                (tool && mentionedServerIds.has(tool._mcpServerId))
+              );
+            });
             const appDefaults = toolEntries.filter(
               ([name]) => !mentionedNames.has(name) && appDefaultNames.has(name),
             );
@@ -544,7 +637,7 @@ export async function POST(request: Request) {
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
         // Decide final toolChoice: force required when explicit client workflow(s) were mentioned
-        const toolChoiceForRun: "auto" | "required" = (forceWorkflowOnly || forceWorkflowAuto) ? "required" : "auto";
+        const toolChoiceForRun: "auto" | "required" = (forceWorkflowOnly || forceWorkflowAuto || clientMcpMentions.length > 0 || forceMcpAuto) ? "required" : "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         const maxStepsForRun = (forceWorkflowOnly || forceWorkflowAuto)
