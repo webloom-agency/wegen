@@ -641,9 +641,8 @@ export async function POST(request: Request) {
         );
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
-        // Decide final toolChoice: force required when explicit client workflow(s) were mentioned
+        // Decide preference to bias prompts (no longer used in code below)
         const preferWorkflow = forceWorkflowOnly || forceWorkflowAuto;
-        const preferMcp = !preferWorkflow && (clientMcpMentions.length > 0 || forceMcpAuto);
         // Always use auto; rely on prompt to invoke tool exactly once, then summarize
         const toolChoiceForRun: "auto" | "required" = "auto";
 
