@@ -226,7 +226,6 @@ export async function POST(request: Request) {
           if (existingWorkflowIds.has((wf as any).id)) continue;
           const wfName = (wf as any).name as string;
           const n = getNormalized(wfName);
-          const strong = !!n && userText.includes(n);
           if (containsCandidate(wfName)) {
             mentions.push({
               type: "workflow",
@@ -516,10 +515,6 @@ export async function POST(request: Request) {
           })
           .map((v) => filterMcpServerCustomizations(MCP_TOOLS!, v))
           .orElse({});
-
-        const clientMcpMentions = (clientMentions || []).filter(
-          (m: any) => m.type === "mcpServer" || m.type === "mcpTool",
-        );
 
         // strong MCP server ids reserved (no longer used to force behavior)
 
