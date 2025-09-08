@@ -422,8 +422,32 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
         ...((node.model?.provider === "openai" && node.model?.model === "gpt-5") ? { temperature: 1 } : {}),
       });
 
+      // Prefer prompt-derived variables over anything else (e.g., attachment hints)
+      const pickLastUrlDomain = (text?: string): string | undefined => {
+        if (!text) return undefined;
+        const urlRegex = /https?:\/\/[^\s)]+/gi;
+        const matches = text.match(urlRegex) || [];
+        if (matches.length === 0) return undefined;
+        try {
+          const last = matches[matches.length - 1]!;
+          const u = new URL(last);
+          const host = u.hostname.replace(/^www\./i, "");
+          return host;
+        } catch {
+          return undefined;
+        }
+      };
+      const toolCall = response.toolCalls.find((call) => call.args);
+      const argsFromModel = (toolCall?.args ?? {}) as Record<string, any>;
+      if (hasClientNameField) {
+        const domain = pickLastUrlDomain(prompt);
+        if (domain) {
+          argsFromModel.client_name = domain;
+        }
+      }
+
       result.input = {
-        parameter: response.toolCalls.find((call) => call.args)?.args,
+        parameter: argsFromModel,
         prompt,
       };
     }
