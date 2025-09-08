@@ -483,7 +483,8 @@ export async function POST(request: Request) {
                 return `${human}${toolKey ? ` (tool: ${toolKey})` : ""}`.trim();
               });
               const list = items.length > 0 ? items.join(", ") : "the detected workflow(s)";
-              const agentContext = effectiveAgent ? `You are collaborating with agent '${effectiveAgent.name}'. Incorporate the agent's context in the summary.` : "";
+              const activeAgent = (agent || autoDetectedAgent) as any;
+              const agentContext = activeAgent ? `You are collaborating with agent '${activeAgent.name}'. Incorporate the agent's context in the summary.` : "";
               return `Invoke the following workflow(s) exactly once this turn: ${list}. After the workflow completes, produce a brief assistant summary in the chat: highlight key findings, actionable next steps, and link to any generated artifacts. Do not re-invoke the same workflow in this turn. ${agentContext}`.trim();
             })()
           : undefined;
