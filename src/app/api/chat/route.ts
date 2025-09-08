@@ -564,8 +564,8 @@ export async function POST(request: Request) {
         );
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
-        // If workflow was explicitly mentioned by the user, require exactly one tool call; otherwise keep AUTO
-        const toolChoiceForRun: "auto" | "required" = forceWorkflowOnly ? "required" : "auto";
+        // Keep AUTO so the model can produce a natural-language summary after workflow execution
+        const toolChoiceForRun: "auto" | "required" = "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         const maxStepsForRun = (forceWorkflowOnly || forceWorkflowAuto)
