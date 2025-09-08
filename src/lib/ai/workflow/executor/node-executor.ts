@@ -383,14 +383,19 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
       };
     } else {
       // Fallback: Use LLM to generate tool parameters from the provided message
+      // Build prompt from the immediate user message only (ignore attachments/previous files for variable extraction)
       const prompt: string | undefined = node.message
-        ? toAny(
-            convertTiptapJsonToAiMessage({
-              role: "user",
-              getOutput: state.getOutput, // Access to previous node outputs
-              json: node.message,
-            }),
-          ).parts[0]?.text
+        ? (() => {
+            const msg = toAny(
+              convertTiptapJsonToAiMessage({
+                role: "user",
+                getOutput: state.getOutput,
+                json: node.message,
+              }),
+            );
+            const text = msg?.parts?.find((p: any) => p?.type === "text")?.text || msg?.parts?.[0]?.text;
+            return typeof text === "string" ? text : undefined;
+          })()
         : undefined;
 
       // Add light guidance to improve parameter grounding (e.g., derive client_name from provided URL domain)
@@ -403,7 +408,11 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
         model: customModelProvider.getModel(node.model),
         maxSteps: 1,
         toolChoice: "required", // Force the model to call the tool
-        prompt: guidance ? `${guidance}\n\n${prompt || ""}` : prompt,
+        prompt: (() => {
+          const hygiene = "Use only the user's latest prompt text to fill parameters. Treat attachments as supporting context, never as the source of parameter values. If prompt and other context disagree, prefer the prompt.";
+          const guidancePrefix = guidance ? `${guidance}\n` : "";
+          return `${guidancePrefix}${hygiene}\n\n${prompt || ""}`.trim();
+        })(),
         tools: {
           [node.tool.id]: {
             description: node.tool.description,

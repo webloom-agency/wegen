@@ -478,7 +478,8 @@ export async function POST(request: Request) {
               const list = items.length > 0 ? items.join(", ") : "the detected workflow(s)";
               const activeAgent = (agent || autoDetectedAgent) as any;
               const agentContext = activeAgent ? `You are collaborating with agent '${activeAgent.name}'. Incorporate the agent's context in the summary.` : "";
-              return `Invoke the following workflow(s) exactly once this turn: ${list}. After the workflow completes, produce a brief assistant summary in the chat: highlight key findings, actionable next steps, and link to any generated artifacts. Do not re-invoke the same workflow in this turn. ${agentContext}`.trim();
+              const argHygiene = `When constructing workflow tool arguments, derive values strictly from the user's latest prompt text and explicit mentions. Do NOT infer variables (e.g., client_name, email, topic, urls) from attachments or previous files; attachments are context only. If prompt and attachments conflict, prefer the prompt.`;
+              return `Invoke the following workflow(s) exactly once this turn: ${list}. After the workflow completes, produce a brief assistant summary in the chat: highlight key findings, actionable next steps, and link to any generated artifacts. Do not re-invoke the same workflow in this turn. ${agentContext}\n\n${argHygiene}`.trim();
             })()
           : undefined;
 
