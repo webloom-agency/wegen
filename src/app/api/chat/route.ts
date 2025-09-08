@@ -483,7 +483,8 @@ export async function POST(request: Request) {
                 return `${human}${toolKey ? ` (tool: ${toolKey})` : ""}`.trim();
               });
               const list = items.length > 0 ? items.join(", ") : "the detected workflow(s)";
-              return `Invoke the following workflow(s) exactly once this turn: ${list}. After the workflow completes, produce a brief assistant summary in the chat: highlight key findings, actionable next steps, and link to any generated artifacts. Do not re-invoke the same workflow in this turn.`;
+              const agentContext = effectiveAgent ? `You are collaborating with agent '${effectiveAgent.name}'. Incorporate the agent's context in the summary.` : "";
+              return `Invoke the following workflow(s) exactly once this turn: ${list}. After the workflow completes, produce a brief assistant summary in the chat: highlight key findings, actionable next steps, and link to any generated artifacts. Do not re-invoke the same workflow in this turn. ${agentContext}`.trim();
             })()
           : undefined;
 
@@ -562,8 +563,8 @@ export async function POST(request: Request) {
         );
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
-        // Always keep AUTO so the model can produce a natural-language summary after tool use
-        const toolChoiceForRun: "auto" | "required" = "auto";
+        // If workflow was explicitly mentioned by the user, require exactly one tool call; otherwise keep AUTO
+        const toolChoiceForRun: "auto" | "required" = forceWorkflowOnly ? "required" : "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         const maxStepsForRun = (forceWorkflowOnly || forceWorkflowAuto)
