@@ -368,12 +368,17 @@ export async function POST(request: Request) {
           `mcp-server count: ${mcpClients.length}, mcp-tools count :${Object.keys(mcpTools).length}`,
         );
 
-        // Determine if the user explicitly mentioned workflow(s)
+        // Determine workflow mentions and selection (at most one per turn)
         const explicitClientWorkflowMentions = (clientMentions || []).filter(
           (m: any) => m.type === "workflow",
         );
-        const forceWorkflowOnly =
-          supportToolCall && explicitClientWorkflowMentions.length > 0;
+        const anyWorkflowMentions = (mentions || []).filter(
+          (m: any) => m.type === "workflow",
+        );
+        const selectedWorkflowMentions = (explicitClientWorkflowMentions.length > 0
+          ? explicitClientWorkflowMentions
+          : anyWorkflowMentions).slice(0, 1);
+        const forceWorkflowOnly = supportToolCall && selectedWorkflowMentions.length > 0;
 
         // Load tools (optionally restricted to explicitly mentioned workflows)
         let MCP_TOOLS: Record<string, any> = {};
@@ -385,28 +390,14 @@ export async function POST(request: Request) {
             WORKFLOW_TOOLS = await safe()
               .map(() =>
                 loadWorkFlowTools({
-                  mentions: explicitClientWorkflowMentions as any,
+                  mentions: selectedWorkflowMentions as any,
                   dataStream,
                 }),
               )
               .orElse({});
-            // Keep other tools accessible alongside forced workflows
-            MCP_TOOLS = await safe()
-              .map(() =>
-                loadMcpTools({
-                  mentions, // respect mentions if any
-                  allowedMcpServers,
-                }),
-              )
-              .orElse({});
-            APP_DEFAULT_TOOLS = await safe()
-              .map(() =>
-                loadAppDefaultTools({
-                  mentions, // respect mentions if any
-                  allowedAppDefaultToolkit,
-                }),
-              )
-              .orElse({});
+            // When a workflow is selected, disable MCP and App Default tools for this turn
+            MCP_TOOLS = {};
+            APP_DEFAULT_TOOLS = {};
           } else {
             MCP_TOOLS = await safe()
               .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
@@ -418,11 +409,13 @@ export async function POST(request: Request) {
               )
               .orElse({});
 
+            // Prefer at most one workflow when any exist
+            const wfMentionsForLoad = selectedWorkflowMentions.length > 0 ? selectedWorkflowMentions : mentions;
             WORKFLOW_TOOLS = await safe()
               .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
               .map(() =>
                 loadWorkFlowTools({
-                  mentions,
+                  mentions: wfMentionsForLoad as any,
                   dataStream,
                 }),
               )
@@ -580,6 +573,7 @@ export async function POST(request: Request) {
             : (vercelAITooles as Record<string, any>);
           if (!isForcing) return base;
           const invoked = new Set<string>();
+          const allowed = new Set(Object.keys(base));
           for (const [name, tool] of Object.entries(base)) {
             const originalExecute = tool?.execute;
             if (typeof originalExecute !== "function") continue;
@@ -589,6 +583,15 @@ export async function POST(request: Request) {
                   error: {
                     name: "DUPLICATE_TOOL_CALL",
                     message: `Tool ${name} already invoked once this turn`,
+                  },
+                };
+              }
+              // Hard block: disallow cross-workflow invocations if somehow included
+              if (!allowed.has(name)) {
+                return {
+                  error: {
+                    name: "WORKFLOW_NOT_SELECTED",
+                    message: `Tool ${name} is not allowed this turn`,
                   },
                 };
               }
