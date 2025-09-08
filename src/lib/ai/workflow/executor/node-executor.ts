@@ -393,11 +393,17 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
           ).parts[0]?.text
         : undefined;
 
+      // Add light guidance to improve parameter grounding (e.g., derive client_name from provided URL domain)
+      const hasClientNameField = !!(toAny(node.tool.parameterSchema)?.properties?.client_name);
+      const guidance = hasClientNameField
+        ? "When generating tool parameters, if the user provided a URL, derive 'client_name' from that URL's domain (e.g., https://example.com -> example.com). Do not invent a different brand. Prefer the most recent URL in the user input."
+        : undefined;
+
       const response = await generateText({
         model: customModelProvider.getModel(node.model),
         maxSteps: 1,
         toolChoice: "required", // Force the model to call the tool
-        prompt,
+        prompt: guidance ? `${guidance}\n\n${prompt || ""}` : prompt,
         tools: {
           [node.tool.id]: {
             description: node.tool.description,
