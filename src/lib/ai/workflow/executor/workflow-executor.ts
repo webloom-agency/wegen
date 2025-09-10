@@ -178,6 +178,10 @@ export const createWorkflowExecutor = (workflow: {
   let needTable: Record<string, number> = buildNeedTable(workflow.nodes, workflow.edges);
 
   // Compile the graph starting from the Input node
+  // Keep per-run dedupe tracker for nodes that may receive multiple arrivals
+  // from the same nearest Condition via different paths
+  let executedOnce = new Set<string>();
+
   const app = graph
     .compile(workflow.nodes.find((node) => node.kind == NodeKind.Input)!.id)
     .use(async ({ name: nodeId, input }, next) => {
@@ -191,12 +195,23 @@ export const createWorkflowExecutor = (workflow: {
       // All branches have arrived, clean up and continue execution
       delete needTable[nodeId];
       return next();
-    });
+    })
+    // Deduplicate arrivals for nodes that receive multiple incoming edges from the same nearest Condition
+    .use((() => {
+      const dedupeOnceSet = buildDedupeOnceSet(workflow.nodes, workflow.edges);
+      return async ({ name: nodeId, input }, next) => {
+        if (!dedupeOnceSet.has(nodeId)) return next();
+        if (executedOnce.has(nodeId)) return next({ name: "SKIP", input });
+        executedOnce.add(nodeId);
+        return next();
+      };
+    })());
 
   // Set up event logging for workflow execution monitoring
   app.subscribe((event) => {
     if (event.eventType == "WORKFLOW_START") {
       needTable = buildNeedTable(workflow.nodes, workflow.edges);
+      executedOnce = new Set();
       logger.debug(
         `[${event.eventType}] ${workflow.nodes.length} nodes, ${workflow.edges.length} edges`,
       );
@@ -284,4 +299,31 @@ function buildNeedTable(nodes: DBNode[], edges: DBEdge[]): Record<string, number
   const tbl: Record<string, number> = {};
   map.forEach((set, n) => set.size > 1 && (tbl[n] = set.size));
   return tbl;
+}
+
+/**
+ * Identify nodes that should execute at most once when multiple arrivals come
+ * from the same nearest upstream Condition via different paths.
+ */
+function buildDedupeOnceSet(nodes: DBNode[], edges: DBEdge[]): Set<string> {
+  const incomingByTarget = new Map<string, DBEdge[]>();
+  edges.forEach((e) => {
+    (incomingByTarget.get(e.target) ?? incomingByTarget.set(e.target, []).get(e.target))!.push(e);
+  });
+  const set = new Set<string>();
+  incomingByTarget.forEach((arr, target) => {
+    const counts = new Map<string, number>();
+    arr.forEach((e) => {
+      const cond = findNearestConditionAncestor(nodes, edges, e.source);
+      if (cond) counts.set(cond, (counts.get(cond) || 0) + 1);
+    });
+    // If any condition ancestor contributes 2+ incoming edges, dedupe target
+    for (const [, n] of counts) {
+      if (n > 1) {
+        set.add(target);
+        break;
+      }
+    }
+  });
+  return set;
 }
