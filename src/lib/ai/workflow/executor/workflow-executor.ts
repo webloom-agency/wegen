@@ -241,7 +241,8 @@ function buildNeedTable(nodes: DBNode[], edges: DBEdge[]): Record<string, number
   edges.forEach((e) => {
     // Ignore edges from Loop nodes for branch-synchronization purposes
     const sourceKind = nodesById.get(e.source)?.kind as NodeKind | undefined;
-    if (sourceKind === NodeKind.Loop) return;
+    // Also ignore Condition sources: branches are mutually exclusive, so do not wait for both
+    if (sourceKind === NodeKind.Loop || sourceKind === NodeKind.Condition) return;
     const bid = e.uiConfig.label as string;
     (map.get(e.target) ?? map.set(e.target, new Set()).get(e.target))!.add(bid);
   });
