@@ -196,7 +196,8 @@ export const conditionNodeExecutor: NodeExecutor<ConditionNodeData> = async ({
         const targets = edges
           .filter((e) => e.source === node.id && (e.uiConfig?.sourceHandle ?? "right") === matched)
           .map((e) => e.target);
-        return targets;
+        // Deduplicate in case multiple edges resolve to same target
+        return Array.from(new Set(targets));
       })(),
     },
   };

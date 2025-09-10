@@ -241,10 +241,14 @@ function buildNeedTable(nodes: DBNode[], edges: DBEdge[]): Record<string, number
   edges.forEach((e) => {
     // Ignore edges from Loop nodes for branch-synchronization purposes
     const sourceKind = nodesById.get(e.source)?.kind as NodeKind | undefined;
-    // Also ignore Condition sources: branches are mutually exclusive, so do not wait for both
-    if (sourceKind === NodeKind.Loop || sourceKind === NodeKind.Condition) return;
-    const bid = e.uiConfig.label as string;
-    (map.get(e.target) ?? map.set(e.target, new Set()).get(e.target))!.add(bid);
+    if (sourceKind === NodeKind.Loop) return;
+    // For Condition sources, multiple handles (if/elseIf/else) originate from the same node
+    // and are mutually exclusive. Count at most one requirement per Condition source.
+    const labelKey =
+      sourceKind === NodeKind.Condition
+        ? `COND:${e.source}`
+        : (e.uiConfig.label as string);
+    (map.get(e.target) ?? map.set(e.target, new Set()).get(e.target))!.add(labelKey);
   });
 
   // Only nodes with multiple incoming branches need synchronization
