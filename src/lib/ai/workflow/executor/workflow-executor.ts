@@ -287,7 +287,7 @@ function buildNeedTable(nodes: DBNode[], edges: DBEdge[]): Record<string, number
   edges.forEach((e) => {
     // Ignore edges from Loop nodes for branch-synchronization purposes
     const sourceKind = nodesById.get(e.source)?.kind as NodeKind | undefined;
-    if (sourceKind === NodeKind.Loop) return;
+    if (sourceKind === NodeKind.Loop || sourceKind === NodeKind.LoopEnd) return;
     // Collapse all incoming paths that share the same nearest upstream Condition
     // so we don't wait for both mutually exclusive branches.
     const nearestCond = findNearestConditionAncestor(nodes, edges, e.source);
@@ -312,18 +312,8 @@ function buildDedupeOnceSet(nodes: DBNode[], edges: DBEdge[]): Set<string> {
   });
   const set = new Set<string>();
   incomingByTarget.forEach((arr, target) => {
-    const counts = new Map<string, number>();
-    arr.forEach((e) => {
-      const cond = findNearestConditionAncestor(nodes, edges, e.source);
-      if (cond) counts.set(cond, (counts.get(cond) || 0) + 1);
-    });
-    // If any condition ancestor contributes 2+ incoming edges, dedupe target
-    for (const [, n] of counts) {
-      if (n > 1) {
-        set.add(target);
-        break;
-      }
-    }
+    // Dedupe if there are multiple incomings from any sources
+    if (arr.length > 1) set.add(target);
   });
   return set;
 }
