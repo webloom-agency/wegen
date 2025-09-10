@@ -180,10 +180,24 @@ export const conditionNodeExecutor: NodeExecutor<ConditionNodeData> = async ({
   // The dynamic edge resolution in workflow-executor will route based on branch id handles
   return {
     output: {
-      branch:
-        checkConditionBranch(node.branches.if, state.getOutput)
+      // Keep branch for UI/debug information
+      branch: (() => {
+        const matched = checkConditionBranch(node.branches.if, state.getOutput)
           ? node.branches.if.id
-          : ((node.branches.elseIf || []).find((b) => checkConditionBranch(b, state.getOutput)) || node.branches.else).id,
+          : ((node.branches.elseIf || []).find((b) => checkConditionBranch(b, state.getOutput)) || node.branches.else).id;
+        return matched;
+      })(),
+      // Provide explicit routing targets for dynamic edges
+      nextNodes: (() => {
+        const matched = checkConditionBranch(node.branches.if, state.getOutput)
+          ? node.branches.if.id
+          : ((node.branches.elseIf || []).find((b) => checkConditionBranch(b, state.getOutput)) || node.branches.else).id;
+        const edges = state.edges || [];
+        const targets = edges
+          .filter((e) => e.source === node.id && (e.uiConfig?.sourceHandle ?? "right") === matched)
+          .map((e) => e.target);
+        return targets;
+      })(),
     },
   };
 };
