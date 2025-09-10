@@ -226,6 +226,37 @@ export const createWorkflowExecutor = (workflow: {
 };
 
 /**
+ * Finds the nearest upstream Condition node for a given node id by walking
+ * backwards through incoming edges. Returns the Condition node id if found.
+ */
+function findNearestConditionAncestor(
+  nodes: DBNode[],
+  edges: DBEdge[],
+  startId: string,
+): string | undefined {
+  const nodesById = new Map(nodes.map((n) => [n.id, n]));
+  const incomingByTarget = new Map<string, DBEdge[]>();
+  edges.forEach((e) => {
+    (incomingByTarget.get(e.target) ?? incomingByTarget.set(e.target, []).get(e.target))!.push(e);
+  });
+  const visited = new Set<string>();
+  const queue: string[] = [startId];
+  while (queue.length) {
+    const id = queue.shift()!;
+    if (visited.has(id)) continue;
+    visited.add(id);
+    const node = nodesById.get(id);
+    if (!node) continue;
+    if (node.kind === NodeKind.Condition) return id;
+    const incoming = incomingByTarget.get(id) || [];
+    for (const ie of incoming) {
+      if (!visited.has(ie.source)) queue.push(ie.source);
+    }
+  }
+  return undefined;
+}
+
+/**
  * Builds a table tracking how many different branches need to reach each target node.
  * This is used to synchronize execution when multiple condition branches
  * converge on the same target node.
@@ -242,12 +273,10 @@ function buildNeedTable(nodes: DBNode[], edges: DBEdge[]): Record<string, number
     // Ignore edges from Loop nodes for branch-synchronization purposes
     const sourceKind = nodesById.get(e.source)?.kind as NodeKind | undefined;
     if (sourceKind === NodeKind.Loop) return;
-    // For Condition sources, multiple handles (if/elseIf/else) originate from the same node
-    // and are mutually exclusive. Count at most one requirement per Condition source.
-    const labelKey =
-      sourceKind === NodeKind.Condition
-        ? `COND:${e.source}`
-        : (e.uiConfig.label as string);
+    // Collapse all incoming paths that share the same nearest upstream Condition
+    // so we don't wait for both mutually exclusive branches.
+    const nearestCond = findNearestConditionAncestor(nodes, edges, e.source);
+    const labelKey = nearestCond ? `COND:${nearestCond}` : (e.uiConfig.label as string);
     (map.get(e.target) ?? map.set(e.target, new Set()).get(e.target))!.add(labelKey);
   });
 
