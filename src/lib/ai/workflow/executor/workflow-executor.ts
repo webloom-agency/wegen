@@ -178,10 +178,6 @@ export const createWorkflowExecutor = (workflow: {
   let needTable: Record<string, number> = buildNeedTable(workflow.nodes, workflow.edges);
 
   // Compile the graph starting from the Input node
-  // Keep per-run dedupe tracker for nodes that may receive multiple arrivals
-  // from the same nearest Condition via different paths
-  let executedOnce = new Set<string>();
-
   const app = graph
     .compile(workflow.nodes.find((node) => node.kind == NodeKind.Input)!.id)
     .use(async ({ name: nodeId, input }, next) => {
@@ -195,23 +191,12 @@ export const createWorkflowExecutor = (workflow: {
       // All branches have arrived, clean up and continue execution
       delete needTable[nodeId];
       return next();
-    })
-    // Deduplicate arrivals for nodes that receive multiple incoming edges from the same nearest Condition
-    .use((() => {
-      const dedupeOnceSet = buildDedupeOnceSet(workflow.nodes, workflow.edges);
-      return async ({ name: nodeId, input }, next) => {
-        if (!dedupeOnceSet.has(nodeId)) return next();
-        if (executedOnce.has(nodeId)) return next({ name: "SKIP", input });
-        executedOnce.add(nodeId);
-        return next();
-      };
-    })());
+    });
 
   // Set up event logging for workflow execution monitoring
   app.subscribe((event) => {
     if (event.eventType == "WORKFLOW_START") {
       needTable = buildNeedTable(workflow.nodes, workflow.edges);
-      executedOnce = new Set();
       logger.debug(
         `[${event.eventType}] ${workflow.nodes.length} nodes, ${workflow.edges.length} edges`,
       );
@@ -241,37 +226,6 @@ export const createWorkflowExecutor = (workflow: {
 };
 
 /**
- * Finds the nearest upstream Condition node for a given node id by walking
- * backwards through incoming edges. Returns the Condition node id if found.
- */
-function findNearestConditionAncestor(
-  nodes: DBNode[],
-  edges: DBEdge[],
-  startId: string,
-): string | undefined {
-  const nodesById = new Map(nodes.map((n) => [n.id, n]));
-  const incomingByTarget = new Map<string, DBEdge[]>();
-  edges.forEach((e) => {
-    (incomingByTarget.get(e.target) ?? incomingByTarget.set(e.target, []).get(e.target))!.push(e);
-  });
-  const visited = new Set<string>();
-  const queue: string[] = [startId];
-  while (queue.length) {
-    const id = queue.shift()!;
-    if (visited.has(id)) continue;
-    visited.add(id);
-    const node = nodesById.get(id);
-    if (!node) continue;
-    if (node.kind === NodeKind.Condition) return id;
-    const incoming = incomingByTarget.get(id) || [];
-    for (const ie of incoming) {
-      if (!visited.has(ie.source)) queue.push(ie.source);
-    }
-  }
-  return undefined;
-}
-
-/**
  * Builds a table tracking how many different branches need to reach each target node.
  * This is used to synchronize execution when multiple condition branches
  * converge on the same target node.
@@ -287,33 +241,13 @@ function buildNeedTable(nodes: DBNode[], edges: DBEdge[]): Record<string, number
   edges.forEach((e) => {
     // Ignore edges from Loop nodes for branch-synchronization purposes
     const sourceKind = nodesById.get(e.source)?.kind as NodeKind | undefined;
-    if (sourceKind === NodeKind.Loop || sourceKind === NodeKind.LoopEnd) return;
-    // Collapse all incoming paths that share the same nearest upstream Condition
-    // so we don't wait for both mutually exclusive branches.
-    const nearestCond = findNearestConditionAncestor(nodes, edges, e.source);
-    const labelKey = nearestCond ? `COND:${nearestCond}` : (e.uiConfig.label as string);
-    (map.get(e.target) ?? map.set(e.target, new Set()).get(e.target))!.add(labelKey);
+    if (sourceKind === NodeKind.Loop) return;
+    const bid = e.uiConfig.label as string;
+    (map.get(e.target) ?? map.set(e.target, new Set()).get(e.target))!.add(bid);
   });
 
   // Only nodes with multiple incoming branches need synchronization
   const tbl: Record<string, number> = {};
   map.forEach((set, n) => set.size > 1 && (tbl[n] = set.size));
   return tbl;
-}
-
-/**
- * Identify nodes that should execute at most once when multiple arrivals come
- * from the same nearest upstream Condition via different paths.
- */
-function buildDedupeOnceSet(nodes: DBNode[], edges: DBEdge[]): Set<string> {
-  const incomingByTarget = new Map<string, DBEdge[]>();
-  edges.forEach((e) => {
-    (incomingByTarget.get(e.target) ?? incomingByTarget.set(e.target, []).get(e.target))!.push(e);
-  });
-  const set = new Set<string>();
-  incomingByTarget.forEach((arr, target) => {
-    // Dedupe if there are multiple incomings from any sources
-    if (arr.length > 1) set.add(target);
-  });
-  return set;
 }
