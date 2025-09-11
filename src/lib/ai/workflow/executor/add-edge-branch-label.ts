@@ -20,27 +20,24 @@ export function addEdgeBranchLabel(nodes: DBNode[], edges: DBEdge[]) {
       byHandle.forEach((group) => {
         if (group.length === 1) {
           const [e] = group;
-          if (!e.uiConfig.label) {
-            e.uiConfig.label = bid;
-            q.push({ id: e.target, bid });
-          }
+          // Always recompute label to avoid stale persisted labels breaking joins
+          e.uiConfig.label = bid;
+          q.push({ id: e.target, bid });
         } else {
           group.forEach((e, i) => {
             const newBid = `${bid}.${i}`;
-            if (!e.uiConfig.label) {
-              e.uiConfig.label = newBid;
-              q.push({ id: e.target, bid: newBid });
-            }
+            // Always recompute label to avoid stale persisted labels breaking joins
+            e.uiConfig.label = newBid;
+            q.push({ id: e.target, bid: newBid });
           });
         }
       });
     } else {
       nexts.forEach((e, i) => {
         const newBid = nexts.length > 1 ? `${bid}.${i}` : bid;
-        if (!e.uiConfig.label) {
-          e.uiConfig.label = newBid;
-          q.push({ id: e.target, bid: newBid });
-        }
+        // Always recompute label to avoid stale persisted labels breaking joins
+        e.uiConfig.label = newBid;
+        q.push({ id: e.target, bid: newBid });
       });
     }
   }
