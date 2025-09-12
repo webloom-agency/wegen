@@ -603,6 +603,80 @@ export async function POST(request: Request) {
           return base;
         })();
 
+        // Post-process: if the selected tool expects a 'client_name' parameter,
+        // and the user's latest prompt includes a domain (URL or bare domain),
+        // fill args.client_name from that domain when the model omitted it.
+        const augmentToolsWithClientName = (tools: Record<string, any>): Record<string, any> => {
+          // Extract last user text
+          const lastUserText = (() => {
+            const lastUser = [...messages].reverse().find((m) => m.role === "user");
+            const parts: any[] = (lastUser?.parts as any[]) || [];
+            const t = parts.find((p) => p?.type === "text")?.text || parts[0]?.text;
+            return typeof t === "string" ? t : "";
+          })();
+
+          const pickLastDomain = (text?: string): string | undefined => {
+            if (!text) return undefined;
+            const urlRegex = /https?:\/\/[^\s)]+/gi;
+            const urls = text.match(urlRegex) || [];
+            const bareDomainRegex = /\b((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,})\b/gi;
+            const bareDomains: string[] = [];
+            let m: RegExpExecArray | null;
+            while ((m = bareDomainRegex.exec(text)) !== null) {
+              if (m[1]) bareDomains.push(m[1]);
+            }
+            const candidates: string[] = [];
+            for (const u of urls) {
+              try {
+                const host = new URL(u).hostname.replace(/^www\./i, "");
+                candidates.push(host);
+              } catch {}
+            }
+            for (const d of bareDomains) {
+              const host = d.replace(/^www\./i, "");
+              candidates.push(host);
+            }
+            if (candidates.length === 0) return undefined;
+            return candidates[candidates.length - 1];
+          };
+
+          const inferredDomain = pickLastDomain(lastUserText);
+          if (!inferredDomain) return tools;
+
+          const wrapped: Record<string, any> = {};
+          for (const [name, tool] of Object.entries(tools)) {
+            const originalExecute = (tool as any)?.execute;
+            const zodParams = (tool as any)?.parameters;
+            const hasClientNameField = (() => {
+              try {
+                const shape = (zodParams as any)?._def?.shape?.() || (zodParams as any)?.shape;
+                return !!(shape && shape.client_name);
+              } catch {
+                return false;
+              }
+            })();
+            if (typeof originalExecute === "function" && hasClientNameField) {
+              wrapped[name] = {
+                ...tool,
+                execute: async (args: any, ctx: any) => {
+                  const nextArgs = args && typeof args === "object"
+                    ? { ...args }
+                    : {};
+                  if (nextArgs.client_name == null || String(nextArgs.client_name).trim() === "") {
+                    nextArgs.client_name = inferredDomain;
+                  }
+                  return originalExecute(nextArgs, ctx);
+                },
+              };
+            } else {
+              wrapped[name] = tool;
+            }
+          }
+          return wrapped;
+        };
+
+        const toolsForRunAugmented = augmentToolsWithClientName(toolsForRun);
+
         const result = streamText({
           model,
           system: systemPrompt,
@@ -612,7 +686,7 @@ export async function POST(request: Request) {
           toolCallStreaming: true,
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 2,
-          tools: toolsForRun,
+          tools: toolsForRunAugmented,
           toolChoice: toolChoiceForRun,
           abortSignal: request.signal,
           onFinish: async ({ response, usage }) => {
