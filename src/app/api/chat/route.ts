@@ -360,6 +360,27 @@ export async function POST(request: Request) {
     const isToolCallAllowed =
       supportToolCall && (toolChoice != "none" || mentions.length > 0);
 
+    // Persist the user's message immediately so unfinished chats are saved
+    if (isLastMessageUserMessage) {
+      try {
+        await chatRepository.upsertMessage({
+          threadId: thread!.id,
+          model: chatModel?.model ?? null,
+          role: "user",
+          parts: finalPatchedMessage.parts as any,
+          attachments: (finalPatchedMessage as any).experimental_attachments,
+          id: message.id,
+          // Save agent annotations now; usage tokens will be appended on finish
+          annotations: appendAnnotations(
+            message.annotations,
+            [...mentionedAgentIds.map((id) => ({ agentId: id }))],
+          ),
+        });
+      } catch (e) {
+        logger.warn("Failed to upsert user message pre-stream", e as any);
+      }
+    }
+
     return createDataStreamResponse({
       execute: async (dataStream) => {
         const mcpClients = await mcpClientsManager.getClients();

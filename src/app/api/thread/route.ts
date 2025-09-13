@@ -17,7 +17,8 @@ export async function GET(request: Request) {
     const threads = agentId
       ? await chatRepository.selectThreadsByAgentVisibleToUser(session.user.id, agentId)
       : await chatRepository.selectAllThreadsWithEmails();
-    return Response.json(threads);
+    // Hide empty threads (no messages) from the list
+    return Response.json((threads || []).filter((t: any) => (t.lastMessageAt ?? 0) > 0));
   }
 
   const threads = agentId
@@ -26,5 +27,6 @@ export async function GET(request: Request) {
         agentId,
       )
     : await chatRepository.selectThreadsByUserId(session.user.id);
-  return Response.json(threads);
+  // Hide empty threads (no messages) from the list
+  return Response.json((threads || []).filter((t: any) => (t.lastMessageAt ?? 0) > 0));
 }
