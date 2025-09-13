@@ -294,6 +294,33 @@ export const workflowToVercelAITool = ({
     description: `${name} ${description?.trim().slice(0, 50)}`,
     parameters: jsonSchema(schema),
     execute(query, { toolCallId, abortSignal }) {
+      // Apply JSON Schema defaults without overwriting provided values
+      const applyDefaultsFromSchema = (
+        value: any,
+        schemaNode?: any,
+      ): any => {
+        if (!schemaNode) return value;
+        if (schemaNode.type === 'object' && schemaNode.properties) {
+          const next: any = { ...(value ?? {}) };
+          for (const [key, propSchema] of Object.entries<any>(schemaNode.properties)) {
+            const has = Object.prototype.hasOwnProperty.call(next, key);
+            if (!has && propSchema && Object.prototype.hasOwnProperty.call(propSchema, 'default')) {
+              next[key] = (propSchema as any).default;
+            }
+            if (typeof next[key] === 'object' && next[key] !== null) {
+              next[key] = applyDefaultsFromSchema(next[key], propSchema);
+            }
+          }
+          return next;
+        }
+        if (schemaNode.type === 'array' && Array.isArray(value)) {
+          const itemSchema = schemaNode.items as any;
+          return value.map((v) => applyDefaultsFromSchema(v, itemSchema));
+        }
+        return value;
+      };
+
+      const argsWithDefaults = applyDefaultsFromSchema(query ?? {}, schema);
       const history: VercelAIWorkflowToolStreaming[] = [];
       const toolResult: VercelAIWorkflowToolStreamingResult = {
         toolCallId,
@@ -381,7 +408,8 @@ export const workflowToVercelAITool = ({
           });
           return executor.run(
             {
-              query: query ?? ({} as any),
+              // Ensure defaults are provided for missing inputs
+              query: argsWithDefaults,
             },
             {
               disableHistory: true,
