@@ -586,12 +586,19 @@ export async function POST(request: Request) {
         );
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
-        // Keep AUTO so the model can produce a natural-language summary after workflow execution
-        const toolChoiceForRun: "auto" | "required" = "auto";
+        // If there are explicit tool mentions (MCP/default/workflow) and not forcing workflows via selection,
+        // nudge the model to actually call tools by requiring a tool call once.
+        const hasExplicitToolMentions = (mentions || []).some((m) =>
+          ["mcpTool", "mcpServer", "defaultTool", "workflow"].includes((m as any)?.type),
+        );
+        const toolChoiceForRun: "auto" | "required" =
+          (hasExplicitToolMentions && supportToolCall) || forceWorkflowOnly
+            ? "required"
+            : "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
-        const maxStepsForRun = (forceWorkflowOnly || forceWorkflowAuto)
-          ? 3 // Allow tool call + optional internal retry + final assistant summary
+        const maxStepsForRun = (forceWorkflowOnly || forceWorkflowAuto || hasExplicitToolMentions)
+          ? 3 // tool call + optional retry + final assistant summary
           : 10;
 
         // Per-turn dedup guard and restriction: if forcing workflows, expose only workflow tools and prevent duplicate calls
