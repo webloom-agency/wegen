@@ -427,7 +427,8 @@ export async function POST(request: Request) {
               .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
               .map(() =>
                 loadMcpTools({
-                  mentions,
+                  // Only use client mentions to restrict MCP tools
+                  mentions: clientMentions as any,
                   allowedMcpServers,
                 }),
               )
@@ -449,7 +450,8 @@ export async function POST(request: Request) {
               .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
               .map(() =>
                 loadAppDefaultTools({
-                  mentions,
+                  // Only use client mentions to restrict default tools
+                  mentions: clientMentions as any,
                   allowedAppDefaultToolkit,
                 }),
               )
@@ -595,9 +597,7 @@ export async function POST(request: Request) {
             : "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
-        const maxStepsForRun = (forceWorkflowOnly || forceWorkflowAuto || hasExplicitToolMentions)
-          ? 3 // tool call + optional retry + final assistant summary
-          : 10;
+        // Let the model take as many steps as it needs; do not cap maxSteps
 
         // Per-turn dedup guard and restriction: if forcing workflows, expose only workflow tools and prevent duplicate calls
         const toolsForRun = (() => {
@@ -715,7 +715,7 @@ export async function POST(request: Request) {
           system: systemPrompt,
           messages,
           temperature: 1,
-          maxSteps: maxStepsForRun,
+          // Do not cap maxSteps; allow the model to plan freely
           toolCallStreaming: true,
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 2,
