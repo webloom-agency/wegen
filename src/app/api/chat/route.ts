@@ -155,14 +155,6 @@ export async function POST(request: Request) {
 
       const userTextRaw = extractUserText(finalPatchedMessage);
       const userText = getNormalized(userTextRaw);
-      const isSearchVolumeIntent = (() => {
-        if (!userText) return false;
-        return (
-          userText.includes("volume de recherche") ||
-          userText.includes("search volume") ||
-          userText.includes("volume recherche")
-        );
-      })();
 
       if (userText && userText.length >= 3) {
         const existingWorkflowIds = new Set(
@@ -239,25 +231,6 @@ export async function POST(request: Request) {
           const wfName = (wf as any).name as string;
           const n = getNormalized(wfName);
           const strong = !!n && userText.includes(n);
-          const tokens = tokenize(wfName).filter((t) => !STOPWORDS.has(t));
-          // Intent boost: prioritize workflows matching "search volume" concept
-          if (isSearchVolumeIntent) {
-            const hasVolume = tokens.includes("volume");
-            const hasRecherche = tokens.includes("recherche") || tokens.includes("search");
-            if (hasVolume && hasRecherche) {
-              mentions.push({
-                type: "workflow",
-                name: wfName,
-                description: (wf as any).description ?? null,
-                workflowId: (wf as any).id,
-                icon: (wf as any).icon ?? null,
-                rank: 20000,
-              } as any);
-              existingWorkflowIds.add((wf as any).id);
-              forceWorkflowAuto = true;
-              continue;
-            }
-          }
           if (containsCandidate(wfName)) {
             mentions.push({
               type: "workflow",
@@ -265,25 +238,18 @@ export async function POST(request: Request) {
               description: (wf as any).description ?? null,
               workflowId: (wf as any).id,
               icon: (wf as any).icon ?? null,
-              // Higher rank for exact phrase containment; otherwise modest boost by token count
-              rank: strong ? 10000 : 500 + Math.min(tokens.length, 5) * 20,
-              source: "detected",
             } as any);
             existingWorkflowIds.add((wf as any).id);
             if (strong) forceWorkflowAuto = true;
             continue;
           }
           // relaxed matching: one significant token with some uniqueness or similarity
+          const tokens = tokenize(wfName).filter((t) => !STOPWORDS.has(t));
           const matched = tokens.filter((t) => userText.includes(t));
           if (matched.length > 0) {
             const hasUnique = matched.some((t) => (wfTokenCounts.get(t) || 0) === 1);
             const sim = bigramSim(n, userText);
-            // Simple near-exact coverage: proportion of significant name tokens matched
-            const coverage = matched.length / Math.max(tokens.length, 1);
             let score = matched.length * 30 + (hasUnique ? 20 : 0) + Math.min(sim, 10);
-            if (coverage >= 0.7 && matched.length >= 1) score += 200; // near-exact boost
-            // Penalize noisy single-token matches that are not unique (e.g., generic terms like 'seo')
-            if (matched.length === 1 && !hasUnique) score -= 10;
             if (tokens.length === 1 && matched.length === 1) score += 10;
             if (score >= 30) {
               mentions.push({
@@ -292,8 +258,6 @@ export async function POST(request: Request) {
                 description: (wf as any).description ?? null,
                 workflowId: (wf as any).id,
                 icon: (wf as any).icon ?? null,
-                rank: score,
-                source: "detected",
               } as any);
               existingWorkflowIds.add((wf as any).id);
             }
@@ -426,22 +390,16 @@ export async function POST(request: Request) {
         );
 
         // Determine workflow mentions and selection (at most one per turn)
-        // Prefer the highest-ranked workflow if multiple were detected
-        // Build candidate workflow mentions strictly from explicit client mentions or detections
-        const sortedWorkflowMentionsDetected = [...((mentions || []).filter(
-          (m: any) => m.type === "workflow" && (m as any).source === "detected",
-        ) as any[])].sort((a: any, b: any) => (Number(b.rank || 0) - Number(a.rank || 0)));
-
-        const explicitClientWorkflowMentions = (clientMentions || [])
-          .filter((m: any) => m.type === "workflow")
-          .sort((a: any, b: any) => (Number(b.rank || 0) - Number(a.rank || 0)));
-
-        const anyWorkflowMentions = sortedWorkflowMentionsDetected;
-
-        // Allow multiple workflows if explicitly mentioned; otherwise include all detected
+        const explicitClientWorkflowMentions = (clientMentions || []).filter(
+          (m: any) => m.type === "workflow",
+        );
+        const anyWorkflowMentions = (mentions || []).filter(
+          (m: any) => m.type === "workflow",
+        );
         const selectedWorkflowMentions = (explicitClientWorkflowMentions.length > 0
           ? explicitClientWorkflowMentions
-          : anyWorkflowMentions);
+          : anyWorkflowMentions).slice(0, 1);
+        const forceWorkflowOnly = supportToolCall && selectedWorkflowMentions.length > 0;
 
         // Load tools (optionally restricted to explicitly mentioned workflows)
         let MCP_TOOLS: Record<string, any> = {};
@@ -449,21 +407,30 @@ export async function POST(request: Request) {
         let APP_DEFAULT_TOOLS: Record<string, any> = {};
 
         if (isToolCallAllowed) {
-            // Only pass MCP-relevant mentions to loader to avoid accidental filtering
-            const mcpMentions = (mentions || []).filter(
-              (m: any) => m.type === "mcpTool" || m.type === "mcpServer",
-            );
+          if (forceWorkflowOnly) {
+            WORKFLOW_TOOLS = await safe()
+              .map(() =>
+                loadWorkFlowTools({
+                  mentions: selectedWorkflowMentions as any,
+                  dataStream,
+                }),
+              )
+              .orElse({});
+            // When a workflow is selected, disable MCP and App Default tools for this turn
+            MCP_TOOLS = {};
+            APP_DEFAULT_TOOLS = {};
+          } else {
             MCP_TOOLS = await safe()
               .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
               .map(() =>
                 loadMcpTools({
-                  mentions: mcpMentions as any,
+                  mentions,
                   allowedMcpServers,
                 }),
               )
               .orElse({});
 
-            // Load workflow tools for all selected or detected mentions
+            // Prefer at most one workflow when any exist
             const wfMentionsForLoad = selectedWorkflowMentions.length > 0 ? selectedWorkflowMentions : mentions;
             WORKFLOW_TOOLS = await safe()
               .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
@@ -475,39 +442,16 @@ export async function POST(request: Request) {
               )
               .orElse({});
 
-            // Default tools policy:
-            // - If explicitly mentioned, load only those default tools
-            // - Else if any workflow/MCP is present, hide default tools to avoid generic fallbacks
-            // - Else expose the configured default toolkit
-            const defaultToolMentions = (mentions || []).filter(
-              (m: any) => m.type === "defaultTool",
-            );
-            const hasDefaultToolMention = defaultToolMentions.length > 0;
-            const hasAnyWorkflow = selectedWorkflowMentions.length > 0 || Object.keys(WORKFLOW_TOOLS ?? {}).length > 0;
-            const hasAnyMcp = mcpMentions.length > 0 || Object.keys(MCP_TOOLS ?? {}).length > 0;
-            if (hasDefaultToolMention) {
-              APP_DEFAULT_TOOLS = await safe()
-                .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
-                .map(() =>
-                  loadAppDefaultTools({
-                    mentions: defaultToolMentions as any,
-                    allowedAppDefaultToolkit,
-                  }),
-                )
-                .orElse({});
-            } else if (hasAnyWorkflow || hasAnyMcp) {
-              APP_DEFAULT_TOOLS = {};
-            } else {
-              APP_DEFAULT_TOOLS = await safe()
-                .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
-                .map(() =>
-                  loadAppDefaultTools({
-                    mentions: [] as any,
-                    allowedAppDefaultToolkit,
-                  }),
-                )
-                .orElse({});
-            }
+            APP_DEFAULT_TOOLS = await safe()
+              .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
+              .map(() =>
+                loadAppDefaultTools({
+                  mentions,
+                  allowedAppDefaultToolkit,
+                }),
+              )
+              .orElse({});
+          }
         }
 
         if (inProgressToolStep) {
@@ -537,8 +481,10 @@ export async function POST(request: Request) {
           .map((v) => filterMcpServerCustomizations(MCP_TOOLS!, v))
           .orElse({});
 
-        const allWorkflowMentions = selectedWorkflowMentions as any[];
-        const forcedWorkflowHint = (selectedWorkflowMentions.length > 0 || forceWorkflowAuto)
+        const allWorkflowMentions = (mentions || []).filter(
+          (m: any) => m.type === "workflow",
+        ) as any[];
+        const forcedWorkflowHint = (forceWorkflowOnly || forceWorkflowAuto)
           ? (() => {
               const items = allWorkflowMentions.map((m) => {
                 const human = m.name || m.description || "";
@@ -559,21 +505,10 @@ export async function POST(request: Request) {
           : undefined;
 
         const effectiveAgent = agent || autoDetectedAgent || undefined;
-        const planningHint = (() => {
-          const hasWorkflowTools = Object.keys(WORKFLOW_TOOLS ?? {}).length > 0;
-          const hasMcpTools = Object.keys(MCP_TOOLS ?? {}).length > 0;
-          if (hasWorkflowTools && hasMcpTools) {
-            return (
-              "Prefer workflows when there is an exact or near-exact name match; otherwise freely combine tools. Plan a short multi-step sequence when needed: invoke the relevant workflow(s), then call the MCP tool(s) to fetch/validate data, then write a concise summary. Avoid default inputs; derive arguments strictly from the user's latest prompt and mentions."
-            );
-          }
-          return undefined;
-        })();
         const systemPrompt = mergeSystemPrompt(
           buildUserSystemPrompt(session.user, userPreferences, effectiveAgent),
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
           forcedWorkflowHint,
-          planningHint,
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
           (!supportToolCall ||
             ["openai", "anthropic"].includes(chatModel?.provider ?? "")) &&
@@ -591,7 +526,7 @@ export async function POST(request: Request) {
             };
           })
           .map((t) => {
-            const allowThinkingTool = supportToolCall && thinking;
+            const allowThinkingTool = supportToolCall && thinking && !forceWorkflowOnly;
             if (allowThinkingTool) {
               return {
                 ...t,
@@ -648,14 +583,19 @@ export async function POST(request: Request) {
         const toolChoiceForRun: "auto" | "required" = "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
-        const maxStepsForRun = 50;
+        const maxStepsForRun = (forceWorkflowOnly || forceWorkflowAuto)
+          ? 3 // Allow tool call + optional internal retry + final assistant summary
+          : 10;
 
         // Per-turn dedup guard and restriction: if forcing workflows, expose only workflow tools and prevent duplicate calls
-        // Prevent rapid loops by limiting each tool to one invocation per turn,
-        // while allowing multiple distinct tools in sequence.
         const toolsForRun = (() => {
-          const base = vercelAITooles as Record<string, any>;
+          const isForcing = forceWorkflowOnly || forceWorkflowAuto;
+          const base: Record<string, any> = isForcing
+            ? (WORKFLOW_TOOLS as Record<string, any>)
+            : (vercelAITooles as Record<string, any>);
+          if (!isForcing) return base;
           const invoked = new Set<string>();
+          const allowed = new Set(Object.keys(base));
           for (const [name, tool] of Object.entries(base)) {
             const originalExecute = tool?.execute;
             if (typeof originalExecute !== "function") continue;
@@ -665,6 +605,15 @@ export async function POST(request: Request) {
                   error: {
                     name: "DUPLICATE_TOOL_CALL",
                     message: `Tool ${name} already invoked once this turn`,
+                  },
+                };
+              }
+              // Hard block: disallow cross-workflow invocations if somehow included
+              if (!allowed.has(name)) {
+                return {
+                  error: {
+                    name: "WORKFLOW_NOT_SELECTED",
+                    message: `Tool ${name} is not allowed this turn`,
                   },
                 };
               }
