@@ -547,7 +547,15 @@ export async function POST(request: Request) {
             };
           })
           .map((t) => {
-            const allowThinkingTool = supportToolCall && thinking && !forceWorkflowOnly;
+            const hasExplicitToolOrWorkflowMention = (mentions || []).some(
+              (m: any) =>
+                m?.type === "workflow" ||
+                m?.type === "mcpServer" ||
+                m?.type === "mcpTool" ||
+                m?.type === "defaultTool",
+            );
+            const allowThinkingTool =
+              supportToolCall && thinking && !forceWorkflowOnly && !hasExplicitToolOrWorkflowMention;
             if (allowThinkingTool) {
               return {
                 ...t,
@@ -616,7 +624,13 @@ export async function POST(request: Request) {
         // Let the model take as many steps as it needs; do not cap maxSteps
 
         // Per-turn dedup guard and restriction: if forcing workflows, expose only workflow tools and prevent duplicate calls
-        const toolsForRun = vercelAITooles as Record<string, any>;
+        // For workflow-first prompts (no client MCP mention), restrict toolset to workflows
+        const workflowFirstMode =
+          clientWorkflowMentions.length > 0 ||
+          (autoWorkflowMentions.length > 0 && !hasClientMcpMention);
+        const toolsForRun = (workflowFirstMode
+          ? (WORKFLOW_TOOLS as Record<string, any>)
+          : (vercelAITooles as Record<string, any>));
 
         // Post-process: if the selected tool expects a 'client_name' parameter,
         // and the user's latest prompt includes a domain (URL or bare domain),
