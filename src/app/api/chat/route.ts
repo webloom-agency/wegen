@@ -397,15 +397,11 @@ export async function POST(request: Request) {
         );
 
         // Determine workflow mentions and selection (at most one per turn)
+        // Only consider client-provided workflow mentions for forcing workflows.
         const explicitClientWorkflowMentions = (clientMentions || []).filter(
           (m: any) => m.type === "workflow",
         );
-        const anyWorkflowMentions = (mentions || []).filter(
-          (m: any) => m.type === "workflow",
-        );
-        const selectedWorkflowMentions = (explicitClientWorkflowMentions.length > 0
-          ? explicitClientWorkflowMentions
-          : anyWorkflowMentions).slice(0, 1);
+        const selectedWorkflowMentions = (explicitClientWorkflowMentions || []).slice(0, 1);
         const forceWorkflowOnly = supportToolCall && selectedWorkflowMentions.length > 0;
 
         // Load tools (optionally restricted to explicitly mentioned workflows)
@@ -488,7 +484,8 @@ export async function POST(request: Request) {
           .map((v) => filterMcpServerCustomizations(MCP_TOOLS!, v))
           .orElse({});
 
-        const allWorkflowMentions = (mentions || []).filter(
+        // For hints, also only use client-provided workflow mentions
+        const allWorkflowMentions = (clientMentions || []).filter(
           (m: any) => m.type === "workflow",
         ) as any[];
         const forcedWorkflowHint = (forceWorkflowOnly || forceWorkflowAuto)
@@ -588,7 +585,8 @@ export async function POST(request: Request) {
 
         // If there are explicit tool mentions (MCP/default/workflow) and not forcing workflows via selection,
         // nudge the model to actually call tools by requiring a tool call once.
-        const hasExplicitToolMentions = (mentions || []).some((m) =>
+        // Only treat client-side mentions as explicit directives to call tools
+        const hasExplicitToolMentions = (clientMentions || []).some((m) =>
           ["mcpTool", "mcpServer", "defaultTool", "workflow"].includes((m as any)?.type),
         );
         const toolChoiceForRun: "auto" | "required" =
