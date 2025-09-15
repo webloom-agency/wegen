@@ -471,10 +471,24 @@ export async function POST(request: Request) {
           .map((v) => filterMcpServerCustomizations(MCP_TOOLS!, v))
           .orElse({});
 
-        // For hints, also only use client-provided workflow mentions
-        const allWorkflowMentions = (clientMentions || []).filter(
+        // Build workflow mentions from both client-provided and auto-detected (non-exclusive)
+        const clientWorkflowMentions = (clientMentions || []).filter(
           (m: any) => m.type === "workflow",
         ) as any[];
+        const autoWorkflowMentions = (mentions || []).filter(
+          (m: any) => m.type === "workflow",
+        ) as any[];
+        const allWorkflowMentions = (() => {
+          const ids = new Set<string>();
+          const list: any[] = [];
+          for (const m of [...clientWorkflowMentions, ...autoWorkflowMentions]) {
+            const id = (m as any)?.workflowId ?? (m as any)?.name;
+            if (!id || ids.has(id)) continue;
+            ids.add(id);
+            list.push(m);
+          }
+          return list;
+        })();
         const forcedWorkflowHint = (allWorkflowMentions.length > 0)
           ? (() => {
               const items = allWorkflowMentions.map((m) => {
@@ -586,8 +600,17 @@ export async function POST(request: Request) {
         );
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
-        // Always keep AUTO so the model can produce a natural-language summary after tool execution
-        const toolChoiceForRun: "auto" | "required" = "auto";
+        // Prefer requiring a tool call when a workflow is explicitly requested or confidently auto-detected,
+        // unless client also specified MCP mentions (in which case AUTO lets the model orchestrate freely).
+        const hasClientWorkflowMention = clientWorkflowMentions.length > 0;
+        const hasAutoWorkflowMention = autoWorkflowMentions.length > 0;
+        const hasClientMcpMention = (clientMentions || []).some((m: any) =>
+          m.type === "mcpServer" || m.type === "mcpTool",
+        );
+        const toolChoiceForRun: "auto" | "required" =
+          hasClientWorkflowMention || (hasAutoWorkflowMention && !hasClientMcpMention)
+            ? "required"
+            : "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         // Let the model take as many steps as it needs; do not cap maxSteps
