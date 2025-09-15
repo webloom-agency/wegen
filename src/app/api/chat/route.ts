@@ -130,7 +130,6 @@ export async function POST(request: Request) {
 
     // Auto-detect mentions (agents/workflows) from user text when not explicitly tagged
     let autoDetectedAgent: any | undefined;
-    let forceWorkflowAuto = false;
     try {
       const getNormalized = (s: string) =>
         s
@@ -230,7 +229,6 @@ export async function POST(request: Request) {
           if (existingWorkflowIds.has((wf as any).id)) continue;
           const wfName = (wf as any).name as string;
           const n = getNormalized(wfName);
-          const strong = !!n && userText.includes(n);
           if (containsCandidate(wfName)) {
             mentions.push({
               type: "workflow",
@@ -240,7 +238,7 @@ export async function POST(request: Request) {
               icon: (wf as any).icon ?? null,
             } as any);
             existingWorkflowIds.add((wf as any).id);
-            if (strong) forceWorkflowAuto = true;
+            // no-op: we no longer force workflows; keep detection only
             continue;
           }
           // relaxed matching: one significant token with some uniqueness or similarity
