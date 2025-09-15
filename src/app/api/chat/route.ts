@@ -357,8 +357,15 @@ export async function POST(request: Request) {
       .map((m: any) => m.agentId)
       .filter(Boolean);
 
+    // Allow tool calls when:
+    // - tools are supported by the model, AND
+    // - tool mode isn't "none" OR there are explicit mentions of MCP/default tools/workflows.
+    // Note: agent mentions alone should NOT block tool usage when toolChoice is "auto"/"manual".
+    const hasToolRelevantMentions = (mentions || []).some((m: any) =>
+      ["mcpTool", "mcpServer", "defaultTool", "workflow"].includes(m?.type),
+    );
     const isToolCallAllowed =
-      supportToolCall && (toolChoice != "none" || mentions.length > 0);
+      supportToolCall && (toolChoice != "none" || hasToolRelevantMentions);
 
     // Persist the user's message immediately so unfinished chats are saved
     if (isLastMessageUserMessage) {

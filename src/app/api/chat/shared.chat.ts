@@ -51,6 +51,11 @@ export function filterMCPToolsByMentions(
     (mention) => mention.type == "mcpTool" || mention.type == "mcpServer",
   );
 
+  // If there are no explicit MCP tool/server mentions, do not filter tools
+  if (toolMentions.length === 0) {
+    return tools;
+  }
+
   const metionsByServer = toolMentions.reduce(
     (acc, mention) => {
       if (mention.type == "mcpServer") {
@@ -502,8 +507,11 @@ export const loadMcpTools = (opt?: {
 }) =>
   safe(() => mcpClientsManager.tools())
     .map((tools) => {
-      if (opt?.mentions?.length) {
-        return filterMCPToolsByMentions(tools, opt.mentions);
+      const hasMcpMentions = (opt?.mentions || []).some(
+        (m) => m.type === "mcpTool" || m.type === "mcpServer",
+      );
+      if (hasMcpMentions) {
+        return filterMCPToolsByMentions(tools, opt!.mentions!);
       }
       return filterMCPToolsByAllowedMCPServers(tools, opt?.allowedMcpServers);
     })
@@ -531,15 +539,16 @@ export const loadAppDefaultTools = (opt?: {
 }) =>
   safe(APP_DEFAULT_TOOL_KIT)
     .map((tools) => {
-      if (opt?.mentions?.length) {
-        const defaultToolMentions = opt.mentions.filter(
-          (m) => m.type == "defaultTool",
-        );
+      const defaultToolMentions = (opt?.mentions || []).filter(
+        (m) => m.type == "defaultTool",
+      );
+      if (defaultToolMentions.length > 0) {
         return Array.from(Object.values(tools)).reduce((acc, t) => {
-          const allowed = objectFlow(t).filter((_, k) => {
+          const group = t as Record<string, Tool>;
+          const allowed = objectFlow(group).filter((_, k) => {
             return defaultToolMentions.some((m) => m.name == k);
           });
-          return { ...acc, ...allowed };
+          return { ...(acc as Record<string, Tool>), ...allowed } as Record<string, Tool>;
         }, {});
       }
       const allowedAppDefaultToolkit =
