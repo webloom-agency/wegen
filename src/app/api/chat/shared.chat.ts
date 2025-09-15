@@ -50,6 +50,9 @@ export function filterMCPToolsByMentions(
   const toolMentions = mentions.filter(
     (mention) => mention.type == "mcpTool" || mention.type == "mcpServer",
   );
+  if (toolMentions.length === 0) {
+    return tools;
+  }
 
   const metionsByServer = toolMentions.reduce(
     (acc, mention) => {
@@ -535,12 +538,15 @@ export const loadAppDefaultTools = (opt?: {
         const defaultToolMentions = opt.mentions.filter(
           (m) => m.type == "defaultTool",
         );
-        return Array.from(Object.values(tools)).reduce((acc, t) => {
-          const allowed = objectFlow(t).filter((_, k) => {
-            return defaultToolMentions.some((m) => m.name == k);
-          });
-          return { ...acc, ...allowed };
-        }, {});
+        if (defaultToolMentions.length > 0) {
+          return Array.from(Object.values(tools)).reduce((acc, t) => {
+            const allowed = objectFlow(t).filter((_, k) => {
+              return defaultToolMentions.some((m) => m.name == k);
+            });
+            return { ...acc, ...allowed };
+          }, {});
+        }
+        // Fall through to default allow-list when there are no defaultTool mentions
       }
       const allowedAppDefaultToolkit =
         opt?.allowedAppDefaultToolkit ?? Object.values(AppDefaultToolkit);
