@@ -722,7 +722,8 @@ export async function POST(request: Request) {
           system: systemPrompt,
           messages,
           temperature: 1,
-          // Do not cap maxSteps; allow the model to plan freely
+          // Allow ample planning and chaining of tool calls before summarizing
+          maxSteps: 20,
           toolCallStreaming: true,
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 2,
