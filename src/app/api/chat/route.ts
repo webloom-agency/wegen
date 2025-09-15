@@ -231,6 +231,7 @@ export async function POST(request: Request) {
           const wfName = (wf as any).name as string;
           const n = getNormalized(wfName);
           const strong = !!n && userText.includes(n);
+          const tokens = tokenize(wfName).filter((t) => !STOPWORDS.has(t));
           if (containsCandidate(wfName)) {
             mentions.push({
               type: "workflow",
@@ -238,18 +239,21 @@ export async function POST(request: Request) {
               description: (wf as any).description ?? null,
               workflowId: (wf as any).id,
               icon: (wf as any).icon ?? null,
+              // Higher rank for exact phrase containment; otherwise modest boost by token count
+              rank: strong ? 10000 : 500 + Math.min(tokens.length, 5) * 20,
             } as any);
             existingWorkflowIds.add((wf as any).id);
             if (strong) forceWorkflowAuto = true;
             continue;
           }
           // relaxed matching: one significant token with some uniqueness or similarity
-          const tokens = tokenize(wfName).filter((t) => !STOPWORDS.has(t));
           const matched = tokens.filter((t) => userText.includes(t));
           if (matched.length > 0) {
             const hasUnique = matched.some((t) => (wfTokenCounts.get(t) || 0) === 1);
             const sim = bigramSim(n, userText);
             let score = matched.length * 30 + (hasUnique ? 20 : 0) + Math.min(sim, 10);
+            // Penalize noisy single-token matches that are not unique (e.g., generic terms like 'seo')
+            if (matched.length === 1 && !hasUnique) score -= 10;
             if (tokens.length === 1 && matched.length === 1) score += 10;
             if (score >= 30) {
               mentions.push({
@@ -258,6 +262,7 @@ export async function POST(request: Request) {
                 description: (wf as any).description ?? null,
                 workflowId: (wf as any).id,
                 icon: (wf as any).icon ?? null,
+                rank: score,
               } as any);
               existingWorkflowIds.add((wf as any).id);
             }
@@ -390,12 +395,17 @@ export async function POST(request: Request) {
         );
 
         // Determine workflow mentions and selection (at most one per turn)
-        const explicitClientWorkflowMentions = (clientMentions || []).filter(
+        // Prefer the highest-ranked workflow if multiple were detected
+        const sortedWorkflowMentions = [...((mentions || []).filter(
           (m: any) => m.type === "workflow",
-        );
-        const anyWorkflowMentions = (mentions || []).filter(
-          (m: any) => m.type === "workflow",
-        );
+        ) as any[])].sort((a: any, b: any) => (Number(b.rank || 0) - Number(a.rank || 0)));
+
+        const explicitClientWorkflowMentions = (clientMentions || [])
+          .filter((m: any) => m.type === "workflow")
+          .sort((a: any, b: any) => (Number(b.rank || 0) - Number(a.rank || 0)));
+
+        const anyWorkflowMentions = sortedWorkflowMentions;
+
         const selectedWorkflowMentions = (explicitClientWorkflowMentions.length > 0
           ? explicitClientWorkflowMentions
           : anyWorkflowMentions).slice(0, 1);
