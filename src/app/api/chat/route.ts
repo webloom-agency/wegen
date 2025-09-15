@@ -511,10 +511,25 @@ export async function POST(request: Request) {
           : undefined;
 
         const effectiveAgent = agent || autoDetectedAgent || undefined;
+        // Build MCP mention hint (client-provided only) to ensure a post-tool summary
+        const clientMcpMentions = (clientMentions || []).filter(
+          (m: any) => m.type === "mcpServer" || m.type === "mcpTool",
+        ) as any[];
+        const forcedMcpHint = clientMcpMentions.length > 0
+          ? (() => {
+              const items = clientMcpMentions.map((m: any) =>
+                m.type === "mcpServer" ? `MCP server '${m.name}'` : `MCP tool '${m.name}'`,
+              );
+              const list = items.join(", ");
+              const chaining = `If a tool returns a list (e.g., properties or accounts), choose the best match from the user's prompt and context (including any mentioned domain or agent) and then call the necessary follow-up tool(s) from the SAME MCP to gather the required KPIs for the requested time window. Do not stop after the first tool call; continue tool calls until you can fully answer, then summarize.`;
+              return `Invoke tool(s) from ${list} as needed to answer the user's request this turn. ${chaining} After tool execution, produce a concise assistant summary of the findings and recommended next steps.`;
+            })()
+          : undefined;
         const systemPrompt = mergeSystemPrompt(
           buildUserSystemPrompt(session.user, userPreferences, effectiveAgent),
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
           forcedWorkflowHint,
+          forcedMcpHint,
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
           (!supportToolCall ||
             ["openai", "anthropic"].includes(chatModel?.provider ?? "")) &&
@@ -585,16 +600,8 @@ export async function POST(request: Request) {
         );
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
-        // If there are explicit tool mentions (MCP/default/workflow) and not forcing workflows via selection,
-        // nudge the model to actually call tools by requiring a tool call once.
-        // Only treat client-side mentions as explicit directives to call tools
-        const hasExplicitToolMentions = (clientMentions || []).some((m) =>
-          ["mcpTool", "mcpServer", "defaultTool", "workflow"].includes((m as any)?.type),
-        );
-        const toolChoiceForRun: "auto" | "required" =
-          (hasExplicitToolMentions && supportToolCall) || forceWorkflowOnly
-            ? "required"
-            : "auto";
+        // Always keep AUTO so the model can produce a natural-language summary after tool execution
+        const toolChoiceForRun: "auto" | "required" = "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         // Let the model take as many steps as it needs; do not cap maxSteps
