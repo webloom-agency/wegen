@@ -155,6 +155,14 @@ export async function POST(request: Request) {
 
       const userTextRaw = extractUserText(finalPatchedMessage);
       const userText = getNormalized(userTextRaw);
+      const isSearchVolumeIntent = (() => {
+        if (!userText) return false;
+        return (
+          userText.includes("volume de recherche") ||
+          userText.includes("search volume") ||
+          userText.includes("volume recherche")
+        );
+      })();
 
       if (userText && userText.length >= 3) {
         const existingWorkflowIds = new Set(
@@ -232,6 +240,24 @@ export async function POST(request: Request) {
           const n = getNormalized(wfName);
           const strong = !!n && userText.includes(n);
           const tokens = tokenize(wfName).filter((t) => !STOPWORDS.has(t));
+          // Intent boost: prioritize workflows matching "search volume" concept
+          if (isSearchVolumeIntent) {
+            const hasVolume = tokens.includes("volume");
+            const hasRecherche = tokens.includes("recherche") || tokens.includes("search");
+            if (hasVolume && hasRecherche) {
+              mentions.push({
+                type: "workflow",
+                name: wfName,
+                description: (wf as any).description ?? null,
+                workflowId: (wf as any).id,
+                icon: (wf as any).icon ?? null,
+                rank: 20000,
+              } as any);
+              existingWorkflowIds.add((wf as any).id);
+              forceWorkflowAuto = true;
+              continue;
+            }
+          }
           if (containsCandidate(wfName)) {
             mentions.push({
               type: "workflow",
@@ -241,6 +267,7 @@ export async function POST(request: Request) {
               icon: (wf as any).icon ?? null,
               // Higher rank for exact phrase containment; otherwise modest boost by token count
               rank: strong ? 10000 : 500 + Math.min(tokens.length, 5) * 20,
+              source: "detected",
             } as any);
             existingWorkflowIds.add((wf as any).id);
             if (strong) forceWorkflowAuto = true;
@@ -251,7 +278,10 @@ export async function POST(request: Request) {
           if (matched.length > 0) {
             const hasUnique = matched.some((t) => (wfTokenCounts.get(t) || 0) === 1);
             const sim = bigramSim(n, userText);
+            // Simple near-exact coverage: proportion of significant name tokens matched
+            const coverage = matched.length / Math.max(tokens.length, 1);
             let score = matched.length * 30 + (hasUnique ? 20 : 0) + Math.min(sim, 10);
+            if (coverage >= 0.7 && matched.length >= 1) score += 200; // near-exact boost
             // Penalize noisy single-token matches that are not unique (e.g., generic terms like 'seo')
             if (matched.length === 1 && !hasUnique) score -= 10;
             if (tokens.length === 1 && matched.length === 1) score += 10;
@@ -263,6 +293,7 @@ export async function POST(request: Request) {
                 workflowId: (wf as any).id,
                 icon: (wf as any).icon ?? null,
                 rank: score,
+                source: "detected",
               } as any);
               existingWorkflowIds.add((wf as any).id);
             }
@@ -396,15 +427,16 @@ export async function POST(request: Request) {
 
         // Determine workflow mentions and selection (at most one per turn)
         // Prefer the highest-ranked workflow if multiple were detected
-        const sortedWorkflowMentions = [...((mentions || []).filter(
-          (m: any) => m.type === "workflow",
+        // Build candidate workflow mentions strictly from explicit client mentions or detections
+        const sortedWorkflowMentionsDetected = [...((mentions || []).filter(
+          (m: any) => m.type === "workflow" && (m as any).source === "detected",
         ) as any[])].sort((a: any, b: any) => (Number(b.rank || 0) - Number(a.rank || 0)));
 
         const explicitClientWorkflowMentions = (clientMentions || [])
           .filter((m: any) => m.type === "workflow")
           .sort((a: any, b: any) => (Number(b.rank || 0) - Number(a.rank || 0)));
 
-        const anyWorkflowMentions = sortedWorkflowMentions;
+        const anyWorkflowMentions = sortedWorkflowMentionsDetected;
 
         // Allow multiple workflows if explicitly mentioned; otherwise include all detected
         const selectedWorkflowMentions = (explicitClientWorkflowMentions.length > 0
@@ -505,9 +537,7 @@ export async function POST(request: Request) {
           .map((v) => filterMcpServerCustomizations(MCP_TOOLS!, v))
           .orElse({});
 
-        const allWorkflowMentions = (mentions || []).filter(
-          (m: any) => m.type === "workflow",
-        ) as any[];
+        const allWorkflowMentions = selectedWorkflowMentions as any[];
         const forcedWorkflowHint = (selectedWorkflowMentions.length > 0 || forceWorkflowAuto)
           ? (() => {
               const items = allWorkflowMentions.map((m) => {
