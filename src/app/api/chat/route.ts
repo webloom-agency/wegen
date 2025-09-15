@@ -443,16 +443,39 @@ export async function POST(request: Request) {
               )
               .orElse({});
 
-            // Only pass defaultTool mentions
-            APP_DEFAULT_TOOLS = await safe()
-              .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
-              .map(() =>
-                loadAppDefaultTools({
-                  mentions: (mentions || []).filter((m: any) => m.type === "defaultTool") as any,
-                  allowedAppDefaultToolkit,
-                }),
-              )
-              .orElse({});
+            // Default tools policy:
+            // - If explicitly mentioned, load only those default tools
+            // - Else if any workflow/MCP is present, hide default tools to avoid generic fallbacks
+            // - Else expose the configured default toolkit
+            const defaultToolMentions = (mentions || []).filter(
+              (m: any) => m.type === "defaultTool",
+            );
+            const hasDefaultToolMention = defaultToolMentions.length > 0;
+            const hasAnyWorkflow = selectedWorkflowMentions.length > 0 || Object.keys(WORKFLOW_TOOLS ?? {}).length > 0;
+            const hasAnyMcp = mcpMentions.length > 0 || Object.keys(MCP_TOOLS ?? {}).length > 0;
+            if (hasDefaultToolMention) {
+              APP_DEFAULT_TOOLS = await safe()
+                .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
+                .map(() =>
+                  loadAppDefaultTools({
+                    mentions: defaultToolMentions as any,
+                    allowedAppDefaultToolkit,
+                  }),
+                )
+                .orElse({});
+            } else if (hasAnyWorkflow || hasAnyMcp) {
+              APP_DEFAULT_TOOLS = {};
+            } else {
+              APP_DEFAULT_TOOLS = await safe()
+                .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
+                .map(() =>
+                  loadAppDefaultTools({
+                    mentions: [] as any,
+                    allowedAppDefaultToolkit,
+                  }),
+                )
+                .orElse({});
+            }
         }
 
         if (inProgressToolStep) {
@@ -511,7 +534,7 @@ export async function POST(request: Request) {
           const hasMcpTools = Object.keys(MCP_TOOLS ?? {}).length > 0;
           if (hasWorkflowTools && hasMcpTools) {
             return (
-              "Plan a short multi-step sequence when needed: first invoke the relevant workflow(s), then use the explicitly-mentioned MCP tool(s) to fetch or validate data, and finally write a concise summary with findings and next steps. Avoid running workflows with default inputs; derive arguments strictly from the user's latest prompt and mentions."
+              "Prefer workflows when there is an exact or near-exact name match; otherwise freely combine tools. Plan a short multi-step sequence when needed: invoke the relevant workflow(s), then call the MCP tool(s) to fetch/validate data, then write a concise summary. Avoid default inputs; derive arguments strictly from the user's latest prompt and mentions."
             );
           }
           return undefined;
@@ -595,10 +618,32 @@ export async function POST(request: Request) {
         const toolChoiceForRun: "auto" | "required" = "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
-        const maxStepsForRun = 15;
+        const maxStepsForRun = 50;
 
         // Per-turn dedup guard and restriction: if forcing workflows, expose only workflow tools and prevent duplicate calls
-        const toolsForRun = vercelAITooles as Record<string, any>;
+        // Prevent rapid loops by limiting each tool to one invocation per turn,
+        // while allowing multiple distinct tools in sequence.
+        const toolsForRun = (() => {
+          const base = vercelAITooles as Record<string, any>;
+          const invoked = new Set<string>();
+          for (const [name, tool] of Object.entries(base)) {
+            const originalExecute = tool?.execute;
+            if (typeof originalExecute !== "function") continue;
+            base[name].execute = async (args: any, ctx: any) => {
+              if (invoked.has(name)) {
+                return {
+                  error: {
+                    name: "DUPLICATE_TOOL_CALL",
+                    message: `Tool ${name} already invoked once this turn`,
+                  },
+                };
+              }
+              invoked.add(name);
+              return originalExecute(args, ctx);
+            };
+          }
+          return base;
+        })();
 
         // Post-process: if the selected tool expects a 'client_name' parameter,
         // and the user's latest prompt includes a domain (URL or bare domain),
