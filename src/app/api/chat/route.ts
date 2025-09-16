@@ -132,7 +132,6 @@ export async function POST(request: Request) {
 
     // Auto-detect mentions (agents/workflows/MCP/default tools) from user text when not explicitly tagged
     let autoDetectedAgent: any | undefined;
-    let hasExactMatch = false;
     try {
       const getNormalized = (s: string) =>
         s
@@ -251,7 +250,7 @@ export async function POST(request: Request) {
               icon: (wf as any).icon ?? null,
             } as any);
             existingWorkflowIds.add((wf as any).id);
-            if (isExactWordMatch(wfName)) hasExactMatch = true;
+            // exact match noted
             continue;
           }
           // relaxed matching: one significant token with some uniqueness or similarity
@@ -290,7 +289,7 @@ export async function POST(request: Request) {
             if (!autoDetectedAgent) {
               autoDetectedAgent = a as any;
             }
-            if (isExactWordMatch((a as any).name)) hasExactMatch = true;
+            // exact match noted
             continue;
           }
           // relaxed agent matching
@@ -331,7 +330,7 @@ export async function POST(request: Request) {
                 name: toolName,
                 serverId: tool?._mcpServerId,
               } as any);
-              if (isExactWordMatch(toolName)) hasExactMatch = true;
+              // exact match noted
               continue;
             }
             const tokens = tokenize(toolName).filter((t) => !STOPWORDS.has(t));
@@ -358,7 +357,7 @@ export async function POST(request: Request) {
           for (const tName of defaultToolEntries) {
             if (isExactWordMatch(tName) || containsCandidate(tName)) {
               mentions.push({ type: "defaultTool", name: tName } as any);
-              if (isExactWordMatch(tName)) hasExactMatch = true;
+              // exact match noted
               continue;
             }
             const tokens = tokenize(tName).filter((tk) => !STOPWORDS.has(tk));
