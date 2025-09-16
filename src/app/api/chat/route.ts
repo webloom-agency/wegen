@@ -51,7 +51,6 @@ import { SequentialThinkingToolName } from "lib/ai/tools";
 import { sequentialThinkingTool } from "lib/ai/tools/thinking/sequential-thinking";
 import { compressPdfAttachmentsIfNeeded } from "lib/pdf/compress";
 import { APP_DEFAULT_TOOL_KIT } from "lib/ai/tools/tool-kit";
-import { AppDefaultToolkit } from "lib/ai/tools";
 
 const logger = globalLogger.withDefaults({
   message: colorize("blackBright", `Chat API: `),
@@ -132,6 +131,7 @@ export async function POST(request: Request) {
 
     // Auto-detect mentions (agents/workflows/MCP/default tools) from user text when not explicitly tagged
     let autoDetectedAgent: any | undefined;
+    let hasExactMatch = false;
     try {
       const getNormalized = (s: string) =>
         s
@@ -250,7 +250,7 @@ export async function POST(request: Request) {
               icon: (wf as any).icon ?? null,
             } as any);
             existingWorkflowIds.add((wf as any).id);
-            // exact match noted
+            if (isExactWordMatch(wfName)) hasExactMatch = true;
             continue;
           }
           // relaxed matching: one significant token with some uniqueness or similarity
@@ -289,7 +289,7 @@ export async function POST(request: Request) {
             if (!autoDetectedAgent) {
               autoDetectedAgent = a as any;
             }
-            // exact match noted
+            if (isExactWordMatch((a as any).name)) hasExactMatch = true;
             continue;
           }
           // relaxed agent matching
@@ -330,7 +330,7 @@ export async function POST(request: Request) {
                 name: toolName,
                 serverId: tool?._mcpServerId,
               } as any);
-              // exact match noted
+              if (isExactWordMatch(toolName)) hasExactMatch = true;
               continue;
             }
             const tokens = tokenize(toolName).filter((t) => !STOPWORDS.has(t));
@@ -357,7 +357,7 @@ export async function POST(request: Request) {
           for (const tName of defaultToolEntries) {
             if (isExactWordMatch(tName) || containsCandidate(tName)) {
               mentions.push({ type: "defaultTool", name: tName } as any);
-              // exact match noted
+              if (isExactWordMatch(tName)) hasExactMatch = true;
               continue;
             }
             const tokens = tokenize(tName).filter((tk) => !STOPWORDS.has(tk));
@@ -535,46 +535,13 @@ export async function POST(request: Request) {
             )
             .orElse({});
 
-          // Decide which default toolkits are allowed by intent
-          const lastUser = [...messages].reverse().find((m) => m.role === "user");
-          const lastUserText: string = (() => {
-            const parts: any[] = (lastUser?.parts as any[]) || [];
-            const t = parts.find((p) => p?.type === "text")?.text || parts[0]?.text;
-            return typeof t === "string" ? t : "";
-          })();
-          const wantsVisualization = /(chart|graph|plot|visuali[sz]e|diagramme|graphique|camembert|histogramme|courbe|bar\s*chart|pie\s*chart)/i.test(lastUserText);
-          const wantsWebSearch = /(web\s*search|recherche|search\b|google|bing|internet)/i.test(lastUserText);
-          const hasDefaultToolMentions = (effectiveClientMentions || []).some((m: any) => m.type === "defaultTool");
-          const hasMcpOrWorkflowMentions = (effectiveClientMentions || []).some((m: any) =>
-            ["mcpTool", "mcpServer", "workflow"].includes((m as any)?.type),
-          );
-
-          // Build allow-list for default toolkits
-          let allowedDefaultToolkit: string[] | undefined = undefined;
-          if (!hasDefaultToolMentions) {
-            // If user did not explicitly mention default tools, be conservative
-            const list: string[] = [];
-            if (wantsVisualization) list.push(AppDefaultToolkit.Visualization);
-            if (wantsWebSearch) list.push(AppDefaultToolkit.WebSearch);
-            // Only allow Code/Http if explicitly allowed upstream via request or explicit mentions
-            // Otherwise, keep them disabled to avoid over-orchestration
-            allowedDefaultToolkit = list;
-            // If there are MCP/workflow mentions and no explicit request for defaults, keep defaults empty
-            if (hasMcpOrWorkflowMentions && list.length === 0) {
-              allowedDefaultToolkit = [];
-            }
-          } else if (Array.isArray(allowedAppDefaultToolkit)) {
-            // Respect explicit allow-list from client when default tools are mentioned
-            allowedDefaultToolkit = allowedAppDefaultToolkit as any;
-          }
-
           APP_DEFAULT_TOOLS = await safe()
             .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
             .map(() =>
               loadAppDefaultTools({
                 // Only use client mentions to restrict default tools
                 mentions: effectiveClientMentions as any,
-                allowedAppDefaultToolkit: allowedDefaultToolkit,
+                allowedAppDefaultToolkit,
               }),
             )
             .orElse({});
@@ -670,12 +637,9 @@ export async function POST(request: Request) {
         const orchestrationPolicy = [
           "Tool orchestration policy:",
           "- Prefer using only tools that match the user's request by exact name; if none, consider close matches; otherwise use web search; if still none, answer directly.",
-          "- Use at most 2 tools per turn unless the user explicitly asks for more.",
+          "- Use at most 2-3 tools per turn unless the user explicitly asks for more.",
           "- When chaining tools, insert a brief internal reasoning step to map outputs to the next tool's required inputs. Do not call a tool with empty or placeholder arguments.",
           "- Stop once you've produced a sufficient answer; do not create documents or files unless explicitly requested.",
-          "- Do not perform web searches or create charts/visualizations unless explicitly requested in the user's prompt.",
-          "- Prefer a direct textual answer when tool results already satisfy the request.",
-          "- Always end your response with a concise textual conclusion summarizing the findings and next steps.",
         ].join("\n");
 
         const systemPrompt = mergeSystemPrompt(
@@ -714,6 +678,7 @@ export async function POST(request: Request) {
             // Hard cap per provider limitation: 128 tools max
             const MAX_TOOLS = 128;
             const toolEntries = Object.entries(allTools);
+            if (toolEntries.length <= MAX_TOOLS) return allTools;
 
             // Prioritize exact-match mentions first, then fuzzy mentions, then app default tools, then others
             const toWorkflowToolKey = (human?: string) => {
@@ -786,7 +751,7 @@ export async function POST(request: Request) {
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
         // Require a tool call when we have an exact match to any tool/workflow/agent; otherwise allow natural choice
-        const toolChoiceForRun: "auto" | "required" = forceWorkflowOnly ? "required" : "auto";
+        const toolChoiceForRun: "auto" | "required" = (supportToolCall && hasExactMatch) ? "required" : "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         // Let the model take as many steps as it needs; do not cap maxSteps
@@ -868,147 +833,17 @@ export async function POST(request: Request) {
 
         const toolsForRunAugmented = augmentToolsWithClientName(toolsForRun);
 
-        // Guardrails: prevent placeholder/empty arguments and bound tool-chaining per turn
-        const wrapToolsWithGuards = (
-          tools: Record<string, any>,
-          historyMessages: Message[],
-          options?: { maxCalls?: number },
-        ): Record<string, any> => {
-          const maxCalls = Math.max(1, options?.maxCalls ?? 2);
-          let executedCount = 0;
-          const isPlaceholderString = (s: string) => {
-            const v = String(s).trim();
-            if (v.length === 0) return true;
-            const lower = v.toLowerCase();
-            if (/[\[\(].*\b(insérer|insert|tbd|to be filled|placeholder|étape suivante|next step)\b.*[\]\)]/i.test(v)) return true;
-            if (/^\[[^\]]+\]$/.test(v)) return true;
-            if (/\b(tbd|placeholder)\b/i.test(lower)) return true;
-            return false;
-          };
-          const hasInvalidArgs = (args: any) => {
-            try {
-              if (args == null) return true;
-              if (typeof args === "string") return isPlaceholderString(args);
-              if (typeof args !== "object") return false;
-              for (const val of Object.values(args)) {
-                if (typeof val === "string" && isPlaceholderString(val)) return true;
-                if (val && typeof val === "object") {
-                  if (hasInvalidArgs(val)) return true;
-                }
-              }
-              return false;
-            } catch {
-              return false;
-            }
-          };
-          const extractCandidateKeywordsFromHistory = (history: Message[]): string[] => {
-            try {
-              const lastAssistant = [...history].reverse().find((m) => m.role === "assistant");
-              const parts: any[] = (lastAssistant?.parts as any[]) || [];
-              // Find the last tool result part
-              for (let i = parts.length - 1; i >= 0; i--) {
-                const p: any = parts[i];
-                if (p?.type === "tool-invocation" && p?.toolInvocation?.state === "result") {
-                  const res = p.toolInvocation?.result as any;
-                  // Structured content text table
-                  const sc = (res && (res.structuredContent?.result || res.result || "")) as string;
-                  const text = typeof sc === "string" ? sc : "";
-                  const candidates: string[] = [];
-                  if (text) {
-                    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-                    // Try markdown-like table rows split by '|'
-                    for (const line of lines) {
-                      if (!line || /^[-\s]+$/.test(line)) continue;
-                      if (line.includes("|") && !line.toLowerCase().includes("query")) {
-                        const firstCell = line.split("|")[0]?.trim() || "";
-                        if (firstCell && !/^[-]+$/.test(firstCell)) candidates.push(firstCell);
-                      }
-                    }
-                  }
-                  // Also check array content outputs
-                  const contentArr: any[] = Array.isArray((res as any)?.content) ? (res as any).content : [];
-                  for (const item of contentArr) {
-                    const v = (typeof item === "string") ? item : (item?.query || item?.keyword || item?.name);
-                    if (typeof v === "string" && v.trim().length > 0) candidates.push(v.trim());
-                  }
-                  // Dedup and trim to 20
-                  return Array.from(new Set(candidates.map((c) => c.trim()))).filter(Boolean).slice(0, 20);
-                }
-              }
-            } catch {}
-            return [];
-          };
-          const getParamFieldNames = (tool: any): string[] => {
-            try {
-              const params = tool?.parameters;
-              const shapeFn = params?._def?.shape?.() || params?.shape;
-              if (shapeFn && typeof shapeFn === "object") return Object.keys(shapeFn);
-            } catch {}
-            return [];
-          };
-
-          const wrapped: Record<string, any> = {};
-          for (const [name, tool] of Object.entries(tools)) {
-            const originalExecute = (tool as any)?.execute;
-            if (typeof originalExecute !== "function") {
-              wrapped[name] = tool;
-              continue;
-            }
-            const paramNames = getParamFieldNames(tool);
-            wrapped[name] = {
-              ...tool,
-              execute: async (args: any, ctx: any) => {
-                if (executedCount >= maxCalls) {
-                  return {
-                    error: {
-                      name: "TOOL_CALL_LIMIT_REACHED",
-                      message: `Tool call limit (${maxCalls}) reached for this turn. Summarize and conclude.`,
-                    },
-                  };
-                }
-                if (hasInvalidArgs(args)) {
-                  // Attempt generic argument bridging for common patterns (e.g., keywords extraction)
-                  const bridgedArgs = { ...(typeof args === "object" && args ? args : {}) } as any;
-                  const needsKeywords = paramNames.includes("keywords");
-                  if (needsKeywords && (!bridgedArgs.keywords || isPlaceholderString(String(bridgedArgs.keywords)))) {
-                    const ks = extractCandidateKeywordsFromHistory(historyMessages);
-                    if (ks.length > 0) {
-                      bridgedArgs.keywords = ks.join(",");
-                      args = bridgedArgs;
-                    }
-                  }
-                  // Re-validate after bridging
-                  if (hasInvalidArgs(args)) {
-                  return {
-                    error: {
-                      name: "INVALID_ARGS",
-                      message:
-                        "Arguments appear to be placeholder or missing. Extract the needed values from previous tool outputs or ask the user to clarify before calling this tool again.",
-                    },
-                  };
-                  }
-                }
-                executedCount++;
-                return originalExecute(args, ctx);
-              },
-            };
-          }
-          return wrapped;
-        };
-
-        const toolsForRunFinal = wrapToolsWithGuards(toolsForRunAugmented, messages, { maxCalls: 2 });
-
         const result = streamText({
           model,
           system: systemPrompt,
           messages,
           temperature: 1,
           // Keep tool-chaining bounded for responsiveness
-          maxSteps: 3,
+          maxSteps: 8,
           toolCallStreaming: true,
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 2,
-          tools: toolsForRunFinal,
+          tools: toolsForRunAugmented,
           toolChoice: toolChoiceForRun,
           abortSignal: request.signal,
           onFinish: async ({ response, usage }) => {
