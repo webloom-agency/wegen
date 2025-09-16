@@ -349,6 +349,33 @@ export async function POST(request: Request) {
     // Capture client-provided mentions before augmenting with agent mentions
     const clientMentions = [...mentions];
 
+    // Resolve @tool() mentions: if a "defaultTool" mention doesn't match any default tool,
+    // check if it matches a workflow name and convert it to a workflow mention
+    const resolvedMentions = await Promise.all(
+      mentions.map(async (mention: any) => {
+        if (mention.type === "defaultTool") {
+          // Check if this tool name exists in default tools
+          const isDefaultTool = Object.values(DefaultToolName).includes(mention.name as any);
+          if (!isDefaultTool) {
+            // Check if it matches a workflow name
+            const userWorkflows = await workflowRepository.selectExecuteAbility(session.user.id);
+            const matchingWorkflow = userWorkflows.find((wf: any) => wf.name === mention.name);
+            if (matchingWorkflow) {
+              return {
+                type: "workflow",
+                name: matchingWorkflow.name,
+                description: matchingWorkflow.description,
+                workflowId: matchingWorkflow.id,
+                icon: matchingWorkflow.icon,
+              };
+            }
+          }
+        }
+        return mention;
+      })
+    );
+    mentions.splice(0, mentions.length, ...resolvedMentions);
+
     if (agent?.instructions?.mentions) {
       mentions.push(...agent.instructions.mentions);
     }
