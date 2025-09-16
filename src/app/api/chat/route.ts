@@ -444,6 +444,26 @@ export async function POST(request: Request) {
               }),
             )
             .orElse({});
+
+          // If a workflow is forced/detected but default code/http tools were not explicitly mentioned,
+          // temporarily exclude them to prevent the model from picking them instead of the workflow first.
+          if ((forceWorkflowOnly || forceWorkflowAuto) && Object.keys(APP_DEFAULT_TOOLS).length > 0) {
+            const explicitlyMentionedDefaultNames = new Set(
+              (clientMentions || [])
+                .filter((m: any) => m.type === "defaultTool")
+                .map((m: any) => m.name)
+                .filter(Boolean),
+            );
+            const codeHttpNames = new Set(["http", "mini-javascript-execution", "python-execution"]);
+            const shouldKeep = (name: string) => explicitlyMentionedDefaultNames.has(name) || !codeHttpNames.has(name);
+            if (![...Object.keys(APP_DEFAULT_TOOLS)].every(shouldKeep)) {
+              const filtered: Record<string, any> = {};
+              for (const [k, v] of Object.entries(APP_DEFAULT_TOOLS)) {
+                if (shouldKeep(k)) filtered[k] = v;
+              }
+              APP_DEFAULT_TOOLS = filtered;
+            }
+          }
         }
 
         if (inProgressToolStep) {
@@ -493,7 +513,8 @@ export async function POST(request: Request) {
               const activeAgent = (agent || autoDetectedAgent) as any;
               const agentContext = activeAgent ? `You are collaborating with agent '${activeAgent.name}'. Incorporate the agent's context in the summary.` : "";
               const argHygiene = `When constructing workflow tool arguments, derive values strictly from the user's latest prompt text and explicit mentions. Do NOT infer variables (e.g., client_name, email, topic, urls) from attachments or previous files; attachments are context only. If prompt and attachments conflict, prefer the prompt.`;
-              return `Invoke the following workflow(s) exactly once this turn: ${list}. You may also use other tools (MCP or app defaults) as needed to gather additional information or perform follow-ups in the same turn. After the workflow completes, produce a brief assistant summary in the chat: highlight key findings, actionable next steps, and link to any generated artifacts. Do not re-invoke the same workflow in this turn. ${agentContext}\n\n${argHygiene}`.trim();
+              const avoidGeneric = `Do not use general-purpose code or HTTP tools before invoking the workflow.`;
+              return `Invoke the following workflow(s) exactly once this turn: ${list}. You may also use other tools (MCP or app defaults) as needed after invoking the workflow to gather additional information or perform follow-ups in the same turn. After the workflow completes, produce a brief assistant summary in the chat: highlight key findings, actionable next steps, and link to any generated artifacts. Do not re-invoke the same workflow in this turn. ${avoidGeneric} ${agentContext}\n\n${argHygiene}`.trim();
             })()
           : undefined;
 
@@ -550,12 +571,24 @@ export async function POST(request: Request) {
             if (toolEntries.length <= MAX_TOOLS) return allTools;
 
             // Prioritize mentioned tools first, then app default tools, then others
-            const mentionedNames = new Set(
-              (mentions || [])
-                .filter((m) => m.type === "mcpTool" || m.type === "workflow" || m.type === "defaultTool")
-                .map((m: any) => m.name)
-                .filter(Boolean),
-            );
+            const toWorkflowToolKey = (human?: string) => {
+              if (!human) return undefined;
+              return String(human)
+                .replace(/[^a-zA-Z0-9\s]/g, "")
+                .trim()
+                .replace(/\s+/g, "-")
+                .toUpperCase();
+            };
+            const mentionedNames = new Set<string>();
+            for (const m of (mentions || [])) {
+              if (!m || !("type" in (m as any))) continue;
+              if ((m as any).type === "mcpTool" || (m as any).type === "defaultTool") {
+                if ((m as any).name) mentionedNames.add((m as any).name);
+              } else if ((m as any).type === "workflow") {
+                const key = toWorkflowToolKey((m as any).name || (m as any).description);
+                if (key) mentionedNames.add(key);
+              }
+            }
             const appDefaultNames = new Set(Object.keys(APP_DEFAULT_TOOLS));
 
             const mentioned = toolEntries.filter(([name]) => mentionedNames.has(name));
@@ -587,8 +620,8 @@ export async function POST(request: Request) {
         );
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
-        // Always keep AUTO so the model can produce a natural-language summary after tool execution
-        const toolChoiceForRun: "auto" | "required" = "auto";
+        // Require a tool call when a workflow is detected/forced; otherwise allow natural choice
+        const toolChoiceForRun: "auto" | "required" = (supportToolCall && (forceWorkflowOnly || forceWorkflowAuto)) ? "required" : "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         // Let the model take as many steps as it needs; do not cap maxSteps
@@ -599,11 +632,13 @@ export async function POST(request: Request) {
           const base: Record<string, any> = vercelAITooles as Record<string, any>;
           if (!isForcing) return base;
           const invoked = new Set<string>();
+          let workflowInvoked = false;
           const wrapped: Record<string, any> = { ...base };
           for (const [name, tool] of Object.entries(base)) {
             const originalExecute = (tool as any)?.execute;
             const isWorkflowTool = (tool as any)?.__$ref__ === "workflow";
-            if (typeof originalExecute === "function" && isWorkflowTool) {
+            if (typeof originalExecute !== "function") continue;
+            if (isWorkflowTool) {
               wrapped[name] = {
                 ...tool,
                 execute: async (args: any, ctx: any) => {
@@ -616,6 +651,28 @@ export async function POST(request: Request) {
                     };
                   }
                   invoked.add(name);
+                  try {
+                    const res = await originalExecute(args, ctx);
+                    workflowInvoked = true;
+                    return res;
+                  } catch (e) {
+                    workflowInvoked = true; // considered attempted
+                    throw e;
+                  }
+                },
+              };
+            } else {
+              wrapped[name] = {
+                ...tool,
+                execute: async (args: any, ctx: any) => {
+                  if (!workflowInvoked) {
+                    return {
+                      error: {
+                        name: "WORKFLOW_REQUIRED_FIRST",
+                        message: `Invoke the selected workflow tool first, then use '${name}' if still needed.`,
+                      },
+                    };
+                  }
                   return originalExecute(args, ctx);
                 },
               };
