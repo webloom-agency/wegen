@@ -445,9 +445,9 @@ export async function POST(request: Request) {
             )
             .orElse({});
 
-          // If a workflow is forced/detected but default code/http tools were not explicitly mentioned,
+          // If a workflow is explicitly mentioned (forced) but default code/http tools were not explicitly mentioned,
           // temporarily exclude them to prevent the model from picking them instead of the workflow first.
-          if ((forceWorkflowOnly || forceWorkflowAuto) && Object.keys(APP_DEFAULT_TOOLS).length > 0) {
+          if (forceWorkflowOnly && Object.keys(APP_DEFAULT_TOOLS).length > 0) {
             const explicitlyMentionedDefaultNames = new Set(
               (clientMentions || [])
                 .filter((m: any) => m.type === "defaultTool")
@@ -497,7 +497,7 @@ export async function POST(request: Request) {
         const allWorkflowMentions = (clientMentions || []).filter(
           (m: any) => m.type === "workflow",
         ) as any[];
-        const forcedWorkflowHint = (forceWorkflowOnly || forceWorkflowAuto)
+        const forcedWorkflowHint = (forceWorkflowOnly)
           ? (() => {
               const items = allWorkflowMentions.map((m) => {
                 const human = m.name || m.description || "";
@@ -580,7 +580,7 @@ export async function POST(request: Request) {
                 .toUpperCase();
             };
             const mentionedNames = new Set<string>();
-            for (const m of (mentions || [])) {
+            for (const m of (clientMentions || [])) {
               if (!m || !("type" in (m as any))) continue;
               if ((m as any).type === "mcpTool" || (m as any).type === "defaultTool") {
                 if ((m as any).name) mentionedNames.add((m as any).name);
@@ -620,15 +620,15 @@ export async function POST(request: Request) {
         );
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
-        // Require a tool call when a workflow is detected/forced; otherwise allow natural choice
-        const toolChoiceForRun: "auto" | "required" = (supportToolCall && (forceWorkflowOnly || forceWorkflowAuto)) ? "required" : "auto";
+        // Require a tool call when a workflow is explicitly mentioned; otherwise allow natural choice
+        const toolChoiceForRun: "auto" | "required" = (supportToolCall && forceWorkflowOnly) ? "required" : "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         // Let the model take as many steps as it needs; do not cap maxSteps
 
         // Per-turn dedup guard: when forcing workflows, prevent duplicate calls to the same workflow tool, while keeping other tools available
         const toolsForRun = (() => {
-          const isForcing = forceWorkflowOnly || forceWorkflowAuto;
+          const isForcing = forceWorkflowOnly;
           const base: Record<string, any> = vercelAITooles as Record<string, any>;
           if (!isForcing) return base;
           const invoked = new Set<string>();
