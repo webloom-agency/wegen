@@ -229,7 +229,6 @@ export async function POST(request: Request) {
           if (existingWorkflowIds.has((wf as any).id)) continue;
           const wfName = (wf as any).name as string;
           const n = getNormalized(wfName);
-          const strong = !!n && userText.includes(n);
           if (containsCandidate(wfName)) {
             mentions.push({
               type: "workflow",
