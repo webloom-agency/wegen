@@ -634,11 +634,20 @@ export async function POST(request: Request) {
               return `Invoke tool(s) from ${list} as needed to answer the user's request this turn. ${chaining} After tool execution, produce a concise assistant summary of the findings and recommended next steps.`;
             })()
           : undefined;
+        const orchestrationPolicy = [
+          "Tool orchestration policy:",
+          "- Prefer using only tools that match the user's request by exact name; if none, consider close matches; otherwise use web search; if still none, answer directly.",
+          "- Use at most 2-3 tools per turn unless the user explicitly asks for more.",
+          "- When chaining tools, insert a brief internal reasoning step to map outputs to the next tool's required inputs. Do not call a tool with empty or placeholder arguments.",
+          "- Stop once you've produced a sufficient answer; do not create documents or files unless explicitly requested.",
+        ].join("\n");
+
         const systemPrompt = mergeSystemPrompt(
           buildUserSystemPrompt(session.user, userPreferences, effectiveAgent),
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
           forcedWorkflowHint,
           forcedMcpHint,
+          orchestrationPolicy,
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
           (!supportToolCall ||
             ["openai", "anthropic"].includes(chatModel?.provider ?? "")) &&
@@ -713,7 +722,14 @@ export async function POST(request: Request) {
               ([name]) => !exactMentioned.has(name) && !fuzzyMentioned.has(name) && !appDefaultNames.has(name),
             );
 
-            const prioritized = [...exact, ...fuzzy, ...appDefaults, ...others].slice(0, MAX_TOOLS);
+            // If we have any matches (exact or fuzzy), filter down to those only to avoid unrelated tool chains
+            if (exact.length + fuzzy.length > 0) {
+              const allowedNames = new Set<string>([...exact.map(([n]) => n), ...fuzzy.map(([n]) => n)]);
+              return Object.fromEntries(toolEntries.filter(([name]) => allowedNames.has(name)).slice(0, MAX_TOOLS));
+            }
+
+            // Otherwise keep priority order (defaults first, then others) within cap
+            const prioritized = [...appDefaults, ...others].slice(0, MAX_TOOLS);
             return Object.fromEntries(prioritized);
           })
           .unwrap();
@@ -822,8 +838,8 @@ export async function POST(request: Request) {
           system: systemPrompt,
           messages,
           temperature: 1,
-          // Allow ample planning and chaining of tool calls before summarizing
-          maxSteps: 20,
+          // Keep tool-chaining bounded for responsiveness
+          maxSteps: 8,
           toolCallStreaming: true,
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 2,
