@@ -637,9 +637,10 @@ export async function POST(request: Request) {
         const orchestrationPolicy = [
           "Tool orchestration policy:",
           "- Prefer using only tools that match the user's request by exact name; if none, consider close matches; otherwise use web search; if still none, answer directly.",
-          "- Use at most 2-3 tools per turn unless the user explicitly asks for more.",
+          "- Use at most 2 tools per turn unless the user explicitly asks for more.",
           "- When chaining tools, insert a brief internal reasoning step to map outputs to the next tool's required inputs. Do not call a tool with empty or placeholder arguments.",
           "- Stop once you've produced a sufficient answer; do not create documents or files unless explicitly requested.",
+          "- Always end your response with a concise textual conclusion summarizing the findings and next steps.",
         ].join("\n");
 
         const systemPrompt = mergeSystemPrompt(
@@ -678,7 +679,6 @@ export async function POST(request: Request) {
             // Hard cap per provider limitation: 128 tools max
             const MAX_TOOLS = 128;
             const toolEntries = Object.entries(allTools);
-            if (toolEntries.length <= MAX_TOOLS) return allTools;
 
             // Prioritize exact-match mentions first, then fuzzy mentions, then app default tools, then others
             const toWorkflowToolKey = (human?: string) => {
@@ -839,7 +839,7 @@ export async function POST(request: Request) {
           messages,
           temperature: 1,
           // Keep tool-chaining bounded for responsiveness
-          maxSteps: 8,
+          maxSteps: 5,
           toolCallStreaming: true,
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 2,
