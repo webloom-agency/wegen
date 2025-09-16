@@ -410,53 +410,40 @@ export async function POST(request: Request) {
         let APP_DEFAULT_TOOLS: Record<string, any> = {};
 
         if (isToolCallAllowed) {
-          if (forceWorkflowOnly) {
-            WORKFLOW_TOOLS = await safe()
-              .map(() =>
-                loadWorkFlowTools({
-                  mentions: selectedWorkflowMentions as any,
-                  dataStream,
-                }),
-              )
-              .orElse({});
-            // When a workflow is selected, disable MCP and App Default tools for this turn
-            MCP_TOOLS = {};
-            APP_DEFAULT_TOOLS = {};
-          } else {
-            MCP_TOOLS = await safe()
-              .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
-              .map(() =>
-                loadMcpTools({
-                  // Only use client mentions to restrict MCP tools
-                  mentions: clientMentions as any,
-                  allowedMcpServers,
-                }),
-              )
-              .orElse({});
+          // Always load all tool categories; restrict by mentions/allow-lists but do not exclude others when a workflow is selected
+          MCP_TOOLS = await safe()
+            .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
+            .map(() =>
+              loadMcpTools({
+                // Only use client mentions to restrict MCP tools
+                mentions: clientMentions as any,
+                allowedMcpServers,
+              }),
+            )
+            .orElse({});
 
-            // Prefer at most one workflow when any exist
-            const wfMentionsForLoad = selectedWorkflowMentions.length > 0 ? selectedWorkflowMentions : mentions;
-            WORKFLOW_TOOLS = await safe()
-              .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
-              .map(() =>
-                loadWorkFlowTools({
-                  mentions: wfMentionsForLoad as any,
-                  dataStream,
-                }),
-              )
-              .orElse({});
+          // Prefer at most one workflow mention when any exist for loading, but keep other tool categories available
+          const wfMentionsForLoad = selectedWorkflowMentions.length > 0 ? selectedWorkflowMentions : mentions;
+          WORKFLOW_TOOLS = await safe()
+            .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
+            .map(() =>
+              loadWorkFlowTools({
+                mentions: wfMentionsForLoad as any,
+                dataStream,
+              }),
+            )
+            .orElse({});
 
-            APP_DEFAULT_TOOLS = await safe()
-              .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
-              .map(() =>
-                loadAppDefaultTools({
-                  // Only use client mentions to restrict default tools
-                  mentions: clientMentions as any,
-                  allowedAppDefaultToolkit,
-                }),
-              )
-              .orElse({});
-          }
+          APP_DEFAULT_TOOLS = await safe()
+            .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
+            .map(() =>
+              loadAppDefaultTools({
+                // Only use client mentions to restrict default tools
+                mentions: clientMentions as any,
+                allowedAppDefaultToolkit,
+              }),
+            )
+            .orElse({});
         }
 
         if (inProgressToolStep) {
@@ -506,7 +493,7 @@ export async function POST(request: Request) {
               const activeAgent = (agent || autoDetectedAgent) as any;
               const agentContext = activeAgent ? `You are collaborating with agent '${activeAgent.name}'. Incorporate the agent's context in the summary.` : "";
               const argHygiene = `When constructing workflow tool arguments, derive values strictly from the user's latest prompt text and explicit mentions. Do NOT infer variables (e.g., client_name, email, topic, urls) from attachments or previous files; attachments are context only. If prompt and attachments conflict, prefer the prompt.`;
-              return `Invoke the following workflow(s) exactly once this turn: ${list}. After the workflow completes, produce a brief assistant summary in the chat: highlight key findings, actionable next steps, and link to any generated artifacts. Do not re-invoke the same workflow in this turn. ${agentContext}\n\n${argHygiene}`.trim();
+              return `Invoke the following workflow(s) exactly once this turn: ${list}. You may also use other tools (MCP or app defaults) as needed to gather additional information or perform follow-ups in the same turn. After the workflow completes, produce a brief assistant summary in the chat: highlight key findings, actionable next steps, and link to any generated artifacts. Do not re-invoke the same workflow in this turn. ${agentContext}\n\n${argHygiene}`.trim();
             })()
           : undefined;
 
@@ -547,7 +534,7 @@ export async function POST(request: Request) {
             };
           })
           .map((t) => {
-            const allowThinkingTool = supportToolCall && thinking && !forceWorkflowOnly;
+            const allowThinkingTool = supportToolCall && thinking;
             if (allowThinkingTool) {
               return {
                 ...t,
@@ -606,41 +593,35 @@ export async function POST(request: Request) {
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         // Let the model take as many steps as it needs; do not cap maxSteps
 
-        // Per-turn dedup guard and restriction: if forcing workflows, expose only workflow tools and prevent duplicate calls
+        // Per-turn dedup guard: when forcing workflows, prevent duplicate calls to the same workflow tool, while keeping other tools available
         const toolsForRun = (() => {
           const isForcing = forceWorkflowOnly || forceWorkflowAuto;
-          const base: Record<string, any> = isForcing
-            ? (WORKFLOW_TOOLS as Record<string, any>)
-            : (vercelAITooles as Record<string, any>);
+          const base: Record<string, any> = vercelAITooles as Record<string, any>;
           if (!isForcing) return base;
           const invoked = new Set<string>();
-          const allowed = new Set(Object.keys(base));
+          const wrapped: Record<string, any> = { ...base };
           for (const [name, tool] of Object.entries(base)) {
-            const originalExecute = tool?.execute;
-            if (typeof originalExecute !== "function") continue;
-            base[name].execute = async (args: any, ctx: any) => {
-              if (invoked.has(name)) {
-                return {
-                  error: {
-                    name: "DUPLICATE_TOOL_CALL",
-                    message: `Tool ${name} already invoked once this turn`,
-                  },
-                };
-              }
-              // Hard block: disallow cross-workflow invocations if somehow included
-              if (!allowed.has(name)) {
-                return {
-                  error: {
-                    name: "WORKFLOW_NOT_SELECTED",
-                    message: `Tool ${name} is not allowed this turn`,
-                  },
-                };
-              }
-              invoked.add(name);
-              return originalExecute(args, ctx);
-            };
+            const originalExecute = (tool as any)?.execute;
+            const isWorkflowTool = (tool as any)?.__$ref__ === "workflow";
+            if (typeof originalExecute === "function" && isWorkflowTool) {
+              wrapped[name] = {
+                ...tool,
+                execute: async (args: any, ctx: any) => {
+                  if (invoked.has(name)) {
+                    return {
+                      error: {
+                        name: "DUPLICATE_TOOL_CALL",
+                        message: `Tool ${name} already invoked once this turn`,
+                      },
+                    };
+                  }
+                  invoked.add(name);
+                  return originalExecute(args, ctx);
+                },
+              };
+            }
           }
-          return base;
+          return wrapped;
         })();
 
         // Post-process: if the selected tool expects a 'client_name' parameter,
