@@ -637,10 +637,9 @@ export async function POST(request: Request) {
         const orchestrationPolicy = [
           "Tool orchestration policy:",
           "- Prefer using only tools that match the user's request by exact name; if none, consider close matches; otherwise use web search; if still none, answer directly.",
-          "- Use at most 2 tools per turn unless the user explicitly asks for more.",
+          "- Use at most 2-3 tools per turn unless the user explicitly asks for more.",
           "- When chaining tools, insert a brief internal reasoning step to map outputs to the next tool's required inputs. Do not call a tool with empty or placeholder arguments.",
           "- Stop once you've produced a sufficient answer; do not create documents or files unless explicitly requested.",
-          "- Always end your response with a concise textual conclusion summarizing the findings and next steps.",
         ].join("\n");
 
         const systemPrompt = mergeSystemPrompt(
@@ -679,6 +678,7 @@ export async function POST(request: Request) {
             // Hard cap per provider limitation: 128 tools max
             const MAX_TOOLS = 128;
             const toolEntries = Object.entries(allTools);
+            if (toolEntries.length <= MAX_TOOLS) return allTools;
 
             // Prioritize exact-match mentions first, then fuzzy mentions, then app default tools, then others
             const toWorkflowToolKey = (human?: string) => {
@@ -833,87 +833,17 @@ export async function POST(request: Request) {
 
         const toolsForRunAugmented = augmentToolsWithClientName(toolsForRun);
 
-        // Guardrails: prevent placeholder/empty arguments and bound tool-chaining per turn
-        const wrapToolsWithGuards = (
-          tools: Record<string, any>,
-          options?: { maxCalls?: number },
-        ): Record<string, any> => {
-          const maxCalls = Math.max(1, options?.maxCalls ?? 2);
-          let executedCount = 0;
-          const isPlaceholderString = (s: string) => {
-            const v = String(s).trim();
-            if (v.length === 0) return true;
-            const lower = v.toLowerCase();
-            if (/[\[\(].*\b(insérer|insert|tbd|to be filled|placeholder|étape suivante|next step)\b.*[\]\)]/i.test(v)) return true;
-            if (/^\[[^\]]+\]$/.test(v)) return true;
-            if (/\b(tbd|placeholder)\b/i.test(lower)) return true;
-            return false;
-          };
-          const hasInvalidArgs = (args: any) => {
-            try {
-              if (args == null) return true;
-              if (typeof args === "string") return isPlaceholderString(args);
-              if (typeof args !== "object") return false;
-              for (const val of Object.values(args)) {
-                if (typeof val === "string" && isPlaceholderString(val)) return true;
-                if (val && typeof val === "object") {
-                  if (hasInvalidArgs(val)) return true;
-                }
-              }
-              return false;
-            } catch {
-              return false;
-            }
-          };
-
-          const wrapped: Record<string, any> = {};
-          for (const [name, tool] of Object.entries(tools)) {
-            const originalExecute = (tool as any)?.execute;
-            if (typeof originalExecute !== "function") {
-              wrapped[name] = tool;
-              continue;
-            }
-            wrapped[name] = {
-              ...tool,
-              execute: async (args: any, ctx: any) => {
-                if (executedCount >= maxCalls) {
-                  return {
-                    error: {
-                      name: "TOOL_CALL_LIMIT_REACHED",
-                      message: `Tool call limit (${maxCalls}) reached for this turn. Summarize and conclude.`,
-                    },
-                  };
-                }
-                if (hasInvalidArgs(args)) {
-                  return {
-                    error: {
-                      name: "INVALID_ARGS",
-                      message:
-                        "Arguments appear to be placeholder or missing. Extract the needed values from previous tool outputs or ask the user to clarify before calling this tool again.",
-                    },
-                  };
-                }
-                executedCount++;
-                return originalExecute(args, ctx);
-              },
-            };
-          }
-          return wrapped;
-        };
-
-        const toolsForRunFinal = wrapToolsWithGuards(toolsForRunAugmented, { maxCalls: 2 });
-
         const result = streamText({
           model,
           system: systemPrompt,
           messages,
           temperature: 1,
           // Keep tool-chaining bounded for responsiveness
-          maxSteps: 5,
+          maxSteps: 8,
           toolCallStreaming: true,
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 2,
-          tools: toolsForRunFinal,
+          tools: toolsForRunAugmented,
           toolChoice: toolChoiceForRun,
           abortSignal: request.signal,
           onFinish: async ({ response, usage }) => {
