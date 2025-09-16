@@ -50,6 +50,7 @@ import { isVercelAIWorkflowTool } from "app-types/workflow";
 import { SequentialThinkingToolName } from "lib/ai/tools";
 import { sequentialThinkingTool } from "lib/ai/tools/thinking/sequential-thinking";
 import { compressPdfAttachmentsIfNeeded } from "lib/pdf/compress";
+import { APP_DEFAULT_TOOL_KIT } from "lib/ai/tools/tool-kit";
 
 const logger = globalLogger.withDefaults({
   message: colorize("blackBright", `Chat API: `),
@@ -128,8 +129,9 @@ export async function POST(request: Request) {
         }
       : patchedMessage;
 
-    // Auto-detect mentions (agents/workflows) from user text when not explicitly tagged
+    // Auto-detect mentions (agents/workflows/MCP/default tools) from user text when not explicitly tagged
     let autoDetectedAgent: any | undefined;
+    let hasExactMatch = false;
     try {
       const getNormalized = (s: string) =>
         s
@@ -154,6 +156,13 @@ export async function POST(request: Request) {
 
       const userTextRaw = extractUserText(finalPatchedMessage);
       const userText = getNormalized(userTextRaw);
+      const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const isExactWordMatch = (name: string) => {
+        const n = getNormalized(name);
+        if (!n) return false;
+        const re = new RegExp(`(^|\\s)${escapeRegExp(n)}(\\s|$)`);
+        return re.test(userText);
+      };
 
       if (userText && userText.length >= 3) {
         const existingWorkflowIds = new Set(
@@ -200,10 +209,13 @@ export async function POST(request: Request) {
           return c;
         };
 
-        // Fetch visible workflows and agents
-        const [wfList, agentList] = await Promise.all([
+        // Fetch visible workflows, agents, and MCP tools
+        const [wfList, agentList, mcpToolMap] = await Promise.all([
           workflowRepository.selectExecuteAbility(session.user.id),
           agentRepository.selectAgents(session.user.id, ["all"], 100),
+          mcpClientsManager
+            .tools()
+            .catch(() => ({} as Record<string, any>)),
         ]);
 
         // Build token frequency maps for uniqueness checks (workflows & agents)
@@ -224,12 +236,12 @@ export async function POST(request: Request) {
           return map;
         })();
 
-        // Detect workflows by name
+        // Detect workflows by name (exact first, then fuzzy)
         for (const wf of wfList || []) {
           if (existingWorkflowIds.has((wf as any).id)) continue;
           const wfName = (wf as any).name as string;
           const n = getNormalized(wfName);
-          if (containsCandidate(wfName)) {
+          if (isExactWordMatch(wfName) || containsCandidate(wfName)) {
             mentions.push({
               type: "workflow",
               name: wfName,
@@ -238,7 +250,7 @@ export async function POST(request: Request) {
               icon: (wf as any).icon ?? null,
             } as any);
             existingWorkflowIds.add((wf as any).id);
-            // keep natural detection, but do not force workflow-first on auto matches
+            if (isExactWordMatch(wfName)) hasExactMatch = true;
             continue;
           }
           // relaxed matching: one significant token with some uniqueness or similarity
@@ -262,10 +274,10 @@ export async function POST(request: Request) {
           }
         }
 
-        // Detect agents by name
+        // Detect agents by name (exact first, then fuzzy)
         for (const a of agentList || []) {
           if (existingAgentIds.has((a as any).id)) continue;
-          if (containsCandidate((a as any).name)) {
+          if (isExactWordMatch((a as any).name) || containsCandidate((a as any).name)) {
             mentions.push({
               type: "agent",
               name: (a as any).name,
@@ -277,6 +289,7 @@ export async function POST(request: Request) {
             if (!autoDetectedAgent) {
               autoDetectedAgent = a as any;
             }
+            if (isExactWordMatch((a as any).name)) hasExactMatch = true;
             continue;
           }
           // relaxed agent matching
@@ -304,6 +317,61 @@ export async function POST(request: Request) {
             }
           }
         }
+
+        // Detect MCP tools by name (exact first, then fuzzy)
+        try {
+          const mcpToolsArr = Object.values(mcpToolMap || {}) as any[];
+          for (const tool of mcpToolsArr) {
+            const toolName = String(tool?._originToolName || "");
+            if (!toolName) continue;
+            if (isExactWordMatch(toolName) || containsCandidate(toolName)) {
+              mentions.push({
+                type: "mcpTool",
+                name: toolName,
+                serverId: tool?._mcpServerId,
+              } as any);
+              if (isExactWordMatch(toolName)) hasExactMatch = true;
+              continue;
+            }
+            const tokens = tokenize(toolName).filter((t) => !STOPWORDS.has(t));
+            const matched = tokens.filter((t) => userText.includes(t));
+            if (matched.length > 0) {
+              const hasUnique = matched.some((t) => tokens.filter((x) => x === t).length === 1);
+              const sim = bigramSim(getNormalized(toolName), userText);
+              let score = matched.length * 25 + (hasUnique ? 15 : 0) + Math.min(sim, 8);
+              if (tokens.length === 1 && matched.length === 1) score += 10;
+              if (score >= 30) {
+                mentions.push({
+                  type: "mcpTool",
+                  name: toolName,
+                  serverId: tool?._mcpServerId,
+                } as any);
+              }
+            }
+          }
+        } catch {}
+
+        // Detect App Default tools by name (exact first, then fuzzy)
+        try {
+          const defaultToolEntries = Object.values(APP_DEFAULT_TOOL_KIT).flatMap((group) => Object.keys(group));
+          for (const tName of defaultToolEntries) {
+            if (isExactWordMatch(tName) || containsCandidate(tName)) {
+              mentions.push({ type: "defaultTool", name: tName } as any);
+              if (isExactWordMatch(tName)) hasExactMatch = true;
+              continue;
+            }
+            const tokens = tokenize(tName).filter((tk) => !STOPWORDS.has(tk));
+            const matched = tokens.filter((tk) => userText.includes(tk));
+            if (matched.length > 0) {
+              const sim = bigramSim(getNormalized(tName), userText);
+              let score = matched.length * 20 + Math.min(sim, 8);
+              if (tokens.length === 1 && matched.length === 1) score += 10;
+              if (score >= 28) {
+                mentions.push({ type: "defaultTool", name: tName } as any);
+              }
+            }
+          }
+        } catch {}
       }
     } catch (e) {
       // ignore detection errors; proceed without auto-mentions
@@ -394,6 +462,41 @@ export async function POST(request: Request) {
           `mcp-server count: ${mcpClients.length}, mcp-tools count :${Object.keys(mcpTools).length}`,
         );
 
+        // Heuristic: auto-detect MCP server/tool intent from user text to bias selection and hints
+        const lastUserTextForMcp = (() => {
+          const lastUser = [...messages].reverse().find((m) => m.role === "user");
+          const parts: any[] = (lastUser?.parts as any[]) || [];
+          const t = parts.find((p) => p?.type === "text")?.text || parts[0]?.text;
+          return typeof t === "string" ? t : "";
+        })();
+        const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const userTextNorm = norm(lastUserTextForMcp);
+        const wantsGSC = /google\s*(search)?\s*console/.test(userTextNorm) || /\bgsc\b/.test(userTextNorm) || /search\s*console/.test(userTextNorm);
+        const wantsAds = /google\s*ads/.test(userTextNorm) || /\bads\b/.test(userTextNorm);
+        const autoMcpMentions: any[] = (() => {
+          const arr: any[] = [];
+          if (!mcpTools || Object.keys(mcpTools).length === 0) return arr;
+          const entries = Object.entries(mcpTools);
+          const byServerCount: Record<string, number> = {};
+          const matchTool = (name: string): boolean => {
+            const n = norm(name);
+            if (wantsGSC) return /search[-_\s]*console/.test(n) || /gsc/.test(n);
+            if (wantsAds) return /google[-_\s]*ads/.test(n) || /\bads\b/.test(n);
+            return false;
+          };
+          const matched = entries.filter(([toolKey, toolVal]: any) => matchTool(toolVal._originToolName || toolKey));
+          for (const [, toolVal] of matched as any) {
+            const sid = toolVal._mcpServerId;
+            byServerCount[sid] = (byServerCount[sid] || 0) + 1;
+          }
+          const bestServer = Object.entries(byServerCount).sort((a, b) => b[1] - a[1])[0]?.[0];
+          if (bestServer) {
+            arr.push({ type: "mcpServer", serverId: bestServer, name: bestServer });
+          }
+          return arr;
+        })();
+        const effectiveClientMentions = [...clientMentions, ...autoMcpMentions];
+
         // Determine workflow mentions and selection (at most one per turn)
         // Only consider client-provided workflow mentions for forcing workflows.
         const explicitClientWorkflowMentions = (clientMentions || []).filter(
@@ -414,7 +517,7 @@ export async function POST(request: Request) {
             .map(() =>
               loadMcpTools({
                 // Only use client mentions to restrict MCP tools
-                mentions: clientMentions as any,
+                mentions: effectiveClientMentions as any,
                 allowedMcpServers,
               }),
             )
@@ -437,7 +540,7 @@ export async function POST(request: Request) {
             .map(() =>
               loadAppDefaultTools({
                 // Only use client mentions to restrict default tools
-                mentions: clientMentions as any,
+                mentions: effectiveClientMentions as any,
                 allowedAppDefaultToolkit,
               }),
             )
@@ -518,7 +621,7 @@ export async function POST(request: Request) {
 
         const effectiveAgent = agent || autoDetectedAgent || undefined;
         // Build MCP mention hint (client-provided only) to ensure a post-tool summary
-        const clientMcpMentions = (clientMentions || []).filter(
+        const clientMcpMentions = (effectiveClientMentions || []).filter(
           (m: any) => m.type === "mcpServer" || m.type === "mcpTool",
         ) as any[];
         const forcedMcpHint = clientMcpMentions.length > 0
@@ -568,7 +671,7 @@ export async function POST(request: Request) {
             const toolEntries = Object.entries(allTools);
             if (toolEntries.length <= MAX_TOOLS) return allTools;
 
-            // Prioritize mentioned tools first, then app default tools, then others
+            // Prioritize exact-match mentions first, then fuzzy mentions, then app default tools, then others
             const toWorkflowToolKey = (human?: string) => {
               if (!human) return undefined;
               return String(human)
@@ -577,27 +680,40 @@ export async function POST(request: Request) {
                 .replace(/\s+/g, "-")
                 .toUpperCase();
             };
-            const mentionedNames = new Set<string>();
+            const exactMentioned = new Set<string>();
+            const fuzzyMentioned = new Set<string>();
             for (const m of (clientMentions || [])) {
               if (!m || !("type" in (m as any))) continue;
               if ((m as any).type === "mcpTool" || (m as any).type === "defaultTool") {
-                if ((m as any).name) mentionedNames.add((m as any).name);
+                if ((m as any).name) exactMentioned.add((m as any).name);
               } else if ((m as any).type === "workflow") {
                 const key = toWorkflowToolKey((m as any).name || (m as any).description);
-                if (key) mentionedNames.add(key);
+                if (key) exactMentioned.add(key);
+              }
+            }
+            // Add fuzzy mentions captured earlier in runtime mentions (excluding exacts)
+            for (const m of (mentions || [])) {
+              if (!m || !("type" in (m as any))) continue;
+              if ((m as any).type === "mcpTool" || (m as any).type === "defaultTool") {
+                const name = (m as any).name;
+                if (name && !exactMentioned.has(name)) fuzzyMentioned.add(name);
+              } else if ((m as any).type === "workflow") {
+                const key = toWorkflowToolKey((m as any).name || (m as any).description);
+                if (key && !exactMentioned.has(key)) fuzzyMentioned.add(key);
               }
             }
             const appDefaultNames = new Set(Object.keys(APP_DEFAULT_TOOLS));
 
-            const mentioned = toolEntries.filter(([name]) => mentionedNames.has(name));
+            const exact = toolEntries.filter(([name]) => exactMentioned.has(name));
+            const fuzzy = toolEntries.filter(([name]) => !exactMentioned.has(name) && fuzzyMentioned.has(name));
             const appDefaults = toolEntries.filter(
-              ([name]) => !mentionedNames.has(name) && appDefaultNames.has(name),
+              ([name]) => !exactMentioned.has(name) && !fuzzyMentioned.has(name) && appDefaultNames.has(name),
             );
             const others = toolEntries.filter(
-              ([name]) => !mentionedNames.has(name) && !appDefaultNames.has(name),
+              ([name]) => !exactMentioned.has(name) && !fuzzyMentioned.has(name) && !appDefaultNames.has(name),
             );
 
-            const prioritized = [...mentioned, ...appDefaults, ...others].slice(0, MAX_TOOLS);
+            const prioritized = [...exact, ...fuzzy, ...appDefaults, ...others].slice(0, MAX_TOOLS);
             return Object.fromEntries(prioritized);
           })
           .unwrap();
@@ -618,66 +734,14 @@ export async function POST(request: Request) {
         );
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
-        // Require a tool call when a workflow is explicitly mentioned; otherwise allow natural choice
-        const toolChoiceForRun: "auto" | "required" = (supportToolCall && forceWorkflowOnly) ? "required" : "auto";
+        // Require a tool call when we have an exact match to any tool/workflow/agent; otherwise allow natural choice
+        const toolChoiceForRun: "auto" | "required" = (supportToolCall && hasExactMatch) ? "required" : "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         // Let the model take as many steps as it needs; do not cap maxSteps
 
-        // Per-turn dedup guard: when forcing workflows, prevent duplicate calls to the same workflow tool, while keeping other tools available
-        const toolsForRun = (() => {
-          const isForcing = forceWorkflowOnly;
-          const base: Record<string, any> = vercelAITooles as Record<string, any>;
-          if (!isForcing) return base;
-          const invoked = new Set<string>();
-          let workflowInvoked = false;
-          const wrapped: Record<string, any> = { ...base };
-          for (const [name, tool] of Object.entries(base)) {
-            const originalExecute = (tool as any)?.execute;
-            const isWorkflowTool = (tool as any)?.__$ref__ === "workflow";
-            if (typeof originalExecute !== "function") continue;
-            if (isWorkflowTool) {
-              wrapped[name] = {
-                ...tool,
-                execute: async (args: any, ctx: any) => {
-                  if (invoked.has(name)) {
-                    return {
-                      error: {
-                        name: "DUPLICATE_TOOL_CALL",
-                        message: `Tool ${name} already invoked once this turn`,
-                      },
-                    };
-                  }
-                  invoked.add(name);
-                  try {
-                    const res = await originalExecute(args, ctx);
-                    workflowInvoked = true;
-                    return res;
-                  } catch (e) {
-                    workflowInvoked = true; // considered attempted
-                    throw e;
-                  }
-                },
-              };
-            } else {
-              wrapped[name] = {
-                ...tool,
-                execute: async (args: any, ctx: any) => {
-                  if (!workflowInvoked) {
-                    return {
-                      error: {
-                        name: "WORKFLOW_REQUIRED_FIRST",
-                        message: `Invoke the selected workflow tool first, then use '${name}' if still needed.`,
-                      },
-                    };
-                  }
-                  return originalExecute(args, ctx);
-                },
-              };
-            }
-          }
-          return wrapped;
-        })();
+        // Allow the model to orchestrate multiple steps across tools/workflows as needed
+        const toolsForRun = vercelAITooles as Record<string, any>;
 
         // Post-process: if the selected tool expects a 'client_name' parameter,
         // and the user's latest prompt includes a domain (URL or bare domain),
