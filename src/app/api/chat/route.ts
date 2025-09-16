@@ -402,6 +402,7 @@ export async function POST(request: Request) {
           (m: any) => m.type === "workflow",
         );
         const selectedWorkflowMentions = (explicitClientWorkflowMentions || []).slice(0, 1);
+        const forceWorkflowOnly = supportToolCall && selectedWorkflowMentions.length > 0;
 
         // Load tools (optionally restricted to explicitly mentioned workflows)
         let MCP_TOOLS: Record<string, any> = {};
@@ -409,39 +410,53 @@ export async function POST(request: Request) {
         let APP_DEFAULT_TOOLS: Record<string, any> = {};
 
         if (isToolCallAllowed) {
-          MCP_TOOLS = await safe()
-            .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
-            .map(() =>
-              loadMcpTools({
-                // Only use client mentions to restrict MCP tools
-                mentions: clientMentions as any,
-                allowedMcpServers,
-              }),
-            )
-            .orElse({});
+          if (forceWorkflowOnly) {
+            WORKFLOW_TOOLS = await safe()
+              .map(() =>
+                loadWorkFlowTools({
+                  mentions: selectedWorkflowMentions as any,
+                  dataStream,
+                }),
+              )
+              .orElse({});
+            // When a workflow is selected, disable MCP and App Default tools for this turn
+            MCP_TOOLS = {};
+            APP_DEFAULT_TOOLS = {};
+          } else {
+            MCP_TOOLS = await safe()
+              .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
+              .map(() =>
+                loadMcpTools({
+                  // Only use client mentions to restrict MCP tools
+                  mentions: clientMentions as any,
+                  allowedMcpServers,
+                }),
+              )
+              .orElse({});
 
-          // Prefer at most one workflow when any exist, but do not exclude other toolkits
-          const wfMentionsForLoad = selectedWorkflowMentions.length > 0 ? selectedWorkflowMentions : mentions;
-          WORKFLOW_TOOLS = await safe()
-            .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
-            .map(() =>
-              loadWorkFlowTools({
-                mentions: wfMentionsForLoad as any,
-                dataStream,
-              }),
-            )
-            .orElse({});
+            // Prefer at most one workflow when any exist
+            const wfMentionsForLoad = selectedWorkflowMentions.length > 0 ? selectedWorkflowMentions : mentions;
+            WORKFLOW_TOOLS = await safe()
+              .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
+              .map(() =>
+                loadWorkFlowTools({
+                  mentions: wfMentionsForLoad as any,
+                  dataStream,
+                }),
+              )
+              .orElse({});
 
-          APP_DEFAULT_TOOLS = await safe()
-            .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
-            .map(() =>
-              loadAppDefaultTools({
-                // Only use client mentions to restrict default tools
-                mentions: clientMentions as any,
-                allowedAppDefaultToolkit,
-              }),
-            )
-            .orElse({});
+            APP_DEFAULT_TOOLS = await safe()
+              .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
+              .map(() =>
+                loadAppDefaultTools({
+                  // Only use client mentions to restrict default tools
+                  mentions: clientMentions as any,
+                  allowedAppDefaultToolkit,
+                }),
+              )
+              .orElse({});
+          }
         }
 
         if (inProgressToolStep) {
@@ -475,7 +490,7 @@ export async function POST(request: Request) {
         const allWorkflowMentions = (clientMentions || []).filter(
           (m: any) => m.type === "workflow",
         ) as any[];
-        const forcedWorkflowHint = ((selectedWorkflowMentions.length > 0) || forceWorkflowAuto)
+        const forcedWorkflowHint = (forceWorkflowOnly || forceWorkflowAuto)
           ? (() => {
               const items = allWorkflowMentions.map((m) => {
                 const human = m.name || m.description || "";
@@ -532,7 +547,7 @@ export async function POST(request: Request) {
             };
           })
           .map((t) => {
-            const allowThinkingTool = supportToolCall && thinking;
+            const allowThinkingTool = supportToolCall && thinking && !forceWorkflowOnly;
             if (allowThinkingTool) {
               return {
                 ...t,
@@ -593,25 +608,31 @@ export async function POST(request: Request) {
 
         // Per-turn dedup guard and restriction: if forcing workflows, expose only workflow tools and prevent duplicate calls
         const toolsForRun = (() => {
-          const base: Record<string, any> = vercelAITooles as Record<string, any>;
-          // Single-invocation dedup for targeted workflow tools (explicitly mentioned or strongly auto-detected)
-          const targetedWorkflowIds = new Set<string>(
-            (selectedWorkflowMentions || []).map((m: any) => m.workflowId),
-          );
-          const guardAllWorkflowTools = forceWorkflowAuto && targetedWorkflowIds.size === 0;
+          const isForcing = forceWorkflowOnly || forceWorkflowAuto;
+          const base: Record<string, any> = isForcing
+            ? (WORKFLOW_TOOLS as Record<string, any>)
+            : (vercelAITooles as Record<string, any>);
+          if (!isForcing) return base;
           const invoked = new Set<string>();
+          const allowed = new Set(Object.keys(base));
           for (const [name, tool] of Object.entries(base)) {
-            const originalExecute = (tool as any)?.execute;
+            const originalExecute = tool?.execute;
             if (typeof originalExecute !== "function") continue;
-            const isWorkflowTool = (tool as any)?.__$ref__ === "workflow";
-            const isTargeted = isWorkflowTool && (guardAllWorkflowTools || targetedWorkflowIds.has((tool as any)?._workflowId));
-            if (!isTargeted) continue;
             base[name].execute = async (args: any, ctx: any) => {
               if (invoked.has(name)) {
                 return {
                   error: {
                     name: "DUPLICATE_TOOL_CALL",
                     message: `Tool ${name} already invoked once this turn`,
+                  },
+                };
+              }
+              // Hard block: disallow cross-workflow invocations if somehow included
+              if (!allowed.has(name)) {
+                return {
+                  error: {
+                    name: "WORKFLOW_NOT_SELECTED",
+                    message: `Tool ${name} is not allowed this turn`,
                   },
                 };
               }
