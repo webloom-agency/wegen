@@ -488,11 +488,12 @@ export async function POST(request: Request) {
         // Visualization intent keywords (EN/FR)
         const wantsVisualization = (() => {
           const patterns = [
-            /\bgraph\b|\bchart\b|\bplot\b|\bdiagram\b|\bhistogram\b|\bbar\b|\bline\b|\bpie\b/,
-            /\bgraphique\b|\bcourbe\b|\bcamembert\b|\bdiagramme\b|\bhistogramme\b|\bbarres\b|\blignes\b/,
+            /\bgraph\b|\bchart\b|\bplot\b|\bdiagram\b|\bhistogram\b|\bbar\b|\bline\b|\bpie\b|\btable\b|\btabular\b|\bcsv\b/,
+            /\bgraphique\b|\bcourbe\b|\bcamembert\b|\bdiagramme\b|\bhistogramme\b|\bbarres\b|\blignes\b|\btableau(x)?\b|\btable\b/,
           ];
           return patterns.some((re) => re.test(userTextNorm));
         })();
+        const wantsTable = /\btable\b|\btableau(x)?\b|\btabular\b|\bcsv\b/.test(userTextNorm);
         const autoMcpMentions: any[] = (() => {
           const arr: any[] = [];
           if (!mcpTools || Object.keys(mcpTools).length === 0) return arr;
@@ -588,6 +589,32 @@ export async function POST(request: Request) {
               filtered[name] = tool;
             }
             APP_DEFAULT_TOOLS = filtered;
+          }
+
+          // If user asked for a table and default CreateTable exists, prefer it over MCP table creators
+          if (wantsTable && APP_DEFAULT_TOOLS[DefaultToolName.CreateTable]) {
+            const explicitMcpToolNames = new Set(
+              (clientMentions || [])
+                .filter((m: any) => m.type === "mcpTool")
+                .map((m: any) => (m.name || "").toLowerCase())
+                .filter(Boolean),
+            );
+            const likelyMcpTable = (toolName: string) => {
+              const n = String(toolName || "").toLowerCase();
+              return (
+                /create[_-]?table/.test(n) ||
+                /table[_-]?create/.test(n) ||
+                (/google/.test(n) && /workspace|sheet|sheets|drive/.test(n) && /table/.test(n))
+              );
+            };
+            const filtered: Record<string, any> = {};
+            for (const [name, tool] of Object.entries(MCP_TOOLS)) {
+              if (likelyMcpTable(name) && !explicitMcpToolNames.has(name.toLowerCase())) {
+                continue; // drop conflicting MCP table tool by default
+              }
+              filtered[name] = tool;
+            }
+            MCP_TOOLS = filtered;
           }
 
           // Remove web search/content tools unless explicitly requested or mentioned
@@ -812,6 +839,12 @@ export async function POST(request: Request) {
               }
             }
             const appDefaultNames = new Set(Object.keys(APP_DEFAULT_TOOLS));
+            const vizDefaultNames = new Set<string>([
+              DefaultToolName.CreateTable,
+              wantsVisualization ? DefaultToolName.CreateBarChart : "",
+              wantsVisualization ? DefaultToolName.CreateLineChart : "",
+              wantsVisualization ? DefaultToolName.CreatePieChart : "",
+            ].filter(Boolean) as string[]);
 
             const exact = toolEntries.filter(([name]) => exactMentioned.has(name));
             const fuzzy = toolEntries.filter(([name]) => !exactMentioned.has(name) && fuzzyMentioned.has(name));
@@ -822,9 +855,13 @@ export async function POST(request: Request) {
               ([name]) => !exactMentioned.has(name) && !fuzzyMentioned.has(name) && !appDefaultNames.has(name),
             );
 
-            // If we have any matches (exact or fuzzy), filter down to those only to avoid unrelated tool chains
+            // If we have any matches (exact or fuzzy), filter down to those only, but always keep
+            // default visualization table tool when the user asked for a table.
             if (exact.length + fuzzy.length > 0) {
               const allowedNames = new Set<string>([...exact.map(([n]) => n), ...fuzzy.map(([n]) => n)]);
+              if (wantsTable) {
+                for (const name of vizDefaultNames) allowedNames.add(name);
+              }
               return Object.fromEntries(toolEntries.filter(([name]) => allowedNames.has(name)).slice(0, MAX_TOOLS));
             }
 
@@ -1008,6 +1045,80 @@ export async function POST(request: Request) {
                 return result.reverse();
               })();
 
+              // Ensure there is a final assistant text answer even if the model omitted one
+              const hasTextAnswer = (dedupParts as any[]).some(
+                (p) => p?.type === "text" && typeof p?.text === "string" && p.text.trim().length > 0,
+              );
+              let finalParts = dedupParts as UIMessage["parts"];
+              if (!hasTextAnswer) {
+                // Build a minimal fallback answer based on detected tool outputs
+                const lastUser = [...messages].reverse().find((m) => m.role === "user");
+                const lastUserText = (() => {
+                  const parts: any[] = (lastUser?.parts as any[]) || [];
+                  const t = parts.find((p) => p?.type === "text")?.text || parts[0]?.text;
+                  return typeof t === "string" ? t : "";
+                })().toLowerCase();
+
+                const isFrench = /\b(le|la|les|un|une|des|de|du|et|ou|qui|est|tableau|recherche)\b/.test(
+                  lastUserText,
+                );
+                const mk = (fr: string, en: string) => (isFrench ? fr : en);
+
+                // Try to extract a few links from web search results if present
+                const links: string[] = [];
+                for (const p of finalParts as any) {
+                  if (
+                    p?.type === "tool-invocation" &&
+                    p?.toolInvocation?.state === "result" &&
+                    typeof p?.toolInvocation?.toolName === "string"
+                  ) {
+                    const r = p.toolInvocation.result;
+                    const candidates: any[] = ([] as any[])
+                      .concat((r?.results as any[]) || [])
+                      .concat((r?.items as any[]) || [])
+                      .concat((r?.documents as any[]) || [])
+                      .concat((r?.data as any[]) || []);
+                    for (const c of candidates) {
+                      const url = c?.url || c?.link || c?.source || c?.href;
+                      if (typeof url === "string" && url.startsWith("http")) {
+                        links.push(url);
+                        if (links.length >= 3) break;
+                      }
+                    }
+                    if (links.length >= 3) break;
+                  }
+                }
+
+                const tableMentioned = /\btable\b|\btableau(x)?\b|\btabular\b|\bcsv\b/i.test(
+                  lastUserText,
+                );
+
+                const summaryLines: string[] = [];
+                if (links.length > 0) {
+                  summaryLines.push(mk("Sources:", "Sources:"));
+                  summaryLines.push(...links.map((u) => `- ${u}`));
+                }
+                if (tableMentioned) {
+                  summaryLines.push(
+                    mk(
+                      "Un tableau interactif est disponible ci-dessus. Dites-moi si vous souhaitez des colonnes supplémentaires ou un autre format.",
+                      "An interactive table is available above. Tell me if you want extra columns or a different format.",
+                    ),
+                  );
+                }
+                const fallbackText =
+                  summaryLines.join("\n") ||
+                  mk(
+                    "Voici un bref résumé des résultats. Souhaitez-vous que je développe ou que je formate différemment ?",
+                    "Here is a brief summary of the results. Would you like me to expand or format differently?",
+                  );
+
+                finalParts = [
+                  ...finalParts,
+                  { type: "text", text: fallbackText } as any,
+                ] as UIMessage["parts"];
+              }
+
               const annotations = appendAnnotations(
                 assistantMessage.annotations,
                 [
@@ -1021,7 +1132,7 @@ export async function POST(request: Request) {
                 threadId: thread!.id,
                 role: assistantMessage.role,
                 id: assistantMessage.id,
-                parts: (dedupParts as UIMessage["parts"]).map(
+                parts: (finalParts as UIMessage["parts"]).map(
                   (v) => {
                     if (
                       v.type == "tool-invocation" &&
