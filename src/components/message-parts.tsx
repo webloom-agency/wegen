@@ -810,6 +810,14 @@ const WebSearchToolInvocation = dynamic(
   },
 );
 
+const SeelabInvocation = dynamic(
+  () => import("./tool-invocation/seelab").then((mod) => mod.SeelabInvocation),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
 const CodeExecutor = dynamic(
   () =>
     import("./tool-invocation/code-executor").then((mod) => mod.CodeExecutor),
@@ -973,6 +981,10 @@ export const ToolMessagePart = memo(
             type="python"
           />
         );
+      }
+
+      if (toolName === DefaultToolName.SeelabTextToImage) {
+        return <SeelabInvocation part={toolInvocation} />;
       }
 
       if (toolName === SequentialThinkingToolName) {
