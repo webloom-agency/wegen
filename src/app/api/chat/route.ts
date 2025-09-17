@@ -156,6 +156,34 @@ export async function POST(request: Request) {
       };
 
       const userTextRaw = extractUserText(finalPatchedMessage);
+
+      // Explicit @tool('...') parsing to force default tool mentions
+      try {
+        const raw = (userTextRaw || "").toString();
+        const re = /@?tool\(\s*['"]([^'"]+)['"]\s*\)/gi;
+        const seen = new Set<string>();
+        const defaultToolEntries = Object.values(APP_DEFAULT_TOOL_KIT).flatMap((group) => Object.keys(group));
+        const norm = (s: string) =>
+          (s || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9\s-]/gi, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toLowerCase();
+        let m: RegExpExecArray | null;
+        while ((m = re.exec(raw)) !== null) {
+          const label = (m[1] || "").trim();
+          if (!label) continue;
+          // Prefer exact id match, then normalized match against known tool ids
+          const found = defaultToolEntries.find((id) => id === label) ||
+            defaultToolEntries.find((id) => norm(id) === norm(label));
+          if (found && !seen.has(found)) {
+            mentions.push({ type: "defaultTool", name: found } as any);
+            seen.add(found);
+          }
+        }
+      } catch {}
       const userText = getNormalized(userTextRaw);
       const userTextLower = userTextRaw.toLowerCase();
       const hasUrlInUserText = /(https?:\/\/|www\.)\S+/.test(userTextLower);
