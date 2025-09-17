@@ -623,6 +623,22 @@ export async function POST(request: Request) {
             APP_DEFAULT_TOOLS = filtered;
           }
 
+          // Avoid overusing createTable: keep it only when user intent suggests a table
+          if (Object.keys(APP_DEFAULT_TOOLS).length > 0) {
+            const wantsTableIntent = wantsTable;
+            const explicitlyWantsCreateTable = explicitDefaultToolNames.has(
+              DefaultToolName.CreateTable,
+            );
+            if (!wantsTableIntent && !explicitlyWantsCreateTable) {
+              const filtered: Record<string, any> = {};
+              for (const [name, tool] of Object.entries(APP_DEFAULT_TOOLS)) {
+                if (name === DefaultToolName.CreateTable) continue;
+                filtered[name] = tool;
+              }
+              APP_DEFAULT_TOOLS = filtered;
+            }
+          }
+
           // If user asked for a table and default CreateTable exists, prefer it over MCP table creators
           if (wantsTable && APP_DEFAULT_TOOLS[DefaultToolName.CreateTable]) {
             const explicitMcpToolNames = new Set(
@@ -900,8 +916,8 @@ export async function POST(request: Request) {
               return Object.fromEntries(toolEntries.filter(([name]) => allowedNames.has(name)).slice(0, MAX_TOOLS));
             }
 
-            // Otherwise keep priority order (defaults first, then others) within cap
-            const prioritized = [...appDefaults, ...others].slice(0, MAX_TOOLS);
+            // Otherwise keep priority order (others first, then app defaults) within cap to reduce default tool bias
+            const prioritized = [...others, ...appDefaults].slice(0, MAX_TOOLS);
             return Object.fromEntries(prioritized);
           })
           .unwrap();
