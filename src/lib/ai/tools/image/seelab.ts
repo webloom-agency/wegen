@@ -12,7 +12,7 @@ export const seelabTextToImageSchema: JSONSchema7 = {
   properties: {
     prompt: {
       type: "string",
-      description: "Text description to generate image(s) from",
+      description: "Text description to generate image(s) from. If omitted, will use the last user message.",
     },
     styleId: {
       type: "number",
@@ -52,8 +52,13 @@ export const seelabTextToImageSchema: JSONSchema7 = {
       minimum: 5,
       maximum: 600,
     },
+    verbose: {
+      type: "boolean",
+      description: "Include detailed logs and timing in the tool result",
+      default: true,
+    },
   },
-  required: ["prompt"],
+  required: [],
 };
 
 type SeelabPollResult = {
@@ -76,7 +81,13 @@ export const seelabTextToImageTool = createTool({
   description:
     "Generate image(s) from text using Seelab. Starts a session and polls until finished, returning resulting image URLs.",
   parameters: jsonSchemaToZod(seelabTextToImageSchema),
-  execute: async (params) => {
+  execute: async (params, { messages }) => {
+    const logs: any[] = [];
+    const log = (event: string, data?: Record<string, any>) => {
+      try {
+        logs.push({ event, at: new Date().toISOString(), ...(data || {}) });
+      } catch {}
+    };
     return safe(async () => {
       if (!API_KEY) {
         throw new Error("SEELAB_API_KEY is not configured");
@@ -91,10 +102,44 @@ export const seelabTextToImageTool = createTool({
         aspectRatio = "1:1",
         pollingIntervalSec = 3,
         timeoutSec = 180,
+        verbose = true,
       } = params as any;
 
+      // Fallback: derive prompt from last user message if not provided
+      const derivedPrompt = (() => {
+        if (typeof prompt === "string" && prompt.trim().length > 0) return prompt.trim();
+        // Attempt to get the last user message content
+        const reversed = [...(messages || [])].reverse();
+        for (const m of reversed) {
+          try {
+            if (m.role === "user") {
+              // Prefer content string if present
+              if (typeof (m as any).content === "string" && (m as any).content.trim()) {
+                return (m as any).content.trim();
+              }
+              // Fallback: aggregate text parts
+              const parts = (m as any).parts || [];
+              const text = parts
+                .filter((p: any) => p?.type === "text" && typeof p.text === "string")
+                .map((p: any) => p.text)
+                .join(" ")
+                .trim();
+              if (text) return text;
+            }
+          } catch {}
+        }
+        return "";
+      })();
+      if (!derivedPrompt) {
+        throw new Error("Missing prompt. Provide a 'prompt' argument or include text in your last message.");
+      }
+      log("config", { styleId, projectId, samples: Number(samples), seed, aspectRatio, pollingIntervalSec, timeoutSec, promptPreview: derivedPrompt.slice(0, 80) });
+
       // Initiate prediction session
-      const startResponse = await fetch(`${API_BASE_URL}/text-to-image${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ""}`, {
+      const startAt = Date.now();
+      const startUrl = `${API_BASE_URL}/text-to-image${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ""}`;
+      log("start_request", { url: startUrl });
+      const startResponse = await fetch(startUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -104,14 +149,14 @@ export const seelabTextToImageTool = createTool({
         body: JSON.stringify({
           styleId,
           params: {
-            prompt,
+            prompt: derivedPrompt,
             samples: String(samples),
             seed,
             aspectRatio,
           },
         }),
       });
-
+      log("start_response", { status: startResponse.status, statusText: startResponse.statusText, ms: Date.now() - startAt });
       if (startResponse.status === 401) {
         throw new Error("Invalid SEELAB API key");
       }
@@ -124,6 +169,7 @@ export const seelabTextToImageTool = createTool({
       }
       const startJson = (await startResponse.json()) as { id: string; state: string };
       const sessionId = startJson.id;
+      log("session_created", { sessionId, initialState: startJson.state });
 
       // Poll until completion
       const started = Date.now();
@@ -132,7 +178,9 @@ export const seelabTextToImageTool = createTool({
       // Small initial delay to avoid immediately hitting rate limits
       await new Promise((r) => setTimeout(r, Math.max(500, pollingIntervalSec * 250)));
       while (Date.now() < deadline) {
-        const pollResp = await fetch(`${API_BASE_URL}/session/${encodeURIComponent(sessionId)}`, {
+        const pollUrl = `${API_BASE_URL}/session/${encodeURIComponent(sessionId)}`;
+        const pollAt = Date.now();
+        const pollResp = await fetch(pollUrl, {
           method: "GET",
           headers: {
             accept: "application/json",
@@ -141,6 +189,7 @@ export const seelabTextToImageTool = createTool({
         });
         if (pollResp.status === 429) {
           // Backoff minimally and continue
+          log("poll_rate_limited", { status: pollResp.status, ms: Date.now() - pollAt });
           await new Promise((r) => setTimeout(r, pollingIntervalSec * 1000));
           continue;
         }
@@ -150,23 +199,29 @@ export const seelabTextToImageTool = createTool({
         }
         const json = (await pollResp.json()) as SeelabPollResult;
         lastState = json.state;
+        log("poll_tick", { state: json.state, ms: Date.now() - pollAt });
         if (json.state === "succeed") {
           const images = (json.result?.image || []).filter((img) => img.type === "result");
           const imageUrls = images
             .map((img) => img.links?.original || img.url)
             .filter((u): u is string => typeof u === "string" && !!u);
-          return {
+          log("completed", { imageCount: imageUrls.length });
+          const result = {
             sessionId,
             status: json.state,
             imageCount: imageUrls.length,
             imageUrls,
-          };
+          } as any;
+          if (verbose) result.logs = logs;
+          return result;
         }
         if (json.state === "failed") {
+          log("failed", { error: json.job?.error || "Unknown error" });
           throw new Error(`Image generation failed: ${json.job?.error || "Unknown error"}`);
         }
         await new Promise((r) => setTimeout(r, pollingIntervalSec * 1000));
       }
+      log("timeout", { afterSec: timeoutSec, lastState: lastState || "unknown" });
       throw new Error(`Seelab prediction timed out after ${timeoutSec}s (last state: ${lastState || "unknown"})`);
     })
       .ifFail((e) => {
@@ -175,6 +230,7 @@ export const seelabTextToImageTool = createTool({
           error: e.message,
           solution:
             "Seelab image generation failed. Verify SEELAB_API_KEY, reduce request rate, or adjust parameters (samples, aspectRatio).",
+          logs,
         };
       })
       .unwrap();
