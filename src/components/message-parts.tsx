@@ -1201,6 +1201,21 @@ export const ToolMessagePart = memo(
                             }
                             return null;
                           };
+                          const findHtmlTextDeep = (v: any, depth = 0): string | null => {
+                            if (!v || depth > 4) return null;
+                            if (typeof v === "string") return looksLikeHtml(v) ? v : null;
+                            if (typeof v !== "object") return null;
+                            // Prioritize keys literally named 'text'
+                            if (typeof v.text === "string" && looksLikeHtml(v.text)) return v.text;
+                            if (typeof v.result?.text === "string" && looksLikeHtml(v.result.text)) return v.result.text;
+                            for (const key of Object.keys(v)) {
+                              if (key === "link") continue; // skip link blobs
+                              const child = (v as any)[key];
+                              const found = findHtmlTextDeep(child, depth + 1);
+                              if (found) return found;
+                            }
+                            return null;
+                          };
                           const htmlString =
                             (typeof result === "string" && looksLikeHtml(result) ? result : null) ??
                             (typeof (result as any)?.html === "string" && looksLikeHtml((result as any).html)
@@ -1216,6 +1231,7 @@ export const ToolMessagePart = memo(
                             looksLikeHtml((result as any).result.text)
                               ? (result as any).result.text
                               : null) ??
+                            findHtmlTextDeep(result) ??
                             pickHtmlFromContent(result) ??
                             getFileHtml(result);
                           return htmlString ? (
