@@ -578,6 +578,34 @@ export async function POST(request: Request) {
             APP_DEFAULT_TOOLS = filtered;
           }
 
+          // Remove web search/content tools unless explicitly requested or mentioned
+          if (Object.keys(APP_DEFAULT_TOOLS).length > 0) {
+            const explicitDefaultToolNames = new Set(
+              (clientMentions || [])
+                .filter((m: any) => m.type === "defaultTool")
+                .map((m: any) => m.name)
+                .filter(Boolean),
+            );
+            const lastUserTextForMcpLower = (lastUserTextForMcp || "").toLowerCase();
+            const hasUrl = /(https?:\/\/|www\.)\S+/.test(lastUserTextForMcpLower);
+            const webPatterns = [
+              /\bsearch\b|\bweb\b|\bgoogle\b|\bbing\b|\blookup\b|\bbrowse\b/,
+              /\brecherche\b|\brecherche\s+web\b|\bgoogle\b|\bbing\b|\bnaviguer\b|\bparcourir\b/,
+            ];
+            const wantsWebSearch = hasUrl || webPatterns.some((re) => re.test(lastUserTextForMcpLower));
+            const keepWeb = wantsWebSearch || explicitDefaultToolNames.has("webSearch") || explicitDefaultToolNames.has("webContent");
+            if (!keepWeb) {
+              const filtered: Record<string, any> = {};
+              for (const [name, tool] of Object.entries(APP_DEFAULT_TOOLS)) {
+                if (name === DefaultToolName.WebSearch || name === DefaultToolName.WebContent) {
+                  continue;
+                }
+                filtered[name] = tool;
+              }
+              APP_DEFAULT_TOOLS = filtered;
+            }
+          }
+
           // If a workflow is explicitly mentioned (forced) but default code/http tools were not explicitly mentioned,
           // temporarily exclude them to prevent the model from picking them instead of the workflow first.
           if (forceWorkflowOnly && Object.keys(APP_DEFAULT_TOOLS).length > 0) {
@@ -674,12 +702,16 @@ export async function POST(request: Request) {
           "- Stop once you've produced a sufficient answer; do not create documents, files, or charts unless explicitly requested (keywords: graph, chart, plot, diagram, histogram, bar, line, pie; FR: graphique, courbe, camembert, diagramme, histogramme, barres, lignes).",
         ].join("\n");
 
+        const forcedSummaryHint =
+          "Always end the turn with a final assistant answer that synthesizes tool outputs and directly answers the user's request. Be as brief or detailed as needed to satisfy the question.";
+
         const systemPrompt = mergeSystemPrompt(
           buildUserSystemPrompt(session.user, userPreferences, effectiveAgent),
           buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
           forcedWorkflowHint,
           forcedMcpHint,
           orchestrationPolicy,
+          forcedSummaryHint,
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
           (!supportToolCall ||
             ["openai", "anthropic"].includes(chatModel?.provider ?? "")) &&
