@@ -523,7 +523,8 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
   const appTool = APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.WebSearch]?.[node.tool.id] ||
     APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.Code]?.[node.tool.id] ||
     APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.Http]?.[node.tool.id] ||
-    APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.Visualization]?.[node.tool.id];
+    APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.Visualization]?.[node.tool.id] ||
+    APP_DEFAULT_TOOL_KIT[AppDefaultToolkit.Image]?.[node.tool.id];
   if (!appTool) throw new Error(`Tool not found: ${node.tool.id}`);
 
   const exec = (appTool as any).execute as

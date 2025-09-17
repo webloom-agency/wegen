@@ -283,6 +283,8 @@ POSTGRES_URL=postgres://your_username:your_password@localhost:5432/your_database
 # === Tools ===
 # Exa AI for web search and content extraction (optional, but recommended for @web and research features)
 EXA_API_KEY=your_exa_api_key_here
+# Seelab for text-to-image generation (optional)
+SEELAB_API_KEY=your_seelab_api_key_here
 
 
 # Whether to use file-based MCP config (default: false)

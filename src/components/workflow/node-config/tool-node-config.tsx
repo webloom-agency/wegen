@@ -75,6 +75,25 @@ export const ToolNodeDataConfig = memo(function ({
         description: exaContentsTool.description!,
         parameterSchema: exaContentsSchema,
       },
+      {
+        type: "app-tool",
+        id: DefaultToolName.SeelabTextToImage,
+        description: "Generate image(s) from text using Seelab API.",
+        parameterSchema: {
+          type: "object",
+          properties: {
+            prompt: { type: "string" },
+            styleId: { type: "number" },
+            projectId: { type: "number" },
+            samples: { anyOf: [{ type: "number" }, { type: "string" }] },
+            seed: { type: "number" },
+            aspectRatio: { type: "string" },
+            pollingIntervalSec: { type: "number" },
+            timeoutSec: { type: "number" },
+          },
+          required: ["prompt"],
+        },
+      },
     ];
     return [...mcpTools, ...defaultTools];
   }, [mcpList]);
