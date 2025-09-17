@@ -513,7 +513,11 @@ export const loadMcpTools = (opt?: {
       if (hasMcpMentions) {
         return filterMCPToolsByMentions(tools, opt!.mentions!);
       }
-      return filterMCPToolsByAllowedMCPServers(tools, opt?.allowedMcpServers);
+      // If there is an explicit allow-list, filter by it; otherwise, do NOT expose any MCP tools
+      if (opt?.allowedMcpServers && Object.keys(opt.allowedMcpServers).length > 0) {
+        return filterMCPToolsByAllowedMCPServers(tools, opt.allowedMcpServers);
+      }
+      return {} as Record<string, VercelAIMcpTool>;
     })
     .orElse({} as Record<string, VercelAIMcpTool>);
 
@@ -551,17 +555,19 @@ export const loadAppDefaultTools = (opt?: {
           return { ...(acc as Record<string, Tool>), ...allowed } as Record<string, Tool>;
         }, {});
       }
-      const allowedAppDefaultToolkit =
-        opt?.allowedAppDefaultToolkit ?? Object.values(AppDefaultToolkit);
+      // If specific default toolkits are explicitly allowed, load only those groups.
+      // Otherwise, expose only non-visualization toolkits by default to avoid unsolicited charts/tables.
+      const allowedAppDefaultToolkit = Array.isArray(opt?.allowedAppDefaultToolkit)
+        ? opt!.allowedAppDefaultToolkit!
+        : Object.values(AppDefaultToolkit).filter((k) => k !== AppDefaultToolkit.Visualization);
 
       return (
         allowedAppDefaultToolkit.reduce(
-          (acc, key) => {
-            return { ...acc, ...tools[key] };
-          },
-          {} as Record<string, Tool>,
-        ) || {}
-      );
+        (acc, key) => {
+          return { ...acc, ...tools[key] };
+        },
+        {} as Record<string, Tool>,
+      ) || {});
     })
     .ifFail((e) => {
       console.error(e);
