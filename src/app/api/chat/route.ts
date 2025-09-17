@@ -938,8 +938,8 @@ export async function POST(request: Request) {
         );
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
-        // Require a tool call when we have an exact match to any tool/workflow/agent; otherwise allow natural choice
-        const toolChoiceForRun: "auto" | "required" = (supportToolCall && hasExactMatch) ? "required" : "auto";
+        // Always allow the model to choose when to call tools so it can finish with a text answer
+        const toolChoiceForRun: "auto" = "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         // Let the model take as many steps as it needs; do not cap maxSteps
