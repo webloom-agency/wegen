@@ -10,6 +10,17 @@ import { NodeResultPopup } from "../workflow/node-result-popup";
 import { cn } from "lib/utils";
 import { NodeIcon } from "../workflow/node-icon";
 import { TextShimmer } from "ui/text-shimmer";
+import dynamic from "next/dynamic";
+
+const HtmlPreview = dynamic(
+  () =>
+    import("./html-preview").then(
+      (mod) => mod.HtmlPreview,
+    ),
+  {
+    ssr: false,
+  },
+);
 
 interface WorkflowInvocationProps {
   result: VercelAIWorkflowToolStreamingResult;
@@ -48,6 +59,7 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
     if (fileObj) {
       const href = `data:${fileObj.mime};base64,${fileObj.base64}`;
       const isCsv = String(fileObj.mime || "").startsWith("text/csv");
+      const isHtml = String(fileObj.mime || "").startsWith("text/html") || /\.html?$/i.test(fileObj.filename || "");
       let csvPreview: string | null = null;
       if (isCsv) {
         try {
@@ -91,12 +103,62 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
                 Download CSV
               </a>
             ) : null}
+            {isHtml ? (
+              <div className="mt-2">
+                {(() => {
+                  try {
+                    const decoded = typeof window !== "undefined" ? atob(fileObj.base64) : "";
+                    return <HtmlPreview html={decoded} title="HTML Preview" />;
+                  } catch {
+                    return null;
+                  }
+                })()}
+              </div>
+            ) : null}
             {isCsv && csvPreview ? (
               <div className="mt-2">
                 <p className="mb-1 text-muted-foreground">CSV preview (first 20 lines)</p>
                 <pre className="text-[10px] p-2 bg-muted rounded overflow-auto whitespace-pre-wrap">{csvPreview}</pre>
               </div>
             ) : null}
+          </div>
+        </div>
+      );
+    }
+
+    // If the final result is an HTML string or container with html
+    const looksLikeHtml = (v: string) => /<\s*!(?:doctype)|<\s*html|<\s*body|<\s*head|<\s*div[\s>]/i.test((v || "").trim());
+    const htmlString: string | null = typeof finalResult === "string" && looksLikeHtml(finalResult)
+      ? finalResult
+      : typeof finalResult?.result === "string" && looksLikeHtml(finalResult.result)
+        ? finalResult.result
+        : typeof finalResult?.html === "string" && looksLikeHtml(finalResult.html)
+          ? finalResult.html
+          : null;
+
+    if (htmlString) {
+      return (
+        <div className="w-full bg-card p-4 border text-xs rounded-lg text-muted-foreground">
+          <div className="flex items-center">
+            <h5 className="text-muted-foreground font-medium select-none">
+              Response
+            </h5>
+            <div className="flex-1" />
+            {copied ? (
+              <Check className="size-3" />
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-3 text-muted-foreground"
+                onClick={() => copy(htmlString)}
+              >
+                <Copy className="size-3" />
+              </Button>
+            )}
+          </div>
+          <div className="mt-2">
+            <HtmlPreview html={htmlString} title="HTML Preview" />
           </div>
         </div>
       );

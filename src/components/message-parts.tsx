@@ -521,7 +521,17 @@ export const AssistMessagePart = memo(function AssistMessagePart({
           "opacity-50 border border-destructive bg-card rounded-lg": isError,
         })}
       >
-        <Markdown>{part.text}</Markdown>
+        {(() => {
+          const text = (part.text || "").trim();
+          const looksLikeHtml = /<\s*!(?:doctype)|<\s*html|<\s*body|<\s*head|<\s*div[\s>]/i.test(
+            text,
+          );
+          return looksLikeHtml ? (
+            <HtmlPreview html={text} title="HTML Preview" />
+          ) : (
+            <Markdown>{part.text}</Markdown>
+          );
+        })()}
       </div>
       {showActions && (
         <div className="flex w-full">
@@ -771,6 +781,17 @@ const InteractiveTable = dynamic(
   () =>
     import("./tool-invocation/interactive-table").then(
       (mod) => mod.InteractiveTable,
+    ),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
+const HtmlPreview = dynamic(
+  () =>
+    import("./tool-invocation/html-preview").then(
+      (mod) => mod.HtmlPreview,
     ),
   {
     ssr: false,
