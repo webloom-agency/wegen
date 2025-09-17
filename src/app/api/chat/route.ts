@@ -732,13 +732,14 @@ export async function POST(request: Request) {
         const orchestrationPolicy = [
           "Tool orchestration policy:",
           "- Prefer using only tools that match the user's request by exact name; if none, consider close matches; otherwise use web search; if still none, answer directly.",
-          "- Use at most 4 tool calls, then produce a final concise summary (≤ 5 total steps).",
+          "- Aim for up to 4–5 total steps; do not stop after the first tool if more are needed.",
           "- When chaining tools, insert a brief internal reasoning step to map outputs to the next tool's required inputs. Do not call a tool with empty or placeholder arguments.",
+          "- After using any tool, you MUST end the turn with at least one assistant text message that answers the user's question.",
           "- Stop once you've produced a sufficient answer; do not create documents, files, or charts unless explicitly requested (keywords: graph, chart, plot, diagram, histogram, bar, line, pie; FR: graphique, courbe, camembert, diagramme, histogramme, barres, lignes).",
         ].join("\n");
 
         const forcedSummaryHint =
-          "Always end the turn with a final assistant answer that synthesizes tool outputs and directly answers the user's request. Be as brief or detailed as needed to satisfy the question.";
+          "Always end the turn with a final assistant text answer that synthesizes any tool outputs and directly answers the user's request. Write the answer in the same language as the user's last message (FR if the user wrote in French). Be concise but complete. If the user asked 'qui est …', provide a short description and key facts with links if available.";
 
         const systemPrompt = mergeSystemPrompt(
           buildUserSystemPrompt(session.user, userPreferences, effectiveAgent),
@@ -938,7 +939,7 @@ export async function POST(request: Request) {
           messages,
           temperature: 1,
           // Keep tool-chaining bounded for responsiveness
-          maxSteps: 4,
+          maxSteps: 5,
           toolCallStreaming: true,
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 2,
