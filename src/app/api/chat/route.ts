@@ -132,6 +132,8 @@ export async function POST(request: Request) {
     // Auto-detect mentions (agents/workflows/MCP/default tools) from user text when not explicitly tagged
     let autoDetectedAgent: any | undefined;
     let hasExactMatch = false;
+    // Hold workflow candidates across detection and later selection
+    let workflowCandidates: Array<{ mention: any; score: number; exact: boolean }> = [];
     try {
       const getNormalized = (s: string) =>
         s
@@ -224,13 +226,8 @@ export async function POST(request: Request) {
             .tools()
             .catch(() => ({} as Record<string, any>)),
         ]);
-
-        // Collect workflow candidates with scores to pick the closest when there is no explicit mention
-        const workflowCandidates: Array<{
-          mention: any;
-          score: number;
-          exact: boolean;
-        }> = [];
+        // Reset candidates for this detection pass
+        workflowCandidates = [];
 
         // Build token frequency maps for uniqueness checks (workflows & agents)
         const wfTokenCounts = (() => {
