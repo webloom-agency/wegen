@@ -179,13 +179,15 @@ export async function POST(request: Request) {
         const containsCandidate = (name: string) => {
           const n = getNormalized(name);
           if (!n) return false;
-          if (userText.includes(n)) return true;
-          // token-wise containment (near-exact)
           const tokens = n.split(" ").filter(Boolean);
-          if (tokens.length >= 2 && tokens.every((t) => userText.includes(t))) {
-            return true;
-          }
-          // space-insensitive containment
+          // Only allow fuzzy/containment for multi-word names; single-word names must be exact
+          if (tokens.length <= 1) return false;
+          // Full phrase containment
+          if (userText.includes(n)) return true;
+          // token-wise containment: require at least two token matches
+          const matchedCount = tokens.filter((t) => userText.includes(t)).length;
+          if (matchedCount >= Math.min(2, tokens.length)) return true;
+          // space-insensitive containment for multi-word names
           const noSpaceMsg = userText.replace(/\s+/g, "");
           const noSpaceName = n.replace(/\s+/g, "");
           return noSpaceMsg.includes(noSpaceName);
@@ -241,7 +243,17 @@ export async function POST(request: Request) {
           if (existingWorkflowIds.has((wf as any).id)) continue;
           const wfName = (wf as any).name as string;
           const n = getNormalized(wfName);
-          if (isExactWordMatch(wfName) || containsCandidate(wfName)) {
+          const wfTokens = tokenize(wfName).filter(Boolean);
+          const isExactAcceptable = (() => {
+            // For single-word workflow names, require the ENTIRE user text to equal the name
+            if (wfTokens.length <= 1) {
+              return userText === n;
+            }
+            // For multi-word workflow names, allow exact phrase with boundaries
+            return isExactWordMatch(wfName);
+          })();
+
+          if (isExactAcceptable || containsCandidate(wfName)) {
             mentions.push({
               type: "workflow",
               name: wfName,
@@ -250,17 +262,17 @@ export async function POST(request: Request) {
               icon: (wf as any).icon ?? null,
             } as any);
             existingWorkflowIds.add((wf as any).id);
-            if (isExactWordMatch(wfName)) hasExactMatch = true;
+            if (isExactAcceptable) hasExactMatch = true;
             continue;
           }
-          // relaxed matching: one significant token with some uniqueness or similarity
+          // relaxed matching: require at least two significant tokens for multi-word names
           const tokens = tokenize(wfName).filter((t) => !STOPWORDS.has(t));
           const matched = tokens.filter((t) => userText.includes(t));
-          if (matched.length > 0) {
+          // Disallow relaxed matching for single-word workflow names; must be exact
+          if (tokens.length >= 2 && matched.length >= 2) {
             const hasUnique = matched.some((t) => (wfTokenCounts.get(t) || 0) === 1);
             const sim = bigramSim(n, userText);
             let score = matched.length * 30 + (hasUnique ? 20 : 0) + Math.min(sim, 10);
-            if (tokens.length === 1 && matched.length === 1) score += 10;
             if (score >= 30) {
               mentions.push({
                 type: "workflow",
@@ -588,12 +600,16 @@ export async function POST(request: Request) {
             );
             const lastUserTextForMcpLower = (lastUserTextForMcp || "").toLowerCase();
             const hasUrl = /(https?:\/\/|www\.)\S+/.test(lastUserTextForMcpLower);
+            // Consider bare domains (e.g., webloom.fr) as web intent but NOT as http intent by default
+            const hasBareDomain = /\b((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,})\b/.test(
+              lastUserTextForMcpLower,
+            );
             // Stricter web intent: explicit web browsing terms only
             const webPatterns = [
               /\bweb\s*search\b|\bsearch\s*the\s*web\b|\bbrowse\b|\bbrowsing\b|\blookup\s*online\b/,
               /\brecherche\s*web\b|\bchercher\s+sur\s+(le\s+)?web\b|\bsur\s+(le\s+)?web\b|\bsur\s+internet\b|\bnaviguer\b|\bparcourir\b/,
             ];
-            const wantsWebSearch = hasUrl || webPatterns.some((re) => re.test(lastUserTextForMcpLower));
+            const wantsWebSearch = hasUrl || hasBareDomain || webPatterns.some((re) => re.test(lastUserTextForMcpLower));
             // Exempt typical SEO keyword/volume phrasing from triggering web browsing
             const isSearchVolumeIntent = /(\bvolume\s+de\s+recherche\b|\bsearch\s+volume\b)/.test(lastUserTextForMcpLower);
             const keepWeb = (!isSearchVolumeIntent) && (wantsWebSearch || explicitDefaultToolNames.has("webSearch") || explicitDefaultToolNames.has("webContent"));
@@ -603,6 +619,22 @@ export async function POST(request: Request) {
                 if (name === DefaultToolName.WebSearch || name === DefaultToolName.WebContent) {
                   continue;
                 }
+                filtered[name] = tool;
+              }
+              APP_DEFAULT_TOOLS = filtered;
+            }
+            // Remove raw HTTP tool unless explicitly requested (keywords) or explicitly mentioned
+            const wantsHttp = (() => {
+              const patterns = [
+                /\bhttp\b|\bhttps\b|\bcurl\b|\bfetch\b|\bapi\b|\bendpoint\b|\bheaders?\b|\bjson\b|\bxml\b|\brss\b|\bsitemap\b|robots\.txt/,
+                /\brequête\b|\bpoint\s*d'accès\b|\brécupérer\b|\bscraper\b|\bcrawler?\b|\btélécharger\b|\bpost\b|\bget\b|\ben[- ]?têtes?\b/,
+              ];
+              return hasUrl || patterns.some((re) => re.test(lastUserTextForMcpLower));
+            })();
+            if (!wantsHttp && !explicitDefaultToolNames.has("http")) {
+              const filtered: Record<string, any> = {};
+              for (const [name, tool] of Object.entries(APP_DEFAULT_TOOLS)) {
+                if (name === "http") continue;
                 filtered[name] = tool;
               }
               APP_DEFAULT_TOOLS = filtered;
