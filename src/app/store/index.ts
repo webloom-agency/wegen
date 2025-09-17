@@ -66,7 +66,6 @@ const initialState: AppState = {
   allowedMcpServers: undefined,
   allowedAppDefaultToolkit: [
     AppDefaultToolkit.Code,
-    AppDefaultToolkit.Visualization,
     AppDefaultToolkit.WebSearch,
     AppDefaultToolkit.Http,
   ],

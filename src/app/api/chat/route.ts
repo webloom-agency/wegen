@@ -47,7 +47,7 @@ import {
 import { getSession } from "auth/server";
 import { colorize } from "consola/utils";
 import { isVercelAIWorkflowTool } from "app-types/workflow";
-import { SequentialThinkingToolName } from "lib/ai/tools";
+import { AppDefaultToolkit, DefaultToolName, SequentialThinkingToolName } from "lib/ai/tools";
 import { sequentialThinkingTool } from "lib/ai/tools/thinking/sequential-thinking";
 import { compressPdfAttachmentsIfNeeded } from "lib/pdf/compress";
 import { APP_DEFAULT_TOOL_KIT } from "lib/ai/tools/tool-kit";
@@ -473,6 +473,14 @@ export async function POST(request: Request) {
         const userTextNorm = norm(lastUserTextForMcp);
         const wantsGSC = /google\s*(search)?\s*console/.test(userTextNorm) || /\bgsc\b/.test(userTextNorm) || /search\s*console/.test(userTextNorm);
         const wantsAds = /google\s*ads/.test(userTextNorm) || /\bads\b/.test(userTextNorm);
+        // Visualization intent keywords (EN/FR)
+        const wantsVisualization = (() => {
+          const patterns = [
+            /\bgraph\b|\bchart\b|\bplot\b|\bdiagram\b|\bhistogram\b|\bbar\b|\bline\b|\bpie\b/,
+            /\bgraphique\b|\bcourbe\b|\bcamembert\b|\bdiagramme\b|\bhistogramme\b|\bbarres\b|\blignes\b/,
+          ];
+          return patterns.some((re) => re.test(userTextNorm));
+        })();
         const autoMcpMentions: any[] = (() => {
           const arr: any[] = [];
           if (!mcpTools || Object.keys(mcpTools).length === 0) return arr;
@@ -535,16 +543,40 @@ export async function POST(request: Request) {
             )
             .orElse({});
 
+          // Gate Visualization toolkit unless explicitly requested via keywords
+          const allowedToolkitEffective = (() => {
+            const base = (allowedAppDefaultToolkit && allowedAppDefaultToolkit.length > 0)
+              ? allowedAppDefaultToolkit
+              : Object.values(AppDefaultToolkit);
+            return wantsVisualization ? base : base.filter((k: any) => k !== AppDefaultToolkit.Visualization);
+          })();
+
           APP_DEFAULT_TOOLS = await safe()
             .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
             .map(() =>
               loadAppDefaultTools({
                 // Only use client mentions to restrict default tools
                 mentions: effectiveClientMentions as any,
-                allowedAppDefaultToolkit,
+                allowedAppDefaultToolkit: allowedToolkitEffective as any,
               }),
             )
             .orElse({});
+
+          // Additionally, remove chart tools by name unless visualization intent is detected
+          if (!wantsVisualization && Object.keys(APP_DEFAULT_TOOLS).length > 0) {
+            const filtered: Record<string, any> = {};
+            for (const [name, tool] of Object.entries(APP_DEFAULT_TOOLS)) {
+              if (
+                name === DefaultToolName.CreatePieChart ||
+                name === DefaultToolName.CreateBarChart ||
+                name === DefaultToolName.CreateLineChart
+              ) {
+                continue;
+              }
+              filtered[name] = tool;
+            }
+            APP_DEFAULT_TOOLS = filtered;
+          }
 
           // If a workflow is explicitly mentioned (forced) but default code/http tools were not explicitly mentioned,
           // temporarily exclude them to prevent the model from picking them instead of the workflow first.
@@ -637,9 +669,9 @@ export async function POST(request: Request) {
         const orchestrationPolicy = [
           "Tool orchestration policy:",
           "- Prefer using only tools that match the user's request by exact name; if none, consider close matches; otherwise use web search; if still none, answer directly.",
-          "- Use at most 2-3 tools per turn unless the user explicitly asks for more.",
+          "- Use at most 4 tool calls, then produce a final concise summary (≤ 5 total steps).",
           "- When chaining tools, insert a brief internal reasoning step to map outputs to the next tool's required inputs. Do not call a tool with empty or placeholder arguments.",
-          "- Stop once you've produced a sufficient answer; do not create documents or files unless explicitly requested.",
+          "- Stop once you've produced a sufficient answer; do not create documents, files, or charts unless explicitly requested (keywords: graph, chart, plot, diagram, histogram, bar, line, pie; FR: graphique, courbe, camembert, diagramme, histogramme, barres, lignes).",
         ].join("\n");
 
         const systemPrompt = mergeSystemPrompt(
@@ -839,7 +871,7 @@ export async function POST(request: Request) {
           messages,
           temperature: 1,
           // Keep tool-chaining bounded for responsiveness
-          maxSteps: 8,
+          maxSteps: 4,
           toolCallStreaming: true,
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 2,
