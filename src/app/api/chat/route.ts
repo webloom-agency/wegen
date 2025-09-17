@@ -272,7 +272,7 @@ export async function POST(request: Request) {
           if (tokens.length >= 2 && matched.length >= 2) {
             const hasUnique = matched.some((t) => (wfTokenCounts.get(t) || 0) === 1);
             const sim = bigramSim(n, userText);
-            let score = matched.length * 30 + (hasUnique ? 20 : 0) + Math.min(sim, 10);
+            const score = matched.length * 30 + (hasUnique ? 20 : 0) + Math.min(sim, 10);
             if (score >= 30) {
               mentions.push({
                 type: "workflow",
