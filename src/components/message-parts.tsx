@@ -1163,7 +1163,67 @@ export const ToolMessagePart = memo(
                     </div>
                     {isExpanded && (
                       <div className="p-2 max-h-[300px] overflow-y-auto">
-                        <JsonView data={result} />
+                        {(() => {
+                          const looksLikeHtml = (v: string) =>
+                            /<\s*!(?:doctype)|<\s*html|<\s*body|<\s*head|<\s*div[\s>]/i.test((v || "").trim());
+                          const pickHtmlFromContent = (v: any): string | null => {
+                            try {
+                              const nodes = Array.isArray(v?.content) ? v.content : [];
+                              for (const node of nodes) {
+                                if (
+                                  node?.type === "text" &&
+                                  typeof node?.text === "string" &&
+                                  looksLikeHtml(node.text)
+                                ) {
+                                  return node.text;
+                                }
+                              }
+                            } catch {}
+                            return null;
+                          };
+                          const getFileHtml = (v: any): string | null => {
+                            const f =
+                              v && typeof v === "object" && v.type === "file"
+                                ? v
+                                : v?.result && v.result.type === "file"
+                                  ? v.result
+                                  : null;
+                            if (
+                              f &&
+                              typeof f.base64 === "string" &&
+                              (String(f.mime || "").startsWith("text/html") || /\.html?$/i.test(f.filename || ""))
+                            ) {
+                              try {
+                                return typeof window !== "undefined" ? atob(f.base64) : "";
+                              } catch {
+                                return "";
+                              }
+                            }
+                            return null;
+                          };
+                          const htmlString =
+                            (typeof result === "string" && looksLikeHtml(result) ? result : null) ??
+                            (typeof (result as any)?.html === "string" && looksLikeHtml((result as any).html)
+                              ? (result as any).html
+                              : null) ??
+                            (typeof (result as any)?.text === "string" && looksLikeHtml((result as any).text)
+                              ? (result as any).text
+                              : null) ??
+                            (typeof (result as any)?.result === "string" && looksLikeHtml((result as any).result)
+                              ? (result as any).result
+                              : null) ??
+                            (typeof (result as any)?.result?.text === "string" &&
+                            looksLikeHtml((result as any).result.text)
+                              ? (result as any).result.text
+                              : null) ??
+                            pickHtmlFromContent(result) ??
+                            getFileHtml(result);
+                          return htmlString ? (
+                            <HtmlPreview html={htmlString} title="HTML Preview" />
+                          ) : (
+                            <JsonView data={result} />
+                          );
+                        })()}
                       </div>
                     )}
                   </div>

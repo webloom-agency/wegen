@@ -128,13 +128,18 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
 
     // If the final result is an HTML string or container with html
     const looksLikeHtml = (v: string) => /<\s*!(?:doctype)|<\s*html|<\s*body|<\s*head|<\s*div[\s>]/i.test((v || "").trim());
-    const htmlString: string | null = typeof finalResult === "string" && looksLikeHtml(finalResult)
-      ? finalResult
-      : typeof finalResult?.result === "string" && looksLikeHtml(finalResult.result)
-        ? finalResult.result
-        : typeof finalResult?.html === "string" && looksLikeHtml(finalResult.html)
-          ? finalResult.html
-          : null;
+    const htmlString: string | null =
+      (typeof finalResult === "string" && looksLikeHtml(finalResult))
+        ? finalResult
+        : (typeof finalResult?.result === "string" && looksLikeHtml(finalResult.result))
+          ? finalResult.result
+          : (typeof finalResult?.html === "string" && looksLikeHtml(finalResult.html))
+            ? finalResult.html
+            : (typeof finalResult?.text === "string" && looksLikeHtml(finalResult.text))
+              ? finalResult.text
+              : (typeof finalResult?.result?.text === "string" && looksLikeHtml(finalResult.result.text))
+                ? finalResult.result.text
+                : null;
 
     if (htmlString) {
       return (

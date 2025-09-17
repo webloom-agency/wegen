@@ -65,7 +65,7 @@ export const HtmlPreview = memo(function HtmlPreview({
         <iframe
           ref={iframeRef}
           title={title}
-          sandbox=""
+          sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups allow-modals allow-presentation"
           srcDoc={html}
           style={{ width: "100%", height }}
           className="rounded-b-lg bg-white"
