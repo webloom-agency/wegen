@@ -588,12 +588,15 @@ export async function POST(request: Request) {
             );
             const lastUserTextForMcpLower = (lastUserTextForMcp || "").toLowerCase();
             const hasUrl = /(https?:\/\/|www\.)\S+/.test(lastUserTextForMcpLower);
+            // Stricter web intent: explicit web browsing terms only
             const webPatterns = [
-              /\bsearch\b|\bweb\b|\bgoogle\b|\bbing\b|\blookup\b|\bbrowse\b/,
-              /\brecherche\b|\brecherche\s+web\b|\bgoogle\b|\bbing\b|\bnaviguer\b|\bparcourir\b/,
+              /\bweb\s*search\b|\bsearch\s*the\s*web\b|\bbrowse\b|\bbrowsing\b|\blookup\s*online\b/,
+              /\brecherche\s*web\b|\bchercher\s+sur\s+(le\s+)?web\b|\bsur\s+(le\s+)?web\b|\bsur\s+internet\b|\bnaviguer\b|\bparcourir\b/,
             ];
             const wantsWebSearch = hasUrl || webPatterns.some((re) => re.test(lastUserTextForMcpLower));
-            const keepWeb = wantsWebSearch || explicitDefaultToolNames.has("webSearch") || explicitDefaultToolNames.has("webContent");
+            // Exempt typical SEO keyword/volume phrasing from triggering web browsing
+            const isSearchVolumeIntent = /(\bvolume\s+de\s+recherche\b|\bsearch\s+volume\b)/.test(lastUserTextForMcpLower);
+            const keepWeb = (!isSearchVolumeIntent) && (wantsWebSearch || explicitDefaultToolNames.has("webSearch") || explicitDefaultToolNames.has("webContent"));
             if (!keepWeb) {
               const filtered: Record<string, any> = {};
               for (const [name, tool] of Object.entries(APP_DEFAULT_TOOLS)) {
