@@ -156,6 +156,11 @@ export async function POST(request: Request) {
 
       const userTextRaw = extractUserText(finalPatchedMessage);
       const userText = getNormalized(userTextRaw);
+      const userTextLower = userTextRaw.toLowerCase();
+      const hasUrlInUserText = /(https?:\/\/|www\.)\S+/.test(userTextLower);
+      const hasBareDomainInUserText = /\b((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,})\b/.test(
+        userTextLower,
+      );
       const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const isExactWordMatch = (name: string) => {
         const n = getNormalized(name);
@@ -220,6 +225,13 @@ export async function POST(request: Request) {
             .catch(() => ({} as Record<string, any>)),
         ]);
 
+        // Collect workflow candidates with scores to pick the closest when there is no explicit mention
+        const workflowCandidates: Array<{
+          mention: any;
+          score: number;
+          exact: boolean;
+        }> = [];
+
         // Build token frequency maps for uniqueness checks (workflows & agents)
         const wfTokenCounts = (() => {
           const map = new Map<string, number>();
@@ -247,21 +259,27 @@ export async function POST(request: Request) {
           const isExactAcceptable = (() => {
             // For single-word workflow names, require the ENTIRE user text to equal the name
             if (wfTokens.length <= 1) {
-              return userText === n;
+              return (
+                userText === n ||
+                (isExactWordMatch(wfName) && (hasUrlInUserText || hasBareDomainInUserText))
+              );
             }
             // For multi-word workflow names, allow exact phrase with boundaries
             return isExactWordMatch(wfName);
           })();
 
           if (isExactAcceptable || containsCandidate(wfName)) {
-            mentions.push({
+            const cand = {
               type: "workflow",
               name: wfName,
               description: (wf as any).description ?? null,
               workflowId: (wf as any).id,
               icon: (wf as any).icon ?? null,
-            } as any);
+            } as any;
+            mentions.push(cand);
             existingWorkflowIds.add((wf as any).id);
+            const baseScore = isExactAcceptable ? 100 : 70;
+            workflowCandidates.push({ mention: cand, score: baseScore, exact: !!isExactAcceptable });
             if (isExactAcceptable) hasExactMatch = true;
             continue;
           }
@@ -274,14 +292,16 @@ export async function POST(request: Request) {
             const sim = bigramSim(n, userText);
             const score = matched.length * 30 + (hasUnique ? 20 : 0) + Math.min(sim, 10);
             if (score >= 30) {
-              mentions.push({
+              const cand = {
                 type: "workflow",
                 name: wfName,
                 description: (wf as any).description ?? null,
                 workflowId: (wf as any).id,
                 icon: (wf as any).icon ?? null,
-              } as any);
+              } as any;
+              mentions.push(cand);
               existingWorkflowIds.add((wf as any).id);
+              workflowCandidates.push({ mention: cand, score, exact: false });
             }
           }
         }
@@ -519,11 +539,23 @@ export async function POST(request: Request) {
         const effectiveClientMentions = [...clientMentions, ...autoMcpMentions];
 
         // Determine workflow mentions and selection (at most one per turn)
-        // Only consider client-provided workflow mentions for forcing workflows.
-        const explicitClientWorkflowMentions = (clientMentions || []).filter(
-          (m: any) => m.type === "workflow",
-        );
-        const selectedWorkflowMentions = (explicitClientWorkflowMentions || []).slice(0, 1);
+        // Prefer client-provided workflow mentions. If none, pick the closest auto-detected candidate by score.
+        const explicitClientWorkflowMentions = (clientMentions || []).filter((m: any) => m.type === "workflow");
+        const selectedWorkflowMentions = (() => {
+          const clientSel = (explicitClientWorkflowMentions || []).slice(0, 1);
+          if (clientSel.length > 0) return clientSel;
+          if (Array.isArray(workflowCandidates) && workflowCandidates.length > 0) {
+            const best = workflowCandidates
+              .slice()
+              .sort((a, b) => (b.exact === a.exact ? b.score - a.score : Number(b.exact) - Number(a.exact)))[0];
+            // Only force when the best is exact OR sufficiently high-scoring
+            if (best && (best.exact || best.score >= 80)) {
+              return [best.mention];
+            }
+            return [];
+          }
+          return [] as any[];
+        })();
         const forceWorkflowOnly = supportToolCall && selectedWorkflowMentions.length > 0;
 
         // Load tools (optionally restricted to explicitly mentioned workflows)
@@ -556,12 +588,15 @@ export async function POST(request: Request) {
             )
             .orElse({});
 
-          // Gate Visualization toolkit unless explicitly requested via keywords
+          // Ensure Visualization toolkit (incl. createTable) is available by default in chat when tools are allowed
           const allowedToolkitEffective = (() => {
             const base = (allowedAppDefaultToolkit && allowedAppDefaultToolkit.length > 0)
               ? allowedAppDefaultToolkit
               : Object.values(AppDefaultToolkit);
-            return wantsVisualization ? base : base.filter((k: any) => k !== AppDefaultToolkit.Visualization);
+            const ensured = new Set(base as any[]);
+            // Always include Visualization when tool usage is enabled (auto/manual), exclude only if toolChoice === 'none'
+            if (toolChoice !== "none") ensured.add(AppDefaultToolkit.Visualization as any);
+            return Array.from(ensured) as any[];
           })();
 
           APP_DEFAULT_TOOLS = await safe()
@@ -656,6 +691,11 @@ export async function POST(request: Request) {
                 /\bhttp\b|\bhttps\b|\bcurl\b|\bfetch\b|\bapi\b|\bendpoint\b|\bheaders?\b|\bjson\b|\bxml\b|\brss\b|\bsitemap\b|robots\.txt/,
                 /\brequête\b|\bpoint\s*d'accès\b|\brécupérer\b|\bscraper\b|\bcrawler?\b|\btélécharger\b|\bpost\b|\bget\b|\ben[- ]?têtes?\b/,
               ];
+              // A URL alone shouldn't trigger HTTP if there's a likely named workflow match (e.g., 'scrap')
+              const likelyNamedWorkflowMentioned = /\bscrap\b|\bscraper\b|\bcrawl(er)?\b/i.test(
+                lastUserTextForMcpLower,
+              );
+              if (hasUrl && likelyNamedWorkflowMentioned) return false;
               return hasUrl || patterns.some((re) => re.test(lastUserTextForMcpLower));
             })();
             if (!wantsHttp && !explicitDefaultToolNames.has("http")) {
@@ -716,10 +756,8 @@ export async function POST(request: Request) {
           .map((v) => filterMcpServerCustomizations(MCP_TOOLS!, v))
           .orElse({});
 
-        // For hints, also only use client-provided workflow mentions
-        const allWorkflowMentions = (clientMentions || []).filter(
-          (m: any) => m.type === "workflow",
-        ) as any[];
+        // For hints, use the actually selected workflow mention (client or auto)
+        const allWorkflowMentions = selectedWorkflowMentions as any[];
         const forcedWorkflowHint = (forceWorkflowOnly)
           ? (() => {
               const items = allWorkflowMentions.map((m) => {
