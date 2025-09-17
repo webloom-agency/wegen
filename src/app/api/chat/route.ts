@@ -939,7 +939,7 @@ export async function POST(request: Request) {
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
         // Always allow the model to choose when to call tools so it can finish with a text answer
-        const toolChoiceForRun: "auto" = "auto";
+        const toolChoiceForRun = "auto" as const;
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         // Let the model take as many steps as it needs; do not cap maxSteps
