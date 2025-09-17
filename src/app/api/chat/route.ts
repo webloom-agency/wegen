@@ -626,8 +626,8 @@ export async function POST(request: Request) {
           // Avoid overusing createTable: keep it only when user intent suggests a table
           if (Object.keys(APP_DEFAULT_TOOLS).length > 0) {
             const wantsTableIntent = wantsTable;
-            const explicitlyWantsCreateTable = explicitDefaultToolNames.has(
-              DefaultToolName.CreateTable,
+            const explicitlyWantsCreateTable = (clientMentions || []).some(
+              (m: any) => m?.type === "defaultTool" && m?.name === DefaultToolName.CreateTable,
             );
             if (!wantsTableIntent && !explicitlyWantsCreateTable) {
               const filtered: Record<string, any> = {};
