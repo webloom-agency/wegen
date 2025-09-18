@@ -48,7 +48,6 @@ import dynamic from "next/dynamic";
 import { useMounted } from "@/hooks/use-mounted";
 import { getStorageManager } from "lib/browser-stroage";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChatHints } from "./chat-hints";
 
 type Props = {
   threadId: string;
@@ -390,17 +389,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
           slots?.emptySlot ? (
             slots.emptySlot
           ) : (
-            <div className="relative">
-              <ChatGreeting />
-              {input.length === 0 && (
-                <div className="absolute left-1/2 -translate-x-1/2 top-20 z-50">
-                  <ChatHints
-                    floating
-                    onSelect={(text) => setInput(text)}
-                  />
-                </div>
-              )}
-            </div>
+            <ChatGreeting />
           )
         ) : (
           <>
