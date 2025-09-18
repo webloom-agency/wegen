@@ -8,10 +8,12 @@ export function ChatSideHints({
   onSelect,
   className,
   max = 4,
+  direction = "column",
 }: {
   onSelect: (text: string) => void;
   className?: string;
   max?: number;
+  direction?: "row" | "column";
 }) {
   const items = useMemo(() => {
     const fixed = [
@@ -33,12 +35,19 @@ export function ChatSideHints({
   return (
     <div
       className={cn(
-        "hidden md:block pointer-events-none select-none",
+        "pointer-events-none select-none",
         className,
       )}
       aria-hidden
     >
-      <div className="flex flex-col gap-1 items-end opacity-60 hover:opacity-80 transition-opacity">
+      <div
+        className={cn(
+          "flex gap-1 opacity-60 hover:opacity-80 transition-opacity",
+          direction === "row"
+            ? "flex-row flex-wrap justify-center items-center"
+            : "flex-col items-end",
+        )}
+      >
         {items.map((text, idx) => (
           <Button
             key={idx}

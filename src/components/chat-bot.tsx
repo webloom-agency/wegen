@@ -469,8 +469,8 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
               onFocus={isFirstTime ? undefined : handleFocus}
             />
             {input.length === 0 && !isLoading && (
-              <div className="hidden md:block absolute right-0 translate-x-full top-1/2 -translate-y-1/2 z-40">
-                <ChatSideHints onSelect={(text) => setInput(text)} />
+              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-40 w-full max-w-3xl flex justify-center">
+                <ChatSideHints direction="row" onSelect={(text) => setInput(text)} />
               </div>
             )}
           </div>
