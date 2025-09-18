@@ -543,36 +543,15 @@ export const loadAppDefaultTools = (opt?: {
 }) =>
   safe(APP_DEFAULT_TOOL_KIT)
     .map((tools) => {
-      const defaultToolMentions = (opt?.mentions || []).filter(
-        (m) => m.type == "defaultTool",
-      );
-      if (defaultToolMentions.length > 0) {
-        const mentionedOnly = Array.from(Object.values(tools)).reduce((acc, t) => {
-          const group = t as Record<string, Tool>;
-          const allowed = objectFlow(group).filter((_, k) => {
-            return defaultToolMentions.some((m) => m.name == k);
-          });
-          return { ...(acc as Record<string, Tool>), ...allowed } as Record<string, Tool>;
-        }, {});
-        // Always include Image toolkit tools (e.g., Seelab) even when mentions restrict defaults
-        const imageTools = tools[AppDefaultToolkit.Image] as Record<string, Tool>;
-        return { ...mentionedOnly, ...(imageTools || {}) } as Record<string, Tool>;
-      }
-      // If specific default toolkits are explicitly allowed, load only those groups.
-      // Otherwise, expose only non-visualization toolkits by default to avoid unsolicited charts/tables.
+      // Respect explicit allow-list from UI; otherwise enable ALL default toolkits by default
       const allowedAppDefaultToolkit = Array.isArray(opt?.allowedAppDefaultToolkit)
         ? opt!.allowedAppDefaultToolkit!
-        : Object.values(AppDefaultToolkit).filter((k) => k !== AppDefaultToolkit.Visualization);
+        : Object.values(AppDefaultToolkit);
 
-      const base = (
-        allowedAppDefaultToolkit.reduce(
-        (acc, key) => {
-          return { ...acc, ...tools[key] };
-        },
-        {} as Record<string, Tool>,
-      ) || {});
-      // Ensure Image toolkit is always included by default
-      return { ...base, ...(tools[AppDefaultToolkit.Image] as Record<string, Tool>) } as Record<string, Tool>;
+      const allAllowed = allowedAppDefaultToolkit.reduce((acc, key) => {
+        return { ...acc, ...tools[key] };
+      }, {} as Record<string, Tool>);
+      return allAllowed;
     })
     .ifFail((e) => {
       console.error(e);

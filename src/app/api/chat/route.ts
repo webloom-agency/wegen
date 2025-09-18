@@ -529,15 +529,9 @@ export async function POST(request: Request) {
         const userTextNorm = norm(lastUserTextForMcp);
         const wantsGSC = /google\s*(search)?\s*console/.test(userTextNorm) || /\bgsc\b/.test(userTextNorm) || /search\s*console/.test(userTextNorm);
         const wantsAds = /google\s*ads/.test(userTextNorm) || /\bads\b/.test(userTextNorm);
-        // Visualization intent keywords (EN/FR)
-        const wantsVisualization = (() => {
-          const patterns = [
-            /\bgraph\b|\bchart\b|\bplot\b|\bdiagram\b|\bhistogram\b|\bbar\b|\bline\b|\bpie\b|\btable\b|\btabular\b|\bcsv\b/,
-            /\bgraphique\b|\bcourbe\b|\bcamembert\b|\bdiagramme\b|\bhistogramme\b|\bbarres\b|\blignes\b|\btableau(x)?\b|\btable\b/,
-          ];
-          return patterns.some((re) => re.test(userTextNorm));
-        })();
-        const wantsTable = /\btable\b|\btableau(x)?\b|\btabular\b|\bcsv\b/.test(userTextNorm);
+        // Enable visualization/table tools by default; user can opt out via UI per question
+        const wantsVisualization = true;
+        const wantsTable = true;
         const autoMcpMentions: any[] = (() => {
           const arr: any[] = [];
           if (!mcpTools || Object.keys(mcpTools).length === 0) return arr;
@@ -617,10 +611,7 @@ export async function POST(request: Request) {
             const base = (allowedAppDefaultToolkit && allowedAppDefaultToolkit.length > 0)
               ? allowedAppDefaultToolkit
               : Object.values(AppDefaultToolkit);
-            const ensured = new Set(base as any[]);
-            // Always include Visualization when tool usage is enabled (auto/manual), exclude only if toolChoice === 'none'
-            if (toolChoice !== "none") ensured.add(AppDefaultToolkit.Visualization as any);
-            return Array.from(ensured) as any[];
+            return Array.from(new Set(base as any[])) as any[];
           })();
 
           APP_DEFAULT_TOOLS = await safe()
@@ -634,119 +625,7 @@ export async function POST(request: Request) {
             )
             .orElse({});
 
-          // Additionally, remove chart tools by name unless visualization intent is detected
-          if (!wantsVisualization && Object.keys(APP_DEFAULT_TOOLS).length > 0) {
-            const filtered: Record<string, any> = {};
-            for (const [name, tool] of Object.entries(APP_DEFAULT_TOOLS)) {
-              if (
-                name === DefaultToolName.CreatePieChart ||
-                name === DefaultToolName.CreateBarChart ||
-                name === DefaultToolName.CreateLineChart
-              ) {
-                continue;
-              }
-              filtered[name] = tool;
-            }
-            APP_DEFAULT_TOOLS = filtered;
-          }
-
-          // Avoid overusing createTable: keep it only when user intent suggests a table
-          if (Object.keys(APP_DEFAULT_TOOLS).length > 0) {
-            const wantsTableIntent = wantsTable;
-            const explicitlyWantsCreateTable = (clientMentions || []).some(
-              (m: any) => m?.type === "defaultTool" && m?.name === DefaultToolName.CreateTable,
-            );
-            if (!wantsTableIntent && !explicitlyWantsCreateTable) {
-              const filtered: Record<string, any> = {};
-              for (const [name, tool] of Object.entries(APP_DEFAULT_TOOLS)) {
-                if (name === DefaultToolName.CreateTable) continue;
-                filtered[name] = tool;
-              }
-              APP_DEFAULT_TOOLS = filtered;
-            }
-          }
-
-          // If user asked for a table and default CreateTable exists, prefer it over MCP table creators
-          if (wantsTable && APP_DEFAULT_TOOLS[DefaultToolName.CreateTable]) {
-            const explicitMcpToolNames = new Set(
-              (clientMentions || [])
-                .filter((m: any) => m.type === "mcpTool")
-                .map((m: any) => (m.name || "").toLowerCase())
-                .filter(Boolean),
-            );
-            const likelyMcpTable = (toolName: string) => {
-              const n = String(toolName || "").toLowerCase();
-              return (
-                /create[_-]?table/.test(n) ||
-                /table[_-]?create/.test(n) ||
-                (/google/.test(n) && /workspace|sheet|sheets|drive/.test(n) && /table/.test(n))
-              );
-            };
-            const filtered: Record<string, any> = {};
-            for (const [name, tool] of Object.entries(MCP_TOOLS)) {
-              if (likelyMcpTable(name) && !explicitMcpToolNames.has(name.toLowerCase())) {
-                continue; // drop conflicting MCP table tool by default
-              }
-              filtered[name] = tool;
-            }
-            MCP_TOOLS = filtered;
-          }
-
-          // Remove web search/content tools unless explicitly requested or mentioned
-          if (Object.keys(APP_DEFAULT_TOOLS).length > 0) {
-            const explicitDefaultToolNames = new Set(
-              (clientMentions || [])
-                .filter((m: any) => m.type === "defaultTool")
-                .map((m: any) => m.name)
-                .filter(Boolean),
-            );
-            const lastUserTextForMcpLower = (lastUserTextForMcp || "").toLowerCase();
-            const hasUrl = /(https?:\/\/|www\.)\S+/.test(lastUserTextForMcpLower);
-            // Consider bare domains (e.g., webloom.fr) as web intent but NOT as http intent by default
-            const hasBareDomain = /\b((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,})\b/.test(
-              lastUserTextForMcpLower,
-            );
-            // Stricter web intent: explicit web browsing terms only
-            const webPatterns = [
-              /\bweb\s*search\b|\bsearch\s*the\s*web\b|\bbrowse\b|\bbrowsing\b|\blookup\s*online\b/,
-              /\brecherche\s*web\b|\bchercher\s+sur\s+(le\s+)?web\b|\bsur\s+(le\s+)?web\b|\bsur\s+internet\b|\bnaviguer\b|\bparcourir\b/,
-            ];
-            const wantsWebSearch = hasUrl || hasBareDomain || webPatterns.some((re) => re.test(lastUserTextForMcpLower));
-            // Exempt typical SEO keyword/volume phrasing from triggering web browsing
-            const isSearchVolumeIntent = /(\bvolume\s+de\s+recherche\b|\bsearch\s+volume\b)/.test(lastUserTextForMcpLower);
-            const keepWeb = (!isSearchVolumeIntent) && (wantsWebSearch || explicitDefaultToolNames.has("webSearch") || explicitDefaultToolNames.has("webContent"));
-            if (!keepWeb) {
-              const filtered: Record<string, any> = {};
-              for (const [name, tool] of Object.entries(APP_DEFAULT_TOOLS)) {
-                if (name === DefaultToolName.WebSearch || name === DefaultToolName.WebContent) {
-                  continue;
-                }
-                filtered[name] = tool;
-              }
-              APP_DEFAULT_TOOLS = filtered;
-            }
-            // Remove raw HTTP tool unless explicitly requested (keywords) or explicitly mentioned
-            const wantsHttp = (() => {
-              const patterns = [
-                /\bhttp\b|\bhttps\b|\bcurl\b|\bfetch\b|\bapi\b|\bendpoint\b|\bheaders?\b|\bjson\b|\bxml\b|\brss\b|\bsitemap\b|robots\.txt/,
-                /\brequête\b|\bpoint\s*d'accès\b|\brécupérer\b|\bscraper\b|\bcrawler?\b|\btélécharger\b|\bpost\b|\bget\b|\ben[- ]?têtes?\b/,
-              ];
-              // A URL alone shouldn't trigger HTTP if there's a likely named workflow match (e.g., 'scrap')
-              const likelyNamedWorkflowMentioned = /\bscrap\b|\bscraper\b|\bcrawl(er)?\b/i.test(
-                lastUserTextForMcpLower,
-              );
-              if (hasUrl && likelyNamedWorkflowMentioned) return false;
-              return hasUrl || patterns.some((re) => re.test(lastUserTextForMcpLower));
-            })();
-            if (!wantsHttp && !explicitDefaultToolNames.has("http")) {
-              const filtered: Record<string, any> = {};
-              for (const [name, tool] of Object.entries(APP_DEFAULT_TOOLS)) {
-                if (name === "http") continue;
-                filtered[name] = tool;
-              }
-              APP_DEFAULT_TOOLS = filtered;
-            }
-          }
+          // Do not heuristically remove visualization tools; keep them available by default
 
           // If a workflow is explicitly mentioned (forced) but default code/http tools were not explicitly mentioned,
           // temporarily exclude them to prevent the model from picking them instead of the workflow first.

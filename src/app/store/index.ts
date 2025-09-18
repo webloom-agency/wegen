@@ -68,6 +68,8 @@ const initialState: AppState = {
     AppDefaultToolkit.Code,
     AppDefaultToolkit.WebSearch,
     AppDefaultToolkit.Http,
+    AppDefaultToolkit.Visualization,
+    AppDefaultToolkit.Image,
   ],
   toolPresets: [],
   chatModel: undefined,
@@ -97,7 +99,7 @@ export const appStore = create<AppState & AppDispatch>()(
       mutate: set,
     }),
     {
-      name: "mc-app-store-v2.1.0",
+      name: "mc-app-store-v2.2.0",
       partialize: (state) => ({
         chatModel: state.chatModel || initialState.chatModel,
         toolChoice: state.toolChoice || initialState.toolChoice,
