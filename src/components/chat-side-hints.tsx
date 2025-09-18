@@ -21,9 +21,11 @@ export function ChatSideHints({
       "top 50 mots-clés Search Console de webloom.fr ce mois-ci en tableau",
       "résume les 5 plus récents fathom de obat.fr sur google drive et détecte les signaux faibles d'insatisfaction",
       "brief seo pour agence seo sur https://webloom.fr/referencement-naturel-seo/",
-      "recherche dans Google Drive le kickoff SEO caats et résume",
+      "recherche dans Google Drive le préaudit SEO caats et résume les pb",
+      "je veux un graph camembert de la part des clics search console vs clics google ads hors marque de caats.co",
       "compare les top mots-clés Google Ads vs Search Console (30 jours) pour caats.co",
-      "scrap https://webloom.fr et donne le pricing",
+      "scrap https://webloom.fr et donne le pricing sous forme de tableau",
+      "montre moi la courbe des clics de obat.fr vs celle de caats.co (source : leur Search Console)",
       "graphique des performances Google Ads de caats.co (7 jours)",
       "recherche web sur Nike, définis 4 personae cibles et crée une image seelab pour chaque persona",
     ];
