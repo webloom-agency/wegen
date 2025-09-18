@@ -17,6 +17,7 @@ export function ChatSideHints({
     const fixed = [
       "crée un contenu SEO sur \"agence seo\"",
       "top 50 mots-clés Search Console de webloom.fr ce mois-ci en tableau",
+      "résume les 5 plus récents fathom de obat.fr sur google drive et détecte les signaux faibles d'insatisfaction",
       "brief seo pour agence seo sur https://webloom.fr/referencement-naturel-seo/",
       "recherche dans Google Drive le kickoff SEO caats et résume",
       "compare les top mots-clés Google Ads vs Search Console (30 jours) pour caats.co",

@@ -128,18 +128,22 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
 
     // If the final result is an HTML string or container with html
     const looksLikeHtml = (v: string) => /<\s*!(?:doctype)|<\s*html|<\s*body|<\s*head|<\s*div[\s>]/i.test((v || "").trim());
+    const pickWorkflowOutputHtml = (): string | null => {
+      try {
+        if (typeof finalResult?.output?.html === "string") return finalResult.output.html;
+        if (typeof finalResult?.html === "string") return finalResult.html;
+        if (typeof finalResult?.result?.output?.html === "string") return finalResult.result.output.html;
+        if (typeof finalResult?.result?.html === "string") return finalResult.result.html;
+      } catch {}
+      return null;
+    };
     const htmlString: string | null =
-      (typeof finalResult === "string" && looksLikeHtml(finalResult))
+      pickWorkflowOutputHtml() ??
+      (typeof finalResult === "string" && looksLikeHtml(finalResult)
         ? finalResult
-        : (typeof finalResult?.result === "string" && looksLikeHtml(finalResult.result))
+        : typeof finalResult?.result === "string" && looksLikeHtml(finalResult.result)
           ? finalResult.result
-          : (typeof finalResult?.html === "string" && looksLikeHtml(finalResult.html))
-            ? finalResult.html
-            : (typeof finalResult?.text === "string" && looksLikeHtml(finalResult.text))
-              ? finalResult.text
-              : (typeof finalResult?.result?.text === "string" && looksLikeHtml(finalResult.result.text))
-                ? finalResult.result.text
-                : null;
+          : null);
 
     if (htmlString) {
       return (
