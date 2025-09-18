@@ -390,13 +390,17 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
           slots?.emptySlot ? (
             slots.emptySlot
           ) : (
-            <>
+            <div className="relative">
               <ChatGreeting />
-              <ChatHints
-                className="mt-1"
-                onSelect={(text) => setInput(text)}
-              />
-            </>
+              {input.length === 0 && (
+                <div className="absolute left-1/2 -translate-x-1/2 top-20 z-50">
+                  <ChatHints
+                    floating
+                    onSelect={(text) => setInput(text)}
+                  />
+                </div>
+              )}
+            </div>
           )
         ) : (
           <>

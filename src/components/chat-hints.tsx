@@ -13,10 +13,12 @@ export function ChatHints({
   onSelect,
   className,
   max = 6,
+  floating = false,
 }: {
   onSelect: (text: string) => void;
   className?: string;
   max?: number;
+  floating?: boolean;
 }) {
   const items = useMemo<ChatHintItem[]>(() => {
     // Fixed French suggestions; keep them concise, actionable, and tool-aware
@@ -25,7 +27,7 @@ export function ChatHints({
       {
         id: "gsc-top-queries",
         text:
-          "dis moi les 50 top mots-clés sur la Search Console de webloom.fr ce mois-ci, avec volume de recherche, en tableau",
+          "dis moi les 50 top mots-clés sur la Search Console de webloom.fr ce mois-ci, avec volume de recherche, et cree un tableau",
       },
       {
         id: "gdrive-kickoff",
@@ -35,17 +37,22 @@ export function ChatHints({
       {
         id: "compare-ads-gsc",
         text:
-          "compare les top mots-clés de Google Ads et de la Search Console depuis 90 jours sur caats.co",
+          "compare les top mots-clés de Google Ads et de la Search Console depuis 30 jours sur caats.co",
+      },
+      {
+        id: "fathom-minutes",
+        text:
+          "compare les cinq derniers fathom de obat.fr et dis moi les pattens qui en ressortent",
       },
       {
         id: "scrape-pricing",
         text:
-          "scrape le site https://webloom.fr et donne moi leur pricing",
+          "scrap https://webloom.fr et donne moi leur pricing",
       },
       {
         id: "ads-histogram",
         text:
-          "crée un histogramme des conversions Google Ads de caats.co sur les 7 derniers jours",
+          "crée un graphique des performances Google Ads de caats.co sur les 7 derniers jours",
       },
       {
         id: "nike-personae-image",
@@ -62,14 +69,28 @@ export function ChatHints({
   if (!items.length) return null;
 
   return (
-    <div className={cn("max-w-3xl mx-auto px-4", className)}>
-      <div className="flex flex-wrap gap-2 justify-center">
+    <div
+      className={cn(
+        floating ? "pointer-events-none" : "max-w-3xl mx-auto px-4",
+        className,
+      )}
+    >
+      <div
+        className={cn(
+          "flex flex-wrap gap-2 justify-center",
+          floating &&
+            "backdrop-blur-sm supports-[backdrop-filter]:bg-background/40 bg-background/60 rounded-2xl px-3 py-2 border shadow-sm",
+        )}
+      >
         {items.map((item) => (
           <Button
             key={item.id}
             variant="secondary"
             size="sm"
-            className="rounded-full px-3 py-1 text-xs hover:bg-accent"
+            className={cn(
+              "rounded-full px-3 py-1 text-xs hover:bg-accent",
+              floating && "pointer-events-auto",
+            )}
             onClick={() => onSelect(item.text)}
           >
             {item.text}
