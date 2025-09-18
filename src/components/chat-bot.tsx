@@ -48,6 +48,7 @@ import dynamic from "next/dynamic";
 import { useMounted } from "@/hooks/use-mounted";
 import { getStorageManager } from "lib/browser-stroage";
 import { AnimatePresence, motion } from "framer-motion";
+import { ChatSideHints } from "./chat-side-hints";
 
 type Props = {
   threadId: string;
@@ -455,17 +456,24 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
             />
           </div>
 
-          <PromptInput
-            input={input}
-            threadId={threadId}
-            append={append}
-            thinking={thinking}
-            setInput={setInput}
-            onThinkingChange={handleThinkingChange}
-            isLoading={isLoading || isPendingToolCall}
-            onStop={stop}
-            onFocus={isFirstTime ? undefined : handleFocus}
-          />
+          <div className="max-w-3xl mx-auto relative">
+            <PromptInput
+              input={input}
+              threadId={threadId}
+              append={append}
+              thinking={thinking}
+              setInput={setInput}
+              onThinkingChange={handleThinkingChange}
+              isLoading={isLoading || isPendingToolCall}
+              onStop={stop}
+              onFocus={isFirstTime ? undefined : handleFocus}
+            />
+            {input.length === 0 && !isLoading && (
+              <div className="hidden md:block absolute right-0 translate-x-full top-1/2 -translate-y-1/2 z-40">
+                <ChatSideHints onSelect={(text) => setInput(text)} />
+              </div>
+            )}
+          </div>
           {slots?.inputBottomSlot}
         </div>
         <DeleteThreadPopup
