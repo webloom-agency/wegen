@@ -7,6 +7,30 @@ import { safe } from "ts-safe";
 const API_BASE_URL = "https://app.seelab.ai/api/predict";
 const API_KEY = process.env.SEELAB_API_KEY;
 
+// Simple in-memory queue to serialize Seelab calls and avoid rate limiting when multiple
+// tool invocations are triggered at once.
+const queueTails = new Map<string, Promise<any>>();
+async function enqueue<T>(key: string, task: () => Promise<T>, onWait?: (ms: number) => void): Promise<T> {
+  const prev = queueTails.get(key) || Promise.resolve();
+  let startedAt = Date.now();
+  const next = prev
+    .catch(() => {})
+    .then(async () => {
+      const waitMs = Date.now() - startedAt;
+      if (waitMs > 0) onWait?.(waitMs);
+      return task();
+    });
+  // Ensure the tail continues even if this task fails
+  queueTails.set(key, next.catch(() => {}));
+  try {
+    const result = await next;
+    return result;
+  } finally {
+    // Clean up if this is still the tail
+    if (queueTails.get(key) === next) queueTails.delete(key);
+  }
+}
+
 export const seelabTextToImageSchema: JSONSchema7 = {
   type: "object",
   properties: {
@@ -57,6 +81,15 @@ export const seelabTextToImageSchema: JSONSchema7 = {
       description: "Include detailed logs and timing in the tool result",
       default: true,
     },
+    queue: {
+      type: "boolean",
+      description: "Queue requests to avoid parallel Seelab calls (reduces rate limit errors)",
+      default: true,
+    },
+    queueKey: {
+      type: "string",
+      description: "Optional queue key for grouping. Defaults to a global Seelab queue.",
+    },
   },
   required: [],
 };
@@ -103,6 +136,8 @@ export const seelabTextToImageTool = createTool({
         pollingIntervalSec = 3,
         timeoutSec = 180,
         verbose = true,
+        queue = true,
+        queueKey,
       } = params as any;
 
       // Fallback: derive prompt from last user message if not provided
@@ -135,94 +170,109 @@ export const seelabTextToImageTool = createTool({
       }
       log("config", { styleId, projectId, samples: Number(samples), seed, aspectRatio, pollingIntervalSec, timeoutSec, promptPreview: derivedPrompt.slice(0, 80) });
 
-      // Initiate prediction session
-      const startAt = Date.now();
-      const startUrl = `${API_BASE_URL}/text-to-image${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ""}`;
-      log("start_request", { url: startUrl });
-      const startResponse = await fetch(startUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          accept: "application/json",
-          Authorization: `Token ${API_KEY}`,
-        },
-        body: JSON.stringify({
-          styleId,
-          params: {
-            prompt: derivedPrompt,
-            samples: String(samples),
-            seed,
-            aspectRatio,
-          },
-        }),
-      });
-      log("start_response", { status: startResponse.status, statusText: startResponse.statusText, ms: Date.now() - startAt });
-      if (startResponse.status === 401) {
-        throw new Error("Invalid SEELAB API key");
-      }
-      if (startResponse.status === 429) {
-        throw new Error("Seelab rate limit exceeded. Please retry later.");
-      }
-      if (!startResponse.ok) {
-        const text = await startResponse.text();
-        throw new Error(`Seelab start error: ${startResponse.status} ${startResponse.statusText} - ${text}`);
-      }
-      const startJson = (await startResponse.json()) as { id: string; state: string };
-      const sessionId = startJson.id;
-      log("session_created", { sessionId, initialState: startJson.state });
-
-      // Poll until completion
-      const started = Date.now();
-      const deadline = started + timeoutSec * 1000;
-      let lastState: string | undefined = startJson.state;
-      // Small initial delay to avoid immediately hitting rate limits
-      await new Promise((r) => setTimeout(r, Math.max(500, pollingIntervalSec * 250)));
-      while (Date.now() < deadline) {
-        const pollUrl = `${API_BASE_URL}/session/${encodeURIComponent(sessionId)}`;
-        const pollAt = Date.now();
-        const pollResp = await fetch(pollUrl, {
-          method: "GET",
+      const runOnce = async () => {
+        // Initiate prediction session
+        const startAt = Date.now();
+        const startUrl = `${API_BASE_URL}/text-to-image${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ""}`;
+        log("start_request", { url: startUrl });
+        const startResponse = await fetch(startUrl, {
+          method: "POST",
           headers: {
+            "Content-Type": "application/json",
             accept: "application/json",
             Authorization: `Token ${API_KEY}`,
           },
+          body: JSON.stringify({
+            styleId,
+            params: {
+              prompt: derivedPrompt,
+              samples: String(samples),
+              seed,
+              aspectRatio,
+            },
+          }),
         });
-        if (pollResp.status === 429) {
-          // Backoff minimally and continue
-          log("poll_rate_limited", { status: pollResp.status, ms: Date.now() - pollAt });
+        log("start_response", { status: startResponse.status, statusText: startResponse.statusText, ms: Date.now() - startAt });
+        if (startResponse.status === 401) {
+          throw new Error("Invalid SEELAB API key");
+        }
+        if (startResponse.status === 429) {
+          throw new Error("Seelab rate limit exceeded. Please retry later.");
+        }
+        if (!startResponse.ok) {
+          const text = await startResponse.text();
+          throw new Error(`Seelab start error: ${startResponse.status} ${startResponse.statusText} - ${text}`);
+        }
+        const startJson = (await startResponse.json()) as { id: string; state: string };
+        const sessionId = startJson.id;
+        log("session_created", { sessionId, initialState: startJson.state });
+
+        // Poll until completion
+        const started = Date.now();
+        const deadline = started + timeoutSec * 1000;
+        let lastState: string | undefined = startJson.state;
+        // Small initial delay to avoid immediately hitting rate limits
+        await new Promise((r) => setTimeout(r, Math.max(500, pollingIntervalSec * 250)));
+        while (Date.now() < deadline) {
+          const pollUrl = `${API_BASE_URL}/session/${encodeURIComponent(sessionId)}`;
+          const pollAt = Date.now();
+          const pollResp = await fetch(pollUrl, {
+            method: "GET",
+            headers: {
+              accept: "application/json",
+              Authorization: `Token ${API_KEY}`,
+            },
+          });
+          if (pollResp.status === 429) {
+            // Backoff minimally and continue
+            log("poll_rate_limited", { status: pollResp.status, ms: Date.now() - pollAt });
+            await new Promise((r) => setTimeout(r, pollingIntervalSec * 1000));
+            continue;
+          }
+          if (!pollResp.ok) {
+            const text = await pollResp.text();
+            throw new Error(`Seelab poll error: ${pollResp.status} ${pollResp.statusText} - ${text}`);
+          }
+          const json = (await pollResp.json()) as SeelabPollResult;
+          lastState = json.state;
+          log("poll_tick", { state: json.state, ms: Date.now() - pollAt });
+          if (json.state === "succeed") {
+            const images = (json.result?.image || []).filter((img) => img.type === "result");
+            const imageUrls = images
+              .map((img) => img.links?.original || img.url)
+              .filter((u): u is string => typeof u === "string" && !!u);
+            log("completed", { imageCount: imageUrls.length });
+            const result = {
+              sessionId,
+              status: json.state,
+              imageCount: imageUrls.length,
+              imageUrls,
+            } as any;
+            if (verbose) result.logs = logs;
+            return result;
+          }
+          if (json.state === "failed") {
+            log("failed", { error: json.job?.error || "Unknown error" });
+            throw new Error(`Image generation failed: ${json.job?.error || "Unknown error"}`);
+          }
           await new Promise((r) => setTimeout(r, pollingIntervalSec * 1000));
-          continue;
         }
-        if (!pollResp.ok) {
-          const text = await pollResp.text();
-          throw new Error(`Seelab poll error: ${pollResp.status} ${pollResp.statusText} - ${text}`);
-        }
-        const json = (await pollResp.json()) as SeelabPollResult;
-        lastState = json.state;
-        log("poll_tick", { state: json.state, ms: Date.now() - pollAt });
-        if (json.state === "succeed") {
-          const images = (json.result?.image || []).filter((img) => img.type === "result");
-          const imageUrls = images
-            .map((img) => img.links?.original || img.url)
-            .filter((u): u is string => typeof u === "string" && !!u);
-          log("completed", { imageCount: imageUrls.length });
-          const result = {
-            sessionId,
-            status: json.state,
-            imageCount: imageUrls.length,
-            imageUrls,
-          } as any;
-          if (verbose) result.logs = logs;
-          return result;
-        }
-        if (json.state === "failed") {
-          log("failed", { error: json.job?.error || "Unknown error" });
-          throw new Error(`Image generation failed: ${json.job?.error || "Unknown error"}`);
-        }
-        await new Promise((r) => setTimeout(r, pollingIntervalSec * 1000));
+        log("timeout", { afterSec: timeoutSec, lastState: lastState || "unknown" });
+        throw new Error(`Seelab prediction timed out after ${timeoutSec}s (last state: ${lastState || "unknown"})`);
+      };
+
+      if (queue) {
+        const key = String(queueKey || "seelab-global-queue");
+        let waited = 0;
+        const result = await enqueue(key, runOnce, (ms) => {
+          waited = ms;
+          log("queue_wait", { key, waitedMs: ms });
+        });
+        if (verbose && waited > 0) (result as any).queueWaitMs = waited;
+        return result;
+      } else {
+        return await runOnce();
       }
-      log("timeout", { afterSec: timeoutSec, lastState: lastState || "unknown" });
-      throw new Error(`Seelab prediction timed out after ${timeoutSec}s (last state: ${lastState || "unknown"})`);
     })
       .ifFail((e) => {
         return {
