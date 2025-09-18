@@ -12,7 +12,7 @@ const API_KEY = process.env.SEELAB_API_KEY;
 const queueTails = new Map<string, Promise<any>>();
 async function enqueue<T>(key: string, task: () => Promise<T>, onWait?: (ms: number) => void): Promise<T> {
   const prev = queueTails.get(key) || Promise.resolve();
-  let startedAt = Date.now();
+  const startedAt = Date.now();
   const next = prev
     .catch(() => {})
     .then(async () => {
