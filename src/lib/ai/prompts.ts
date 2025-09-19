@@ -7,6 +7,11 @@ import { format } from "date-fns";
 import { SequentialThinkingToolName } from "./tools";
 import { Agent } from "app-types/agent";
 
+export const HARDCODED_AGENT_FALLBACK_INSTRUCTION = `
+if a workflow and/or is used and client_name or similar variable is not specified by user, assume agent's name is the client_name, url or similar.
+
+if a MCP is used (like Google Ads, Google Workspace or Google Search console), assume agent's name is the key to find the domain name and/or account name/id. If a lookup/search is done, always add agent's name.`.trim();
+
 export const CREATE_THREAD_TITLE_PROMPT = `
 You are a chat title generation expert.
 
@@ -74,6 +79,12 @@ export const buildUserSystemPrompt = (
   ${agent.instructions.systemPrompt}
   </core_capabilities>`;
   }
+
+  // Global hardcoded defaults appended after dynamic agent instructions
+  prompt += `
+
+# Defaults and inference rules
+${HARDCODED_AGENT_FALLBACK_INSTRUCTION}`;
 
   // User context section (first priority)
   const userInfo: string[] = [];
@@ -157,6 +168,12 @@ export const buildSpeechSystemPrompt = (
     ${agent.instructions.systemPrompt}
     </core_capabilities>`;
   }
+
+  // Global hardcoded defaults appended after dynamic agent instructions
+  prompt += `
+
+# Defaults and inference rules
+${HARDCODED_AGENT_FALLBACK_INSTRUCTION}`;
 
   // User context section (first priority)
   const userInfo: string[] = [];
