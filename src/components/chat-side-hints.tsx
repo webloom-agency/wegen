@@ -18,6 +18,7 @@ export function ChatSideHints({
   const items = useMemo(() => {
     const fixed = [
       "crée un contenu SEO sur \"agence seo\"",
+      "audit google ads sur https://www.adidas.fr/stan_smith",
       "top 50 mots-clés Search Console de webloom.fr ce mois-ci en tableau",
       "résume les 5 plus récents fathom de obat.fr sur google drive et détecte les signaux faibles d'insatisfaction",
       "brief seo pour agence seo sur https://webloom.fr/referencement-naturel-seo/",

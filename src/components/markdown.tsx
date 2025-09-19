@@ -189,7 +189,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
         <JsonView data={children} />
       ) : (
         <ReactMarkdown components={components} remarkPlugins={[remarkGfm]}>
-          {children}
+          {children.replace(/<\s*br\s*\/?\s*>/gi, "  \n")}
         </ReactMarkdown>
       )}
     </article>
