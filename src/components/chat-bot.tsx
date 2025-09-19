@@ -383,7 +383,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
       <div
         className={cn(
           emptyMessage && "justify-center pb-24",
-          "flex flex-col min-w-0 relative h-full z-40",
+          "flex flex-col min-w-0 relative h-full z-40 overflow-hidden",
         )}
       >
         {emptyMessage ? (
@@ -469,7 +469,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
               onFocus={isFirstTime ? undefined : handleFocus}
             />
             {input.length === 0 && !isLoading && (
-              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-40 w-full max-w-3xl flex justify-center">
+              <div className="absolute inset-x-0 top-full mt-2 z-40 w-full flex justify-center">
                 <ChatSideHints direction="row" onSelect={(text) => setInput(text)} />
               </div>
             )}
