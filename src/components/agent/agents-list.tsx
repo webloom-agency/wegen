@@ -11,6 +11,7 @@ import { useBookmark } from "@/hooks/queries/use-bookmark";
 import { useMutateAgents } from "@/hooks/queries/use-agents";
 import { toast } from "sonner";
 import useSWR from "swr";
+import { authClient } from "auth/client";
 import { fetcher } from "lib/utils";
 import { Visibility } from "@/components/shareable-actions";
 import { ShareableCard } from "@/components/shareable-card";
@@ -49,6 +50,9 @@ export function AgentsList({
       fallbackData: [...initialMyAgents, ...initialSharedAgents],
     },
   );
+
+  const { data: session } = authClient.useSession();
+  const isAdmin = (session?.user as any)?.role === "admin";
 
   const myAgents =
     allAgents?.filter((agent: AgentSummary) => agent.userId === userId) ||
@@ -172,18 +176,19 @@ export function AgentsList({
           </Link>
 
           {myAgents.map((agent) => (
-            <ShareableCard
-              key={agent.id}
-              type="agent"
-              item={agent}
-              href={`/agent/${agent.id}`}
-              onVisibilityChange={updateVisibility}
-              isVisibilityChangeLoading={visibilityChangeLoading === agent.id}
-              isDeleteLoading={deletingAgentLoading === agent.id}
-              onDelete={deleteAgent}
-              onDuplicate={duplicateAgent}
-              isDuplicateLoading={duplicatingAgentId === agent.id}
-            />
+            <div key={agent.id}>
+              <ShareableCard
+                type="agent"
+                item={agent}
+                href={`/agent/${agent.id}`}
+                onVisibilityChange={updateVisibility}
+                isVisibilityChangeLoading={visibilityChangeLoading === agent.id}
+                isDeleteLoading={deletingAgentLoading === agent.id}
+                onDelete={deleteAgent}
+                onDuplicate={duplicateAgent}
+                isDuplicateLoading={duplicatingAgentId === agent.id}
+              />
+            </div>
           ))}
         </div>
       </div>
@@ -197,17 +202,23 @@ export function AgentsList({
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {sharedAgents.map((agent) => (
-            <ShareableCard
-              key={agent.id}
-              type="agent"
-              item={agent}
-              isOwner={false}
-              href={`/agent/${agent.id}`}
-              onBookmarkToggle={toggleBookmark}
-              isBookmarkToggleLoading={isBookmarkLoading(agent.id)}
-              onDuplicate={duplicateAgent}
-              isDuplicateLoading={duplicatingAgentId === agent.id}
-            />
+            <div key={agent.id}>
+              <ShareableCard
+                type="agent"
+                item={agent}
+                isOwner={false}
+                canManage={isAdmin}
+                href={`/agent/${agent.id}`}
+                onVisibilityChange={updateVisibility}
+                isVisibilityChangeLoading={visibilityChangeLoading === agent.id}
+                onBookmarkToggle={toggleBookmark}
+                isBookmarkToggleLoading={isBookmarkLoading(agent.id)}
+                onDelete={deleteAgent}
+                isDeleteLoading={deletingAgentLoading === agent.id}
+                onDuplicate={duplicateAgent}
+                isDuplicateLoading={duplicatingAgentId === agent.id}
+              />
+            </div>
           ))}
           {sharedAgents.length === 0 && (
             <Card className="col-span-full bg-transparent border-none">

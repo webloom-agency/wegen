@@ -121,13 +121,18 @@ export const pgAgentRepository: AgentRepository = {
   },
 
   async updateAgent(id, userId, agent) {
+    const admin = await isAdmin(userId);
     const [result] = await db
       .update(AgentSchema)
       .set({
         ...agent,
         updatedAt: new Date(),
       })
-      .where(and(eq(AgentSchema.id, id), eq(AgentSchema.userId, userId)))
+      .where(
+        admin
+          ? eq(AgentSchema.id, id)
+          : and(eq(AgentSchema.id, id), eq(AgentSchema.userId, userId)),
+      )
       .returning();
     return {
       ...result,
@@ -138,7 +143,10 @@ export const pgAgentRepository: AgentRepository = {
   },
 
   async deleteAgent(id, userId) {
-    await db.delete(AgentSchema).where(and(eq(AgentSchema.id, id), eq(AgentSchema.userId, userId)));
+    const admin = await isAdmin(userId);
+    await db
+      .delete(AgentSchema)
+      .where(admin ? eq(AgentSchema.id, id) : and(eq(AgentSchema.id, id), eq(AgentSchema.userId, userId)));
   },
 
   async selectAgents(

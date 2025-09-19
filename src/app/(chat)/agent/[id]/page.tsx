@@ -1,5 +1,5 @@
 import EditAgent from "@/components/agent/edit-agent";
-import { agentRepository } from "lib/db/repository";
+import { agentRepository, userRepository } from "lib/db/repository";
 import { getSession } from "auth/server";
 import { notFound } from "next/navigation";
 
@@ -28,14 +28,16 @@ export default async function AgentPage({
   }
 
   const isOwner = agent.userId === session.user.id;
-  const hasEditAccess = isOwner || agent.visibility === "public";
+  const me = await userRepository.findById(session.user.id);
+  const isAdmin = (me as any)?.role === "admin";
+  const hasEditAccess = isAdmin || isOwner || agent.visibility === "public";
 
   return (
     <EditAgent
       key={id}
       initialAgent={agent}
       userId={session.user.id}
-      isOwner={isOwner}
+      isOwner={isOwner || isAdmin}
       hasEditAccess={hasEditAccess}
       isBookmarked={agent.isBookmarked || false}
     />

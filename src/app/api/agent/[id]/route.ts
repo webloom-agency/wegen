@@ -1,4 +1,4 @@
-import { agentRepository } from "lib/db/repository";
+import { agentRepository, userRepository } from "lib/db/repository";
 import { getSession } from "auth/server";
 import { z } from "zod";
 import { AgentUpdateSchema } from "app-types/agent";
@@ -48,12 +48,11 @@ export async function PUT(
       return new Response("Unauthorized", { status: 401 });
     }
 
-    // For non-owners of public agents, preserve original visibility
-    const existingAgent = await agentRepository.selectAgentById(
-      id,
-      session.user.id,
-    );
-    if (existingAgent && existingAgent.userId !== session.user.id) {
+    // For non-owners of public agents, preserve original visibility unless admin
+    const existingAgent = await agentRepository.selectAgentById(id, session.user.id);
+    const me = await userRepository.findById(session.user.id);
+    const isAdmin = (me as any)?.role === "admin";
+    if (!isAdmin && existingAgent && existingAgent.userId !== session.user.id) {
       data.visibility = existingAgent.visibility;
     }
 
