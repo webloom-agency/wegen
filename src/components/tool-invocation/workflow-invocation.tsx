@@ -11,6 +11,7 @@ import { cn } from "lib/utils";
 import { NodeIcon } from "../workflow/node-icon";
 import { TextShimmer } from "ui/text-shimmer";
 import dynamic from "next/dynamic";
+import { Markdown } from "../markdown";
 
 const HtmlPreview = dynamic(
   () =>
@@ -60,6 +61,7 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
       const href = `data:${fileObj.mime};base64,${fileObj.base64}`;
       const isCsv = String(fileObj.mime || "").startsWith("text/csv");
       const isHtml = String(fileObj.mime || "").startsWith("text/html") || /\.html?$/i.test(fileObj.filename || "");
+      const isMarkdown = String(fileObj.mime || "").startsWith("text/markdown") || /\.md(?:own)?$/i.test(fileObj.filename || "");
       let csvPreview: string | null = null;
       if (isCsv) {
         try {
@@ -115,6 +117,18 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
                 })()}
               </div>
             ) : null}
+            {isMarkdown ? (
+              <div className="mt-2">
+                {(() => {
+                  try {
+                    const decoded = typeof window !== "undefined" ? atob(fileObj.base64) : "";
+                    return <Markdown>{decoded}</Markdown>;
+                  } catch {
+                    return null;
+                  }
+                })()}
+              </div>
+            ) : null}
             {isCsv && csvPreview ? (
               <div className="mt-2">
                 <p className="mb-1 text-muted-foreground">CSV preview (first 20 lines)</p>
@@ -126,14 +140,31 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
       );
     }
 
-    // If the final result is an HTML string or container with html
+    // If the final result is an HTML or Markdown string or container
     const looksLikeHtml = (v: string) => /<\s*!(?:doctype)|<\s*html|<\s*body|<\s*head|<\s*div[\s>]/i.test((v || "").trim());
+    const looksLikeMarkdown = (v: string) => {
+      const s = (v || "").trim();
+      return /(^|\n)\s*#\s+/.test(s) ||
+        /(^|\n)\s*```/.test(s) ||
+        /\[[^\]]+\]\([^\)]+\)/.test(s) ||
+        /(^|\n)\s*[-*+]\s+\S/.test(s) ||
+        /(^|\n)\s*\d+\.\s+\S/.test(s);
+    };
     const pickWorkflowOutputHtml = (): string | null => {
       try {
         if (typeof finalResult?.output?.html === "string") return finalResult.output.html;
         if (typeof finalResult?.html === "string") return finalResult.html;
         if (typeof finalResult?.result?.output?.html === "string") return finalResult.result.output.html;
         if (typeof finalResult?.result?.html === "string") return finalResult.result.html;
+      } catch {}
+      return null;
+    };
+    const pickWorkflowOutputMarkdown = (): string | null => {
+      try {
+        if (typeof finalResult?.output?.markdown === "string") return finalResult.output.markdown;
+        if (typeof finalResult?.markdown === "string") return finalResult.markdown;
+        if (typeof finalResult?.result?.output?.markdown === "string") return finalResult.result.output.markdown;
+        if (typeof finalResult?.result?.markdown === "string") return finalResult.result.markdown;
       } catch {}
       return null;
     };
@@ -168,6 +199,42 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
           </div>
           <div className="mt-2">
             <HtmlPreview html={htmlString} title="HTML Preview" />
+          </div>
+        </div>
+      );
+    }
+
+    const markdownString: string | null =
+      pickWorkflowOutputMarkdown() ??
+      (typeof finalResult === "string" && looksLikeMarkdown(finalResult)
+        ? finalResult
+        : typeof finalResult?.result === "string" && looksLikeMarkdown(finalResult.result)
+          ? finalResult.result
+          : null);
+
+    if (markdownString) {
+      return (
+        <div className="w-full bg-card p-4 border text-xs rounded-lg text-muted-foreground">
+          <div className="flex items-center">
+            <h5 className="text-muted-foreground font-medium select-none">
+              Response
+            </h5>
+            <div className="flex-1" />
+            {copied ? (
+              <Check className="size-3" />
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-3 text-muted-foreground"
+                onClick={() => copy(markdownString)}
+              >
+                <Copy className="size-3" />
+              </Button>
+            )}
+          </div>
+          <div className="mt-2">
+            <Markdown>{markdownString}</Markdown>
           </div>
         </div>
       );

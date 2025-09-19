@@ -529,7 +529,7 @@ export const AssistMessagePart = memo(function AssistMessagePart({
           return looksLikeHtml ? (
             <HtmlPreview html={text} title="HTML Preview" />
           ) : (
-            <Markdown>{part.text}</Markdown>
+        <Markdown>{part.text}</Markdown>
           );
         })()}
       </div>
@@ -1178,6 +1178,14 @@ export const ToolMessagePart = memo(
                         {(() => {
                           const looksLikeHtml = (v: string) =>
                             /<\s*!(?:doctype)|<\s*html|<\s*body|<\s*head|<\s*div[\s>]/i.test((v || "").trim());
+                          const looksLikeMarkdown = (v: string) => {
+                            const s = (v || "").trim();
+                            return /(^|\n)\s*#\s+/.test(s) ||
+                              /(^|\n)\s*```/.test(s) ||
+                              /\[[^\]]+\]\([^\)]+\)/.test(s) ||
+                              /(^|\n)\s*[-*+]\s+\S/.test(s) ||
+                              /(^|\n)\s*\d+\.\s+\S/.test(s);
+                          };
                           const pickHtmlFromContent = (v: any): string | null => {
                             try {
                               const nodes = Array.isArray(v?.content) ? v.content : [];
@@ -1186,6 +1194,21 @@ export const ToolMessagePart = memo(
                                   node?.type === "text" &&
                                   typeof node?.text === "string" &&
                                   looksLikeHtml(node.text)
+                                ) {
+                                  return node.text;
+                                }
+                              }
+                            } catch {}
+                            return null;
+                          };
+                          const pickMarkdownFromContent = (v: any): string | null => {
+                            try {
+                              const nodes = Array.isArray(v?.content) ? v.content : [];
+                              for (const node of nodes) {
+                                if (
+                                  node?.type === "text" &&
+                                  typeof node?.text === "string" &&
+                                  looksLikeMarkdown(node.text)
                                 ) {
                                   return node.text;
                                 }
@@ -1213,6 +1236,26 @@ export const ToolMessagePart = memo(
                             }
                             return null;
                           };
+                          const getFileMarkdown = (v: any): string | null => {
+                            const f =
+                              v && typeof v === "object" && v.type === "file"
+                                ? v
+                                : v?.result && v.result.type === "file"
+                                  ? v.result
+                                  : null;
+                            if (
+                              f &&
+                              typeof f.base64 === "string" &&
+                              (String(f.mime || "").startsWith("text/markdown") || /\.md(?:own)?$/i.test(f.filename || ""))
+                            ) {
+                              try {
+                                return typeof window !== "undefined" ? atob(f.base64) : "";
+                              } catch {
+                                return "";
+                              }
+                            }
+                            return null;
+                          };
                           const findHtmlTextDeep = (v: any, depth = 0): string | null => {
                             if (!v || depth > 4) return null;
                             if (typeof v === "string") return looksLikeHtml(v) ? v : null;
@@ -1228,6 +1271,33 @@ export const ToolMessagePart = memo(
                             }
                             return null;
                           };
+                          const findMarkdownTextDeep = (v: any, depth = 0): string | null => {
+                            if (!v || depth > 4) return null;
+                            if (typeof v === "string") return looksLikeMarkdown(v) ? v : null;
+                            if (typeof v !== "object") return null;
+                            if (typeof v.markdown === "string" && looksLikeMarkdown(v.markdown)) return v.markdown;
+                            if (typeof v.text === "string" && looksLikeMarkdown(v.text)) return v.text;
+                            if (typeof v.result?.markdown === "string" && looksLikeMarkdown(v.result.markdown)) return v.result.markdown;
+                            if (typeof v.result?.text === "string" && looksLikeMarkdown(v.result.text)) return v.result.text;
+                            for (const key of Object.keys(v)) {
+                              if (key === "link") continue;
+                              const child = (v as any)[key];
+                              const found = findMarkdownTextDeep(child, depth + 1);
+                              if (found) return found;
+                            }
+                            return null;
+                          };
+                          const markdownString =
+                            (typeof (result as any)?.markdown === "string" && looksLikeMarkdown((result as any).markdown)
+                              ? (result as any).markdown
+                              : null) ??
+                            (typeof (result as any)?.result?.markdown === "string" &&
+                            looksLikeMarkdown((result as any).result.markdown)
+                              ? (result as any).result.markdown
+                              : null) ??
+                            pickMarkdownFromContent(result) ??
+                            getFileMarkdown(result) ??
+                            findMarkdownTextDeep(result);
                           const htmlString =
                             (typeof result === "string" && looksLikeHtml(result) ? result : null) ??
                             (typeof (result as any)?.html === "string" && looksLikeHtml((result as any).html)
@@ -1246,11 +1316,13 @@ export const ToolMessagePart = memo(
                             findHtmlTextDeep(result) ??
                             pickHtmlFromContent(result) ??
                             getFileHtml(result);
-                          return htmlString ? (
-                            <HtmlPreview html={htmlString} title="HTML Preview" />
-                          ) : (
-                            <JsonView data={result} />
-                          );
+                          if (htmlString) {
+                            return <HtmlPreview html={htmlString} title="HTML Preview" />;
+                          }
+                          if (markdownString) {
+                            return <Markdown>{markdownString}</Markdown>;
+                          }
+                          return <JsonView data={result} />;
                         })()}
                       </div>
                     )}
