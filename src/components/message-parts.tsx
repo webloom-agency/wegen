@@ -1136,7 +1136,7 @@ export const ToolMessagePart = memo(
                     )}
                   </div>
                   {isExpanded && (
-                    <div className="p-2 max-h-[300px] overflow-y-auto ">
+                    <div className="p-2 overflow-x-auto ">
                       <JsonView data={toolInvocation.args} />
                     </div>
                   )}
@@ -1174,7 +1174,7 @@ export const ToolMessagePart = memo(
                       )}
                     </div>
                     {isExpanded && (
-                      <div className="p-2 max-h-[300px] overflow-y-auto">
+                      <div className="p-2 overflow-x-auto">
                         {(() => {
                           const looksLikeHtml = (v: string) =>
                             /<\s*!(?:doctype)|<\s*html|<\s*body|<\s*head|<\s*div[\s>]/i.test((v || "").trim());

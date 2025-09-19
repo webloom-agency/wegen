@@ -88,7 +88,8 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
               </Button>
             )}
           </div>
-          <div className="p-2 max-h-[300px] overflow-y-auto flex flex-col gap-2">
+          <div className="p-2 flex flex-col gap-2">
+            <div className="flex flex-col gap-2">
             <a
               href={href}
               download={fileObj.filename}
@@ -135,6 +136,7 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
                 <pre className="text-[10px] p-2 bg-muted rounded overflow-auto whitespace-pre-wrap">{csvPreview}</pre>
               </div>
             ) : null}
+            </div>
           </div>
         </div>
       );
@@ -260,7 +262,7 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
             </Button>
           )}
         </div>
-        <div className="p-2 max-h-[300px] overflow-y-auto">
+        <div className="p-2 overflow-x-auto">
           <JsonView data={result.result} />
         </div>
       </div>
