@@ -10,6 +10,7 @@ import { generateUUID } from "lib/utils";
 import { AgentSummary } from "app-types/agent";
 import Link from "next/link";
 import { authClient } from "auth/client";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 
 type Props = PropsWithChildren<{
   agent: AgentSummary;
@@ -22,7 +23,8 @@ export function AgentDropdown({ agent, children, side, align }: Props) {
   const [open, setOpen] = useState(false);
   const { data: session } = authClient.useSession();
   const isOwner = session?.user?.id === agent.userId;
-  const isAdmin = (session?.user as any)?.role === "admin";
+  const { isAdmin: isAdminQuery } = useIsAdmin();
+  const isAdmin = isAdminQuery || ((session?.user as any)?.role === "admin");
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

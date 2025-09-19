@@ -22,6 +22,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useAgents } from "@/hooks/queries/use-agents";
 import { Avatar, AvatarFallback, AvatarImage } from "ui/avatar";
 import { AgentDropdown } from "../agent/agent-dropdown";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 
 import { appStore } from "@/app/store";
 import { useRouter } from "next/navigation";
@@ -39,6 +40,7 @@ export function AppSidebarAgents() {
   const { bookmarkedAgents, myAgents, isLoading, sharedAgents } = useAgents({
     limit: 50,
   }); // Increase limit since we're not artificially limiting display
+  const { isAdmin } = useIsAdmin();
 
   const agents = useMemo(() => {
     const combined = [...myAgents, ...bookmarkedAgents, ...sharedAgents];

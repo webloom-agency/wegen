@@ -1,4 +1,4 @@
-import { agentRepository } from "lib/db/repository";
+import { agentRepository, userRepository } from "lib/db/repository";
 import { getSession } from "auth/server";
 import { notFound } from "next/navigation";
 import { AgentsList } from "@/components/agent/agents-list";
@@ -17,6 +17,9 @@ export default async function AgentsPage() {
     50,
   );
 
+  const me = await userRepository.findById(session.user.id);
+  const isAdmin = (me as any)?.role === "admin";
+
   // Separate into my agents and shared agents
   const myAgents = allAgents.filter(
     (agent) => agent.userId === session.user.id,
@@ -30,6 +33,7 @@ export default async function AgentsPage() {
       initialMyAgents={myAgents}
       initialSharedAgents={sharedAgents}
       userId={session.user.id}
+      isAdminDefault={isAdmin}
     />
   );
 }

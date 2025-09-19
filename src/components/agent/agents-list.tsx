@@ -11,7 +11,7 @@ import { useBookmark } from "@/hooks/queries/use-bookmark";
 import { useMutateAgents } from "@/hooks/queries/use-agents";
 import { toast } from "sonner";
 import useSWR from "swr";
-import { authClient } from "auth/client";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { fetcher } from "lib/utils";
 import { Visibility } from "@/components/shareable-actions";
 import { ShareableCard } from "@/components/shareable-card";
@@ -24,12 +24,14 @@ interface AgentsListProps {
   initialMyAgents: AgentSummary[];
   initialSharedAgents: AgentSummary[];
   userId: string;
+  isAdminDefault?: boolean;
 }
 
 export function AgentsList({
   initialMyAgents,
   initialSharedAgents,
   userId,
+  isAdminDefault,
 }: AgentsListProps) {
   const t = useTranslations();
   const mutateAgents = useMutateAgents();
@@ -51,8 +53,8 @@ export function AgentsList({
     },
   );
 
-  const { data: session } = authClient.useSession();
-  const isAdmin = (session?.user as any)?.role === "admin";
+  const { isAdmin: isAdminQuery } = useIsAdmin();
+  const isAdmin = isAdminDefault ?? isAdminQuery;
 
   const myAgents =
     allAgents?.filter((agent: AgentSummary) => agent.userId === userId) ||
