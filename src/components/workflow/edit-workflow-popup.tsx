@@ -58,8 +58,9 @@ const zodSchema = z.object({
   id: z.string().optional(),
   name: z
     .string()
-    .min(1)
-    .regex(/^[a-zA-Z -]+$/),
+    .trim()
+    .min(1, { message: "Name is required" })
+    .max(80, { message: "Name must be at most 80 characters" }),
   description: z.string().max(200).optional(),
   icon: z.object({
     type: z.enum(["emoji"]),
