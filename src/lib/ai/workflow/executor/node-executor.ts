@@ -539,6 +539,29 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
     abortSignal: new AbortController().signal,
     messages: [],
   });
+  // Heuristic error detection for app tools:
+  // - Respect conventional { isError, error } shapes
+  // - Detect Exa-style per-item statuses that include errors
+  if (res && typeof res === "object") {
+    const anyRes: any = res as any;
+    // Conventional tool error contract
+    if (anyRes.isError) {
+      const message = (anyRes.error && (anyRes.error.message || anyRes.error)) || "Tool execution error";
+      throw new Error(String(message));
+    }
+    // Exa-style status errors
+    const statuses = anyRes.statuses;
+    if (Array.isArray(statuses)) {
+      const hasErrorStatus = statuses.some((s: any) => s?.status === "error" || !!s?.error);
+      if (hasErrorStatus) {
+        const tags = statuses
+          .map((s: any) => (s?.error?.tag || s?.status || ""))
+          .filter(Boolean)
+          .join(", ");
+        throw new Error(`Tool returned error statuses: ${tags}`);
+      }
+    }
+  }
   return { output: { tool_result: res } };
 };
 
