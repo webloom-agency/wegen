@@ -134,7 +134,7 @@ export const exaSearchSchema: JSONSchema7 = {
       type: "number",
       description:
         "The timeout for livecrawling in milliseconds (server default is 10000)",
-      default: 20000,
+      default: 30000,
       minimum: 1000,
       maximum: 60000,
     },
@@ -168,7 +168,7 @@ export const exaContentsSchema: JSONSchema7 = {
       type: "number",
       description:
         "The timeout for livecrawling in milliseconds (server default is 10000)",
-      default: 20000,
+      default: 30000,
       minimum: 1000,
       maximum: 60000,
     },
@@ -221,7 +221,7 @@ export const exaSearchToolForWorkflow = createTool({
           maxCharacters: params.maxCharacters || 3000,
         },
         livecrawl: params.livecrawl || "preferred",
-        livecrawlTimeout: params.livecrawlTimeout || 20000,
+        livecrawlTimeout: params.livecrawlTimeout || 30000,
       },
     };
 
@@ -252,7 +252,7 @@ export const exaContentsToolForWorkflow = createTool({
           maxCharacters: params.maxCharacters || 3000,
         },
         livecrawl: params.livecrawl || "preferred",
-        livecrawlTimeout: params.livecrawlTimeout || 20000,
+        livecrawlTimeout: params.livecrawlTimeout || 30000,
       },
     };
 
@@ -275,7 +275,7 @@ export const exaSearchTool = createTool({
             maxCharacters: params.maxCharacters || 3000,
           },
           livecrawl: params.livecrawl || "preferred",
-          livecrawlTimeout: params.livecrawlTimeout || 20000,
+          livecrawlTimeout: params.livecrawlTimeout || 30000,
         },
       };
 
@@ -322,7 +322,7 @@ export const exaContentsTool = createTool({
             maxCharacters: params.maxCharacters || 3000,
           },
           livecrawl: params.livecrawl || "preferred",
-          livecrawlTimeout: params.livecrawlTimeout || 20000,
+          livecrawlTimeout: params.livecrawlTimeout || 30000,
         },
       };
 

@@ -96,6 +96,33 @@ export const createWorkflowExecutor = (workflow: {
   // Add branch labels for condition node edges
   addEdgeBranchLabel(workflow.nodes, workflow.edges);
 
+  // Precompute nodes that are inside any loop body so we can downgrade failures to skips
+  const nodesById = new Map(workflow.nodes.map((n) => [n.id, n]));
+  const outgoingBySource = workflow.edges.reduce((acc, e) => {
+    (acc.get(e.source) ?? acc.set(e.source, []).get(e.source))!.push(e.target);
+    return acc;
+  }, new Map<string, string[]>());
+  const loopBodyNodeIds = new Set<string>();
+  workflow.nodes
+    .filter((n) => n.kind === NodeKind.Loop)
+    .forEach((loopNode) => {
+      const outs = outgoingBySource.get(loopNode.id) || [];
+      const endTargets = outs.filter((t) => nodesById.get(t)?.kind === NodeKind.LoopEnd);
+      const bodyStarts = outs.filter((t) => nodesById.get(t)?.kind !== NodeKind.LoopEnd);
+      const endSet = new Set(endTargets);
+      const queue = [...bodyStarts];
+      const visited = new Set<string>();
+      while (queue.length) {
+        const cur = queue.shift()!;
+        if (visited.has(cur)) continue;
+        visited.add(cur);
+        loopBodyNodeIds.add(cur);
+        if (endSet.has(cur)) continue; // do not traverse past the paired LoopEnd
+        const nexts = outgoingBySource.get(cur) || [];
+        for (const n of nexts) queue.push(n);
+      }
+    });
+
   /**
    * Special SKIP node used to handle excess branches from condition nodes.
    * When multiple branches try to execute the same target node,
@@ -126,10 +153,20 @@ export const createWorkflowExecutor = (workflow: {
         const executor = getExecutorByKind(node.kind as NodeKind);
 
         // Execute the node with current state
-        const result = await executor({
-          node: convertDBNodeToUINode(node).data,
-          state,
-        });
+        let result: any;
+        try {
+          result = await executor({
+            node: convertDBNodeToUINode(node).data,
+            state,
+          });
+        } catch (err) {
+          // If this node is within a loop body, treat failures as skips
+          if (loopBodyNodeIds.has(node.id)) {
+            logger.warn(`Skipping failed node in loop: ${node.name}`);
+            return; // swallow error to continue iteration
+          }
+          throw err;
+        }
 
         // Store the execution results in the workflow state
         if (result?.output) {
