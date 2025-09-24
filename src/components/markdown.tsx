@@ -31,7 +31,7 @@ WordByWordFadeIn.displayName = "WordByWordFadeIn";
 const components: Partial<Components> = {
   table: ({ node, children, ...props }) => {
     return (
-      <div className="my-4">
+      <div className="my-4 max-w-full">
         <Table {...props}>{children}</Table>
       </div>
     );
@@ -47,14 +47,14 @@ const components: Partial<Components> = {
   },
   th: ({ node, children, ...props }) => {
     return (
-      <TableHead {...props}>
+      <TableHead className="whitespace-pre-wrap break-words min-w-0" {...props}>
         <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </TableHead>
     );
   },
   td: ({ node, children, ...props }) => {
     return (
-      <TableCell {...props}>
+      <TableCell className="whitespace-pre-wrap break-words align-top min-w-0" {...props}>
         <WordByWordFadeIn>{children}</WordByWordFadeIn>
       </TableCell>
     );

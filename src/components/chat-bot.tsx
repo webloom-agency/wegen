@@ -427,7 +427,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
               })}
               {space && (
                 <>
-                  <div className="w-full mx-auto max-w-5xl px-6 relative">
+                  <div className="w-full mx-auto max-w-6xl px-6 relative">
                     <div className={space == "space" ? "opacity-0" : ""}>
                       <Think />
                     </div>
@@ -448,7 +448,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
             "w-full z-10",
           )}
         >
-          <div className="max-w-5xl mx-auto relative flex justify-center items-center -top-2">
+          <div className="max-w-6xl mx-auto relative flex justify-center items-center -top-2">
             <ScrollToBottomButton
               show={!isAtBottom && messages.length > 0}
               onClick={scrollToBottom}
@@ -456,7 +456,7 @@ export default function ChatBot({ threadId, initialMessages, slots }: Props) {
             />
           </div>
 
-          <div className="max-w-5xl mx-auto relative">
+          <div className="max-w-6xl mx-auto relative">
             <PromptInput
               input={input}
               threadId={threadId}
