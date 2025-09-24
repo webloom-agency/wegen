@@ -52,9 +52,23 @@ export const HtmlPreview = memo(function HtmlPreview({
           blockquote { border-left: 3px solid #e5e7eb; padding: 8px 12px; margin: 8px 0; color: #374151; background: #f9fafb; }
           ul, ol { margin: 8px 0 8px 20px; }
         </style>`;
+      const headerHtml = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <img src="https://bucket-prod.jecreemavitrine.fr/uploads/sites/156/2023/07/logo-sansmarge-webloom-1.svg" alt="webloom" style="height:24px;width:auto;object-fit:contain;"/>
+            <span style="font-weight:600;font-size:14px;color:#111827">webloom</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-weight:600;font-size:14px;color:#111827">wegen</span>
+          </div>
+        </div>
+        <hr style="border:none;border-top:1px solid #E5E7EB;margin:12px 0"/>
+      `;
       const fullDoc = hasHtmlTag
-        ? html.replace(/<\s*head\s*>/i, `<head>${baseCss}`)
-        : `<!doctype html><html><head><meta charset=\"utf-8\"><title>${title}</title>${baseCss}</head><body>${html}</body></html>`;
+        ? html
+            .replace(/<\s*head\s*>/i, `<head>${baseCss}`)
+            .replace(/<\s*body([^>]*)>/i, `<body$1>${headerHtml}`)
+        : `<!doctype html><html><head><meta charset=\"utf-8\"><title>${title}</title>${baseCss}</head><body>${headerHtml}${html}</body></html>`;
 
       const frame = document.createElement("iframe");
       frame.style.position = "fixed";

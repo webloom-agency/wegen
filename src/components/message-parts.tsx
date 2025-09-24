@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { Button } from "ui/button";
+import { Markdown } from "./markdown";
 import { cn, createThrottle, safeJSONParse, truncateString } from "lib/utils";
 import JsonView from "ui/json-view";
 import { useMemo, useState, memo, useEffect, useRef, useCallback } from "react";
@@ -520,17 +521,7 @@ export const AssistMessagePart = memo(function AssistMessagePart({
           "opacity-50 border border-destructive bg-card rounded-lg": isError,
         })}
       >
-        {(() => {
-          const text = (part.text || "").trim();
-          const looksLikeHtml = /<\s*!(?:doctype)|<\s*html|<\s*body|<\s*head|<\s*div[\s>]/i.test(
-            text,
-          );
-          return looksLikeHtml ? (
-            <HtmlPreview html={text} title="HTML Preview" />
-          ) : (
-            <MarkdownPreview markdown={part.text} title="Markdown Preview" />
-          );
-        })()}
+        <Markdown>{part.text}</Markdown>
       </div>
       {showActions && (
         <div className="flex w-full">
@@ -734,7 +725,7 @@ export const ReasoningPart = memo(function ReasoningPart({
               style={{ overflow: "hidden" }}
               className="pl-6 text-muted-foreground border-l flex flex-col gap-4"
             >
-              <MarkdownPreview markdown={reasoning} title="Markdown Preview" />
+              <Markdown>{reasoning}</Markdown>
             </motion.div>
           )}
         </AnimatePresence>
@@ -1330,12 +1321,7 @@ export const ToolMessagePart = memo(
                             return <HtmlPreview html={htmlString} title="HTML Preview" />;
                           }
                           if (markdownString) {
-                            return (
-                              <MarkdownPreview
-                                markdown={markdownString}
-                                title="Markdown Preview"
-                              />
-                            );
+                            return <Markdown>{markdownString}</Markdown>;
                           }
                           return <JsonView data={result} />;
                         })()}
