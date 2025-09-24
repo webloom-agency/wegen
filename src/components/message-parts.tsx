@@ -1321,7 +1321,12 @@ export const ToolMessagePart = memo(
                             return <HtmlPreview html={htmlString} title="HTML Preview" />;
                           }
                           if (markdownString) {
-                            return <Markdown>{markdownString}</Markdown>;
+                            return (
+                              <MarkdownPreview
+                                markdown={markdownString}
+                                title="Markdown Preview"
+                              />
+                            );
                           }
                           return <JsonView data={result} />;
                         })()}
