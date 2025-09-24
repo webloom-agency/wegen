@@ -11,7 +11,6 @@ import { cn } from "lib/utils";
 import { NodeIcon } from "../workflow/node-icon";
 import { TextShimmer } from "ui/text-shimmer";
 import dynamic from "next/dynamic";
-import { Markdown } from "../markdown";
 
 const HtmlPreview = dynamic(
   () =>
