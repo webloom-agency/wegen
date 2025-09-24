@@ -450,7 +450,7 @@ function ConversationView({
   }, [messages.length]);
   return (
     <div className="select-text w-full overflow-y-auto h-full" ref={ref}>
-      <div className="max-w-4xl mx-auto flex flex-col px-6 gap-6 pb-44 min-h-0 min-w-0">
+      <div className="max-w-5xl mx-auto flex flex-col px-6 gap-6 pb-44 min-h-0 min-w-0">
         {messages.map((message) => (
           <div
             key={message.id}

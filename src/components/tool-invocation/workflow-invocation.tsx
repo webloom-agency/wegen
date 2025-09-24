@@ -23,6 +23,16 @@ const HtmlPreview = dynamic(
   },
 );
 
+const MarkdownPreview = dynamic(
+  () =>
+    import("./markdown-preview").then(
+      (mod) => mod.MarkdownPreview,
+    ),
+  {
+    ssr: false,
+  },
+);
+
 interface WorkflowInvocationProps {
   result: VercelAIWorkflowToolStreamingResult;
 }
@@ -123,7 +133,9 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
                 {(() => {
                   try {
                     const decoded = typeof window !== "undefined" ? atob(fileObj.base64) : "";
-                    return <Markdown>{decoded}</Markdown>;
+                    return (
+                      <MarkdownPreview markdown={decoded} title="Markdown Preview" />
+                    );
                   } catch {
                     return null;
                   }
@@ -236,7 +248,7 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
             )}
           </div>
           <div className="mt-2">
-            <Markdown>{markdownString}</Markdown>
+            <MarkdownPreview markdown={markdownString} title="Markdown Preview" />
           </div>
         </div>
       );
@@ -293,6 +305,7 @@ function PureWorkflowInvocation({ result }: WorkflowInvocationProps) {
                   : stepResult,
               }}
             >
+              {/* Ensure child exists for type requirement */}
               <div
                 className={cn(
                   "flex items-center gap-2 text-sm rounded-sm px-2 py-1.5 relative",

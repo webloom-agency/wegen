@@ -529,7 +529,7 @@ export const AssistMessagePart = memo(function AssistMessagePart({
           return looksLikeHtml ? (
             <HtmlPreview html={text} title="HTML Preview" />
           ) : (
-        <Markdown>{part.text}</Markdown>
+            <MarkdownPreview markdown={part.text} title="Markdown Preview" />
           );
         })()}
       </div>
@@ -735,7 +735,7 @@ export const ReasoningPart = memo(function ReasoningPart({
               style={{ overflow: "hidden" }}
               className="pl-6 text-muted-foreground border-l flex flex-col gap-4"
             >
-              <Markdown>{reasoning}</Markdown>
+              <MarkdownPreview markdown={reasoning} title="Markdown Preview" />
             </motion.div>
           )}
         </AnimatePresence>
@@ -792,6 +792,17 @@ const HtmlPreview = dynamic(
   () =>
     import("./tool-invocation/html-preview").then(
       (mod) => mod.HtmlPreview,
+    ),
+  {
+    ssr: false,
+    loading,
+  },
+);
+
+const MarkdownPreview = dynamic(
+  () =>
+    import("./tool-invocation/markdown-preview").then(
+      (mod) => mod.MarkdownPreview,
     ),
   {
     ssr: false,
@@ -1320,7 +1331,12 @@ export const ToolMessagePart = memo(
                             return <HtmlPreview html={htmlString} title="HTML Preview" />;
                           }
                           if (markdownString) {
-                            return <Markdown>{markdownString}</Markdown>;
+                            return (
+                              <MarkdownPreview
+                                markdown={markdownString}
+                                title="Markdown Preview"
+                              />
+                            );
                           }
                           return <JsonView data={result} />;
                         })()}
