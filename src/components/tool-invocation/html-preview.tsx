@@ -34,8 +34,6 @@ export const HtmlPreview = memo(function HtmlPreview({
 
   const handlePrint = () => {
     try {
-      const printWindow = window.open("", "_blank", "noopener,noreferrer");
-      if (!printWindow) return;
       const hasHtmlTag = /<\s*html[\s>]/i.test(html);
       const baseCss = `
         <style>
@@ -52,17 +50,31 @@ export const HtmlPreview = memo(function HtmlPreview({
           th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; vertical-align: top; word-break: break-word; white-space: pre-wrap; }
           th { background: #f9fafb; font-weight: 600; }
           blockquote { border-left: 3px solid #e5e7eb; padding: 8px 12px; margin: 8px 0; color: #374151; background: #f9fafb; }
+          ul, ol { margin: 8px 0 8px 20px; }
         </style>`;
       const fullDoc = hasHtmlTag
         ? html.replace(/<\s*head\s*>/i, `<head>${baseCss}`)
         : `<!doctype html><html><head><meta charset=\"utf-8\"><title>${title}</title>${baseCss}</head><body>${html}</body></html>`;
 
-      printWindow.document.open();
-      printWindow.document.write(fullDoc);
-      printWindow.document.close();
+      const frame = document.createElement("iframe");
+      frame.style.position = "fixed";
+      frame.style.right = "0";
+      frame.style.bottom = "0";
+      frame.style.width = "0";
+      frame.style.height = "0";
+      frame.style.border = "0";
+      document.body.appendChild(frame);
+      const doc = frame.contentDocument || frame.contentWindow?.document;
+      if (!doc) return;
+      doc.open();
+      doc.write(fullDoc);
+      doc.close();
       setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
+        frame.contentWindow?.focus();
+        frame.contentWindow?.print();
+        setTimeout(() => {
+          document.body.removeChild(frame);
+        }, 800);
       }, 200);
     } catch {}
   };

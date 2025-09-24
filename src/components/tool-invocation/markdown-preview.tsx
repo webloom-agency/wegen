@@ -34,8 +34,6 @@ export const MarkdownPreview = memo(function MarkdownPreview({
 
   const handlePrint = () => {
     try {
-      const printWindow = window.open("", "_blank", "noopener,noreferrer");
-      if (!printWindow) return;
       const baseCss = `
         <style>
           @page { size: A4; margin: 18mm; }
@@ -55,12 +53,26 @@ export const MarkdownPreview = memo(function MarkdownPreview({
         </style>`;
       const htmlContent = contentRef.current?.innerHTML || "";
       const docHtml = `<!doctype html><html><head><meta charset=\"utf-8\"><title>${title}</title>${baseCss}</head><body>${htmlContent}</body></html>`;
-      printWindow.document.open();
-      printWindow.document.write(docHtml);
-      printWindow.document.close();
+
+      const frame = document.createElement("iframe");
+      frame.style.position = "fixed";
+      frame.style.right = "0";
+      frame.style.bottom = "0";
+      frame.style.width = "0";
+      frame.style.height = "0";
+      frame.style.border = "0";
+      document.body.appendChild(frame);
+      const doc = frame.contentDocument || frame.contentWindow?.document;
+      if (!doc) return;
+      doc.open();
+      doc.write(docHtml);
+      doc.close();
       setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
+        frame.contentWindow?.focus();
+        frame.contentWindow?.print();
+        setTimeout(() => {
+          document.body.removeChild(frame);
+        }, 800);
       }, 200);
     } catch {}
   };
