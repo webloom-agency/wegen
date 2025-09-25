@@ -907,8 +907,8 @@ export async function POST(request: Request) {
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
         // Always allow the model to choose when to call tools so it can finish with a text answer
-        // If a workflow is selected and not ambiguous, require a tool call to ensure it triggers
-        const toolChoiceForRun: "auto" | "required" = (forceWorkflowOnly && !isSelectedWorkflowAmbiguous) ? "required" : "auto";
+        // Use 'auto' to avoid rare stalls after a tool call; we narrow tools to the selected workflow
+        const toolChoiceForRun: "auto" | "required" = "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         // Let the model take as many steps as it needs; do not cap maxSteps
@@ -933,6 +933,7 @@ export async function POST(request: Request) {
         }
 
         // Allow the model to orchestrate multiple steps across tools/workflows as needed
+        const maxStepsForRun = (forceWorkflowOnly && !isSelectedWorkflowAmbiguous) ? 3 : 5;
 
         // Post-process: if the selected tool expects a 'client_name' parameter,
         // and the user's latest prompt includes a domain (URL or bare domain),
@@ -1017,7 +1018,7 @@ export async function POST(request: Request) {
           messages,
           temperature: 1,
           // Keep tool-chaining bounded for responsiveness
-          maxSteps: 5,
+          maxSteps: maxStepsForRun,
           toolCallStreaming: true,
           experimental_transform: smoothStream({ chunking: "word" }),
           maxRetries: 2,
@@ -1223,6 +1224,10 @@ export async function POST(request: Request) {
                 updatedAt: new Date(),
               } as any);
             }
+            // Proactively close the data stream to avoid post-tool hanging states
+            try {
+              dataStream.close();
+            } catch {}
           },
         });
         result.consumeStream();
