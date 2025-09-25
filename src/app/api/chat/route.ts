@@ -1224,10 +1224,6 @@ export async function POST(request: Request) {
                 updatedAt: new Date(),
               } as any);
             }
-            // Proactively close the data stream to avoid post-tool hanging states
-            try {
-              dataStream.close();
-            } catch {}
           },
         });
         result.consumeStream();
