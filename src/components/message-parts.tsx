@@ -521,7 +521,43 @@ export const AssistMessagePart = memo(function AssistMessagePart({
           "opacity-50 border border-destructive bg-card rounded-lg": isError,
         })}
       >
-        <Markdown>{part.text}</Markdown>
+        {(() => {
+          const text = (part.text || "");
+          const trimmed = text.trim();
+          const looksLikeHtml = /<\s*!(?:doctype)|<\s*html|<\s*body|<\s*head|<\s*div[\s>]/i.test(trimmed);
+          const htmlFence = text.match(/```\s*html\s*([\s\S]*?)```/i);
+          const htmlStartIdx = text.search(/<\s*!(?:doctype)|<\s*html|<\s*head|<\s*body|<\s*div[\s>]/i);
+          const hasHtmlHint = /(^|\n)\s*html\s*(\n|$)/i.test(text) && htmlStartIdx >= 0;
+          const htmlFromFence = htmlFence ? htmlFence[1] : null;
+          const htmlFromStart = htmlStartIdx >= 0 ? text.slice(htmlStartIdx) : null;
+
+          // Markdown doc heuristic (strong signal)
+          const looksLikeMarkdownDoc = (() => {
+            const s = trimmed;
+            if (/(^|\n)\s*```/.test(s)) return true; // fenced blocks
+            if (/^\s*#\s+/.test(s) || /(^|\n)\s*##\s+/.test(s)) return true; // headings early
+            if (/(^|\n)\s*\|.*\|/.test(s) && /\n\s*\|?\s*:?[-]+\s*\|/.test(s)) return true; // tables
+            if (/^\s*---\s*$/.test(s.split(/\n/)[0] || "").toString()) return true; // frontmatter line
+            return false;
+          })();
+
+          if (htmlFromFence) {
+            return <HtmlPreview html={htmlFromFence} title="HTML Preview" />;
+          }
+          if (hasHtmlHint || looksLikeHtml) {
+            const htmlPayload = htmlFromStart || trimmed;
+            return <HtmlPreview html={htmlPayload} title="HTML Preview" />;
+          }
+          if (looksLikeMarkdownDoc) {
+            return (
+              <MarkdownPreview
+                markdown={text}
+                title="Markdown Preview"
+              />
+            );
+          }
+          return <Markdown>{text}</Markdown>;
+        })()}
       </div>
       {showActions && (
         <div className="flex w-full">
