@@ -413,11 +413,24 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
           })()
         : undefined;
 
-      // Add light guidance to improve parameter grounding (e.g., derive client_name from provided URL domain)
-      const hasClientNameField = !!(toAny(node.tool.parameterSchema)?.properties?.client_name);
-      const guidance = hasClientNameField
-        ? "When generating tool parameters, if the user provided a URL, derive 'client_name' from that URL's domain (e.g., https://example.com -> example.com). Do not invent a different brand. Prefer the most recent URL in the user input."
-        : undefined;
+      // Add light guidance to improve parameter grounding and avoid ambiguous auto-fills
+      const props = toAny(node.tool.parameterSchema)?.properties || {};
+      const hasClientNameField = !!props?.client_name;
+      const hasUrlField = !!props?.url;
+      const hasBriefField = !!(props?.brief || props?.summary);
+      const guidance = (() => {
+        const lines: string[] = [];
+        if (hasClientNameField) {
+          lines.push("If the user provided a URL, derive 'client_name' from that URL's domain (e.g., https://example.com -> example.com). Do not invent a different brand. Only infer when a single unique domain is present.");
+        }
+        if (hasUrlField) {
+          lines.push("Populate 'url' only when exactly one unique URL or bare domain is present in the user's prompt; if multiple different domains/URLs are present, leave 'url' unset.");
+        }
+        if (hasBriefField) {
+          lines.push("Populate 'brief' with the user's full brief as provided in the latest prompt. Do not truncate unless the schema explicitly specifies a maximum length.");
+        }
+        return lines.length > 0 ? lines.join(" ") : undefined;
+      })();
 
       const response = await generateText({
         model: customModelProvider.getModel(node.model),
@@ -453,7 +466,7 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
           if (m[1]) bareDomains.push(m[1]);
         }
 
-        // Merge keeping order of appearance; prefer the last occurrence overall
+        // Merge keeping order of appearance
         const candidates: string[] = [];
         // Map URLs -> hostnames
         for (const u of urls) {
@@ -469,7 +482,10 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
         }
 
         if (candidates.length === 0) return undefined;
-        return candidates[candidates.length - 1];
+        // Only infer when exactly one unique domain is present; otherwise ambiguous
+        const unique = Array.from(new Set(candidates.map((h) => h.toLowerCase())));
+        if (unique.length !== 1) return undefined;
+        return unique[0];
       };
       const toolCall = response.toolCalls.find((call) => call.args);
       const argsFromModel = (toolCall?.args ?? {}) as Record<string, any>;
@@ -477,6 +493,19 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
         const domain = pickLastUrlDomain(prompt);
         if (domain) {
           argsFromModel.client_name = domain;
+        }
+      }
+
+      // Ensure 'brief' (or 'summary') is populated when schema expects it and the prompt contains content.
+      const briefKey = (() => {
+        const props = toAny(node.tool.parameterSchema)?.properties || {};
+        if (props?.brief) return "brief";
+        if (props?.summary) return "summary";
+        return undefined;
+      })();
+      if (briefKey && (!argsFromModel[briefKey] || String(argsFromModel[briefKey]).trim() === "")) {
+        if (typeof prompt === "string" && prompt.trim().length > 0) {
+          argsFromModel[briefKey] = prompt;
         }
       }
 

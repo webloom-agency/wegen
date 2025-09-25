@@ -693,8 +693,9 @@ export async function POST(request: Request) {
               const activeAgent = (agent || autoDetectedAgent) as any;
               const agentContext = activeAgent ? `You are collaborating with agent '${activeAgent.name}'. Incorporate the agent's context in the summary.` : "";
               const argHygiene = `When constructing workflow tool arguments, derive values strictly from the user's latest prompt text and explicit mentions. Do NOT infer variables (e.g., client_name, email, topic, urls) from attachments or previous files; attachments are context only. If prompt and attachments conflict, prefer the prompt.`;
+              const ambiguityRule = `If required inputs like 'url' are ambiguous (e.g., multiple different URLs/domains detected), ask a short clarifying question and wait for the user's confirmation before invoking the workflow. If the workflow requires a 'brief' or 'summary', propose using the user's latest message as the brief and ask for confirmation. Do not block on long briefs; use them as provided.`;
               const avoidGeneric = `Do not use general-purpose code or HTTP tools before invoking the workflow.`;
-              return `Invoke the following workflow(s) exactly once this turn: ${list}. You may also use other tools (MCP or app defaults) as needed after invoking the workflow to gather additional information or perform follow-ups in the same turn. After the workflow completes, produce a brief assistant summary in the chat: highlight key findings, actionable next steps, and link to any generated artifacts. Do not re-invoke the same workflow in this turn. ${avoidGeneric} ${agentContext}\n\n${argHygiene}`.trim();
+              return `Invoke the following workflow(s) exactly once this turn: ${list}. You may also use other tools (MCP or app defaults) as needed after invoking the workflow to gather additional information or perform follow-ups in the same turn. After the workflow completes, produce a brief assistant summary in the chat: highlight key findings, actionable next steps, and link to any generated artifacts. Do not re-invoke the same workflow in this turn. ${avoidGeneric} ${agentContext}\n\n${argHygiene}\n\n${ambiguityRule}`.trim();
             })()
           : undefined;
 
@@ -828,6 +829,65 @@ export async function POST(request: Request) {
           })
           .unwrap();
 
+        // Detect ambiguity for selected workflow inputs (e.g., url/brief) and, if ambiguous,
+        // avoid exposing that workflow tool this turn so the model asks a clarification first.
+        let toolsForRun: Record<string, any> = vercelAITooles as Record<string, any>;
+        try {
+          const selectedMention = (selectedWorkflowMentions || [])[0] as any;
+          if (selectedMention) {
+            const toWorkflowToolKey = (human?: string) => {
+              if (!human) return undefined;
+              return String(human)
+                .replace(/[^a-zA-Z0-9\s]/g, "")
+                .trim()
+                .replace(/\s+/g, "-")
+                .toUpperCase();
+            };
+            const toolKey = toWorkflowToolKey(selectedMention.name || selectedMention.description);
+            const tool = toolKey ? (toolsForRun as any)[toolKey] : undefined;
+            if (tool && tool.parameters) {
+              const shape = (tool.parameters as any)?._def?.shape?.() || (tool.parameters as any)?.shape;
+              const hasUrlField = !!(shape && shape.url);
+              const lastUser = [...messages].reverse().find((m) => m.role === "user");
+              const parts: any[] = (lastUser?.parts as any[]) || [];
+              const lastUserText = (parts.find((p) => p?.type === "text")?.text || parts[0]?.text || "").toString();
+              // If brief/summary is required but the tool omitted it, we'll still proceed,
+              // but the system hint already instructs to ask for confirmation, and the
+              // tool parameter generation will default to using the latest user text.
+              const extractUniqueDomains = (text?: string): string[] => {
+                if (!text) return [];
+                const urlRegex = /https?:\/\/[^\s)]+/gi;
+                const urls = text.match(urlRegex) || [];
+                const bareDomainRegex = /\b((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,})\b/gi;
+                const bareDomains: string[] = [];
+                let m: RegExpExecArray | null;
+                while ((m = bareDomainRegex.exec(text)) !== null) {
+                  if (m[1]) bareDomains.push(m[1]);
+                }
+                const candidates: string[] = [];
+                for (const u of urls) {
+                  try {
+                    const host = new URL(u).hostname.replace(/^www\./i, "");
+                    candidates.push(host);
+                  } catch {}
+                }
+                for (const d of bareDomains) {
+                  const host = d.replace(/^www\./i, "");
+                  candidates.push(host);
+                }
+                return Array.from(new Set(candidates.map((h) => h.toLowerCase())));
+              };
+              const uniqueDomains = extractUniqueDomains(lastUserText);
+              const ambiguousUrl = hasUrlField && uniqueDomains.length !== 1;
+              const ambiguous = ambiguousUrl; // long briefs are allowed; don't treat length as ambiguous
+              if (ambiguous && toolKey && (toolKey in toolsForRun)) {
+                const entries = Object.entries(toolsForRun).filter(([name]) => name !== toolKey);
+                toolsForRun = Object.fromEntries(entries);
+              }
+            }
+          }
+        } catch {}
+
         const allowedMcpTools = Object.values(allowedMcpServers ?? {})
           .map((t: AllowedMCPServer) => t.tools)
           .flat();
@@ -851,7 +911,6 @@ export async function POST(request: Request) {
         // Let the model take as many steps as it needs; do not cap maxSteps
 
         // Allow the model to orchestrate multiple steps across tools/workflows as needed
-        const toolsForRun = vercelAITooles as Record<string, any>;
 
         // Post-process: if the selected tool expects a 'client_name' parameter,
         // and the user's latest prompt includes a domain (URL or bare domain),
@@ -887,7 +946,10 @@ export async function POST(request: Request) {
               candidates.push(host);
             }
             if (candidates.length === 0) return undefined;
-            return candidates[candidates.length - 1];
+            // Use unique domains only; if multiple different domains, treat as ambiguous
+            const unique = Array.from(new Set(candidates.map((h) => h.toLowerCase())));
+            if (unique.length !== 1) return undefined;
+            return unique[0];
           };
 
           const inferredDomain = pickLastDomain(lastUserText);
