@@ -724,7 +724,7 @@ export async function POST(request: Request) {
         ].join("\n");
 
         const forcedSummaryHint =
-          "Always end the turn with a final assistant text answer that synthesizes any tool outputs and directly answers the user's request. Write the answer in the same language as the user's last message (FR if the user wrote in French). Be concise but complete. If the user asked 'qui est …', provide a short description and key facts with links if available.";
+          "If a workflow was selected, you MUST invoke it in this turn unless inputs are ambiguous. After any tool/workflow calls, end the turn with a final assistant text answer that synthesizes outputs and directly answers the user's request in the user's language (FR if the user wrote in French). Be concise but complete. If the user asked 'qui est …', provide a short description and key facts with links if available.";
 
         const systemPrompt = mergeSystemPrompt(
           buildUserSystemPrompt(session.user, userPreferences, effectiveAgent),
@@ -832,6 +832,7 @@ export async function POST(request: Request) {
         // Detect ambiguity for selected workflow inputs (e.g., url/brief) and, if ambiguous,
         // avoid exposing that workflow tool this turn so the model asks a clarification first.
         let toolsForRun: Record<string, any> = vercelAITooles as Record<string, any>;
+        let isSelectedWorkflowAmbiguous = false;
         try {
           const selectedMention = (selectedWorkflowMentions || [])[0] as any;
           if (selectedMention) {
@@ -881,6 +882,7 @@ export async function POST(request: Request) {
               const ambiguousUrl = hasUrlField && uniqueDomains.length !== 1;
               const ambiguous = ambiguousUrl; // long briefs are allowed; don't treat length as ambiguous
               if (ambiguous && toolKey && (toolKey in toolsForRun)) {
+                isSelectedWorkflowAmbiguous = true;
                 const entries = Object.entries(toolsForRun).filter(([name]) => name !== toolKey);
                 toolsForRun = Object.fromEntries(entries);
               }
@@ -905,10 +907,30 @@ export async function POST(request: Request) {
         logger.info(`model: ${chatModel?.provider}/${chatModel?.model}`);
 
         // Always allow the model to choose when to call tools so it can finish with a text answer
-        const toolChoiceForRun = "auto" as const;
+        // If a workflow is selected and not ambiguous, require a tool call to ensure it triggers
+        const toolChoiceForRun: "auto" | "required" = (forceWorkflowOnly && !isSelectedWorkflowAmbiguous) ? "required" : "auto";
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         // Let the model take as many steps as it needs; do not cap maxSteps
+
+        // If forcing a workflow and it's not ambiguous, expose ONLY that workflow tool to the model
+        if (forceWorkflowOnly && !isSelectedWorkflowAmbiguous) {
+          try {
+            const selectedMention = (selectedWorkflowMentions || [])[0] as any;
+            const toWorkflowToolKey = (human?: string) => {
+              if (!human) return undefined;
+              return String(human)
+                .replace(/[^a-zA-Z0-9\s]/g, "")
+                .trim()
+                .replace(/\s+/g, "-")
+                .toUpperCase();
+            };
+            const toolKey = toWorkflowToolKey(selectedMention?.name || selectedMention?.description);
+            if (toolKey && (toolsForRun as any)[toolKey]) {
+              toolsForRun = { [toolKey]: (toolsForRun as any)[toolKey] } as Record<string, any>;
+            }
+          } catch {}
+        }
 
         // Allow the model to orchestrate multiple steps across tools/workflows as needed
 
