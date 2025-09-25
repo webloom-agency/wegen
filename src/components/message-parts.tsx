@@ -521,7 +521,25 @@ export const AssistMessagePart = memo(function AssistMessagePart({
           "opacity-50 border border-destructive bg-card rounded-lg": isError,
         })}
       >
-        <Markdown>{part.text}</Markdown>
+        {(() => {
+          const text = (part.text || "");
+          const trimmed = text.trim();
+          // Detect explicit HTML content only. Do NOT auto-wrap markdown in a viewer.
+          const looksLikeHtml = /<\s*!(?:doctype)|<\s*html|<\s*body|<\s*head|<\s*div[\s>]/i.test(trimmed);
+          const htmlFence = text.match(/```\s*html\s*([\s\S]*?)```/i);
+          const htmlStartIdx = text.search(/<\s*!(?:doctype)|<\s*html|<\s*head|<\s*body|<\s*div[\s>]/i);
+          const htmlFromFence = htmlFence ? htmlFence[1] : null;
+          const htmlFromStart = htmlStartIdx >= 0 ? text.slice(htmlStartIdx) : null;
+
+          if (htmlFromFence) {
+            return <HtmlPreview html={htmlFromFence} title="HTML Preview" />;
+          }
+          if (looksLikeHtml) {
+            const htmlPayload = htmlFromStart || trimmed;
+            return <HtmlPreview html={htmlPayload} title="HTML Preview" />;
+          }
+          return <Markdown>{text}</Markdown>;
+        })()}
       </div>
       {showActions && (
         <div className="flex w-full">
