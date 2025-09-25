@@ -24,6 +24,7 @@ import { jsonSchemaToZod } from "lib/json-schema-to-zod";
 import { toAny } from "lib/utils";
 import { AppError } from "lib/errors";
 import { AppDefaultToolkit } from "lib/ai/tools";
+import { DefaultToolName } from "lib/ai/tools";
 import { APP_DEFAULT_TOOL_KIT } from "lib/ai/tools/tool-kit";
 import { mcpClientsManager } from "lib/ai/mcp/mcp-manager";
 import { safeJsRun } from "lib/code-runner/safe-js-run";
@@ -534,11 +535,21 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
     throw new Error(`Tool '${node.tool.id}' is not executable`);
   }
 
-  const res = await exec(result.input.parameter as any, {
-    toolCallId: `${node.id}:${Date.now()}`,
-    abortSignal: new AbortController().signal,
-    messages: [],
-  });
+  const isSeelab = node.tool?.id === DefaultToolName.SeelabTextToImage;
+  let res: any;
+  try {
+    res = await exec(result.input.parameter as any, {
+      toolCallId: `${node.id}:${Date.now()}`,
+      abortSignal: new AbortController().signal,
+      messages: [],
+    });
+  } catch (err: any) {
+    if (isSeelab) {
+      // Non-blocking: return empty result so downstream nodes can continue
+      return { output: { tool_result: { imageUrls: [], imageCount: 0, error: err?.message || String(err) } } };
+    }
+    throw err;
+  }
   // Heuristic error detection for app tools:
   // - Respect conventional { isError, error } shapes
   // - Detect Exa-style per-item statuses that include errors
@@ -547,6 +558,11 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
     // Conventional tool error contract
     if (anyRes.isError) {
       const message = (anyRes.error && (anyRes.error.message || anyRes.error)) || "Tool execution error";
+      if (isSeelab) {
+        // Non-blocking: map error to empty output
+        const logs = anyRes.logs;
+        return { output: { tool_result: { imageUrls: [], imageCount: 0, error: String(message), ...(logs ? { logs } : {}) } } };
+      }
       throw new Error(String(message));
     }
     // Exa-style status errors
