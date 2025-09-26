@@ -949,9 +949,6 @@ export async function POST(request: Request) {
                   const nextArgs = args && typeof args === "object"
                     ? { ...args }
                     : {};
-                  // Enforce client_name rules only when relevant keys appear
-                  const hasRelevantKeys = Object.prototype.hasOwnProperty.call(nextArgs, "client_name") ||
-                    Object.prototype.hasOwnProperty.call(nextArgs, "url");
                   // Prefer client_name derived from explicit args.url when present; else from agent name
                   const deriveDomainFromUrl = (maybeUrl: any): string | undefined => {
                     try {
