@@ -973,12 +973,23 @@ export async function POST(request: Request) {
                   const fromAgentName = (effectiveAgent && (effectiveAgent as any).name)
                     ? String((effectiveAgent as any).name).trim()
                     : undefined;
+                  // Prefer URL domain over agent name when both exist
                   const candidate = fromArgsUrl || fromAgentName;
-                  if (candidate && (nextArgs.client_name == null || String(nextArgs.client_name).trim() === "")) {
-                    nextArgs.client_name = candidate;
-                  } else if (fromArgsUrl && nextArgs.client_name && String(nextArgs.client_name).toLowerCase() !== String(fromArgsUrl).toLowerCase()) {
-                    // If client_name conflicts with explicit URL-derived domain, drop it to avoid wrong client
-                    delete (nextArgs as any).client_name;
+                  const existing = (nextArgs as any)?.client_name;
+                  if (candidate) {
+                    // If missing or mismatched, force to the candidate
+                    if (
+                      existing == null ||
+                      String(existing).trim().length === 0 ||
+                      String(existing).toLowerCase() !== String(candidate).toLowerCase()
+                    ) {
+                      nextArgs.client_name = candidate;
+                    }
+                  } else {
+                    // No URL and no agent → never pass a client_name
+                    if (existing != null) {
+                      delete (nextArgs as any).client_name;
+                    }
                   }
                   return originalExecute(nextArgs, ctx);
                 },
