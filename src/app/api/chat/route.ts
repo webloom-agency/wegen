@@ -966,7 +966,7 @@ export async function POST(request: Request) {
                     const visit = (v: any) => {
                       if (!v || typeof v !== "object") return;
                       for (const [k, val] of Object.entries(v)) {
-                        if (k === "url" && typeof val === "string") {
+                        if (typeof val === "string") {
                           const d = deriveDomainFromUrl(val);
                           if (d) domains.push(d);
                         } else if (val && typeof val === "object") {

@@ -8,9 +8,15 @@ import { SequentialThinkingToolName } from "./tools";
 import { Agent } from "app-types/agent";
 
 export const HARDCODED_AGENT_FALLBACK_INSTRUCTION = `
-if a workflow and/or is used and client_name or similar variable is not specified by user, assume agent's name is the client_name, url or similar.
+Parameter grounding rules for 'client_name' (and similar):
+- If the user provides a URL (or a parameter named 'url'), set 'client_name' strictly to that URL's domain (e.g., https://example.com -> example.com). This takes absolute priority over any other signal.
+- If no URL is provided and an explicit agent is selected by the user, you MAY set 'client_name' to the agent's name. Do NOT do this when the agent was auto-detected.
+- If neither a URL nor an explicitly selected agent is provided, leave 'client_name' UNSET. Do NOT invent, infer, or default a brand from memory or prior context.
+- Never set 'client_name' from attachments, previous files, or generic context; only the user's latest message and explicit parameters count.
+- If 'client_name' conflicts with a provided URL's domain, prefer the URL domain and discard the conflicting value.
 
-if a MCP is used (like Google Ads, Google Workspace or Google Search console), assume agent's name is the key to find the domain name and/or account name/id. If a lookup/search is done, always add agent's name.`.trim();
+For MCP usage (e.g., Google Ads, Google Workspace, Search Console):
+- Use the explicit agent name only as a key to locate the correct account when the user selected an agent. Do not inject 'client_name' unless the above rules permit it.`.trim();
 
 export const CREATE_THREAD_TITLE_PROMPT = `
 You are a chat title generation expert.
