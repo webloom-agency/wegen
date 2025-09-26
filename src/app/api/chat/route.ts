@@ -936,47 +936,9 @@ export async function POST(request: Request) {
         const maxStepsForRun = (forceWorkflowOnly && !isSelectedWorkflowAmbiguous) ? 3 : 5;
 
         // Post-process: if the selected tool expects a 'client_name' parameter,
-        // and the user's latest prompt includes a domain (URL or bare domain),
-        // fill args.client_name from that domain when the model omitted it.
+        // only derive it from an explicit 'url' field or the active agent's name.
+        // Never infer from free text.
         const augmentToolsWithClientName = (tools: Record<string, any>): Record<string, any> => {
-          // Extract last user text
-          const lastUserText = (() => {
-            const lastUser = [...messages].reverse().find((m) => m.role === "user");
-            const parts: any[] = (lastUser?.parts as any[]) || [];
-            const t = parts.find((p) => p?.type === "text")?.text || parts[0]?.text;
-            return typeof t === "string" ? t : "";
-          })();
-
-          const pickLastDomain = (text?: string): string | undefined => {
-            if (!text) return undefined;
-            const urlRegex = /https?:\/\/[^\s)]+/gi;
-            const urls = text.match(urlRegex) || [];
-            const bareDomainRegex = /\b((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,})\b/gi;
-            const bareDomains: string[] = [];
-            let m: RegExpExecArray | null;
-            while ((m = bareDomainRegex.exec(text)) !== null) {
-              if (m[1]) bareDomains.push(m[1]);
-            }
-            const candidates: string[] = [];
-            for (const u of urls) {
-              try {
-                const host = new URL(u).hostname.replace(/^www\./i, "");
-                candidates.push(host);
-              } catch {}
-            }
-            for (const d of bareDomains) {
-              const host = d.replace(/^www\./i, "");
-              candidates.push(host);
-            }
-            if (candidates.length === 0) return undefined;
-            // Use unique domains only; if multiple different domains, treat as ambiguous
-            const unique = Array.from(new Set(candidates.map((h) => h.toLowerCase())));
-            if (unique.length !== 1) return undefined;
-            return unique[0];
-          };
-
-          const inferredDomain = pickLastDomain(lastUserText);
-
           const wrapped: Record<string, any> = {};
           for (const [name, tool] of Object.entries(tools)) {
             const originalExecute = (tool as any)?.execute;
@@ -996,7 +958,7 @@ export async function POST(request: Request) {
                   const nextArgs = args && typeof args === "object"
                     ? { ...args }
                     : {};
-                  // Prefer client_name derived from explicit args.url when present; else unique inferred domain
+                  // Prefer client_name derived from explicit args.url when present; else from agent name
                   const deriveDomainFromUrl = (maybeUrl: any): string | undefined => {
                     try {
                       if (typeof maybeUrl !== "string" || maybeUrl.trim().length === 0) return undefined;
@@ -1008,7 +970,10 @@ export async function POST(request: Request) {
                     }
                   };
                   const fromArgsUrl = deriveDomainFromUrl((nextArgs as any)?.url);
-                  const candidate = fromArgsUrl || inferredDomain;
+                  const fromAgentName = (effectiveAgent && (effectiveAgent as any).name)
+                    ? String((effectiveAgent as any).name).trim()
+                    : undefined;
+                  const candidate = fromArgsUrl || fromAgentName;
                   if (candidate && (nextArgs.client_name == null || String(nextArgs.client_name).trim() === "")) {
                     nextArgs.client_name = candidate;
                   } else if (fromArgsUrl && nextArgs.client_name && String(nextArgs.client_name).toLowerCase() !== String(fromArgsUrl).toLowerCase()) {

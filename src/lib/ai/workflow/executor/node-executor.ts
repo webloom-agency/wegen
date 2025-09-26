@@ -450,47 +450,11 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
         ...((node.model?.provider === "openai" && node.model?.model === "gpt-5") ? { temperature: 1 } : {}),
       });
 
-      // Prefer prompt-derived variables over anything else (e.g., attachment hints)
-      const pickLastUrlDomain = (text?: string): string | undefined => {
-        if (!text) return undefined;
-        // 1) Find all full URLs
-        const urlRegex = /https?:\/\/[^\s)]+/gi;
-        const urls = text.match(urlRegex) || [];
-
-        // 2) Also detect bare domains (e.g., "obat.fr")
-        // Capture hostname-like tokens; exclude trailing punctuation
-        const bareDomainRegex = /\b((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,})\b/gi;
-        const bareDomains: string[] = [];
-        let m: RegExpExecArray | null;
-        while ((m = bareDomainRegex.exec(text)) !== null) {
-          if (m[1]) bareDomains.push(m[1]);
-        }
-
-        // Merge keeping order of appearance
-        const candidates: string[] = [];
-        // Map URLs -> hostnames
-        for (const u of urls) {
-          try {
-            const host = new URL(u).hostname.replace(/^www\./i, "");
-            candidates.push(host);
-          } catch {}
-        }
-        // Add bare domains
-        for (const d of bareDomains) {
-          const host = d.replace(/^www\./i, "");
-          candidates.push(host);
-        }
-
-        if (candidates.length === 0) return undefined;
-        // Only infer when exactly one unique domain is present; otherwise ambiguous
-        const unique = Array.from(new Set(candidates.map((h) => h.toLowerCase())));
-        if (unique.length !== 1) return undefined;
-        return unique[0];
-      };
+      // Removed prompt-based inference; client_name should not be inferred from prompt text
       const toolCall = response.toolCalls.find((call) => call.args);
       const argsFromModel = (toolCall?.args ?? {}) as Record<string, any>;
       if (hasClientNameField) {
-        // Prefer client_name derived from explicit args.url when provided
+        // Only set client_name from explicit args.url; do not infer from prompt
         const deriveDomainFromUrl = (maybeUrl: any): string | undefined => {
           try {
             if (typeof maybeUrl !== "string" || maybeUrl.trim().length === 0) return undefined;
@@ -502,14 +466,12 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
           }
         };
         const fromArgsUrl = deriveDomainFromUrl((argsFromModel as any)?.url);
-        const fromPrompt = pickLastUrlDomain(prompt);
-        const candidate = fromArgsUrl || fromPrompt;
-        if (candidate) {
-          argsFromModel.client_name = candidate;
+        if (fromArgsUrl) {
+          argsFromModel.client_name = fromArgsUrl;
         } else {
           // If model proposed a client_name that conflicts with explicit URL, drop it
           const existing = (argsFromModel as any)?.client_name;
-          if (existing && fromArgsUrl && String(existing).toLowerCase() !== String(fromArgsUrl).toLowerCase()) {
+          if (existing) {
             delete (argsFromModel as any).client_name;
           }
         }
