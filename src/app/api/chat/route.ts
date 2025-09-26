@@ -952,8 +952,7 @@ export async function POST(request: Request) {
                   // Enforce client_name rules only when relevant keys appear
                   const hasRelevantKeys = Object.prototype.hasOwnProperty.call(nextArgs, "client_name") ||
                     Object.prototype.hasOwnProperty.call(nextArgs, "url");
-                  if (hasRelevantKeys) {
-                    // Prefer client_name derived from explicit args.url when present; else from agent name
+                  // Prefer client_name derived from explicit args.url when present; else from agent name
                   const deriveDomainFromUrl = (maybeUrl: any): string | undefined => {
                     try {
                       if (typeof maybeUrl !== "string" || maybeUrl.trim().length === 0) return undefined;
@@ -964,28 +963,57 @@ export async function POST(request: Request) {
                       return undefined;
                     }
                   };
-                  const fromArgsUrl = deriveDomainFromUrl((nextArgs as any)?.url);
-                  const fromAgentName = (effectiveAgent && (effectiveAgent as any).name)
-                    ? String((effectiveAgent as any).name).trim()
+                  // Deep-scan args for any url fields to derive a consistent domain
+                  const collectDomainsFromArgs = (obj: any): string[] => {
+                    const domains: string[] = [];
+                    const visit = (v: any) => {
+                      if (!v || typeof v !== "object") return;
+                      for (const [k, val] of Object.entries(v)) {
+                        if (k === "url" && typeof val === "string") {
+                          const d = deriveDomainFromUrl(val);
+                          if (d) domains.push(d);
+                        } else if (val && typeof val === "object") {
+                          visit(val);
+                        }
+                      }
+                    };
+                    visit(obj);
+                    return Array.from(new Set(domains.map((d) => d.toLowerCase())));
+                  };
+                  const deepDomains = collectDomainsFromArgs(nextArgs);
+                  const topUrlDomain = deriveDomainFromUrl((nextArgs as any)?.url);
+                  const domainFromArgs = topUrlDomain || (deepDomains.length === 1 ? deepDomains[0] : undefined);
+                  const fromAgentName = (agent && (agent as any).name)
+                    ? String((agent as any).name).trim()
                     : undefined;
-                  // Prefer URL domain over agent name when both exist
-                  const candidate = fromArgsUrl || fromAgentName;
-                  const existing = (nextArgs as any)?.client_name;
+                  // Prefer URL/domain from args; otherwise use explicitly selected agent. No prompt inference.
+                  const candidate = domainFromArgs || fromAgentName;
+                  const enforceClientNameDeep = (obj: any, value: string | undefined) => {
+                    const stack: any[] = [obj];
+                    while (stack.length) {
+                      const cur = stack.pop();
+                      if (!cur || typeof cur !== "object") continue;
+                      for (const key of Object.keys(cur)) {
+                        const v = (cur as any)[key];
+                        if (key === "client_name") {
+                          if (value) {
+                            (cur as any)[key] = value;
+                          } else {
+                            delete (cur as any)[key];
+                          }
+                          continue;
+                        }
+                        if (v && typeof v === "object") stack.push(v);
+                      }
+                    }
+                  };
+                  // Enforce everywhere; then also ensure top-level presence when candidate exists
+                  enforceClientNameDeep(nextArgs, candidate);
                   if (candidate) {
-                    // If missing or mismatched, force to the candidate
-                    if (
-                      existing == null ||
-                      String(existing).trim().length === 0 ||
-                      String(existing).toLowerCase() !== String(candidate).toLowerCase()
-                    ) {
-                      nextArgs.client_name = candidate;
+                    const existing = (nextArgs as any)?.client_name;
+                    if (existing == null || String(existing).trim().length === 0) {
+                      (nextArgs as any).client_name = candidate;
                     }
-                  } else {
-                    // No URL and no agent → never pass a client_name
-                    if (existing != null) {
-                      delete (nextArgs as any).client_name;
-                    }
-                  }
                   }
                   return originalExecute(nextArgs, ctx);
                 },
@@ -1163,6 +1191,83 @@ export async function POST(request: Request) {
                 id: assistantMessage.id,
                 parts: (finalParts as UIMessage["parts"]).map(
                   (v) => {
+                    // Normalize displayed tool args to reflect enforced client_name rules
+                    if (
+                      v.type == "tool-invocation" &&
+                      v.toolInvocation &&
+                      typeof (v as any).toolInvocation.args === "object"
+                    ) {
+                      try {
+                        const normalizeArgs = (inputArgs: any): any => {
+                          const next = inputArgs && typeof inputArgs === "object" ? { ...inputArgs } : {};
+                          const deriveDomainFromUrl = (maybeUrl: any): string | undefined => {
+                            try {
+                              if (typeof maybeUrl !== "string" || maybeUrl.trim().length === 0) return undefined;
+                              const raw = maybeUrl.trim();
+                              const url = raw.startsWith("http") ? new URL(raw) : new URL(`https://${raw}`);
+                              return url.hostname.replace(/^www\./i, "");
+                            } catch {
+                              return undefined;
+                            }
+                          };
+                          const collectDomainsFromArgs = (obj: any): string[] => {
+                            const domains: string[] = [];
+                            const visit = (v: any) => {
+                              if (!v || typeof v !== "object") return;
+                              for (const [k, val] of Object.entries(v)) {
+                                if (k === "url" && typeof val === "string") {
+                                  const d = deriveDomainFromUrl(val);
+                                  if (d) domains.push(d);
+                                } else if (val && typeof val === "object") {
+                                  visit(val);
+                                }
+                              }
+                            };
+                            visit(obj);
+                            return Array.from(new Set(domains.map((d) => d.toLowerCase())));
+                          };
+                          const deepDomains = collectDomainsFromArgs(next);
+                          const topUrlDomain = deriveDomainFromUrl((next as any)?.url);
+                          const domainFromArgs = topUrlDomain || (deepDomains.length === 1 ? deepDomains[0] : undefined);
+                          const fromAgentName = (agent && (agent as any).name) ? String((agent as any).name).trim() : undefined;
+                          const candidate = domainFromArgs || fromAgentName;
+                          const enforceClientNameDeep = (obj: any, value: string | undefined) => {
+                            const stack: any[] = [obj];
+                            while (stack.length) {
+                              const cur = stack.pop();
+                              if (!cur || typeof cur !== "object") continue;
+                              for (const key of Object.keys(cur)) {
+                                const val = (cur as any)[key];
+                                if (key === "client_name") {
+                                  if (value) {
+                                    (cur as any)[key] = value;
+                                  } else {
+                                    delete (cur as any)[key];
+                                  }
+                                  continue;
+                                }
+                                if (val && typeof val === "object") stack.push(val);
+                              }
+                            }
+                          };
+                          if (!candidate) enforceClientNameDeep(next, undefined);
+                          if (candidate) {
+                            enforceClientNameDeep(next, candidate);
+                            if (next.client_name == null || String(next.client_name).trim().length === 0) {
+                              next.client_name = candidate;
+                            }
+                          }
+                          return next;
+                        };
+                        return {
+                          ...v,
+                          toolInvocation: {
+                            ...v.toolInvocation,
+                            args: normalizeArgs((v as any).toolInvocation.args),
+                          },
+                        } as any;
+                      } catch {}
+                    }
                     if (
                       v.type == "tool-invocation" &&
                       v.toolInvocation.state == "result" &&
