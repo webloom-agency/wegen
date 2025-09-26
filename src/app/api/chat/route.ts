@@ -965,7 +965,8 @@ export async function POST(request: Request) {
                     const domains: string[] = [];
                     const visit = (v: any) => {
                       if (!v || typeof v !== "object") return;
-                      for (const [k, val] of Object.entries(v)) {
+                      for (const entry of Object.entries(v)) {
+                        const val = entry[1];
                         if (typeof val === "string") {
                           const d = deriveDomainFromUrl(val);
                           if (d) domains.push(d);
@@ -1211,8 +1212,10 @@ export async function POST(request: Request) {
                             const domains: string[] = [];
                             const visit = (v: any) => {
                               if (!v || typeof v !== "object") return;
-                              for (const [k, val] of Object.entries(v)) {
-                                if (k === "url" && typeof val === "string") {
+                              for (const entry of Object.entries(v)) {
+                                const key = entry[0];
+                                const val = entry[1];
+                                if (key === "url" && typeof val === "string") {
                                   const d = deriveDomainFromUrl(val);
                                   if (d) domains.push(d);
                                 } else if (val && typeof val === "object") {
