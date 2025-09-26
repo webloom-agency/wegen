@@ -942,23 +942,18 @@ export async function POST(request: Request) {
           const wrapped: Record<string, any> = {};
           for (const [name, tool] of Object.entries(tools)) {
             const originalExecute = (tool as any)?.execute;
-            const zodParams = (tool as any)?.parameters;
-            const hasClientNameField = (() => {
-              try {
-                const shape = (zodParams as any)?._def?.shape?.() || (zodParams as any)?.shape;
-                return !!(shape && shape.client_name);
-              } catch {
-                return false;
-              }
-            })();
-            if (typeof originalExecute === "function" && hasClientNameField) {
+            if (typeof originalExecute === "function") {
               wrapped[name] = {
                 ...tool,
                 execute: async (args: any, ctx: any) => {
                   const nextArgs = args && typeof args === "object"
                     ? { ...args }
                     : {};
-                  // Prefer client_name derived from explicit args.url when present; else from agent name
+                  // Enforce client_name rules only when relevant keys appear
+                  const hasRelevantKeys = Object.prototype.hasOwnProperty.call(nextArgs, "client_name") ||
+                    Object.prototype.hasOwnProperty.call(nextArgs, "url");
+                  if (hasRelevantKeys) {
+                    // Prefer client_name derived from explicit args.url when present; else from agent name
                   const deriveDomainFromUrl = (maybeUrl: any): string | undefined => {
                     try {
                       if (typeof maybeUrl !== "string" || maybeUrl.trim().length === 0) return undefined;
@@ -990,6 +985,7 @@ export async function POST(request: Request) {
                     if (existing != null) {
                       delete (nextArgs as any).client_name;
                     }
+                  }
                   }
                   return originalExecute(nextArgs, ctx);
                 },
