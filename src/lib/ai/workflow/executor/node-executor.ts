@@ -490,23 +490,60 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
       const toolCall = response.toolCalls.find((call) => call.args);
       const argsFromModel = (toolCall?.args ?? {}) as Record<string, any>;
       if (hasClientNameField) {
-        const domain = pickLastUrlDomain(prompt);
-        if (domain) {
-          argsFromModel.client_name = domain;
+        // Prefer client_name derived from explicit args.url when provided
+        const deriveDomainFromUrl = (maybeUrl: any): string | undefined => {
+          try {
+            if (typeof maybeUrl !== "string" || maybeUrl.trim().length === 0) return undefined;
+            const raw = maybeUrl.trim();
+            const url = raw.startsWith("http") ? new URL(raw) : new URL(`https://${raw}`);
+            return url.hostname.replace(/^www\./i, "");
+          } catch {
+            return undefined;
+          }
+        };
+        const fromArgsUrl = deriveDomainFromUrl((argsFromModel as any)?.url);
+        const fromPrompt = pickLastUrlDomain(prompt);
+        const candidate = fromArgsUrl || fromPrompt;
+        if (candidate) {
+          argsFromModel.client_name = candidate;
+        } else {
+          // If model proposed a client_name that conflicts with explicit URL, drop it
+          const existing = (argsFromModel as any)?.client_name;
+          if (existing && fromArgsUrl && String(existing).toLowerCase() !== String(fromArgsUrl).toLowerCase()) {
+            delete (argsFromModel as any).client_name;
+          }
         }
       }
 
-      // Ensure 'brief' (or 'summary') is populated when schema expects it and the prompt contains content.
+      // Ensure 'brief' (or 'summary') is populated only when the user's text looks like an actual brief
       const briefKey = (() => {
         const props = toAny(node.tool.parameterSchema)?.properties || {};
         if (props?.brief) return "brief";
         if (props?.summary) return "summary";
         return undefined;
       })();
-      if (briefKey && (!argsFromModel[briefKey] || String(argsFromModel[briefKey]).trim() === "")) {
-        if (typeof prompt === "string" && prompt.trim().length > 0) {
-          argsFromModel[briefKey] = prompt;
-        }
+      const looksLikeBrief = (text?: string): boolean => {
+        if (!text) return false;
+        const t = text.trim();
+        if (t.length === 0) return false;
+        const urlRegex = /https?:\/\/[^\s)]+/gi;
+        const stripped = t.replace(urlRegex, "").trim();
+        const wordCount = stripped.split(/\s+/).filter(Boolean).length;
+        const sentenceCount = (stripped.match(/[.!?]/g) || []).length + (stripped.match(/\n/g) || []).length;
+        const hasStructure = /\b(brief|contexte|context|instruction|instructions|objectif|objectifs|goals?|specs?|sp[ée]cifications?)\b/i.test(
+          stripped,
+        );
+        const isLong = stripped.length >= 400 || wordCount >= 60 || sentenceCount >= 2;
+        // If text is very short and mostly URL/topic, do not treat as brief
+        const isVeryShort = stripped.length < 120 && wordCount < 25 && sentenceCount < 2;
+        return (hasStructure || isLong) && !isVeryShort;
+      };
+      if (
+        briefKey &&
+        (!argsFromModel[briefKey] || String(argsFromModel[briefKey]).trim() === "") &&
+        looksLikeBrief(prompt)
+      ) {
+        argsFromModel[briefKey] = prompt;
       }
 
       result.input = {

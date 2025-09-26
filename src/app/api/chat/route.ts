@@ -693,7 +693,7 @@ export async function POST(request: Request) {
               const activeAgent = (agent || autoDetectedAgent) as any;
               const agentContext = activeAgent ? `You are collaborating with agent '${activeAgent.name}'. Incorporate the agent's context in the summary.` : "";
               const argHygiene = `When constructing workflow tool arguments, derive values strictly from the user's latest prompt text and explicit mentions. Do NOT infer variables (e.g., client_name, email, topic, urls) from attachments or previous files; attachments are context only. If prompt and attachments conflict, prefer the prompt.`;
-              const ambiguityRule = `If required inputs like 'url' are ambiguous (e.g., multiple different URLs/domains detected), ask a short clarifying question and wait for the user's confirmation before invoking the workflow. If the workflow requires a 'brief' or 'summary', propose using the user's latest message as the brief and ask for confirmation. Do not block on long briefs; use them as provided.`;
+              const ambiguityRule = `If required inputs like 'url' are ambiguous (e.g., multiple different URLs/domains detected), ask a short clarifying question and wait for the user's confirmation before invoking the workflow. If the workflow requires a 'brief' or 'summary', only propose using the user's latest message as the brief when it appears to be an actual brief (long or structured); otherwise ask the user to provide a brief (or proceed with an empty brief). Do not block on long briefs; use them as provided.`;
               const avoidGeneric = `Do not use general-purpose code or HTTP tools before invoking the workflow.`;
               return `Invoke the following workflow(s) exactly once this turn: ${list}. You may also use other tools (MCP or app defaults) as needed after invoking the workflow to gather additional information or perform follow-ups in the same turn. After the workflow completes, produce a brief assistant summary in the chat: highlight key findings, actionable next steps, and link to any generated artifacts. Do not re-invoke the same workflow in this turn. ${avoidGeneric} ${agentContext}\n\n${argHygiene}\n\n${ambiguityRule}`.trim();
             })()
@@ -976,7 +976,6 @@ export async function POST(request: Request) {
           };
 
           const inferredDomain = pickLastDomain(lastUserText);
-          if (!inferredDomain) return tools;
 
           const wrapped: Record<string, any> = {};
           for (const [name, tool] of Object.entries(tools)) {
@@ -997,8 +996,24 @@ export async function POST(request: Request) {
                   const nextArgs = args && typeof args === "object"
                     ? { ...args }
                     : {};
-                  if (nextArgs.client_name == null || String(nextArgs.client_name).trim() === "") {
-                    nextArgs.client_name = inferredDomain;
+                  // Prefer client_name derived from explicit args.url when present; else unique inferred domain
+                  const deriveDomainFromUrl = (maybeUrl: any): string | undefined => {
+                    try {
+                      if (typeof maybeUrl !== "string" || maybeUrl.trim().length === 0) return undefined;
+                      const raw = maybeUrl.trim();
+                      const url = raw.startsWith("http") ? new URL(raw) : new URL(`https://${raw}`);
+                      return url.hostname.replace(/^www\./i, "");
+                    } catch {
+                      return undefined;
+                    }
+                  };
+                  const fromArgsUrl = deriveDomainFromUrl((nextArgs as any)?.url);
+                  const candidate = fromArgsUrl || inferredDomain;
+                  if (candidate && (nextArgs.client_name == null || String(nextArgs.client_name).trim() === "")) {
+                    nextArgs.client_name = candidate;
+                  } else if (fromArgsUrl && nextArgs.client_name && String(nextArgs.client_name).toLowerCase() !== String(fromArgsUrl).toLowerCase()) {
+                    // If client_name conflicts with explicit URL-derived domain, drop it to avoid wrong client
+                    delete (nextArgs as any).client_name;
                   }
                   return originalExecute(nextArgs, ctx);
                 },
