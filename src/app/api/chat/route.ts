@@ -559,7 +559,7 @@ export async function POST(request: Request) {
             const dataSourcePatterns = [
               { keywords: ['search console', 'gsc', 'google search console', 'mots-clés', 'keywords'], intent: 'search-analytics' },
               { keywords: ['google ads', 'adwords', 'ads', 'publicité', 'advertising'], intent: 'advertising-data' },
-              { keywords: ['drive', 'google drive', 'workspace', 'docs', 'sheets', 'fathom'], intent: 'document-storage' },
+              { keywords: ['drive', 'google drive', 'workspace', 'docs', 'sheets', 'fathom', 'search drive', 'drive files', 'google docs', 'google sheets', 'gdrive'], intent: 'document-storage' },
               { keywords: ['analytics', 'ga', 'google analytics', 'traffic'], intent: 'web-analytics' },
               { keywords: ['youtube', 'video', 'channel'], intent: 'video-platform' },
               { keywords: ['facebook', 'meta', 'instagram', 'social'], intent: 'social-media' },
@@ -610,7 +610,11 @@ export async function POST(request: Request) {
               // Boost score for semantic matches
               if (intents.includes('search-analytics') && (serverName.includes('search') || serverName.includes('console') || toolName.includes('search'))) score += 20;
               if (intents.includes('advertising-data') && (serverName.includes('ads') || serverName.includes('google') || toolName.includes('ads'))) score += 20;
-              if (intents.includes('document-storage') && (serverName.includes('drive') || serverName.includes('workspace') || toolName.includes('drive'))) score += 20;
+              if (intents.includes('document-storage') && (
+                serverName.includes('drive') || serverName.includes('workspace') || serverName.includes('google') ||
+                toolName.includes('drive') || toolName.includes('workspace') || toolName.includes('search_drive') || 
+                toolName.includes('files') || toolName.includes('docs') || toolName.includes('sheets')
+              )) score += 20;
               if (intents.includes('web-analytics') && (serverName.includes('analytics') || toolName.includes('analytics'))) score += 20;
               if (intents.includes('ecommerce') && (serverName.includes('shopify') || toolName.includes('product'))) score += 20;
               
@@ -876,6 +880,11 @@ export async function POST(request: Request) {
 
         const forcedSummaryHint =
           "If a workflow was selected, you MUST invoke it in this turn unless inputs are ambiguous. After any tool/workflow calls, end the turn with a final assistant text answer that synthesizes outputs and directly answers the user's request in the user's language (FR if the user wrote in French). Be concise but complete. If the user asked 'qui est …', provide a short description and key facts with links if available.";
+        
+        // Determine if this is a complex query that would benefit from thinking mode
+        const isComplexQuery = needsMultiStepOrchestration || 
+                              selectedWorkflowMentions.length > 0 ||
+                              Object.keys({ ...MCP_TOOLS, ...WORKFLOW_TOOLS }).length > 5;
             
             const systemPrompt = mergeSystemPrompt(
           buildUserSystemPrompt(session.user, userPreferences, effectiveAgent),
@@ -885,9 +894,10 @@ export async function POST(request: Request) {
           orchestrationPolicy,
           forcedSummaryHint,
               !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
-          (!supportToolCall ||
+            (!supportToolCall ||
             ["openai", "anthropic"].includes(chatModel?.provider ?? "")) &&
             thinking &&
+            isComplexQuery &&
             buildThinkingSystemPrompt(supportToolCall),
         );
 
@@ -901,7 +911,8 @@ export async function POST(request: Request) {
             };
           })
           .map((t) => {
-            const allowThinkingTool = supportToolCall && thinking;
+            // Only add thinking tool for complex queries that would benefit from planning
+            const allowThinkingTool = supportToolCall && thinking && isComplexQuery;
             if (allowThinkingTool) {
               return {
                 ...t,
@@ -1172,6 +1183,10 @@ export async function POST(request: Request) {
         
         logger.info(
           `🔧 FINAL DECISION: shouldForceWorkflowOnly will be ${forceWorkflowOnly && !needsMultiStepOrchestration}, maxSteps will be ${needsMultiStepOrchestration ? 6 : (forceWorkflowOnly && !needsMultiStepOrchestration) ? 3 : 5}`,
+        );
+        
+        logger.info(
+          `🧠 THINKING MODE: thinking=${thinking}, isComplexQuery=${isComplexQuery}, willUseThinking=${thinking && isComplexQuery}`,
         );
 
         if (needsMultiStepOrchestration) {
