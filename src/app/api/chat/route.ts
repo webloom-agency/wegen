@@ -800,7 +800,12 @@ export async function POST(request: Request) {
               const argHygiene = `When constructing workflow tool arguments, derive values strictly from the user's latest prompt text and explicit mentions. Do NOT infer variables (e.g., client_name, email, topic, urls) from attachments or previous files; attachments are context only. If prompt and attachments conflict, prefer the prompt.`;
               const ambiguityRule = `If required inputs like 'url' are ambiguous (e.g., multiple different URLs/domains detected), ask a short clarifying question and wait for the user's confirmation before invoking the workflow. If the workflow requires a 'brief' or 'summary', only propose using the user's latest message as the brief when it appears to be an actual brief (long or structured); otherwise ask the user to provide a brief (or proceed with an empty brief). Do not block on long briefs; use them as provided.`;
               const sequencingRule = needsMultiStepOrchestration 
-                ? `CRITICAL: This query requires data from multiple sources. You MUST first gather all required data using available MCP tools BEFORE invoking the workflow. The workflow needs real data as input, not placeholder data. Sequence: 1) Get data from relevant MCP servers, 2) Use that data as input for the workflow, 3) Present results.`
+                ? `CRITICAL ORCHESTRATION SEQUENCE: This query requires data from multiple sources. You MUST follow this exact sequence:
+                   1) FIRST: Gather all required data using available MCP tools (Google Search Console, Google Ads, etc.)
+                   2) SECOND: Analyze and process the collected data if needed
+                   3) THIRD: Use the real data as input for the workflow (${selectedWorkflowMentions[0]?.name || 'detected workflow'})
+                   4) FOURTH: Present the final results
+                   DO NOT skip steps or use placeholder data. The workflow requires actual data from MCP tools.`
                 : `Do not use general-purpose code or HTTP tools before invoking the workflow.`;
               return `Invoke the following workflow(s) exactly once this turn: ${list}. ${sequencingRule} You may also use other tools (MCP or app defaults) as needed to gather data or perform follow-ups. After the workflow completes, produce a brief assistant summary in the chat: highlight key findings, actionable next steps, and link to any generated artifacts. Do not re-invoke the same workflow in this turn. ${agentContext}\n\n${argHygiene}\n\n${ambiguityRule}`.trim();
             })()
@@ -832,10 +837,12 @@ export async function POST(request: Request) {
           "- Adapt to new MCP tools automatically without hardcoded patterns",
           "",
           "🔄 MULTI-STEP ORCHESTRATION:",
-          "- For complex queries requiring multiple data sources, plan the optimal sequence:",
-          "  * Data gathering steps first (any MCP tools: analytics, advertising, storage, etc.)",
-          "  * Analysis/processing steps second (compare datasets, define personas, analyze trends)",
-          "  * Output generation steps last (create tables, generate images, summarize findings)",
+          "- For complex queries requiring multiple data sources, ALWAYS follow this sequence:",
+          "  1. DATA GATHERING: Use MCP tools first (Google Search Console, Google Ads, Analytics, etc.)",
+          "  2. DATA PROCESSING: Analyze, compare, or transform the collected data if needed",
+          "  3. WORKFLOW EXECUTION: Use workflows with the real data as input (never placeholder data)",
+          "  4. FINAL OUTPUT: Present results with tables, charts, or summaries as requested",
+          "- CRITICAL: Never skip data gathering steps - workflows need real data to function properly",
           "- Execute steps in logical dependency order - don't call tools with incomplete data",
           "- Chain tool outputs intelligently - use results from step N as inputs for step N+1",
           "- Automatically adapt to new MCP servers and their capabilities",
@@ -843,6 +850,7 @@ export async function POST(request: Request) {
           "📊 EXAMPLE ORCHESTRATIONS:",
           "- 'compare Google Ads vs Search Console keywords' → Get Ads data → Get GSC data → Compare → Summarize",
           "- 'volume de recherche des mots-clés GSC vs Ads' → Get GSC data → Get Ads data → Run volume-de-recherche workflow → Present table",
+          "- 'donne moi le volume de recherche des top mots-clés search console vs google ads' → Get Search Console data → Get Google Ads data → Run volume-de-recherche workflow → Create comparative table",
           "- 'web search Nike + create personas + generate images' → Web search → Define personas → Generate 4 images → Present results",
           "- 'Search Console data in table format' → Get GSC data → Create table → Present with insights",
           "",
@@ -850,6 +858,8 @@ export async function POST(request: Request) {
           "- ALWAYS gather data from MCP tools BEFORE running workflows that need that data",
           "- Workflows need real data as input - get it from relevant MCP servers first",
           "- Don't run workflows with placeholder data - ensure data dependencies are satisfied",
+          "- Workflows can also generate data that feeds into subsequent MCP tool calls",
+          "- Support bidirectional flow: MCP → Workflow → MCP or Workflow → MCP → Analysis",
           "- Automatically detect which MCP servers provide the required data types",
           "",
           "✅ EXECUTION RULES:",
@@ -1072,15 +1082,41 @@ export async function POST(request: Request) {
         const uniqueCapabilities = Array.from(new Set(detectedCapabilities));
         
         // FUTURE-PROOF: Multi-step orchestration detection for any MCP + workflow combination
-        needsMultiStepOrchestration = uniqueCapabilities.length > 1 && 
-          uniqueCapabilities.some(cap => 
-            // Data source capabilities that need to be gathered before workflows
-            ['google-ads', 'google-search-console', 'google-workspace', 'web-search', 'web-analytics', 'ecommerce', 'code-repository', 'communication'].includes(cap)
-          ) &&
-          selectedWorkflowMentions.length > 0;
+        const hasDataSourceCapabilities = uniqueCapabilities.some(cap => 
+          // Data source capabilities that need to be gathered before workflows
+          ['google-ads', 'google-search-console', 'google-workspace', 'web-search', 'web-analytics', 'ecommerce', 'code-repository', 'communication'].includes(cap)
+        );
+        const hasWorkflowCapabilities = selectedWorkflowMentions.length > 0;
+        const hasVisualizationCapabilities = uniqueCapabilities.includes('visualization');
+        
+        // Multi-step orchestration is needed when:
+        // 1. Multiple capabilities are detected AND
+        // 2. There are data sources that need to feed into workflows OR visualization
+        // 3. OR there are workflows that might need follow-up MCP calls
+        needsMultiStepOrchestration = (
+          (uniqueCapabilities.length > 1) && 
+          (
+            (hasDataSourceCapabilities && (hasWorkflowCapabilities || hasVisualizationCapabilities)) ||
+            (hasWorkflowCapabilities && hasDataSourceCapabilities)
+          )
+        );
+        
+        // CRITICAL FIX: When multi-step orchestration is needed, don't force workflow-only mode
+        // This allows the model to gather MCP data first, then use workflows
+        if (needsMultiStepOrchestration) {
+          // Reset forceWorkflowOnly to allow proper orchestration
+          // The model will still have access to the workflow but won't be forced to use it immediately
+          logger.info(
+            `🔄 MULTI-STEP ORCHESTRATION: Disabling workflow-only mode to allow data gathering first. Workflow will be available after MCP data collection.`,
+          );
+        }
         
         logger.info(
           `🧠 INTELLIGENT ORCHESTRATION: detected capabilities [${uniqueCapabilities.join(', ')}] from query: "${lastUserTextForMcp.substring(0, 100)}${lastUserTextForMcp.length > 100 ? '...' : ''}"`,
+        );
+        
+        logger.info(
+          `🔍 ORCHESTRATION ANALYSIS: hasDataSource=${hasDataSourceCapabilities}, hasWorkflow=${hasWorkflowCapabilities}, hasVisualization=${hasVisualizationCapabilities}, needsMultiStep=${needsMultiStepOrchestration}`,
         );
 
         if (needsMultiStepOrchestration) {
@@ -1108,8 +1144,12 @@ export async function POST(request: Request) {
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         // Let the model take as many steps as it needs; do not cap maxSteps
 
-        if (forceWorkflowOnly && !isSelectedWorkflowAmbiguous && !needsMultiStepOrchestration) {
+        // UPDATED LOGIC: Only force workflow-only mode for simple queries without multi-step orchestration
+        const shouldForceWorkflowOnly = forceWorkflowOnly && !isSelectedWorkflowAmbiguous && !needsMultiStepOrchestration;
+        
+        if (shouldForceWorkflowOnly) {
           // Only force workflow-only for simple single-capability queries
+          logger.info(`🎯 FORCING WORKFLOW-ONLY MODE: Simple query detected, restricting to workflow tool only`);
           try {
             const selectedMention = (selectedWorkflowMentions || [])[0] as any;
             const toWorkflowToolKey = (human?: string) => {
@@ -1125,11 +1165,14 @@ export async function POST(request: Request) {
               toolsForRun = { [toolKey]: (toolsForRun as any)[toolKey] } as Record<string, any>;
             }
           } catch {}
+        } else if (needsMultiStepOrchestration) {
+          // For multi-step orchestration, ensure all tools are available for proper sequencing
+          logger.info(`🔄 MULTI-STEP MODE: Keeping all tools available for orchestrated execution`);
         }
 
         // Allow the model to orchestrate multiple steps across tools/workflows as needed
         const maxStepsForRun = needsMultiStepOrchestration ? 6 : 
-                              (forceWorkflowOnly && !isSelectedWorkflowAmbiguous) ? 3 : 5;
+                              shouldForceWorkflowOnly ? 3 : 5;
 
         // Post-process: if the selected tool expects a 'client_name' parameter,
         // only derive it from an explicit 'url' field or the active agent's name.
