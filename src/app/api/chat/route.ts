@@ -864,7 +864,7 @@ export async function POST(request: Request) {
                 m.type === "mcpServer" ? `MCP server '${m.name}'` : `MCP tool '${m.name}'`,
               );
               const list = items.join(", ");
-              const chaining = `If a tool returns a list (e.g., properties or accounts), choose the best match from the user's prompt and context (including any mentioned domain or agent) and then call the necessary follow-up tool(s) from the SAME MCP to gather the required KPIs for the requested time window. Do not stop after the first tool call; continue tool calls until you can fully answer, then summarize.`;
+              const chaining = `If a tool returns a list (e.g., properties or accounts), choose the best match from the user's prompt and context (including any mentioned domain or agent) and then call the necessary follow-up tool(s) from the SAME MCP to gather the required KPIs for the requested time window. Do not stop after the first tool call; continue tool calls until you can fully answer, then summarize. IMPORTANT: When comparing multiple domains/sites (e.g., "obat.fr vs webloom.fr"), call the SAME tool multiple times with different parameters - once for each domain/site mentioned.`;
               return `Invoke tool(s) from ${list} as needed to answer the user's request this turn. ${chaining} After tool execution, produce a concise assistant summary of the findings and recommended next steps.`;
             })()
           : undefined;
@@ -893,6 +893,7 @@ export async function POST(request: Request) {
           "- 'compare Google Ads vs Search Console keywords' → Get Ads data → Get GSC data → Compare → Summarize",
           "- 'volume de recherche des mots-clés GSC vs Ads' → Get GSC data → Get Ads data → Run volume-de-recherche workflow → Present table",
           "- 'donne moi le volume de recherche des top mots-clés search console vs google ads' → Get Search Console data → Get Google Ads data → Run volume-de-recherche workflow → Create comparative table",
+          "- 'courbe des clics obat.fr vs webloom.fr' → Get GSC data for obat.fr → Get GSC data for webloom.fr → Create line chart comparing both",
           "- 'web search Nike + create personas + generate images' → Web search → Define personas → Generate 4 images → Present results",
           "- 'Search Console data in table format' → Get GSC data → Create table → Present with insights",
           "",
@@ -903,6 +904,8 @@ export async function POST(request: Request) {
           "- Workflows can also generate data that feeds into subsequent MCP tool calls",
           "- Support bidirectional flow: MCP → Workflow → MCP or Workflow → MCP → Analysis",
           "- Automatically detect which MCP servers provide the required data types",
+          "- MULTIPLE CALLS: When comparing multiple domains/sites, call the SAME tool multiple times with different parameters",
+          "- Example: 'obat.fr vs webloom.fr' requires calling get_performance_overview twice (once for each domain)",
           "",
           "✅ EXECUTION RULES:",
           "- Always end with a comprehensive assistant text response that directly answers the user's question",
@@ -913,7 +916,7 @@ export async function POST(request: Request) {
         ].join("\n");
 
         const forcedSummaryHint =
-          "If a workflow was selected, you MUST invoke it in this turn unless inputs are ambiguous. After any tool/workflow calls, end the turn with a final assistant text answer that synthesizes outputs and directly answers the user's request in the user's language (FR if the user wrote in French). Be concise but complete. If the user asked 'qui est …', provide a short description and key facts with links if available.";
+          "If a workflow was selected, you MUST invoke it in this turn unless inputs are ambiguous. When comparing multiple domains/sites (e.g., 'obat.fr vs webloom.fr'), call the required tools multiple times - once for each domain. After any tool/workflow calls, end the turn with a final assistant text answer that synthesizes outputs and directly answers the user's request in the user's language (FR if the user wrote in French). Be concise but complete. If the user asked 'qui est …', provide a short description and key facts with links if available.";
         
         // Determine if this is a complex query that would benefit from thinking mode
         const isComplexQuery = needsMultiStepOrchestration || 
