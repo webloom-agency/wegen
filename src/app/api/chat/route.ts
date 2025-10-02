@@ -590,6 +590,9 @@ export async function POST(request: Request) {
         const selectedWorkflowMentions = (() => {
           const clientSel = (explicitClientWorkflowMentions || []).slice(0, 1);
           if (clientSel.length > 0) return clientSel;
+          // If any MCP servers are mentioned (explicitly or via auto-mentions), do not force a workflow first
+          const anyMcpServersMentioned = (effectiveClientMentions || []).some((m: any) => m?.type === "mcpServer");
+          if (anyMcpServersMentioned) return [];
           if (Array.isArray(workflowCandidates) && workflowCandidates.length > 0) {
             const best = workflowCandidates
               .slice()
