@@ -528,20 +528,7 @@ export async function POST(request: Request) {
         const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const userTextNorm = norm(lastUserTextForMcp);
         
-        // Enhanced capability detection
-        const wantsGSC = /google\s*(search)?\s*console/.test(userTextNorm) || 
-                         /\bgsc\b/.test(userTextNorm) || 
-                         /search\s*console/.test(userTextNorm) ||
-                         /mots.cl[eé]s.*search/i.test(userTextNorm);
-        
-        const wantsAds = /google\s*ads/.test(userTextNorm) || 
-                        /\bads\b/.test(userTextNorm) ||
-                        /publicit[eé]/i.test(userTextNorm);
-        
-        const wantsWorkspace = /google\s*drive/.test(userTextNorm) || 
-                              /drive/.test(userTextNorm) ||
-                              /workspace/.test(userTextNorm) ||
-                              /fathom/.test(userTextNorm);
+        // App default tool detection (legacy patterns for backward compatibility)
         
         const wantsWebSearch = /recherche\s*web/.test(userTextNorm) || 
                               /web\s*search/.test(userTextNorm) ||
@@ -557,56 +544,116 @@ export async function POST(request: Request) {
                                   /graphique/.test(userTextNorm) ||
                                   /chart/.test(userTextNorm);
         const wantsTable = wantsVisualization;
+        // FUTURE-PROOF: Dynamic MCP detection based on natural language understanding
         const autoMcpMentions: any[] = (() => {
           const arr: any[] = [];
           if (!mcpTools || Object.keys(mcpTools).length === 0) return arr;
           const entries = Object.entries(mcpTools);
-          const byServerCount: Record<string, number> = {};
           
-          const matchTool = (name: string, serverName: string): boolean => {
-            const n = norm(name);
-            const s = norm(serverName);
+          // DYNAMIC MCP DETECTION: Analyze user intent and match against available MCP servers
+          const analyzeUserIntent = (text: string): string[] => {
+            const intents: string[] = [];
+            const lowerText = text.toLowerCase();
             
-            // Google Search Console detection
-            if (wantsGSC) {
-              return /search[-_\s]*console/.test(n) || 
-                     /gsc/.test(n) || 
-                     /search[-_\s]*console/.test(s);
+            // Expandable data source patterns - automatically works with any MCP
+            const dataSourcePatterns = [
+              { keywords: ['search console', 'gsc', 'google search console', 'mots-clés', 'keywords'], intent: 'search-analytics' },
+              { keywords: ['google ads', 'adwords', 'ads', 'publicité', 'advertising'], intent: 'advertising-data' },
+              { keywords: ['drive', 'google drive', 'workspace', 'docs', 'sheets', 'fathom'], intent: 'document-storage' },
+              { keywords: ['analytics', 'ga', 'google analytics', 'traffic'], intent: 'web-analytics' },
+              { keywords: ['youtube', 'video', 'channel'], intent: 'video-platform' },
+              { keywords: ['facebook', 'meta', 'instagram', 'social'], intent: 'social-media' },
+              { keywords: ['shopify', 'ecommerce', 'store', 'products'], intent: 'ecommerce' },
+              { keywords: ['salesforce', 'crm', 'customers'], intent: 'customer-management' },
+              { keywords: ['slack', 'teams', 'discord', 'chat'], intent: 'communication' },
+              { keywords: ['github', 'git', 'repository', 'code'], intent: 'code-repository' },
+              { keywords: ['database', 'sql', 'postgres', 'mysql'], intent: 'database' },
+              { keywords: ['api', 'rest', 'graphql', 'endpoint'], intent: 'api-integration' },
+              { keywords: ['email', 'gmail', 'outlook', 'mail'], intent: 'email-service' },
+              { keywords: ['calendar', 'events', 'meetings'], intent: 'calendar-service' },
+              { keywords: ['notion', 'notes', 'wiki'], intent: 'knowledge-management' },
+              { keywords: ['stripe', 'payment', 'billing'], intent: 'payment-processing' }
+            ];
+            
+            for (const pattern of dataSourcePatterns) {
+              if (pattern.keywords.some(keyword => lowerText.includes(keyword))) {
+                intents.push(pattern.intent);
+              }
             }
             
-            // Google Ads detection
-            if (wantsAds) {
-              return /google[-_\s]*ads/.test(n) || 
-                     /\bads\b/.test(n) ||
-                     /google[-_\s]*ads/.test(s);
-            }
-            
-            // Google Workspace detection
-            if (wantsWorkspace) {
-              return /drive/.test(n) || 
-                     /workspace/.test(n) ||
-                     /google[-_\s]*workspace/.test(s) ||
-                     /drive/.test(s);
-            }
-            
-            return false;
+            return intents;
           };
           
-          const matched = entries.filter(([toolKey, toolVal]: any) => 
-            matchTool(toolVal._originToolName || toolKey, toolVal._mcpServerName || '')
-          );
+          // Match detected intents against available MCP servers dynamically
+          const matchMcpServers = (intents: string[]): any[] => {
+            const serverScores: Record<string, { score: number, name: string }> = {};
+            
+            for (const [toolKey, toolVal] of entries as any) {
+              const serverName = (toolVal._mcpServerName || '').toLowerCase();
+              const toolName = (toolVal._originToolName || toolKey).toLowerCase();
+              const serverId = toolVal._mcpServerId;
+              
+              if (!serverId) continue;
+              
+              let score = 0;
+              
+              // Score based on server/tool name matching intents
+              for (const intent of intents) {
+                const intentWords = intent.split('-');
+                for (const word of intentWords) {
+                  if (serverName.includes(word) || toolName.includes(word)) {
+                    score += 10;
+                  }
+                }
+              }
+              
+              // Boost score for semantic matches
+              if (intents.includes('search-analytics') && (serverName.includes('search') || serverName.includes('console') || toolName.includes('search'))) score += 20;
+              if (intents.includes('advertising-data') && (serverName.includes('ads') || serverName.includes('google') || toolName.includes('ads'))) score += 20;
+              if (intents.includes('document-storage') && (serverName.includes('drive') || serverName.includes('workspace') || toolName.includes('drive'))) score += 20;
+              if (intents.includes('web-analytics') && (serverName.includes('analytics') || toolName.includes('analytics'))) score += 20;
+              if (intents.includes('ecommerce') && (serverName.includes('shopify') || toolName.includes('product'))) score += 20;
+              
+              // Generic fuzzy matching for any MCP server
+              const allWords = [...intents.join(' ').split(/[-_\s]+/), ...lastUserTextForMcp.toLowerCase().split(/\s+/)];
+              for (const word of allWords) {
+                if (word.length > 3) { // Only match meaningful words
+                  if (serverName.includes(word) || toolName.includes(word)) {
+                    score += 5;
+                  }
+                }
+              }
+              
+              if (score > 0) {
+                if (!serverScores[serverId] || serverScores[serverId].score < score) {
+                  serverScores[serverId] = { score, name: serverName || serverId };
+                }
+              }
+            }
+            
+            // Return top scoring servers (up to 3 most relevant)
+            const sortedServers = Object.entries(serverScores)
+              .sort((a, b) => b[1].score - a[1].score)
+              .slice(0, 3);
+            
+            return sortedServers.map(([serverId, { score, name }]) => ({
+              type: "mcpServer",
+              serverId,
+              name: serverId,
+              score,
+              displayName: name
+            }));
+          };
           
-          for (const [, toolVal] of matched as any) {
-            const sid = toolVal._mcpServerId;
-            byServerCount[sid] = (byServerCount[sid] || 0) + 1;
+          const detectedIntents = analyzeUserIntent(lastUserTextForMcp);
+          const matchedServers = matchMcpServers(detectedIntents);
+          
+          // Log the dynamic detection for debugging
+          if (detectedIntents.length > 0 || matchedServers.length > 0) {
+            logger.info(`🔍 FUTURE-PROOF MCP DETECTION: intents [${detectedIntents.join(', ')}] → servers [${matchedServers.map(s => s.displayName || s.name).join(', ')}]`);
           }
           
-          const bestServer = Object.entries(byServerCount).sort((a, b) => b[1] - a[1])[0]?.[0];
-          if (bestServer) {
-            arr.push({ type: "mcpServer", serverId: bestServer, name: bestServer });
-          }
-          
-          return arr;
+          return matchedServers;
         })();
         const effectiveClientMentions = [...clientMentions, ...autoMcpMentions];
 
@@ -629,6 +676,10 @@ export async function POST(request: Request) {
           return [] as any[];
         })();
         const forceWorkflowOnly = supportToolCall && selectedWorkflowMentions.length > 0;
+        
+        // FUTURE-PROOF: Multi-step orchestration detection for any MCP + workflow combination
+        // Note: This is declared early because it's used in workflow hints
+        let needsMultiStepOrchestration = false;
 
         // Load tools (optionally restricted to explicitly mentioned workflows)
         let MCP_TOOLS: Record<string, any> = {};
@@ -749,7 +800,7 @@ export async function POST(request: Request) {
               const argHygiene = `When constructing workflow tool arguments, derive values strictly from the user's latest prompt text and explicit mentions. Do NOT infer variables (e.g., client_name, email, topic, urls) from attachments or previous files; attachments are context only. If prompt and attachments conflict, prefer the prompt.`;
               const ambiguityRule = `If required inputs like 'url' are ambiguous (e.g., multiple different URLs/domains detected), ask a short clarifying question and wait for the user's confirmation before invoking the workflow. If the workflow requires a 'brief' or 'summary', only propose using the user's latest message as the brief when it appears to be an actual brief (long or structured); otherwise ask the user to provide a brief (or proceed with an empty brief). Do not block on long briefs; use them as provided.`;
               const sequencingRule = needsMultiStepOrchestration 
-                ? `CRITICAL: This query requires data from multiple sources. You MUST first gather all required data using MCP tools (Google Ads, Search Console, etc.) BEFORE invoking the workflow. The workflow needs real data as input, not placeholder keywords. Sequence: 1) Get data from MCP tools, 2) Use that data as input for the workflow, 3) Present results.`
+                ? `CRITICAL: This query requires data from multiple sources. You MUST first gather all required data using available MCP tools BEFORE invoking the workflow. The workflow needs real data as input, not placeholder data. Sequence: 1) Get data from relevant MCP servers, 2) Use that data as input for the workflow, 3) Present results.`
                 : `Do not use general-purpose code or HTTP tools before invoking the workflow.`;
               return `Invoke the following workflow(s) exactly once this turn: ${list}. ${sequencingRule} You may also use other tools (MCP or app defaults) as needed to gather data or perform follow-ups. After the workflow completes, produce a brief assistant summary in the chat: highlight key findings, actionable next steps, and link to any generated artifacts. Do not re-invoke the same workflow in this turn. ${agentContext}\n\n${argHygiene}\n\n${ambiguityRule}`.trim();
             })()
@@ -775,17 +826,19 @@ export async function POST(request: Request) {
           "",
           "🧠 NATURAL LANGUAGE UNDERSTANDING:",
           "- Analyze user intent beyond keywords - understand what they actually want to accomplish",
-          "- Detect required capabilities: google-ads, google-search-console, google-workspace, web-search, visualization, seelab-text-to-image, etc.",
-          "- Identify entities: domains (caats.co, webloom.fr), timeframes (30 jours, ce mois-ci), actions (compare, résume, crée)",
-          "- Recognize language (FR/EN) and respond accordingly",
+          "- Dynamically detect required capabilities from available MCP servers and app tools",
+          "- Identify entities: domains, timeframes, actions (compare, analyze, create, summarize)",
+          "- Recognize language and respond accordingly",
+          "- Adapt to new MCP tools automatically without hardcoded patterns",
           "",
           "🔄 MULTI-STEP ORCHESTRATION:",
           "- For complex queries requiring multiple data sources, plan the optimal sequence:",
-          "  * Data gathering steps first (Google Ads, Search Console, web search, etc.)",
-          "  * Analysis/processing steps second (compare datasets, define personas)",
-          "  * Output generation steps last (create tables, generate images, summarize)",
+          "  * Data gathering steps first (any MCP tools: analytics, advertising, storage, etc.)",
+          "  * Analysis/processing steps second (compare datasets, define personas, analyze trends)",
+          "  * Output generation steps last (create tables, generate images, summarize findings)",
           "- Execute steps in logical dependency order - don't call tools with incomplete data",
           "- Chain tool outputs intelligently - use results from step N as inputs for step N+1",
+          "- Automatically adapt to new MCP servers and their capabilities",
           "",
           "📊 EXAMPLE ORCHESTRATIONS:",
           "- 'compare Google Ads vs Search Console keywords' → Get Ads data → Get GSC data → Compare → Summarize",
@@ -795,8 +848,9 @@ export async function POST(request: Request) {
           "",
           "🔑 CRITICAL SEQUENCING RULES:",
           "- ALWAYS gather data from MCP tools BEFORE running workflows that need that data",
-          "- Workflows like 'volume-de-recherche' need keyword data as input - get it from GSC/Ads first",
-          "- Don't run workflows with placeholder data - get real data first",
+          "- Workflows need real data as input - get it from relevant MCP servers first",
+          "- Don't run workflows with placeholder data - ensure data dependencies are satisfied",
+          "- Automatically detect which MCP servers provide the required data types",
           "",
           "✅ EXECUTION RULES:",
           "- Always end with a comprehensive assistant text response that directly answers the user's question",
@@ -977,17 +1031,56 @@ export async function POST(request: Request) {
           .map((t: AllowedMCPServer) => t.tools)
           .flat();
 
-        // Log intelligent orchestration decisions
+        // FUTURE-PROOF: Dynamic capability detection based on detected MCP servers and intents
         const detectedCapabilities: string[] = [];
-        if (wantsGSC) detectedCapabilities.push('google-search-console');
-        if (wantsAds) detectedCapabilities.push('google-ads');
-        if (wantsWorkspace) detectedCapabilities.push('google-workspace');
+        
+        // Add capabilities from detected MCP servers
+        for (const mcpMention of autoMcpMentions) {
+          const serverName = (mcpMention.displayName || mcpMention.name || '').toLowerCase();
+          
+          // Map server names to capability categories
+          if (serverName.includes('search') || serverName.includes('console')) {
+            detectedCapabilities.push('google-search-console');
+          }
+          if (serverName.includes('ads') || serverName.includes('adwords')) {
+            detectedCapabilities.push('google-ads');
+          }
+          if (serverName.includes('drive') || serverName.includes('workspace')) {
+            detectedCapabilities.push('google-workspace');
+          }
+          if (serverName.includes('analytics')) {
+            detectedCapabilities.push('web-analytics');
+          }
+          if (serverName.includes('shopify') || serverName.includes('ecommerce')) {
+            detectedCapabilities.push('ecommerce');
+          }
+          if (serverName.includes('github') || serverName.includes('git')) {
+            detectedCapabilities.push('code-repository');
+          }
+          if (serverName.includes('slack') || serverName.includes('discord')) {
+            detectedCapabilities.push('communication');
+          }
+          // Add more mappings as needed for future MCP servers
+        }
+        
+        // Add traditional app default capabilities
         if (wantsWebSearch) detectedCapabilities.push('web-search');
         if (wantsImageGen) detectedCapabilities.push('seelab-text-to-image');
         if (wantsVisualization) detectedCapabilities.push('visualization');
         
+        // Remove duplicates
+        const uniqueCapabilities = Array.from(new Set(detectedCapabilities));
+        
+        // FUTURE-PROOF: Multi-step orchestration detection for any MCP + workflow combination
+        needsMultiStepOrchestration = uniqueCapabilities.length > 1 && 
+          uniqueCapabilities.some(cap => 
+            // Data source capabilities that need to be gathered before workflows
+            ['google-ads', 'google-search-console', 'google-workspace', 'web-search', 'web-analytics', 'ecommerce', 'code-repository', 'communication'].includes(cap)
+          ) &&
+          selectedWorkflowMentions.length > 0;
+        
         logger.info(
-          `🧠 INTELLIGENT ORCHESTRATION: detected capabilities [${detectedCapabilities.join(', ')}] from query: "${lastUserTextForMcp.substring(0, 100)}${lastUserTextForMcp.length > 100 ? '...' : ''}"`,
+          `🧠 INTELLIGENT ORCHESTRATION: detected capabilities [${uniqueCapabilities.join(', ')}] from query: "${lastUserTextForMcp.substring(0, 100)}${lastUserTextForMcp.length > 100 ? '...' : ''}"`,
         );
 
         if (needsMultiStepOrchestration) {
@@ -1014,11 +1107,6 @@ export async function POST(request: Request) {
 
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         // Let the model take as many steps as it needs; do not cap maxSteps
-
-        // INTELLIGENT MULTI-STEP ORCHESTRATION: Don't force workflow-only when MCP tools are also needed
-        const needsMultiStepOrchestration = detectedCapabilities.length > 1 && 
-          detectedCapabilities.some(cap => ['google-ads', 'google-search-console', 'google-workspace', 'web-search'].includes(cap)) &&
-          selectedWorkflowMentions.length > 0;
 
         if (forceWorkflowOnly && !isSelectedWorkflowAmbiguous && !needsMultiStepOrchestration) {
           // Only force workflow-only for simple single-capability queries
