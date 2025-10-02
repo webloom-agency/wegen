@@ -558,10 +558,10 @@ export async function POST(request: Request) {
                 if (/serp|search[-_\s]*api|search[-_\s]*engine/.test(sn)) adsScores[sid] = (adsScores[sid] || 0) - 1;
               }
               if (wantGsc) {
-                // Strongly prefer servers whose name matches Search Console synonyms
-                if (/search\s*console|gsc|webmaster/.test(sn)) gscScores[sid] = (gscScores[sid] || 0) + 5;
+                // Strongly prefer servers whose name matches Search Console synonyms (including hyphen/underscore)
+                if (/search[-_\s]*console|gsc|webmaster/.test(sn)) gscScores[sid] = (gscScores[sid] || 0) + 5;
                 // Also consider tool names containing GSC-related terms
-                if (/search\s*console|gsc|webmaster/.test(tn)) gscScores[sid] = (gscScores[sid] || 0) + 2;
+                if (/search[-_\s]*console|gsc|webmaster/.test(tn)) gscScores[sid] = (gscScores[sid] || 0) + 2;
                 // Light penalty for generic SERP-style servers when GSC requested
                 if (/serp|search[-_\s]*api|search[-_\s]*engine/.test(sn)) gscScores[sid] = (gscScores[sid] || 0) - 1;
               }

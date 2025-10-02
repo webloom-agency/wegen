@@ -56,7 +56,19 @@ export function filterMCPToolsByMentions(
     return tools;
   }
 
-  const metionsByServer = toolMentions.reduce(
+  // If any servers are mentioned, restrict to ONLY those servers and ignore single-tool mentions from other servers
+  const mentionedServerIds = new Set(
+    toolMentions.filter((m) => m.type === "mcpServer").map((m) => m.serverId),
+  );
+
+  if (mentionedServerIds.size > 0) {
+    return objectFlow(tools).filter((_tool) => {
+      return mentionedServerIds.has(_tool._mcpServerId);
+    });
+  }
+
+  // Otherwise, fall back to per-tool filtering within their respective servers
+  const mentionsByServer = toolMentions.reduce(
     (acc, mention) => {
       if (mention.type == "mcpServer") {
         return {
@@ -75,8 +87,8 @@ export function filterMCPToolsByMentions(
   );
 
   return objectFlow(tools).filter((_tool) => {
-    if (!metionsByServer[_tool._mcpServerId]) return false;
-    return metionsByServer[_tool._mcpServerId].includes(_tool._originToolName);
+    if (!mentionsByServer[_tool._mcpServerId]) return false;
+    return mentionsByServer[_tool._mcpServerId].includes(_tool._originToolName);
   });
 }
 
