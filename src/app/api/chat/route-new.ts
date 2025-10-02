@@ -99,7 +99,7 @@ export async function POST(request: Request) {
         ]
       : ((patchedMessage as any).experimental_attachments as any[] | undefined);
 
-    let finalPatchedMessage: UIMessage = mergedAttachments && mergedAttachments.length > 0
+    const finalPatchedMessage: UIMessage = mergedAttachments && mergedAttachments.length > 0
       ? {
           ...(patchedMessage as any),
           experimental_attachments: await compressPdfAttachmentsIfNeeded(mergedAttachments as any),

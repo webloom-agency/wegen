@@ -7,7 +7,7 @@ export interface ToolCapability {
   serverId?: string; // for MCP tools
   workflowId?: string; // for workflows
   parameters?: any;
-  execute?: Function;
+  execute?: (args: any, ctx: { toolCallId: string; abortSignal: AbortSignal; messages: any[] }) => Promise<any>;
 }
 
 export interface ExecutionStep {
