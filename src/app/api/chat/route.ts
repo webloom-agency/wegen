@@ -539,7 +539,7 @@ export async function POST(request: Request) {
           const byServerCount: Record<string, number> = {};
           const matchTool = (name: string): boolean => {
             const n = norm(name);
-            if (wantsGSC) return /search[-_\s]*console/.test(n) || /\bgsc\b/.test(n);
+            if (wantsGSC) return /search[-_\s]*console/.test(n) || /gsc/.test(n);
             if (wantsAds) return /google[-_\s]*ads/.test(n) || /\bads\b/.test(n);
             return false;
           };
@@ -548,41 +548,9 @@ export async function POST(request: Request) {
             const sid = toolVal._mcpServerId;
             byServerCount[sid] = (byServerCount[sid] || 0) + 1;
           }
-
-          // Prefer server-name matches over generic sub-tool matches
-          const serverScores: Record<string, number> = {};
-          try {
-            for (const { id, client } of mcpClients || []) {
-              const serverName = client?.getInfo?.().name || "";
-              const n = norm(serverName);
-              let score = 0;
-              if (wantsAds) {
-                if (/google[-_\s]*ads/.test(n)) score += 120; // strong preference for Google Ads server
-                else if (/\bads\b/.test(n)) score += 45; // weaker generic ads signal
-              }
-              if (wantsGSC) {
-                if (/search[-_\s]*console/.test(n) || /\bgsc\b/.test(n)) score += 120; // strong preference for GSC server
-              }
-              // Blend in tool-name evidence but at a lower weight
-              if (byServerCount[id]) score += byServerCount[id] * 10;
-              if (score > 0) serverScores[id] = (serverScores[id] || 0) + score;
-            }
-          } catch {}
-
-          // Fallback to tool-match counts if no server scored
-          const ranked = Object.keys(serverScores).length > 0
-            ? Object.entries(serverScores).sort((a, b) => b[1] - a[1])
-            : Object.entries(byServerCount).sort((a, b) => b[1] - a[1]);
-          const bestServer = ranked[0]?.[0];
+          const bestServer = Object.entries(byServerCount).sort((a, b) => b[1] - a[1])[0]?.[0];
           if (bestServer) {
-            const serverName = (() => {
-              try {
-                return (mcpClients || []).find((c: any) => c.id === bestServer)?.client?.getInfo?.().name || bestServer;
-              } catch {
-                return bestServer;
-              }
-            })();
-            arr.push({ type: "mcpServer", serverId: bestServer, name: serverName });
+            arr.push({ type: "mcpServer", serverId: bestServer, name: bestServer });
           }
           return arr;
         })();
@@ -795,6 +763,7 @@ export async function POST(request: Request) {
             // Hard cap per provider limitation: 128 tools max
             const MAX_TOOLS = 128;
             const toolEntries = Object.entries(allTools);
+            if (toolEntries.length <= MAX_TOOLS) return allTools;
 
             // Prioritize exact-match mentions first, then fuzzy mentions, then app default tools, then others
             const toWorkflowToolKey = (human?: string) => {
@@ -807,15 +776,10 @@ export async function POST(request: Request) {
             };
             const exactMentioned = new Set<string>();
             const fuzzyMentioned = new Set<string>();
-            const exactMentionedServerIds = new Set<string>();
-            const fuzzyMentionedServerIds = new Set<string>();
-            // Include explicit client mentions and auto MCP server mentions
-            for (const m of (effectiveClientMentions || [])) {
+            for (const m of (clientMentions || [])) {
               if (!m || !("type" in (m as any))) continue;
               if ((m as any).type === "mcpTool" || (m as any).type === "defaultTool") {
                 if ((m as any).name) exactMentioned.add((m as any).name);
-              } else if ((m as any).type === "mcpServer") {
-                if ((m as any).serverId) exactMentionedServerIds.add((m as any).serverId);
               } else if ((m as any).type === "workflow") {
                 const key = toWorkflowToolKey((m as any).name || (m as any).description);
                 if (key) exactMentioned.add(key);
@@ -827,9 +791,6 @@ export async function POST(request: Request) {
               if ((m as any).type === "mcpTool" || (m as any).type === "defaultTool") {
                 const name = (m as any).name;
                 if (name && !exactMentioned.has(name)) fuzzyMentioned.add(name);
-              } else if ((m as any).type === "mcpServer") {
-                const sid = (m as any).serverId;
-                if (sid && !exactMentionedServerIds.has(sid)) fuzzyMentionedServerIds.add(sid);
               } else if ((m as any).type === "workflow") {
                 const key = toWorkflowToolKey((m as any).name || (m as any).description);
                 if (key && !exactMentioned.has(key)) fuzzyMentioned.add(key);
@@ -843,24 +804,8 @@ export async function POST(request: Request) {
               wantsVisualization ? DefaultToolName.CreatePieChart : "",
             ].filter(Boolean) as string[]);
 
-            // Include server-level mentions as exact/fuzzy tool candidates
-            const exactByServer = toolEntries.filter(([, val]: any) => exactMentionedServerIds.has((val as any)?._mcpServerId));
-            const exactByServerKeys = new Set(exactByServer.map(([name]) => name));
-            const fuzzyByServer = toolEntries.filter(([name, val]: any) =>
-              !exactByServerKeys.has(name) && fuzzyMentionedServerIds.has((val as any)?._mcpServerId),
-            );
-
-            const exactByName = toolEntries.filter(([name]) => exactMentioned.has(name));
-            const fuzzyByName = toolEntries.filter(([name]) => !exactMentioned.has(name) && fuzzyMentioned.has(name));
-
-            const exact = [...new Set([...
-              exactByServer,
-              ...exactByName,
-            ])];
-            const fuzzy = [...new Set([...
-              fuzzyByServer,
-              ...fuzzyByName,
-            ])];
+            const exact = toolEntries.filter(([name]) => exactMentioned.has(name));
+            const fuzzy = toolEntries.filter(([name]) => !exactMentioned.has(name) && fuzzyMentioned.has(name));
             const appDefaults = toolEntries.filter(
               ([name]) => !exactMentioned.has(name) && !fuzzyMentioned.has(name) && appDefaultNames.has(name),
             );
@@ -878,13 +823,9 @@ export async function POST(request: Request) {
               return Object.fromEntries(toolEntries.filter(([name]) => allowedNames.has(name)).slice(0, MAX_TOOLS));
             }
 
-            // If no mention matches, apply cap only when exceeding MAX_TOOLS; otherwise return as-is
-            if (toolEntries.length > MAX_TOOLS) {
-              // Otherwise keep priority order (others first, then app defaults) within cap to reduce default tool bias
-              const prioritized = [...others, ...appDefaults].slice(0, MAX_TOOLS);
-              return Object.fromEntries(prioritized);
-            }
-            return allTools;
+            // Otherwise keep priority order (others first, then app defaults) within cap to reduce default tool bias
+            const prioritized = [...others, ...appDefaults].slice(0, MAX_TOOLS);
+            return Object.fromEntries(prioritized);
           })
           .unwrap();
 
