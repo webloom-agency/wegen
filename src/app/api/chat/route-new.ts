@@ -4,7 +4,6 @@ import {
   smoothStream,
   streamText,
   type UIMessage,
-  formatDataStreamPart,
   appendClientMessage,
   Message,
 } from "ai";
