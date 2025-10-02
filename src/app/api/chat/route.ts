@@ -1031,6 +1031,18 @@ export async function POST(request: Request) {
           for (const [name, tool] of Object.entries(tools)) {
             const originalExecute = (tool as any)?.execute;
             if (typeof originalExecute === "function") {
+              // Check if this tool actually expects a client_name parameter
+              const toolSchema = (tool as any)?.parameters;
+              const hasClientNameParam = toolSchema && 
+                ((toolSchema.properties && toolSchema.properties.client_name) ||
+                 (toolSchema._def?.shape && toolSchema._def.shape().client_name));
+              
+              if (!hasClientNameParam) {
+                // Tool doesn't expect client_name, don't modify it
+                wrapped[name] = tool;
+                continue;
+              }
+
               wrapped[name] = {
                 ...tool,
                 execute: async (args: any, ctx: any) => {
@@ -1084,7 +1096,7 @@ export async function POST(request: Request) {
                         if (key === "client_name") {
                           if (value) {
                             (cur as any)[key] = value;
-          } else {
+                          } else {
                             delete (cur as any)[key];
                           }
                           continue;
@@ -1277,13 +1289,25 @@ export async function POST(request: Request) {
                     id: assistantMessage.id,
                 parts: (finalParts as UIMessage["parts"]).map(
                   (v) => {
-                    // Normalize displayed tool args to reflect enforced client_name rules
+                    // Normalize displayed tool args to reflect enforced client_name rules (only for tools that expect client_name)
                     if (
                       v.type == "tool-invocation" &&
                       v.toolInvocation &&
                       typeof (v as any).toolInvocation.args === "object"
                     ) {
                       try {
+                        const toolName = (v as any).toolInvocation.toolName;
+                        const tool = toolsForRunAugmented[toolName];
+                        const toolSchema = tool?.parameters;
+                        const hasClientNameParam = toolSchema && 
+                          ((toolSchema.properties && toolSchema.properties.client_name) ||
+                           (toolSchema._def?.shape && toolSchema._def.shape().client_name));
+                        
+                        if (!hasClientNameParam) {
+                          // Tool doesn't expect client_name, don't normalize
+                          return v;
+                        }
+
                         const normalizeArgs = (inputArgs: any): any => {
                           const next = inputArgs && typeof inputArgs === "object" ? { ...inputArgs } : {};
                           const deriveDomainFromUrl = (maybeUrl: any): string | undefined => {
