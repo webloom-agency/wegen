@@ -12,11 +12,6 @@ export async function POST(
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const hasAccess = await agentRepository.checkAccess(id, session.user.id, false);
-  if (!hasAccess) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
   const sourceAgent = await agentRepository.selectAgentById(id, session.user.id);
   if (!sourceAgent) {
     return new Response("Not Found", { status: 404 });
