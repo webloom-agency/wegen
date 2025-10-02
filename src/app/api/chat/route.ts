@@ -535,22 +535,50 @@ export async function POST(request: Request) {
         const autoMcpMentions: any[] = (() => {
           const arr: any[] = [];
           if (!mcpTools || Object.keys(mcpTools).length === 0) return arr;
-          const entries = Object.entries(mcpTools);
-          const byServerCount: Record<string, number> = {};
-          const matchTool = (name: string): boolean => {
-            const n = norm(name);
-            if (wantsGSC) return /search[-_\s]*console/.test(n) || /gsc/.test(n);
-            if (wantsAds) return /google[-_\s]*ads/.test(n) || /\bads\b/.test(n);
-            return false;
+          const entries = Object.entries(mcpTools) as Array<[string, any]>;
+
+          const scoreFor = (
+            wantAds: boolean,
+            wantGsc: boolean,
+          ) => {
+            const adsScores: Record<string, number> = {};
+            const gscScores: Record<string, number> = {};
+            for (const [, toolVal] of entries) {
+              const sid = String(toolVal._mcpServerId || "");
+              const sname = String(toolVal._mcpServerName || "");
+              const tname = String(toolVal._originToolName || "");
+              const sn = norm(sname);
+              const tn = norm(tname);
+              if (wantAds) {
+                // Strongly prefer servers whose name matches Google Ads synonyms
+                if (/google\s*ads|adwords|g\s*ads|google-ads/.test(sn)) adsScores[sid] = (adsScores[sid] || 0) + 5;
+                // Also consider tool names containing ads-related terms
+                if (/google\s*ads|adwords|g\s*ads|\bads\b/.test(tn)) adsScores[sid] = (adsScores[sid] || 0) + 2;
+                // Light penalty for generic SERP-style servers when ads requested
+                if (/serp|search[-_\s]*api|search[-_\s]*engine/.test(sn)) adsScores[sid] = (adsScores[sid] || 0) - 1;
+              }
+              if (wantGsc) {
+                // Strongly prefer servers whose name matches Search Console synonyms
+                if (/search\s*console|gsc|webmaster/.test(sn)) gscScores[sid] = (gscScores[sid] || 0) + 5;
+                // Also consider tool names containing GSC-related terms
+                if (/search\s*console|gsc|webmaster/.test(tn)) gscScores[sid] = (gscScores[sid] || 0) + 2;
+                // Light penalty for generic SERP-style servers when GSC requested
+                if (/serp|search[-_\s]*api|search[-_\s]*engine/.test(sn)) gscScores[sid] = (gscScores[sid] || 0) - 1;
+              }
+            }
+            const topAds = Object.entries(adsScores).sort((a, b) => b[1] - a[1])[0]?.[0];
+            const topGsc = Object.entries(gscScores).sort((a, b) => b[1] - a[1])[0]?.[0];
+            return { topAds, topGsc };
           };
-          const matched = entries.filter(([toolKey, toolVal]: any) => matchTool(toolVal._originToolName || toolKey));
-          for (const [, toolVal] of matched as any) {
-            const sid = toolVal._mcpServerId;
-            byServerCount[sid] = (byServerCount[sid] || 0) + 1;
+
+          const { topAds, topGsc } = scoreFor(wantsAds, wantsGSC);
+          const pushed = new Set<string>();
+          if (topGsc) {
+            arr.push({ type: "mcpServer", serverId: topGsc, name: topGsc });
+            pushed.add(topGsc);
           }
-          const bestServer = Object.entries(byServerCount).sort((a, b) => b[1] - a[1])[0]?.[0];
-          if (bestServer) {
-            arr.push({ type: "mcpServer", serverId: bestServer, name: bestServer });
+          if (topAds && !pushed.has(topAds)) {
+            arr.push({ type: "mcpServer", serverId: topAds, name: topAds });
           }
           return arr;
         })();
@@ -776,7 +804,7 @@ export async function POST(request: Request) {
             };
             const exactMentioned = new Set<string>();
             const fuzzyMentioned = new Set<string>();
-            for (const m of (clientMentions || [])) {
+            for (const m of (effectiveClientMentions || [])) {
               if (!m || !("type" in (m as any))) continue;
               if ((m as any).type === "mcpTool" || (m as any).type === "defaultTool") {
                 if ((m as any).name) exactMentioned.add((m as any).name);
@@ -794,6 +822,13 @@ export async function POST(request: Request) {
               } else if ((m as any).type === "workflow") {
                 const key = toWorkflowToolKey((m as any).name || (m as any).description);
                 if (key && !exactMentioned.has(key)) fuzzyMentioned.add(key);
+              }
+            }
+            // Prefer tools from explicitly or auto-mentioned MCP servers
+            const preferredServerIds = new Set<string>();
+            for (const m of (effectiveClientMentions || [])) {
+              if ((m as any).type === "mcpServer" && (m as any).serverId) {
+                preferredServerIds.add((m as any).serverId);
               }
             }
             const appDefaultNames = new Set(Object.keys(APP_DEFAULT_TOOLS));
@@ -817,14 +852,28 @@ export async function POST(request: Request) {
             // default visualization table tool when the user asked for a table.
             if (exact.length + fuzzy.length > 0) {
               const allowedNames = new Set<string>([...exact.map(([n]) => n), ...fuzzy.map(([n]) => n)]);
+              // Also include all tools from preferred MCP servers (bias toward named servers without excluding within)
+              if (preferredServerIds.size > 0) {
+                for (const [name, tool] of toolEntries) {
+                  const sid = (tool as any)?._mcpServerId as string | undefined;
+                  if (sid && preferredServerIds.has(sid)) allowedNames.add(name);
+                }
+              }
               if (wantsTable) {
                 for (const name of vizDefaultNames) allowedNames.add(name);
               }
               return Object.fromEntries(toolEntries.filter(([name]) => allowedNames.has(name)).slice(0, MAX_TOOLS));
             }
 
-            // Otherwise keep priority order (others first, then app defaults) within cap to reduce default tool bias
-            const prioritized = [...others, ...appDefaults].slice(0, MAX_TOOLS);
+            // Otherwise keep priority order, but move preferred MCP server tools to the front (others first, then app defaults)
+            const splitByPreference = (arr: Array<[string, any]>) => {
+              const preferred = arr.filter(([, tool]) => (tool as any)?._mcpServerId && preferredServerIds.has((tool as any)._mcpServerId));
+              const nonPreferred = arr.filter(([, tool]) => !(tool as any)?._mcpServerId || !preferredServerIds.has((tool as any)._mcpServerId));
+              return { preferred, nonPreferred };
+            };
+            const { preferred: preferredOthers, nonPreferred: nonPreferredOthers } = splitByPreference(others);
+            const { preferred: preferredDefaults, nonPreferred: nonPreferredDefaults } = splitByPreference(appDefaults);
+            const prioritized = [...preferredOthers, ...preferredDefaults, ...nonPreferredOthers, ...nonPreferredDefaults].slice(0, MAX_TOOLS);
             return Object.fromEntries(prioritized);
           })
           .unwrap();
