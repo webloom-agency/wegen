@@ -558,7 +558,8 @@ export async function POST(request: Request) {
             // Expandable data source patterns - automatically works with any MCP
             const dataSourcePatterns = [
               { keywords: ['search console', 'gsc', 'google search console', 'mots-clés', 'keywords'], intent: 'search-analytics' },
-              { keywords: ['google ads', 'adwords', 'ads', 'publicité', 'advertising'], intent: 'advertising-data' },
+              { keywords: ['google ads', 'adwords', 'google adwords', 'publicité google', 'advertising google'], intent: 'advertising-data' },
+              { keywords: ['ads research', 'search ads', 'competitor ads', 'serp ads', 'ads analysis'], intent: 'ads-research' },
               { keywords: ['drive', 'google drive', 'workspace', 'docs', 'sheets', 'fathom', 'search drive', 'drive files', 'google docs', 'google sheets', 'gdrive'], intent: 'document-storage' },
               { keywords: ['analytics', 'ga', 'google analytics', 'traffic'], intent: 'web-analytics' },
               { keywords: ['youtube', 'video', 'channel'], intent: 'video-platform' },
@@ -607,9 +608,37 @@ export async function POST(request: Request) {
                 }
               }
               
-              // Boost score for semantic matches
+              // Boost score for semantic matches with PRIORITY for exact server name matches
               if (intents.includes('search-analytics') && (serverName.includes('search') || serverName.includes('console') || toolName.includes('search'))) score += 20;
-              if (intents.includes('advertising-data') && (serverName.includes('ads') || serverName.includes('google') || toolName.includes('ads'))) score += 20;
+              
+              // CRITICAL FIX: Prioritize actual Google Ads MCP over SERP tools
+              if (intents.includes('advertising-data')) {
+                // Highest priority: Exact Google Ads server match
+                if (serverName.includes('google-ads') || serverName.includes('googleads') || serverName === 'google ads') {
+                  score += 50; // Much higher score for actual Google Ads MCP
+                }
+                // Medium priority: Google + ads combination (but not SERP)
+                else if (serverName.includes('google') && serverName.includes('ads') && !serverName.includes('serp')) {
+                  score += 30;
+                }
+                // Lower priority: Generic ads tools (like SERP search_ads_by_domain)
+                else if (toolName.includes('ads') || serverName.includes('ads')) {
+                  score += 10; // Much lower score for generic ads tools
+                }
+              }
+              
+              // Handle ads research (SERP tools) separately from Google Ads platform
+              if (intents.includes('ads-research')) {
+                // Prioritize SERP and research tools for ads analysis
+                if (serverName.includes('serp') || toolName.includes('search_ads') || toolName.includes('competitor')) {
+                  score += 30;
+                }
+                // Generic ads research tools
+                else if (toolName.includes('ads') && !serverName.includes('google-ads')) {
+                  score += 15;
+                }
+              }
+              
               if (intents.includes('document-storage') && (
                 serverName.includes('drive') || serverName.includes('workspace') || serverName.includes('google') ||
                 toolName.includes('drive') || toolName.includes('workspace') || toolName.includes('search_drive') || 
@@ -655,9 +684,14 @@ export async function POST(request: Request) {
           // Log the dynamic detection for debugging
           logger.info(`🔍 MCP INTENT ANALYSIS: query="${lastUserTextForMcp}" → intents [${detectedIntents.join(', ')}]`);
           if (detectedIntents.length > 0 || matchedServers.length > 0) {
-            logger.info(`🔍 FUTURE-PROOF MCP DETECTION: intents [${detectedIntents.join(', ')}] → servers [${matchedServers.map(s => s.displayName || s.name).join(', ')}]`);
+            logger.info(`🔍 FUTURE-PROOF MCP DETECTION: intents [${detectedIntents.join(', ')}] → servers [${matchedServers.map(s => `${s.displayName || s.name} (score: ${s.score})`).join(', ')}]`);
           } else {
             logger.info(`❌ NO MCP SERVERS DETECTED: No intents matched or no servers available`);
+          }
+          
+          // Special debugging for Google Ads vs SERP confusion
+          if (detectedIntents.includes('advertising-data') || detectedIntents.includes('ads-research')) {
+            logger.info(`🎯 ADS DETECTION DEBUG: Found advertising intent. Top servers: ${matchedServers.slice(0, 3).map(s => `${s.displayName || s.name}:${s.score}`).join(', ')}`);
           }
           
           return matchedServers;
@@ -1072,8 +1106,17 @@ export async function POST(request: Request) {
             logger.info(`✅ DETECTED CAPABILITY: google-search-console from "${serverName}"`);
           }
           if (serverName.includes('ads') || serverName.includes('adwords')) {
-            detectedCapabilities.push('google-ads');
-            logger.info(`✅ DETECTED CAPABILITY: google-ads from "${serverName}"`);
+            // Distinguish between Google Ads platform and ads research tools
+            if (serverName.includes('google-ads') || serverName.includes('googleads') || serverName === 'google ads') {
+              detectedCapabilities.push('google-ads');
+              logger.info(`✅ DETECTED CAPABILITY: google-ads from "${serverName}"`);
+            } else if (serverName.includes('serp') || serverName.includes('research')) {
+              detectedCapabilities.push('ads-research');
+              logger.info(`✅ DETECTED CAPABILITY: ads-research from "${serverName}"`);
+            } else {
+              detectedCapabilities.push('google-ads'); // Default to Google Ads for ambiguous cases
+              logger.info(`✅ DETECTED CAPABILITY: google-ads (default) from "${serverName}"`);
+            }
           }
           if (serverName.includes('drive') || serverName.includes('workspace')) {
             detectedCapabilities.push('google-workspace');
@@ -1141,7 +1184,7 @@ export async function POST(request: Request) {
         // FUTURE-PROOF: Multi-step orchestration detection for any MCP + workflow combination
         const hasDataSourceCapabilities = uniqueCapabilities.some(cap => 
           // Data source capabilities that need to be gathered before workflows
-          ['google-ads', 'google-search-console', 'google-workspace', 'web-search', 'web-analytics', 'ecommerce', 'code-repository', 'communication', 'data-comparison'].includes(cap)
+          ['google-ads', 'ads-research', 'google-search-console', 'google-workspace', 'web-search', 'web-analytics', 'ecommerce', 'code-repository', 'communication', 'data-comparison'].includes(cap)
         );
         const hasWorkflowCapabilities = selectedWorkflowMentions.length > 0;
         const hasVisualizationCapabilities = uniqueCapabilities.includes('visualization');
