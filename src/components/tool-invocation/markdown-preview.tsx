@@ -127,7 +127,7 @@ export const MarkdownPreview = memo(function MarkdownPreview({
           )}
         </div>
       </div>
-      <div className="p-3" ref={contentRef}>
+      <div className="p-3 text-foreground" ref={contentRef}>
         <Markdown>{markdown}</Markdown>
       </div>
     </div>
