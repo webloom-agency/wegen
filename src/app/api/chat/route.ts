@@ -748,8 +748,10 @@ export async function POST(request: Request) {
               const agentContext = activeAgent ? `You are collaborating with agent '${activeAgent.name}'. Incorporate the agent's context in the summary.` : "";
               const argHygiene = `When constructing workflow tool arguments, derive values strictly from the user's latest prompt text and explicit mentions. Do NOT infer variables (e.g., client_name, email, topic, urls) from attachments or previous files; attachments are context only. If prompt and attachments conflict, prefer the prompt.`;
               const ambiguityRule = `If required inputs like 'url' are ambiguous (e.g., multiple different URLs/domains detected), ask a short clarifying question and wait for the user's confirmation before invoking the workflow. If the workflow requires a 'brief' or 'summary', only propose using the user's latest message as the brief when it appears to be an actual brief (long or structured); otherwise ask the user to provide a brief (or proceed with an empty brief). Do not block on long briefs; use them as provided.`;
-              const avoidGeneric = `Do not use general-purpose code or HTTP tools before invoking the workflow.`;
-              return `Invoke the following workflow(s) exactly once this turn: ${list}. You may also use other tools (MCP or app defaults) as needed after invoking the workflow to gather additional information or perform follow-ups in the same turn. After the workflow completes, produce a brief assistant summary in the chat: highlight key findings, actionable next steps, and link to any generated artifacts. Do not re-invoke the same workflow in this turn. ${avoidGeneric} ${agentContext}\n\n${argHygiene}\n\n${ambiguityRule}`.trim();
+              const sequencingRule = needsMultiStepOrchestration 
+                ? `CRITICAL: This query requires data from multiple sources. You MUST first gather all required data using MCP tools (Google Ads, Search Console, etc.) BEFORE invoking the workflow. The workflow needs real data as input, not placeholder keywords. Sequence: 1) Get data from MCP tools, 2) Use that data as input for the workflow, 3) Present results.`
+                : `Do not use general-purpose code or HTTP tools before invoking the workflow.`;
+              return `Invoke the following workflow(s) exactly once this turn: ${list}. ${sequencingRule} You may also use other tools (MCP or app defaults) as needed to gather data or perform follow-ups. After the workflow completes, produce a brief assistant summary in the chat: highlight key findings, actionable next steps, and link to any generated artifacts. Do not re-invoke the same workflow in this turn. ${agentContext}\n\n${argHygiene}\n\n${ambiguityRule}`.trim();
             })()
           : undefined;
 
@@ -787,8 +789,14 @@ export async function POST(request: Request) {
           "",
           "📊 EXAMPLE ORCHESTRATIONS:",
           "- 'compare Google Ads vs Search Console keywords' → Get Ads data → Get GSC data → Compare → Summarize",
+          "- 'volume de recherche des mots-clés GSC vs Ads' → Get GSC data → Get Ads data → Run volume-de-recherche workflow → Present table",
           "- 'web search Nike + create personas + generate images' → Web search → Define personas → Generate 4 images → Present results",
           "- 'Search Console data in table format' → Get GSC data → Create table → Present with insights",
+          "",
+          "🔑 CRITICAL SEQUENCING RULES:",
+          "- ALWAYS gather data from MCP tools BEFORE running workflows that need that data",
+          "- Workflows like 'volume-de-recherche' need keyword data as input - get it from GSC/Ads first",
+          "- Don't run workflows with placeholder data - get real data first",
           "",
           "✅ EXECUTION RULES:",
           "- Always end with a comprehensive assistant text response that directly answers the user's question",
@@ -982,6 +990,12 @@ export async function POST(request: Request) {
           `🧠 INTELLIGENT ORCHESTRATION: detected capabilities [${detectedCapabilities.join(', ')}] from query: "${lastUserTextForMcp.substring(0, 100)}${lastUserTextForMcp.length > 100 ? '...' : ''}"`,
         );
 
+        if (needsMultiStepOrchestration) {
+          logger.info(
+            `🔄 MULTI-STEP ORCHESTRATION: Detected need for data gathering before workflow execution. Will not force workflow-only mode.`,
+          );
+        }
+
         logger.info(
           `${effectiveAgent ? `agent: ${effectiveAgent.name}, ` : ""}tool mode: ${toolChoice}, mentions: ${mentions.length}, thinking: ${thinking}`,
         );
@@ -1001,8 +1015,13 @@ export async function POST(request: Request) {
         // When forcing workflows, allow as many steps as the number of distinct explicitly-mentioned workflows (cap to 10)
         // Let the model take as many steps as it needs; do not cap maxSteps
 
-        // If forcing a workflow and it's not ambiguous, expose ONLY that workflow tool to the model
-        if (forceWorkflowOnly && !isSelectedWorkflowAmbiguous) {
+        // INTELLIGENT MULTI-STEP ORCHESTRATION: Don't force workflow-only when MCP tools are also needed
+        const needsMultiStepOrchestration = detectedCapabilities.length > 1 && 
+          detectedCapabilities.some(cap => ['google-ads', 'google-search-console', 'google-workspace', 'web-search'].includes(cap)) &&
+          selectedWorkflowMentions.length > 0;
+
+        if (forceWorkflowOnly && !isSelectedWorkflowAmbiguous && !needsMultiStepOrchestration) {
+          // Only force workflow-only for simple single-capability queries
           try {
             const selectedMention = (selectedWorkflowMentions || [])[0] as any;
             const toWorkflowToolKey = (human?: string) => {
@@ -1021,7 +1040,8 @@ export async function POST(request: Request) {
         }
 
         // Allow the model to orchestrate multiple steps across tools/workflows as needed
-        const maxStepsForRun = (forceWorkflowOnly && !isSelectedWorkflowAmbiguous) ? 3 : 5;
+        const maxStepsForRun = needsMultiStepOrchestration ? 6 : 
+                              (forceWorkflowOnly && !isSelectedWorkflowAmbiguous) ? 3 : 5;
 
         // Post-process: if the selected tool expects a 'client_name' parameter,
         // only derive it from an explicit 'url' field or the active agent's name.
