@@ -753,6 +753,7 @@ export async function POST(request: Request) {
           "- When chaining tools, insert a brief internal reasoning step to map outputs to the next tool's required inputs. Do not call a tool with empty or placeholder arguments.",
           "- After using any tool, you MUST end the turn with at least one assistant text message that answers the user's question.",
           "- Stop once you've produced a sufficient answer; do not create documents, files, or charts unless explicitly requested (keywords: graph, chart, plot, diagram, histogram, bar, line, pie; FR: graphique, courbe, camembert, diagramme, histogramme, barres, lignes).",
+          "- If the user names a data source/platform (e.g., a specific provider), use that source FIRST to gather the requested base metrics or lists before calling any enrichment/aggregator workflows. Only after collecting the base data should you optionally enrich and then present results.",
         ].join("\n");
 
         const forcedSummaryHint =
@@ -869,7 +870,7 @@ export async function POST(request: Request) {
               return Object.fromEntries(toolEntries.filter(([name]) => allowedNames.has(name)).slice(0, MAX_TOOLS));
             }
 
-            // Otherwise reorder softly: when MCP servers were mentioned, promote their tools and keep workflows alongside for fluid orchestration
+            // Otherwise reorder: when MCP servers were mentioned, promote their tools and demote workflows so base data is gathered first
             const isWorkflow = (tool: any) => (tool && typeof tool === "object" && tool.__$ref__ === "workflow");
             const isMcp = (tool: any) => (tool && typeof tool === "object" && tool.__$ref__ === "mcp");
 
@@ -881,7 +882,7 @@ export async function POST(request: Request) {
               const workflows = toolEntries.filter(([, tool]) => isWorkflow(tool));
               const mcpOthers = toolEntries.filter(([, tool]) => isMcp(tool) && (!preferredServerIds.has((tool as any)._mcpServerId)));
               const remaining = toolEntries.filter(([name, tool]) => !vizDefaultNames.has(name) && !isMcp(tool) && !isWorkflow(tool) && !appDefaultNames.has(name));
-              const prioritized = [...mcpPreferred, ...workflows, ...vizDefaults, ...mcpOthers, ...nonVizDefaults, ...remaining].slice(0, MAX_TOOLS);
+              const prioritized = [...mcpPreferred, ...vizDefaults, ...mcpOthers, ...nonVizDefaults, ...remaining, ...workflows].slice(0, MAX_TOOLS);
               return Object.fromEntries(prioritized);
             }
 
