@@ -649,8 +649,11 @@ export async function POST(request: Request) {
           const matchedServers = matchMcpServers(detectedIntents);
           
           // Log the dynamic detection for debugging
+          logger.info(`🔍 MCP INTENT ANALYSIS: query="${lastUserTextForMcp}" → intents [${detectedIntents.join(', ')}]`);
           if (detectedIntents.length > 0 || matchedServers.length > 0) {
             logger.info(`🔍 FUTURE-PROOF MCP DETECTION: intents [${detectedIntents.join(', ')}] → servers [${matchedServers.map(s => s.displayName || s.name).join(', ')}]`);
+          } else {
+            logger.info(`❌ NO MCP SERVERS DETECTED: No intents matched or no servers available`);
           }
           
           return matchedServers;
@@ -675,7 +678,8 @@ export async function POST(request: Request) {
           }
           return [] as any[];
         })();
-        const forceWorkflowOnly = supportToolCall && selectedWorkflowMentions.length > 0;
+        // Initially determine if workflow should be forced based on mentions
+        let forceWorkflowOnly = supportToolCall && selectedWorkflowMentions.length > 0;
         
         // FUTURE-PROOF: Multi-step orchestration detection for any MCP + workflow combination
         // Note: This is declared early because it's used in workflow hints
@@ -1045,30 +1049,40 @@ export async function POST(request: Request) {
         const detectedCapabilities: string[] = [];
         
         // Add capabilities from detected MCP servers
+        logger.info(`🔍 MCP DETECTION: Found ${autoMcpMentions.length} auto MCP mentions: [${autoMcpMentions.map(m => m.displayName || m.name).join(', ')}]`);
+        
         for (const mcpMention of autoMcpMentions) {
           const serverName = (mcpMention.displayName || mcpMention.name || '').toLowerCase();
+          logger.info(`🔍 MCP SERVER ANALYSIS: "${serverName}"`);
           
           // Map server names to capability categories
           if (serverName.includes('search') || serverName.includes('console')) {
             detectedCapabilities.push('google-search-console');
+            logger.info(`✅ DETECTED CAPABILITY: google-search-console from "${serverName}"`);
           }
           if (serverName.includes('ads') || serverName.includes('adwords')) {
             detectedCapabilities.push('google-ads');
+            logger.info(`✅ DETECTED CAPABILITY: google-ads from "${serverName}"`);
           }
           if (serverName.includes('drive') || serverName.includes('workspace')) {
             detectedCapabilities.push('google-workspace');
+            logger.info(`✅ DETECTED CAPABILITY: google-workspace from "${serverName}"`);
           }
           if (serverName.includes('analytics')) {
             detectedCapabilities.push('web-analytics');
+            logger.info(`✅ DETECTED CAPABILITY: web-analytics from "${serverName}"`);
           }
           if (serverName.includes('shopify') || serverName.includes('ecommerce')) {
             detectedCapabilities.push('ecommerce');
+            logger.info(`✅ DETECTED CAPABILITY: ecommerce from "${serverName}"`);
           }
           if (serverName.includes('github') || serverName.includes('git')) {
             detectedCapabilities.push('code-repository');
+            logger.info(`✅ DETECTED CAPABILITY: code-repository from "${serverName}"`);
           }
           if (serverName.includes('slack') || serverName.includes('discord')) {
             detectedCapabilities.push('communication');
+            logger.info(`✅ DETECTED CAPABILITY: communication from "${serverName}"`);
           }
           // Add more mappings as needed for future MCP servers
         }
@@ -1078,13 +1092,45 @@ export async function POST(request: Request) {
         if (wantsImageGen) detectedCapabilities.push('seelab-text-to-image');
         if (wantsVisualization) detectedCapabilities.push('visualization');
         
+        // ENHANCED FALLBACK: Always check for data source keywords when workflows are present
+        // This ensures multi-step orchestration even if MCP auto-detection fails
+        if (selectedWorkflowMentions.length > 0) {
+          const queryLower = lastUserTextForMcp.toLowerCase();
+          // Check for data source keywords that suggest MCP tools are needed
+          if (queryLower.includes('search console') || queryLower.includes('gsc') || queryLower.includes('mots-clés')) {
+            if (!detectedCapabilities.includes('google-search-console')) {
+              detectedCapabilities.push('google-search-console');
+              logger.info(`🔄 FALLBACK DETECTION: Added google-search-console capability`);
+            }
+          }
+          if (queryLower.includes('google ads') || queryLower.includes('ads') || queryLower.includes('adwords')) {
+            if (!detectedCapabilities.includes('google-ads')) {
+              detectedCapabilities.push('google-ads');
+              logger.info(`🔄 FALLBACK DETECTION: Added google-ads capability`);
+            }
+          }
+          if (queryLower.includes('analytics') || queryLower.includes('ga')) {
+            if (!detectedCapabilities.includes('web-analytics')) {
+              detectedCapabilities.push('web-analytics');
+              logger.info(`🔄 FALLBACK DETECTION: Added web-analytics capability`);
+            }
+          }
+          // Check for comparison keywords that suggest multi-step processing
+          if (queryLower.includes('vs') || queryLower.includes('compare') || queryLower.includes('comparatif')) {
+            if (!detectedCapabilities.includes('data-comparison')) {
+              detectedCapabilities.push('data-comparison');
+              logger.info(`🔄 FALLBACK DETECTION: Added data-comparison capability for multi-step processing`);
+            }
+          }
+        }
+        
         // Remove duplicates
         const uniqueCapabilities = Array.from(new Set(detectedCapabilities));
         
         // FUTURE-PROOF: Multi-step orchestration detection for any MCP + workflow combination
         const hasDataSourceCapabilities = uniqueCapabilities.some(cap => 
           // Data source capabilities that need to be gathered before workflows
-          ['google-ads', 'google-search-console', 'google-workspace', 'web-search', 'web-analytics', 'ecommerce', 'code-repository', 'communication'].includes(cap)
+          ['google-ads', 'google-search-console', 'google-workspace', 'web-search', 'web-analytics', 'ecommerce', 'code-repository', 'communication', 'data-comparison'].includes(cap)
         );
         const hasWorkflowCapabilities = selectedWorkflowMentions.length > 0;
         const hasVisualizationCapabilities = uniqueCapabilities.includes('visualization');
@@ -1106,6 +1152,7 @@ export async function POST(request: Request) {
         if (needsMultiStepOrchestration) {
           // Reset forceWorkflowOnly to allow proper orchestration
           // The model will still have access to the workflow but won't be forced to use it immediately
+          forceWorkflowOnly = false;
           logger.info(
             `🔄 MULTI-STEP ORCHESTRATION: Disabling workflow-only mode to allow data gathering first. Workflow will be available after MCP data collection.`,
           );
@@ -1117,6 +1164,14 @@ export async function POST(request: Request) {
         
         logger.info(
           `🔍 ORCHESTRATION ANALYSIS: hasDataSource=${hasDataSourceCapabilities}, hasWorkflow=${hasWorkflowCapabilities}, hasVisualization=${hasVisualizationCapabilities}, needsMultiStep=${needsMultiStepOrchestration}`,
+        );
+        
+        logger.info(
+          `🎯 WORKFLOW FORCING: forceWorkflowOnly=${forceWorkflowOnly}, selectedWorkflowMentions=${selectedWorkflowMentions.length}, workflowNames=[${selectedWorkflowMentions.map(w => w.name).join(', ')}]`,
+        );
+        
+        logger.info(
+          `🔧 FINAL DECISION: shouldForceWorkflowOnly will be ${forceWorkflowOnly && !needsMultiStepOrchestration}, maxSteps will be ${needsMultiStepOrchestration ? 6 : (forceWorkflowOnly && !needsMultiStepOrchestration) ? 3 : 5}`,
         );
 
         if (needsMultiStepOrchestration) {
