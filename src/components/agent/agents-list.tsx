@@ -45,16 +45,18 @@ export function AgentsList({
     null,
   );
 
+  const { isAdmin: isAdminQuery } = useIsAdmin();
+  const isAdmin = isAdminDefault ?? isAdminQuery;
+
+  const filtersParam = isAdmin ? "all" : "mine,shared";
+
   const { data: allAgents } = useSWR(
-    "/api/agent?filters=mine,shared",
+    `/api/agent?filters=${filtersParam}`,
     fetcher,
     {
       fallbackData: [...initialMyAgents, ...initialSharedAgents],
     },
   );
-
-  const { isAdmin: isAdminQuery } = useIsAdmin();
-  const isAdmin = isAdminDefault ?? isAdminQuery;
 
   const myAgents =
     allAgents?.filter((agent: AgentSummary) => agent.userId === userId) ||
