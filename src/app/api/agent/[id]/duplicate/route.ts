@@ -28,7 +28,7 @@ export async function POST(
     icon: sourceAgent.icon,
     instructions: sourceAgent.instructions,
     userId: session.user.id,
-    visibility: "private",
+    visibility: "readonly",
   });
 
   return Response.json(duplicated);

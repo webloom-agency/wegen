@@ -62,7 +62,7 @@ const defaultConfig = (): PartialBy<
       systemPrompt: "",
       mentions: [],
     },
-    visibility: "private",
+    visibility: "readonly",
   };
 };
 

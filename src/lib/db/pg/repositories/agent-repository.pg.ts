@@ -23,7 +23,7 @@ export const pgAgentRepository: AgentRepository = {
         icon: agent.icon,
         userId: agent.userId,
         instructions: agent.instructions,
-        visibility: agent.visibility || "private",
+        visibility: agent.visibility || "readonly",
         createdAt: new Date(),
         updatedAt: new Date(),
       })

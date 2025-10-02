@@ -52,7 +52,7 @@ export const AgentSchema = pgTable("agent", {
     enum: ["public", "private", "readonly"],
   })
     .notNull()
-    .default("private"),
+    .default("readonly"),
   createdAt: timestamp("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
@@ -200,7 +200,7 @@ export const WorkflowSchema = pgTable("workflow", {
     enum: ["public", "private", "readonly"],
   })
     .notNull()
-    .default("private"),
+    .default("readonly"),
   userId: uuid("user_id")
     .notNull()
     .references(() => UserSchema.id, { onDelete: "cascade" }),

@@ -38,7 +38,7 @@ export const AgentCreateSchema = z
       .optional(),
     userId: z.string(),
     instructions: AgentInstructionsSchema,
-    visibility: VisibilitySchema.optional().default("private"),
+    visibility: VisibilitySchema.optional().default("readonly"),
   })
   .strip();
 export const AgentUpdateSchema = z

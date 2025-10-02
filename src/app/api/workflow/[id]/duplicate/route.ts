@@ -73,7 +73,7 @@ export async function POST(
     description: source.description,
     icon: source.icon,
     isPublished: false,
-    visibility: "private",
+    visibility: "readonly",
     userId: session.user.id,
   }, true);
 
