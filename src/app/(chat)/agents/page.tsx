@@ -10,15 +10,17 @@ export default async function AgentsPage() {
     notFound();
   }
 
+  // Determine admin and choose filters accordingly (admins see all)
+  const me = await userRepository.findById(session.user.id);
+  const isAdmin = (me as any)?.role === "admin";
+  const filters = isAdmin ? ["all"] : ["mine", "shared"];
+
   // Fetch agents data on the server
   const allAgents = await agentRepository.selectAgents(
     session.user.id,
-    ["mine", "shared"],
+    filters,
     50,
   );
-
-  const me = await userRepository.findById(session.user.id);
-  const isAdmin = (me as any)?.role === "admin";
 
   // Separate into my agents and shared agents
   const myAgents = allAgents.filter(
