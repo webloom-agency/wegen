@@ -558,10 +558,10 @@ export async function POST(request: Request) {
                 if (/serp|search[-_\s]*api|search[-_\s]*engine/.test(sn)) adsScores[sid] = (adsScores[sid] || 0) - 1;
               }
               if (wantGsc) {
-                // Strongly prefer servers whose name matches Search Console synonyms (including hyphen/underscore)
-                if (/search[-_\s]*console|gsc|webmaster/.test(sn)) gscScores[sid] = (gscScores[sid] || 0) + 5;
+                // Strongly prefer servers whose name matches Search Console synonyms
+                if (/search\s*console|gsc|webmaster/.test(sn)) gscScores[sid] = (gscScores[sid] || 0) + 5;
                 // Also consider tool names containing GSC-related terms
-                if (/search[-_\s]*console|gsc|webmaster/.test(tn)) gscScores[sid] = (gscScores[sid] || 0) + 2;
+                if (/search\s*console|gsc|webmaster/.test(tn)) gscScores[sid] = (gscScores[sid] || 0) + 2;
                 // Light penalty for generic SERP-style servers when GSC requested
                 if (/serp|search[-_\s]*api|search[-_\s]*engine/.test(sn)) gscScores[sid] = (gscScores[sid] || 0) - 1;
               }
@@ -590,9 +590,6 @@ export async function POST(request: Request) {
         const selectedWorkflowMentions = (() => {
           const clientSel = (explicitClientWorkflowMentions || []).slice(0, 1);
           if (clientSel.length > 0) return clientSel;
-          // If any MCP servers are mentioned (explicitly or via auto-mentions), do not force a workflow first
-          const anyMcpServersMentioned = (effectiveClientMentions || []).some((m: any) => m?.type === "mcpServer");
-          if (anyMcpServersMentioned) return [];
           if (Array.isArray(workflowCandidates) && workflowCandidates.length > 0) {
             const best = workflowCandidates
               .slice()
@@ -741,9 +738,8 @@ export async function POST(request: Request) {
                 m.type === "mcpServer" ? `MCP server '${m.name}'` : `MCP tool '${m.name}'`,
               );
               const list = items.join(", ");
-              const orchestration = `When both Google Ads and Search Console are requested, decide the order fluidly: gather from Ads/Console first if you need base metrics, or start with a workflow if it is necessary to scope/aggregate before fetching from MCP. Interleave calls as needed to fully answer the request.`;
               const chaining = `If a tool returns a list (e.g., properties or accounts), choose the best match from the user's prompt and context (including any mentioned domain or agent) and then call the necessary follow-up tool(s) from the SAME MCP to gather the required KPIs for the requested time window. Do not stop after the first tool call; continue tool calls until you can fully answer, then summarize.`;
-              return `Invoke tool(s) from ${list} as needed to answer the user's request this turn. ${orchestration} ${chaining} After tool execution, produce a concise assistant summary of the findings and recommended next steps.`;
+              return `Invoke tool(s) from ${list} as needed to answer the user's request this turn. ${chaining} After tool execution, produce a concise assistant summary of the findings and recommended next steps.`;
             })()
           : undefined;
         const orchestrationPolicy = [
@@ -753,7 +749,6 @@ export async function POST(request: Request) {
           "- When chaining tools, insert a brief internal reasoning step to map outputs to the next tool's required inputs. Do not call a tool with empty or placeholder arguments.",
           "- After using any tool, you MUST end the turn with at least one assistant text message that answers the user's question.",
           "- Stop once you've produced a sufficient answer; do not create documents, files, or charts unless explicitly requested (keywords: graph, chart, plot, diagram, histogram, bar, line, pie; FR: graphique, courbe, camembert, diagramme, histogramme, barres, lignes).",
-          "- If the user names a data source/platform (e.g., a specific provider), use that source FIRST to gather the requested base metrics or lists before calling any enrichment/aggregator workflows. Only after collecting the base data should you optionally enrich and then present results.",
         ].join("\n");
 
         const forcedSummaryHint =
@@ -870,24 +865,15 @@ export async function POST(request: Request) {
               return Object.fromEntries(toolEntries.filter(([name]) => allowedNames.has(name)).slice(0, MAX_TOOLS));
             }
 
-            // Otherwise reorder: when MCP servers were mentioned, promote their tools and demote workflows so base data is gathered first
-            const isWorkflow = (tool: any) => (tool && typeof tool === "object" && tool.__$ref__ === "workflow");
-            const isMcp = (tool: any) => (tool && typeof tool === "object" && tool.__$ref__ === "mcp");
-
-            const vizDefaults = toolEntries.filter(([name]) => vizDefaultNames.has(name));
-            const nonVizDefaults = appDefaults.filter(([name]) => !vizDefaultNames.has(name));
-
-            if (preferredServerIds.size > 0) {
-              const mcpPreferred = toolEntries.filter(([, tool]) => isMcp(tool) && preferredServerIds.has((tool as any)._mcpServerId));
-              const workflows = toolEntries.filter(([, tool]) => isWorkflow(tool));
-              const mcpOthers = toolEntries.filter(([, tool]) => isMcp(tool) && (!preferredServerIds.has((tool as any)._mcpServerId)));
-              const remaining = toolEntries.filter(([name, tool]) => !vizDefaultNames.has(name) && !isMcp(tool) && !isWorkflow(tool) && !appDefaultNames.has(name));
-              const prioritized = [...mcpPreferred, ...vizDefaults, ...mcpOthers, ...nonVizDefaults, ...remaining, ...workflows].slice(0, MAX_TOOLS);
-              return Object.fromEntries(prioritized);
-            }
-
-            // No MCP preference: keep original bias minimal
-            const prioritized = [...others, ...appDefaults].slice(0, MAX_TOOLS);
+            // Otherwise keep priority order, but move preferred MCP server tools to the front (others first, then app defaults)
+            const splitByPreference = (arr: Array<[string, any]>) => {
+              const preferred = arr.filter(([, tool]) => (tool as any)?._mcpServerId && preferredServerIds.has((tool as any)._mcpServerId));
+              const nonPreferred = arr.filter(([, tool]) => !(tool as any)?._mcpServerId || !preferredServerIds.has((tool as any)._mcpServerId));
+              return { preferred, nonPreferred };
+            };
+            const { preferred: preferredOthers, nonPreferred: nonPreferredOthers } = splitByPreference(others);
+            const { preferred: preferredDefaults, nonPreferred: nonPreferredDefaults } = splitByPreference(appDefaults);
+            const prioritized = [...preferredOthers, ...preferredDefaults, ...nonPreferredOthers, ...nonPreferredDefaults].slice(0, MAX_TOOLS);
             return Object.fromEntries(prioritized);
           })
           .unwrap();
