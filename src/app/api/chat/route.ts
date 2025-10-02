@@ -795,7 +795,6 @@ export async function POST(request: Request) {
             // Hard cap per provider limitation: 128 tools max
             const MAX_TOOLS = 128;
             const toolEntries = Object.entries(allTools);
-            if (toolEntries.length <= MAX_TOOLS) return allTools;
 
             // Prioritize exact-match mentions first, then fuzzy mentions, then app default tools, then others
             const toWorkflowToolKey = (human?: string) => {
@@ -810,7 +809,8 @@ export async function POST(request: Request) {
             const fuzzyMentioned = new Set<string>();
             const exactMentionedServerIds = new Set<string>();
             const fuzzyMentionedServerIds = new Set<string>();
-            for (const m of (clientMentions || [])) {
+            // Include explicit client mentions and auto MCP server mentions
+            for (const m of (effectiveClientMentions || [])) {
               if (!m || !("type" in (m as any))) continue;
               if ((m as any).type === "mcpTool" || (m as any).type === "defaultTool") {
                 if ((m as any).name) exactMentioned.add((m as any).name);
@@ -845,8 +845,9 @@ export async function POST(request: Request) {
 
             // Include server-level mentions as exact/fuzzy tool candidates
             const exactByServer = toolEntries.filter(([, val]: any) => exactMentionedServerIds.has((val as any)?._mcpServerId));
-            const fuzzyByServer = toolEntries.filter(([, val]: any) =>
-              !exactByServer.includes((["", val] as any)) && fuzzyMentionedServerIds.has((val as any)?._mcpServerId),
+            const exactByServerKeys = new Set(exactByServer.map(([name]) => name));
+            const fuzzyByServer = toolEntries.filter(([name, val]: any) =>
+              !exactByServerKeys.has(name) && fuzzyMentionedServerIds.has((val as any)?._mcpServerId),
             );
 
             const exactByName = toolEntries.filter(([name]) => exactMentioned.has(name));
@@ -877,9 +878,13 @@ export async function POST(request: Request) {
               return Object.fromEntries(toolEntries.filter(([name]) => allowedNames.has(name)).slice(0, MAX_TOOLS));
             }
 
-            // Otherwise keep priority order (others first, then app defaults) within cap to reduce default tool bias
-            const prioritized = [...others, ...appDefaults].slice(0, MAX_TOOLS);
-            return Object.fromEntries(prioritized);
+            // If no mention matches, apply cap only when exceeding MAX_TOOLS; otherwise return as-is
+            if (toolEntries.length > MAX_TOOLS) {
+              // Otherwise keep priority order (others first, then app defaults) within cap to reduce default tool bias
+              const prioritized = [...others, ...appDefaults].slice(0, MAX_TOOLS);
+              return Object.fromEntries(prioritized);
+            }
+            return allTools;
           })
           .unwrap();
 
