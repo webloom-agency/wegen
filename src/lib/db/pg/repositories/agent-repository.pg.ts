@@ -131,7 +131,13 @@ export const pgAgentRepository: AgentRepository = {
       .where(
         admin
           ? eq(AgentSchema.id, id)
-          : and(eq(AgentSchema.id, id), eq(AgentSchema.userId, userId)),
+          : and(
+              eq(AgentSchema.id, id),
+              or(
+                eq(AgentSchema.userId, userId),
+                eq(AgentSchema.visibility, "public"),
+              ),
+            ),
       )
       .returning();
     return {
