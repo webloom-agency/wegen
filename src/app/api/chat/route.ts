@@ -741,8 +741,9 @@ export async function POST(request: Request) {
                 m.type === "mcpServer" ? `MCP server '${m.name}'` : `MCP tool '${m.name}'`,
               );
               const list = items.join(", ");
+              const orchestration = `When both Google Ads and Search Console are requested, decide the order fluidly: gather from Ads/Console first if you need base metrics, or start with a workflow if it is necessary to scope/aggregate before fetching from MCP. Interleave calls as needed to fully answer the request.`;
               const chaining = `If a tool returns a list (e.g., properties or accounts), choose the best match from the user's prompt and context (including any mentioned domain or agent) and then call the necessary follow-up tool(s) from the SAME MCP to gather the required KPIs for the requested time window. Do not stop after the first tool call; continue tool calls until you can fully answer, then summarize.`;
-              return `Invoke tool(s) from ${list} as needed to answer the user's request this turn. ${chaining} After tool execution, produce a concise assistant summary of the findings and recommended next steps.`;
+              return `Invoke tool(s) from ${list} as needed to answer the user's request this turn. ${orchestration} ${chaining} After tool execution, produce a concise assistant summary of the findings and recommended next steps.`;
             })()
           : undefined;
         const orchestrationPolicy = [
@@ -868,15 +869,24 @@ export async function POST(request: Request) {
               return Object.fromEntries(toolEntries.filter(([name]) => allowedNames.has(name)).slice(0, MAX_TOOLS));
             }
 
-            // Otherwise keep priority order, but move preferred MCP server tools to the front (others first, then app defaults)
-            const splitByPreference = (arr: Array<[string, any]>) => {
-              const preferred = arr.filter(([, tool]) => (tool as any)?._mcpServerId && preferredServerIds.has((tool as any)._mcpServerId));
-              const nonPreferred = arr.filter(([, tool]) => !(tool as any)?._mcpServerId || !preferredServerIds.has((tool as any)._mcpServerId));
-              return { preferred, nonPreferred };
-            };
-            const { preferred: preferredOthers, nonPreferred: nonPreferredOthers } = splitByPreference(others);
-            const { preferred: preferredDefaults, nonPreferred: nonPreferredDefaults } = splitByPreference(appDefaults);
-            const prioritized = [...preferredOthers, ...preferredDefaults, ...nonPreferredOthers, ...nonPreferredDefaults].slice(0, MAX_TOOLS);
+            // Otherwise reorder softly: when MCP servers were mentioned, promote their tools and keep workflows alongside for fluid orchestration
+            const isWorkflow = (tool: any) => (tool && typeof tool === "object" && tool.__$ref__ === "workflow");
+            const isMcp = (tool: any) => (tool && typeof tool === "object" && tool.__$ref__ === "mcp");
+
+            const vizDefaults = toolEntries.filter(([name]) => vizDefaultNames.has(name));
+            const nonVizDefaults = appDefaults.filter(([name]) => !vizDefaultNames.has(name));
+
+            if (preferredServerIds.size > 0) {
+              const mcpPreferred = toolEntries.filter(([, tool]) => isMcp(tool) && preferredServerIds.has((tool as any)._mcpServerId));
+              const workflows = toolEntries.filter(([, tool]) => isWorkflow(tool));
+              const mcpOthers = toolEntries.filter(([, tool]) => isMcp(tool) && (!preferredServerIds.has((tool as any)._mcpServerId)));
+              const remaining = toolEntries.filter(([name, tool]) => !vizDefaultNames.has(name) && !isMcp(tool) && !isWorkflow(tool) && !appDefaultNames.has(name));
+              const prioritized = [...mcpPreferred, ...workflows, ...vizDefaults, ...mcpOthers, ...nonVizDefaults, ...remaining].slice(0, MAX_TOOLS);
+              return Object.fromEntries(prioritized);
+            }
+
+            // No MCP preference: keep original bias minimal
+            const prioritized = [...others, ...appDefaults].slice(0, MAX_TOOLS);
             return Object.fromEntries(prioritized);
           })
           .unwrap();
