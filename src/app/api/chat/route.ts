@@ -569,8 +569,8 @@ export async function POST(request: Request) {
             // Expandable data source patterns - automatically works with any MCP
             const dataSourcePatterns = [
               { keywords: ['search console', 'gsc', 'google search console', 'mots-clés', 'keywords'], intent: 'search-analytics' },
-              { keywords: ['google ads', 'adwords', 'google adwords', 'publicité google', 'advertising google'], intent: 'advertising-data' },
-              { keywords: ['ads research', 'search ads', 'competitor ads', 'serp ads', 'ads analysis'], intent: 'ads-research' },
+              { keywords: ['google ads', 'adwords', 'google adwords', 'publicité google', 'advertising google', 'performances google ads', 'google ads performance', 'campagne google ads', 'google ads campaign'], intent: 'advertising-data' },
+              { keywords: ['ads research', 'search ads', 'competitor ads', 'serp ads', 'ads analysis', 'recherche publicitaire'], intent: 'ads-research' },
               { keywords: ['drive', 'google drive', 'workspace', 'docs', 'sheets', 'fathom', 'fathoms', 'kickoff', 'preaudit', 'search drive', 'drive files', 'google docs', 'google sheets', 'gdrive', 'rapport', 'document', 'fichier'], intent: 'document-storage' },
               { keywords: ['analytics', 'ga', 'google analytics', 'traffic'], intent: 'web-analytics' },
               { keywords: ['youtube', 'video', 'channel'], intent: 'video-platform' },
@@ -607,6 +607,14 @@ export async function POST(request: Request) {
               logger.info(`🚀 FORCED INTENT: Added document-storage intent due to Google Drive/business document context in: "${text}"`);
             }
             
+            // CRITICAL FALLBACK: Force advertising-data intent for Google Ads performance queries
+            if ((lowerText.includes('google ads') || lowerText.includes('google adwords')) && 
+                (lowerText.includes('performance') || lowerText.includes('performances') || lowerText.includes('campagne') || lowerText.includes('campaign')) 
+                && !intents.includes('advertising-data')) {
+              intents.push('advertising-data');
+              logger.info(`🚀 FORCED INTENT: Added advertising-data intent due to Google Ads performance context in: "${text}"`);
+            }
+            
             return intents;
           };
           
@@ -640,15 +648,16 @@ export async function POST(request: Request) {
               if (intents.includes('advertising-data')) {
                 // Highest priority: Exact Google Ads server match
                 if (serverName.includes('google-ads') || serverName.includes('googleads') || serverName === 'google ads') {
-                  score += 50; // Much higher score for actual Google Ads MCP
+                  score += 100; // Very high score for actual Google Ads MCP
+                  logger.info(`🚀 GOOGLE ADS BOOST: Boosting score for ${serverName}/${toolName} due to advertising-data intent`);
                 }
                 // Medium priority: Google + ads combination (but not SERP)
                 else if (serverName.includes('google') && serverName.includes('ads') && !serverName.includes('serp')) {
-                  score += 30;
+                  score += 50;
                 }
                 // Lower priority: Generic ads tools (like SERP search_ads_by_domain)
                 else if (toolName.includes('ads') || serverName.includes('ads')) {
-                  score += 10; // Much lower score for generic ads tools
+                  score += 5; // Much lower score for generic ads tools
                 }
               }
               
