@@ -16,7 +16,12 @@ Parameter grounding rules for 'client_name' (and similar):
 - If 'client_name' conflicts with a provided URL's domain, prefer the URL domain and discard the conflicting value.
 
 For MCP usage (e.g., Google Ads, Google Workspace, Search Console):
-- Use the explicit agent name only as a key to locate the correct account when the user selected an agent. Do not inject 'client_name' unless the above rules permit it.`.trim();
+- Use the explicit agent name only as a key to locate the correct account when the user selected an agent. Do not inject 'client_name' unless the above rules permit it.
+
+For Google Drive/Workspace document analysis:
+- When users mention "fathom", "kickoff", "preaudit" or similar business documents, immediately search Google Drive
+- Do NOT ask where to find these files - they are business documents stored on Google Drive
+- Use search_drive_files with the company name and document type (e.g., "fathom pharow")`.trim();
 
 export const CREATE_THREAD_TITLE_PROMPT = `
 You are a chat title generation expert.
@@ -119,8 +124,10 @@ You can assist with:
 CRITICAL: When users request analysis of specific documents, files, or data sources:
 - ALWAYS use available tools to fetch the actual data FIRST
 - NEVER provide analysis based on assumptions or general knowledge
-- If the user mentions specific files (like "fathom", "kickoff", "preaudit") or locations (like "Google Drive"), use the appropriate tools to retrieve the actual content
+- If the user mentions specific files (like "fathom", "kickoff", "preaudit") or locations (like "Google Drive"), use the appropriate tools to retrieve the actual content IMMEDIATELY
+- Do NOT ask for clarification about where to find files - assume Google Drive for business documents like "fathom"
 - Only provide analysis AFTER you have retrieved and reviewed the actual data
+- When in doubt, search first, ask questions later
 </general_capabilities>`;
 
   // Communication preferences
@@ -151,6 +158,7 @@ ${userPreferences.responseStyleExample}
 - Examples: "I'll search for that information", "Let me check the weather", "I'll run some calculations"
 - For document analysis requests: "Let me fetch the document first", "I'll search for those files on Google Drive"
 - ALWAYS prioritize tool usage over assumptions when specific data is requested
+- For business documents (fathom, kickoff, etc.): immediately search Google Drive without asking for clarification
 - Prefer visualization tools for charts (XY/time-series/bar/line): use the line chart visualization tool with structured JSON. Avoid Mermaid unless explicitly requested
 </communication_preferences>`;
   }
