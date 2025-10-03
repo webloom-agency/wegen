@@ -792,7 +792,15 @@ export async function POST(request: Request) {
           
           // CRITICAL: Don't auto-select workflows when user explicitly mentions MCP tools
           if (explicitClientMcpMentions.length > 0) {
-            logger.info(`🚫 WORKFLOW AUTO-SELECTION BLOCKED: User explicitly mentioned MCP tools [${explicitClientMcpMentions.map(m => m.name || m.serverId).join(', ')}], skipping workflow auto-selection`);
+            const mcpNames = explicitClientMcpMentions.map(m => {
+              if (m.type === 'mcpTool') {
+                return m.name || m.serverId;
+              } else if (m.type === 'mcpServer') {
+                return (m as any).serverId || (m as any).name;
+              }
+              return (m as any).name || 'unknown';
+            });
+            logger.info(`🚫 WORKFLOW AUTO-SELECTION BLOCKED: User explicitly mentioned MCP tools [${mcpNames.join(', ')}], skipping workflow auto-selection`);
             return [];
           }
           
