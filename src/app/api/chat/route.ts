@@ -785,13 +785,19 @@ export async function POST(request: Request) {
           // Always load all tool categories; restrict by mentions/allow-lists but do not exclude others when a workflow is selected
           MCP_TOOLS = await safe()
             .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
-            .map(() =>
-              loadMcpTools({
+            .map(() => {
+              logger.info(`🔧 MCP TOOLS LOADING: effectiveClientMentions=${effectiveClientMentions.length}, allowedMcpServers=${allowedMcpServers ? Object.keys(allowedMcpServers).length : 'undefined'}`);
+              const result = loadMcpTools({
                 // Only use client mentions to restrict MCP tools
                 mentions: effectiveClientMentions as any,
                 allowedMcpServers,
-              }),
-            )
+              });
+              logger.info(`🔧 MCP TOOLS LOADED: ${Object.keys(result).length} tools available`);
+              if (Object.keys(result).length > 0) {
+                logger.info(`🔧 MCP TOOLS LIST: [${Object.keys(result).join(', ')}]`);
+              }
+              return result;
+            })
             .orElse({});
 
           // Prefer at most one workflow mention when any exist for loading, but keep other tool categories available
