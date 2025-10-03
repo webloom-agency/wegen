@@ -56,9 +56,6 @@ export function filterMCPToolsByMentions(
     return tools;
   }
 
-  console.log(`🔧 FILTER MCP TOOLS: ${toolMentions.length} mentions for ${Object.keys(tools).length} tools`);
-  console.log(`🔧 FILTER MCP TOOLS: Mentions: ${toolMentions.map(m => `${m.type}:${m.serverId || m.name}`).join(', ')}`);
-
   const metionsByServer = toolMentions.reduce(
     (acc, mention) => {
       if (mention.type == "mcpServer") {
@@ -77,16 +74,10 @@ export function filterMCPToolsByMentions(
     {} as Record<string, string[]>,
   );
 
-  console.log(`🔧 FILTER MCP TOOLS: Allowed servers: ${Object.keys(metionsByServer).join(', ')}`);
-
-  const filtered = objectFlow(tools).filter((_tool) => {
+  return objectFlow(tools).filter((_tool) => {
     if (!metionsByServer[_tool._mcpServerId]) return false;
     return metionsByServer[_tool._mcpServerId].includes(_tool._originToolName);
   });
-
-  console.log(`🔧 FILTER MCP TOOLS: Filtered from ${Object.keys(tools).length} to ${Object.keys(filtered).length} tools`);
-  
-  return filtered;
 }
 
 export function filterMCPToolsByAllowedMCPServers(

@@ -785,21 +785,13 @@ export async function POST(request: Request) {
           // Always load all tool categories; restrict by mentions/allow-lists but do not exclude others when a workflow is selected
           MCP_TOOLS = await safe()
             .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
-            .map(() => {
-              logger.info(`🔧 MCP TOOLS LOADING: effectiveClientMentions=${effectiveClientMentions.length}, allowedMcpServers=${allowedMcpServers ? Object.keys(allowedMcpServers).length : 'undefined'}`);
-              return loadMcpTools({
+            .map(() =>
+              loadMcpTools({
                 // Only use client mentions to restrict MCP tools
                 mentions: effectiveClientMentions as any,
                 allowedMcpServers,
-              });
-            })
-            .map((result) => {
-              logger.info(`🔧 MCP TOOLS LOADED: ${Object.keys(result).length} tools available`);
-              if (Object.keys(result).length > 0) {
-                logger.info(`🔧 MCP TOOLS LIST: [${Object.keys(result).join(', ')}]`);
-              }
-              return result;
-            })
+              }),
+            )
             .orElse({});
 
           // Prefer at most one workflow mention when any exist for loading, but keep other tool categories available
@@ -980,15 +972,6 @@ export async function POST(request: Request) {
 
         const forcedSummaryHint =
           "If a workflow was selected, you MUST invoke it in this turn unless inputs are ambiguous. When comparing multiple domains/sites (e.g., 'obat.fr vs webloom.fr'), call the required tools multiple times - once for each domain. After any tool/workflow calls, end the turn with a final assistant text answer that synthesizes outputs and directly answers the user's request in the user's language (FR if the user wrote in French). Be concise but complete. If the user asked 'qui est …', provide a short description and key facts with links if available.";
-        
-        // Add explicit MCP tool usage instruction when MCP tools are available and mentioned
-        const mcpToolUsageHint = (effectiveClientMentions.length > 0 && Object.keys(MCP_TOOLS).length > 0) 
-          ? "🚨 CRITICAL: You have access to MCP tools that can provide real data. When the user asks about Google Drive files, Search Console data, Google Ads, or other external services, you MUST use the appropriate MCP tools to get actual data instead of hallucinating or making up information. For Google Drive queries, use Google-workspace tools like search_drive_files or list_drive_items. Always call tools first, then provide analysis based on the real data returned."
-          : undefined;
-        
-        if (mcpToolUsageHint) {
-          logger.info(`🚨 MCP TOOL USAGE HINT APPLIED: Forcing model to use MCP tools instead of hallucinating`);
-        }
         
         // System prompt will be built after capabilities are detected
 
@@ -1368,7 +1351,6 @@ export async function POST(request: Request) {
           forcedMcpHint,
           multiDomainHint,
           orchestrationPolicy,
-          mcpToolUsageHint,
           forcedSummaryHint,
           !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
           (!supportToolCall ||
