@@ -864,7 +864,7 @@ export async function POST(request: Request) {
                 m.type === "mcpServer" ? `MCP server '${m.name}'` : `MCP tool '${m.name}'`,
               );
               const list = items.join(", ");
-              const chaining = `If a tool returns a list (e.g., properties or accounts), choose the best match from the user's prompt and context (including any mentioned domain or agent) and then call the necessary follow-up tool(s) from the SAME MCP to gather the required KPIs for the requested time window. Do not stop after the first tool call; continue tool calls until you can fully answer, then summarize. IMPORTANT: When comparing multiple domains/sites (e.g., "obat.fr vs webloom.fr"), call the SAME tool multiple times with different parameters - once for each domain/site mentioned.`;
+              const chaining = `If a tool returns a list (e.g., properties or accounts), choose the best match from the user's prompt and context (including any mentioned domain or agent) and then call the necessary follow-up tool(s) from the SAME MCP to gather the required KPIs for the requested time window. Do not stop after the first tool call; continue tool calls until you can fully answer, then summarize. CRITICAL FOR COMPARISONS: When comparing multiple domains/sites (e.g., "obat.fr vs webloom.fr"), you MUST call the SAME tool multiple times with different parameters - once for each domain/site mentioned. DO NOT create visualizations or charts until you have data for ALL domains mentioned in the query.`;
               return `Invoke tool(s) from ${list} as needed to answer the user's request this turn. ${chaining} After tool execution, produce a concise assistant summary of the findings and recommended next steps.`;
             })()
           : undefined;
@@ -904,39 +904,23 @@ export async function POST(request: Request) {
           "- Workflows can also generate data that feeds into subsequent MCP tool calls",
           "- Support bidirectional flow: MCP → Workflow → MCP or Workflow → MCP → Analysis",
           "- Automatically detect which MCP servers provide the required data types",
-          "- MULTIPLE CALLS: When comparing multiple domains/sites, call the SAME tool multiple times with different parameters",
-          "- Example: 'obat.fr vs webloom.fr' requires calling get_performance_overview twice (once for each domain)",
+          "- MULTIPLE CALLS MANDATORY: When comparing multiple domains/sites, you MUST call the SAME tool multiple times with different parameters",
+          "- Example: 'obat.fr vs webloom.fr' requires calling get_performance_overview TWICE (once for each domain) BEFORE creating any charts",
+          "- NEVER create visualizations with incomplete data - gather ALL required data first",
           "",
           "✅ EXECUTION RULES:",
           "- Always end with a comprehensive assistant text response that directly answers the user's question",
           "- Provide responses in the user's language (French if they wrote in French)",
           "- Include actionable insights, key findings, and next steps when relevant",
           "- For data queries, present results clearly with context and interpretation",
-          "- Maximum 5 steps total - be efficient but thorough",
+          "- VISUALIZATION RULE: Before creating charts/graphs, ensure you have collected data for ALL entities mentioned in the query",
+          "- Maximum 6 steps total - be efficient but thorough (allow extra steps for multi-domain comparisons)",
         ].join("\n");
 
         const forcedSummaryHint =
           "If a workflow was selected, you MUST invoke it in this turn unless inputs are ambiguous. When comparing multiple domains/sites (e.g., 'obat.fr vs webloom.fr'), call the required tools multiple times - once for each domain. After any tool/workflow calls, end the turn with a final assistant text answer that synthesizes outputs and directly answers the user's request in the user's language (FR if the user wrote in French). Be concise but complete. If the user asked 'qui est …', provide a short description and key facts with links if available.";
         
-        // Determine if this is a complex query that would benefit from thinking mode
-        const isComplexQuery = needsMultiStepOrchestration || 
-                              selectedWorkflowMentions.length > 0 ||
-                              Object.keys({ ...MCP_TOOLS, ...WORKFLOW_TOOLS }).length > 5;
-            
-            const systemPrompt = mergeSystemPrompt(
-          buildUserSystemPrompt(session.user, userPreferences, effectiveAgent),
-          buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
-          forcedWorkflowHint,
-          forcedMcpHint,
-          orchestrationPolicy,
-          forcedSummaryHint,
-              !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
-            (!supportToolCall ||
-            ["openai", "anthropic"].includes(chatModel?.provider ?? "")) &&
-            thinking &&
-            isComplexQuery &&
-            buildThinkingSystemPrompt(supportToolCall),
-        );
+        // System prompt will be built after capabilities are detected
 
         const vercelAITooles = safe({ ...MCP_TOOLS, ...WORKFLOW_TOOLS })
           .map((t) => {
@@ -1173,10 +1157,18 @@ export async function POST(request: Request) {
             }
           }
           // Check for comparison keywords that suggest multi-step processing
-          if (queryLower.includes('vs') || queryLower.includes('compare') || queryLower.includes('comparatif')) {
+          if (queryLower.includes('vs') || queryLower.includes('compare') || queryLower.includes('comparatif') || 
+              queryLower.includes('courbe') || queryLower.includes('chart') || queryLower.includes('graph')) {
             if (!detectedCapabilities.includes('data-comparison')) {
               detectedCapabilities.push('data-comparison');
               logger.info(`🔄 FALLBACK DETECTION: Added data-comparison capability for multi-step processing`);
+            }
+            // Special detection for multi-domain comparisons
+            const domainPattern = /([a-zA-Z0-9-]+\.[a-zA-Z]{2,})/g;
+            const domains = queryLower.match(domainPattern) || [];
+            if (domains.length > 1) {
+              detectedCapabilities.push('multi-domain-comparison');
+              logger.info(`🔄 MULTI-DOMAIN DETECTION: Found ${domains.length} domains: ${domains.join(', ')}`);
             }
           }
         }
@@ -1184,10 +1176,16 @@ export async function POST(request: Request) {
         // Remove duplicates
         const uniqueCapabilities = Array.from(new Set(detectedCapabilities));
         
+        // Special hint for multi-domain comparisons
+        const isMultiDomainComparison = uniqueCapabilities.includes('multi-domain-comparison');
+        const multiDomainHint = isMultiDomainComparison 
+          ? "🚨 MULTI-DOMAIN COMPARISON DETECTED: This query compares multiple domains/sites. You MUST call the same MCP tool multiple times (once for each domain) before creating any visualizations. Example: For 'obat.fr vs webloom.fr', call get_performance_overview twice - first for obat.fr, then for webloom.fr, then create the chart with both datasets."
+          : undefined;
+        
         // FUTURE-PROOF: Multi-step orchestration detection for any MCP + workflow combination
         const hasDataSourceCapabilities = uniqueCapabilities.some(cap => 
           // Data source capabilities that need to be gathered before workflows
-          ['google-ads', 'ads-research', 'google-search-console', 'google-workspace', 'web-search', 'web-analytics', 'ecommerce', 'code-repository', 'communication', 'data-comparison'].includes(cap)
+          ['google-ads', 'ads-research', 'google-search-console', 'google-workspace', 'web-search', 'web-analytics', 'ecommerce', 'code-repository', 'communication', 'data-comparison', 'multi-domain-comparison'].includes(cap)
         );
         const hasWorkflowCapabilities = selectedWorkflowMentions.length > 0;
         const hasVisualizationCapabilities = uniqueCapabilities.includes('visualization');
@@ -1231,8 +1229,36 @@ export async function POST(request: Request) {
           `🔧 FINAL DECISION: shouldForceWorkflowOnly will be ${forceWorkflowOnly && !needsMultiStepOrchestration}, maxSteps will be ${needsMultiStepOrchestration ? 6 : (forceWorkflowOnly && !needsMultiStepOrchestration) ? 3 : 5}`,
         );
         
+        // Determine if this is a complex query that would benefit from thinking mode
+        const isComplexQuery = needsMultiStepOrchestration || 
+                              selectedWorkflowMentions.length > 0 ||
+                              Object.keys({ ...MCP_TOOLS, ...WORKFLOW_TOOLS }).length > 5;
+        
         logger.info(
           `🧠 THINKING MODE: thinking=${thinking}, isComplexQuery=${isComplexQuery}, willUseThinking=${thinking && isComplexQuery}`,
+        );
+        
+        if (isMultiDomainComparison) {
+          logger.info(
+            `🚨 MULTI-DOMAIN COMPARISON DETECTED: Special handling enabled for multiple domain comparison`,
+          );
+        }
+        
+        // Build system prompt with all detected capabilities and hints
+        const systemPrompt = mergeSystemPrompt(
+          buildUserSystemPrompt(session.user, userPreferences, effectiveAgent),
+          buildMcpServerCustomizationsSystemPrompt(mcpServerCustomizations),
+          forcedWorkflowHint,
+          forcedMcpHint,
+          multiDomainHint,
+          orchestrationPolicy,
+          forcedSummaryHint,
+          !supportToolCall && buildToolCallUnsupportedModelSystemPrompt,
+          (!supportToolCall ||
+            ["openai", "anthropic"].includes(chatModel?.provider ?? "")) &&
+            thinking &&
+            isComplexQuery &&
+            buildThinkingSystemPrompt(supportToolCall),
         );
 
         if (needsMultiStepOrchestration) {
