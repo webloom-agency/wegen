@@ -787,11 +787,13 @@ export async function POST(request: Request) {
             .map(errorIf(() => !isToolCallAllowed && "Not allowed"))
             .map(() => {
               logger.info(`🔧 MCP TOOLS LOADING: effectiveClientMentions=${effectiveClientMentions.length}, allowedMcpServers=${allowedMcpServers ? Object.keys(allowedMcpServers).length : 'undefined'}`);
-              const result = loadMcpTools({
+              return loadMcpTools({
                 // Only use client mentions to restrict MCP tools
                 mentions: effectiveClientMentions as any,
                 allowedMcpServers,
               });
+            })
+            .map((result) => {
               logger.info(`🔧 MCP TOOLS LOADED: ${Object.keys(result).length} tools available`);
               if (Object.keys(result).length > 0) {
                 logger.info(`🔧 MCP TOOLS LIST: [${Object.keys(result).join(', ')}]`);

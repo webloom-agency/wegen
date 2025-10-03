@@ -507,28 +507,16 @@ export const loadMcpTools = (opt?: {
 }) =>
   safe(() => mcpClientsManager.tools())
     .map((tools) => {
-      console.log(`🔧 LOAD MCP TOOLS: Available tools: ${Object.keys(tools).length}, mentions: ${opt?.mentions?.length || 0}, allowedMcpServers: ${opt?.allowedMcpServers ? Object.keys(opt.allowedMcpServers).length : 'undefined'}`);
-      
       const hasMcpMentions = (opt?.mentions || []).some(
         (m) => m.type === "mcpTool" || m.type === "mcpServer",
       );
-      
       if (hasMcpMentions) {
-        console.log(`🔧 LOAD MCP TOOLS: Using MCP mentions path - ${opt!.mentions!.length} mentions`);
-        const result = filterMCPToolsByMentions(tools, opt!.mentions!);
-        console.log(`🔧 LOAD MCP TOOLS: MCP mentions result: ${Object.keys(result).length} tools`);
-        return result;
+        return filterMCPToolsByMentions(tools, opt!.mentions!);
       }
-      
       // If there is an explicit allow-list, filter by it; otherwise, do NOT expose any MCP tools
       if (opt?.allowedMcpServers && Object.keys(opt.allowedMcpServers).length > 0) {
-        console.log(`🔧 LOAD MCP TOOLS: Using allowedMcpServers path - ${Object.keys(opt.allowedMcpServers).length} servers`);
-        const result = filterMCPToolsByAllowedMCPServers(tools, opt.allowedMcpServers);
-        console.log(`🔧 LOAD MCP TOOLS: allowedMcpServers result: ${Object.keys(result).length} tools`);
-        return result;
+        return filterMCPToolsByAllowedMCPServers(tools, opt.allowedMcpServers);
       }
-      
-      console.log(`🔧 LOAD MCP TOOLS: No mentions and no allowedMcpServers - returning empty`);
       return {} as Record<string, VercelAIMcpTool>;
     })
     .orElse({} as Record<string, VercelAIMcpTool>);
