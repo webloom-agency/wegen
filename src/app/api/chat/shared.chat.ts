@@ -513,11 +513,13 @@ export const loadMcpTools = (opt?: {
       if (hasMcpMentions) {
         return filterMCPToolsByMentions(tools, opt!.mentions!);
       }
-      // If there is an explicit allow-list, filter by it; otherwise, do NOT expose any MCP tools
+      // If there is an explicit allow-list, filter by it; otherwise, allow all MCP tools
       if (opt?.allowedMcpServers && Object.keys(opt.allowedMcpServers).length > 0) {
         return filterMCPToolsByAllowedMCPServers(tools, opt.allowedMcpServers);
       }
-      return {} as Record<string, VercelAIMcpTool>;
+      // FIXED: When no explicit mentions and no allow-list, allow all MCP tools
+      // This enables auto-detected MCP tools (from intent analysis) to work properly
+      return tools;
     })
     .orElse({} as Record<string, VercelAIMcpTool>);
 
