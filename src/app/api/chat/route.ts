@@ -560,7 +560,7 @@ export async function POST(request: Request) {
               { keywords: ['search console', 'gsc', 'google search console', 'mots-clés', 'keywords'], intent: 'search-analytics' },
               { keywords: ['google ads', 'adwords', 'google adwords', 'publicité google', 'advertising google'], intent: 'advertising-data' },
               { keywords: ['ads research', 'search ads', 'competitor ads', 'serp ads', 'ads analysis'], intent: 'ads-research' },
-              { keywords: ['drive', 'google drive', 'workspace', 'docs', 'sheets', 'fathom', 'search drive', 'drive files', 'google docs', 'google sheets', 'gdrive'], intent: 'document-storage' },
+              { keywords: ['drive', 'google drive', 'workspace', 'docs', 'sheets', 'fathom', 'fathoms', 'kickoff', 'preaudit', 'search drive', 'drive files', 'google docs', 'google sheets', 'gdrive'], intent: 'document-storage' },
               { keywords: ['analytics', 'ga', 'google analytics', 'traffic'], intent: 'web-analytics' },
               { keywords: ['youtube', 'video', 'channel'], intent: 'video-platform' },
               { keywords: ['facebook', 'meta', 'instagram', 'social'], intent: 'social-media' },
@@ -580,6 +580,20 @@ export async function POST(request: Request) {
               if (pattern.keywords.some(keyword => lowerText.includes(keyword))) {
                 intents.push(pattern.intent);
               }
+            }
+            
+            // CRITICAL FALLBACK: Add document-storage intent for explicit Google Drive mentions or business document types
+            if ((lowerText.includes('google drive') || 
+                 lowerText.includes('gdrive') || 
+                 lowerText.includes('google workspace') ||
+                 lowerText.includes('fathom') || 
+                 lowerText.includes('fathoms') || 
+                 lowerText.includes('kickoff') || 
+                 lowerText.includes('preaudit') ||
+                 (lowerText.includes('drive') && (lowerText.includes('files') || lowerText.includes('docs') || lowerText.includes('sheets')))) 
+                && !intents.includes('document-storage')) {
+              intents.push('document-storage');
+              logger.info(`🚀 FORCED INTENT: Added document-storage intent due to Google Drive/business document context in: "${text}"`);
             }
             
             return intents;
@@ -644,6 +658,22 @@ export async function POST(request: Request) {
                 toolName.includes('drive') || toolName.includes('workspace') || toolName.includes('search_drive') || 
                 toolName.includes('files') || toolName.includes('docs') || toolName.includes('sheets')
               )) score += 20;
+              
+              // CRITICAL: Force Google Drive detection - for explicit Google Drive mentions or business document types
+              const queryLower = lastUserTextForMcp.toLowerCase();
+              if (queryLower.includes('google drive') || 
+                  queryLower.includes('gdrive') || 
+                  queryLower.includes('google workspace') ||
+                  queryLower.includes('fathom') || 
+                  queryLower.includes('fathoms') || 
+                  queryLower.includes('kickoff') || 
+                  queryLower.includes('preaudit') ||
+                  (queryLower.includes('drive') && (queryLower.includes('files') || queryLower.includes('docs') || queryLower.includes('sheets')))) {
+                if (serverName.includes('workspace') || toolName.includes('search_drive') || toolName.includes('drive_files')) {
+                  score += 100; // Very high score to ensure Google Workspace is selected
+                  logger.info(`🚀 FORCED GOOGLE DRIVE: Boosting score for ${serverName}/${toolName} due to Google Drive/business document context`);
+                }
+              }
               if (intents.includes('web-analytics') && (serverName.includes('analytics') || toolName.includes('analytics'))) score += 20;
               if (intents.includes('ecommerce') && (serverName.includes('shopify') || toolName.includes('product'))) score += 20;
               
@@ -687,6 +717,29 @@ export async function POST(request: Request) {
             logger.info(`🔍 FUTURE-PROOF MCP DETECTION: intents [${detectedIntents.join(', ')}] → servers [${matchedServers.map(s => `${s.displayName || s.name} (score: ${s.score})`).join(', ')}]`);
           } else {
             logger.info(`❌ NO MCP SERVERS DETECTED: No intents matched or no servers available`);
+          }
+          
+          // Special debugging for Google Drive / document-storage detection
+          if (detectedIntents.includes('document-storage')) {
+            logger.info(`📁 GOOGLE DRIVE DEBUG: Found document-storage intent. Query: "${lastUserTextForMcp}"`);
+            logger.info(`📁 GOOGLE DRIVE DEBUG: Available MCP tools: ${Object.keys(mcpTools).length}, Top servers: ${matchedServers.slice(0, 3).map(s => `${s.displayName || s.name}:${s.score}`).join(', ')}`);
+            // Log all available MCP servers for debugging
+            const allServers = Object.values(mcpTools).map((tool: any) => `${tool._mcpServerName || 'unknown'}(${tool._originToolName})`);
+            logger.info(`📁 ALL AVAILABLE MCP SERVERS: [${Array.from(new Set(allServers)).join(', ')}]`);
+          } else {
+            // Debug when document-storage intent is NOT detected for explicit Google Drive mentions or business docs
+            const queryLower = lastUserTextForMcp.toLowerCase();
+            if (queryLower.includes('google drive') || 
+                queryLower.includes('gdrive') || 
+                queryLower.includes('google workspace') ||
+                queryLower.includes('fathom') || 
+                queryLower.includes('fathoms') || 
+                queryLower.includes('kickoff') || 
+                queryLower.includes('preaudit') ||
+                (queryLower.includes('drive') && (queryLower.includes('files') || queryLower.includes('docs') || queryLower.includes('sheets')))) {
+              logger.info(`❌ GOOGLE DRIVE MISS: Query "${lastUserTextForMcp}" contains Google Drive/business document context but document-storage intent not detected`);
+              logger.info(`❌ DETECTED INTENTS: [${detectedIntents.join(', ')}]`);
+            }
           }
           
           // Special debugging for Google Ads vs SERP confusion
@@ -1135,8 +1188,10 @@ export async function POST(request: Request) {
         
         // ENHANCED FALLBACK: Always check for data source keywords when workflows are present
         // This ensures multi-step orchestration even if MCP auto-detection fails
+        const queryLower = lastUserTextForMcp.toLowerCase();
         if (selectedWorkflowMentions.length > 0) {
-          const queryLower = lastUserTextForMcp.toLowerCase();
+          logger.info(`🔄 FALLBACK DETECTION: Checking query "${queryLower}" for data source keywords`);
+          
           // Check for data source keywords that suggest MCP tools are needed
           if (queryLower.includes('search console') || queryLower.includes('gsc') || queryLower.includes('mots-clés')) {
             if (!detectedCapabilities.includes('google-search-console')) {
@@ -1156,9 +1211,54 @@ export async function POST(request: Request) {
               logger.info(`🔄 FALLBACK DETECTION: Added web-analytics capability`);
             }
           }
-          // Check for comparison keywords that suggest multi-step processing
-          if (queryLower.includes('vs') || queryLower.includes('compare') || queryLower.includes('comparatif') || 
-              queryLower.includes('courbe') || queryLower.includes('chart') || queryLower.includes('graph')) {
+          // CRITICAL: Check for explicit Google Drive keywords or business document types
+          if (queryLower.includes('google drive') || 
+              queryLower.includes('gdrive') || 
+              queryLower.includes('google workspace') ||
+              queryLower.includes('fathom') || 
+              queryLower.includes('fathoms') || 
+              queryLower.includes('kickoff') || 
+              queryLower.includes('preaudit') ||
+              (queryLower.includes('drive') && (queryLower.includes('files') || queryLower.includes('docs') || queryLower.includes('sheets')))) {
+            if (!detectedCapabilities.includes('google-workspace')) {
+              detectedCapabilities.push('google-workspace');
+              logger.info(`🔄 FALLBACK DETECTION: Added google-workspace capability for Google Drive/business document context`);
+            }
+          }
+        } else {
+          // Even without workflows, check for explicit Google Drive keywords or business document types
+          if (queryLower.includes('google drive') || 
+              queryLower.includes('gdrive') || 
+              queryLower.includes('google workspace') ||
+              queryLower.includes('fathom') || 
+              queryLower.includes('fathoms') || 
+              queryLower.includes('kickoff') || 
+              queryLower.includes('preaudit') ||
+              (queryLower.includes('drive') && (queryLower.includes('files') || queryLower.includes('docs') || queryLower.includes('sheets')))) {
+            if (!detectedCapabilities.includes('google-workspace')) {
+              detectedCapabilities.push('google-workspace');
+              logger.info(`🔄 STANDALONE DETECTION: Added google-workspace capability for Google Drive/business document context`);
+            }
+          }
+        }
+        
+        // ULTIMATE SAFETY NET: Ensure Google Drive queries get Google Workspace capability (explicit mentions + business docs)
+        if ((queryLower.includes('google drive') || 
+             queryLower.includes('gdrive') || 
+             queryLower.includes('google workspace') ||
+             queryLower.includes('fathom') || 
+             queryLower.includes('fathoms') || 
+             queryLower.includes('kickoff') || 
+             queryLower.includes('preaudit') ||
+             (queryLower.includes('drive') && (queryLower.includes('files') || queryLower.includes('docs') || queryLower.includes('sheets')))) 
+            && !detectedCapabilities.includes('google-workspace')) {
+          detectedCapabilities.push('google-workspace');
+          logger.info(`🚀 ULTIMATE FALLBACK: Force-added google-workspace capability for Google Drive/business document context: "${lastUserTextForMcp}"`);
+        }
+        
+        // Check for comparison keywords that suggest multi-step processing
+        if (queryLower.includes('vs') || queryLower.includes('compare') || queryLower.includes('comparatif') || 
+            queryLower.includes('courbe') || queryLower.includes('chart') || queryLower.includes('graph')) {
             if (!detectedCapabilities.includes('data-comparison')) {
               detectedCapabilities.push('data-comparison');
               logger.info(`🔄 FALLBACK DETECTION: Added data-comparison capability for multi-step processing`);
