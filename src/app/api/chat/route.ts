@@ -560,7 +560,7 @@ export async function POST(request: Request) {
               { keywords: ['search console', 'gsc', 'google search console', 'mots-clés', 'keywords'], intent: 'search-analytics' },
               { keywords: ['google ads', 'adwords', 'google adwords', 'publicité google', 'advertising google'], intent: 'advertising-data' },
               { keywords: ['ads research', 'search ads', 'competitor ads', 'serp ads', 'ads analysis'], intent: 'ads-research' },
-              { keywords: ['drive', 'google drive', 'workspace', 'docs', 'sheets', 'fathom', 'fathoms', 'kickoff', 'preaudit', 'search drive', 'drive files', 'google docs', 'google sheets', 'gdrive'], intent: 'document-storage' },
+              { keywords: ['drive', 'google drive', 'workspace', 'docs', 'sheets', 'fathom', 'fathoms', 'kickoff', 'preaudit', 'search drive', 'drive files', 'google docs', 'google sheets', 'gdrive', 'rapport', 'document', 'fichier', 'analyse'], intent: 'document-storage' },
               { keywords: ['analytics', 'ga', 'google analytics', 'traffic'], intent: 'web-analytics' },
               { keywords: ['youtube', 'video', 'channel'], intent: 'video-platform' },
               { keywords: ['facebook', 'meta', 'instagram', 'social'], intent: 'social-media' },
@@ -668,10 +668,22 @@ export async function POST(request: Request) {
                   queryLower.includes('fathoms') || 
                   queryLower.includes('kickoff') || 
                   queryLower.includes('preaudit') ||
+                  queryLower.includes('rapport') ||
+                  queryLower.includes('document') ||
+                  queryLower.includes('fichier') ||
+                  queryLower.includes('analyse') ||
                   (queryLower.includes('drive') && (queryLower.includes('files') || queryLower.includes('docs') || queryLower.includes('sheets')))) {
                 if (serverName.includes('workspace') || toolName.includes('search_drive') || toolName.includes('drive_files')) {
                   score += 100; // Very high score to ensure Google Workspace is selected
                   logger.info(`🚀 FORCED GOOGLE DRIVE: Boosting score for ${serverName}/${toolName} due to Google Drive/business document context`);
+                }
+              }
+              
+              // EXTRA BOOST: Super high priority for business document analysis keywords
+              if (queryLower.includes('fathom') || queryLower.includes('kickoff') || queryLower.includes('preaudit')) {
+                if (serverName.includes('workspace') || toolName.includes('search_drive') || toolName.includes('drive_files')) {
+                  score += 50; // Additional boost for business document keywords
+                  logger.info(`🚀 BUSINESS DOCS BOOST: Extra boost for ${serverName}/${toolName} due to business document keyword`);
                 }
               }
               if (intents.includes('web-analytics') && (serverName.includes('analytics') || toolName.includes('analytics'))) score += 20;
