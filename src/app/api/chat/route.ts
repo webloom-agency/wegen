@@ -570,7 +570,7 @@ export async function POST(request: Request) {
             const dataSourcePatterns = [
               { keywords: ['search console', 'gsc', 'google search console', 'mots-clés', 'keywords'], intent: 'search-analytics' },
               { keywords: ['google ads', 'adwords', 'google adwords', 'publicité google', 'advertising google', 'performances google ads', 'google ads performance', 'campagne google ads', 'google ads campaign'], intent: 'advertising-data' },
-              { keywords: ['ads research', 'search ads', 'competitor ads', 'serp ads', 'ads analysis', 'recherche publicitaire'], intent: 'ads-research' },
+              { keywords: ['show me ads', 'ads of domain', 'competitor ads', 'serp ads', 'domain ads', 'ads research', 'recherche publicitaire', 'publicités concurrents'], intent: 'ads-research' },
               { keywords: ['drive', 'google drive', 'workspace', 'docs', 'sheets', 'fathom', 'fathoms', 'kickoff', 'preaudit', 'search drive', 'drive files', 'google docs', 'google sheets', 'gdrive', 'rapport', 'document', 'fichier'], intent: 'document-storage' },
               { keywords: ['analytics', 'ga', 'google analytics', 'traffic'], intent: 'web-analytics' },
               { keywords: ['youtube', 'video', 'channel'], intent: 'video-platform' },
@@ -608,12 +608,25 @@ export async function POST(request: Request) {
             }
             
             // CRITICAL FALLBACK: Force advertising-data intent for Google Ads performance queries
-            if ((lowerText.includes('google ads') || lowerText.includes('google adwords')) && 
-                (lowerText.includes('performance') || lowerText.includes('performances') || lowerText.includes('campagne') || lowerText.includes('campaign')) 
+            if ((lowerText.includes('google ads') || lowerText.includes('google adwords') || 
+                 (lowerText.includes('google') && lowerText.includes('ads'))) && 
+                (lowerText.includes('performance') || lowerText.includes('performances') || 
+                 lowerText.includes('campagne') || lowerText.includes('campaign') ||
+                 lowerText.includes('compare') || lowerText.includes('tableau')) 
                 && !intents.includes('advertising-data')) {
               intents.push('advertising-data');
               logger.info(`🚀 FORCED INTENT: Added advertising-data intent due to Google Ads performance context in: "${text}"`);
+              
+              // Remove ads-research intent if it was incorrectly added for performance queries
+              const adsResearchIndex = intents.indexOf('ads-research');
+              if (adsResearchIndex > -1) {
+                intents.splice(adsResearchIndex, 1);
+                logger.info(`🚫 REMOVED INTENT: Removed ads-research intent as this is a performance query, not competitor research`);
+              }
             }
+            
+            // DEBUG: Log all detected intents for troubleshooting
+            logger.info(`🔍 INTENT ANALYSIS DEBUG: Query="${text.substring(0, 100)}" → Detected intents: [${intents.join(', ')}]`);
             
             return intents;
           };
@@ -646,31 +659,41 @@ export async function POST(request: Request) {
               
               // CRITICAL FIX: Prioritize actual Google Ads MCP over SERP tools
               if (intents.includes('advertising-data')) {
-                // Highest priority: Exact Google Ads server match
-                if (serverName.includes('google-ads') || serverName.includes('googleads') || serverName === 'google ads') {
+                // Highest priority: Exact Google Ads server match (case-insensitive)
+                const serverLower = serverName.toLowerCase();
+                if (serverLower === 'google-ads' || serverLower === 'googleads' || serverLower === 'google ads') {
                   score += 100; // Very high score for actual Google Ads MCP
                   logger.info(`🚀 GOOGLE ADS BOOST: Boosting score for ${serverName}/${toolName} due to advertising-data intent`);
                 }
                 // Medium priority: Google + ads combination (but not SERP)
-                else if (serverName.includes('google') && serverName.includes('ads') && !serverName.includes('serp')) {
+                else if (serverLower.includes('google') && serverLower.includes('ads') && !serverLower.includes('serp')) {
                   score += 50;
+                  logger.info(`🚀 GOOGLE ADS PARTIAL: Partial boost for ${serverName}/${toolName} due to google+ads match`);
                 }
                 // Lower priority: Generic ads tools (like SERP search_ads_by_domain)
-                else if (toolName.includes('ads') || serverName.includes('ads')) {
+                else if (toolName.includes('ads') || serverLower.includes('ads')) {
                   score += 5; // Much lower score for generic ads tools
+                  logger.info(`🔍 GENERIC ADS: Low score for ${serverName}/${toolName} due to generic ads match`);
                 }
               }
               
-              // Handle ads research (SERP tools) separately from Google Ads platform
+              // Handle ads research (SERP tools) separately from Google Ads platform - VERY RESTRICTIVE
               if (intents.includes('ads-research')) {
-                // Prioritize SERP and research tools for ads analysis
+                // Only boost SERP tools for very specific competitor/domain ads requests
                 if (serverName.includes('serp') || toolName.includes('search_ads') || toolName.includes('competitor')) {
-                  score += 30;
+                  score += 25; // Reduced from 30
+                  logger.info(`🔍 SERP ADS RESEARCH: Boosting score for ${serverName}/${toolName} due to specific ads-research intent`);
                 }
-                // Generic ads research tools
-                else if (toolName.includes('ads') && !serverName.includes('google-ads')) {
-                  score += 15;
+                // Much lower score for generic ads research tools
+                else if (toolName.includes('ads') && !serverName.toLowerCase().includes('google-ads')) {
+                  score += 5; // Reduced from 15
                 }
+              }
+              
+              // CRITICAL: Prevent SERP tools from getting generic ads boosts when advertising-data intent is present
+              if (intents.includes('advertising-data') && serverName.includes('serp')) {
+                score = Math.max(0, score - 10); // Penalty for SERP when Google Ads data is wanted
+                logger.info(`🚫 SERP PENALTY: Reducing SERP score for ${serverName}/${toolName} when advertising-data intent is present`);
               }
               
               if (intents.includes('document-storage') && (
@@ -722,6 +745,8 @@ export async function POST(request: Request) {
                 if (!serverScores[serverId] || serverScores[serverId].score < score) {
                   serverScores[serverId] = { score, name: serverName || serverId };
                 }
+                // DEBUG: Log all scoring for troubleshooting
+                logger.info(`🔍 MCP SCORING DEBUG: ${serverName}/${toolName} → score: ${score} (intents: [${intents.join(', ')}])`);
               }
             }
             
@@ -1194,7 +1219,8 @@ export async function POST(request: Request) {
           }
           if (serverName.includes('ads') || serverName.includes('adwords')) {
             // Distinguish between Google Ads platform and ads research tools
-            if (serverName.includes('google-ads') || serverName.includes('googleads') || serverName === 'google ads') {
+            const serverLower = serverName.toLowerCase();
+            if (serverLower === 'google-ads' || serverLower === 'googleads' || serverLower === 'google ads') {
               detectedCapabilities.push('google-ads');
               logger.info(`✅ DETECTED CAPABILITY: google-ads from "${serverName}"`);
             } else if (serverName.includes('serp') || serverName.includes('research')) {
