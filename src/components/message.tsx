@@ -105,19 +105,31 @@ const PurePreviewMessage = ({
           )}
 
           {(() => {
-            // Deduplicate tool-invocation parts:
+            // Deduplicate tool-invocation parts (but allow multiple calls to same tool with different args):
             const parts = (message.parts as UIMessage["parts"]) || [];
             if (message.role === "user") return parts;
-            const resultExists = new Set<string>();
+            const resultExists = new Map<string, Set<string>>(); // toolName -> set of arg hashes
             const firstCallIndex = new Map<string, number>();
+            
+            // Helper function to create a unique key for tool calls with different arguments
+            const getToolCallKey = (toolName: string, args: any): string => {
+              const argsHash = JSON.stringify(args || {});
+              return `${toolName}:${argsHash}`;
+            };
+            
             for (let i = 0; i < parts.length; i++) {
               const pv: any = parts[i];
               if (pv?.type === "tool-invocation" && typeof pv?.toolInvocation?.toolName === "string") {
-                const key = pv.toolInvocation.toolName as string;
+                const toolName = pv.toolInvocation.toolName as string;
+                const uniqueKey = getToolCallKey(toolName, pv.toolInvocation.args);
+                
                 if (pv.toolInvocation.state === "result") {
-                  resultExists.add(key);
-                } else if (!firstCallIndex.has(key)) {
-                  firstCallIndex.set(key, i);
+                  if (!resultExists.has(toolName)) {
+                    resultExists.set(toolName, new Set());
+                  }
+                  resultExists.get(toolName)!.add(uniqueKey);
+                } else if (!firstCallIndex.has(uniqueKey)) {
+                  firstCallIndex.set(uniqueKey, i);
                 }
               }
             }
@@ -127,19 +139,22 @@ const PurePreviewMessage = ({
             for (let i = 0; i < parts.length; i++) {
               const p: any = parts[i];
               if (p?.type === "tool-invocation" && typeof p?.toolInvocation?.toolName === "string") {
-                const key = p.toolInvocation.toolName as string;
+                const toolName = p.toolInvocation.toolName as string;
+                const uniqueKey = getToolCallKey(toolName, p.toolInvocation.args);
+                
                 if (p.toolInvocation.state === "result") {
-                  if (includedResult.has(key)) continue;
-                  includedResult.add(key);
+                  if (includedResult.has(uniqueKey)) continue;
+                  includedResult.add(uniqueKey);
                   filtered.push(parts[i] as any);
                   continue;
                 }
-                if (resultExists.has(key)) {
+                const toolResultExists = resultExists.get(toolName)?.has(uniqueKey);
+                if (toolResultExists) {
                   continue;
                 }
-                if (firstCallIndex.get(key) !== i) continue;
-                if (includedCall.has(key)) continue;
-                includedCall.add(key);
+                if (firstCallIndex.get(uniqueKey) !== i) continue;
+                if (includedCall.has(uniqueKey)) continue;
+                includedCall.add(uniqueKey);
                 filtered.push(parts[i] as any);
                 continue;
               }

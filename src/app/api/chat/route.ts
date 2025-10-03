@@ -1455,12 +1455,20 @@ export async function POST(request: Request) {
             }
                 const assistantMessage = appendMessages.at(-1);
                 if (assistantMessage) {
-              // Deduplicate tool-invocation parts by tool name
-              // - Keep only the last 'result' per tool
+              // Deduplicate tool-invocation parts by tool name + arguments
+              // - Keep only the last 'result' per unique tool call (same tool + same args)
               // - Drop earlier 'call' entries for tools that have a 'result' later in the same message
+              // - Allow multiple calls to same tool with different arguments
               const dedupParts = (() => {
                 const parts = (assistantMessage.parts as UIMessage["parts"]) || [];
-                const resultToolNames = new Set<string>();
+                
+                // Helper function to create unique key for tool calls
+                const getToolCallKey = (toolName: string, args: any): string => {
+                  const argsHash = JSON.stringify(args || {});
+                  return `${toolName}:${argsHash}`;
+                };
+                
+                const resultToolKeys = new Set<string>();
                 for (const p of parts) {
                   const pv: any = p;
                   if (
@@ -1468,7 +1476,8 @@ export async function POST(request: Request) {
                     pv?.toolInvocation?.state === "result" &&
                     typeof pv?.toolInvocation?.toolName === "string"
                   ) {
-                    resultToolNames.add(pv.toolInvocation.toolName);
+                    const uniqueKey = getToolCallKey(pv.toolInvocation.toolName, pv.toolInvocation.args);
+                    resultToolKeys.add(uniqueKey);
                   }
                 }
                 const seen = new Set<string>();
@@ -1479,13 +1488,13 @@ export async function POST(request: Request) {
                     p?.type === "tool-invocation" &&
                     typeof p?.toolInvocation?.toolName === "string"
                   ) {
-                    const key = p.toolInvocation.toolName;
-                    if (p?.toolInvocation?.state !== "result" && resultToolNames.has(key)) {
+                    const uniqueKey = getToolCallKey(p.toolInvocation.toolName, p.toolInvocation.args);
+                    if (p?.toolInvocation?.state !== "result" && resultToolKeys.has(uniqueKey)) {
                       continue; // drop earlier 'call' when a 'result' exists later
                     }
                     if (p?.toolInvocation?.state === "result") {
-                      if (seen.has(key)) continue;
-                      seen.add(key);
+                      if (seen.has(uniqueKey)) continue;
+                      seen.add(uniqueKey);
                     }
                   }
                   result.push(parts[i]);
