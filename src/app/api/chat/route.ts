@@ -1271,7 +1271,6 @@ export async function POST(request: Request) {
               logger.info(`🔄 MULTI-DOMAIN DETECTION: Found ${domains.length} domains: ${domains.join(', ')}`);
             }
           }
-        }
         
         // Remove duplicates
         const uniqueCapabilities = Array.from(new Set(detectedCapabilities));
