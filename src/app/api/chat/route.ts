@@ -218,13 +218,15 @@ export async function POST(request: Request) {
           if (tokens.length <= 1) return false;
           // Full phrase containment
           if (userText.includes(n)) return true;
-          // token-wise containment: require at least two token matches
-          const matchedCount = tokens.filter((t) => userText.includes(t)).length;
-          if (matchedCount >= Math.min(2, tokens.length)) return true;
-          // space-insensitive containment for multi-word names
+          // token-wise containment: require at least two token matches AND at least one substantial token (>4 chars)
+          const matchedTokens = tokens.filter((t) => userText.includes(t));
+          const matchedCount = matchedTokens.length;
+          const hasSubstantialMatch = matchedTokens.some(t => t.length > 4);
+          if (matchedCount >= Math.min(2, tokens.length) && hasSubstantialMatch) return true;
+          // space-insensitive containment for multi-word names (only if substantial)
           const noSpaceMsg = userText.replace(/\s+/g, "");
           const noSpaceName = n.replace(/\s+/g, "");
-          return noSpaceMsg.includes(noSpaceName);
+          return noSpaceName.length > 6 && noSpaceMsg.includes(noSpaceName);
         };
 
         const STOPWORDS = new Set<string>([
@@ -315,7 +317,16 @@ export async function POST(request: Request) {
             const hasUnique = matched.some((t) => (wfTokenCounts.get(t) || 0) === 1);
             const sim = bigramSim(n, userText);
             const score = matched.length * 30 + (hasUnique ? 20 : 0) + Math.min(sim, 10);
-            if (score >= 30) {
+            
+            // STRICTER WORKFLOW MATCHING: Require higher scores and better token matches
+            // Prevent generic words like "analyse" from triggering specific workflows
+            const minScore = 60; // Increased from 30
+            const hasStrongMatch = matched.some(token => {
+              // Require at least one token to be longer than 4 characters and match well
+              return token.length > 4 && userText.includes(token);
+            });
+            
+            if (score >= minScore && hasStrongMatch) {
               const cand = {
                 type: "workflow",
                 name: wfName,
@@ -560,7 +571,7 @@ export async function POST(request: Request) {
               { keywords: ['search console', 'gsc', 'google search console', 'mots-clés', 'keywords'], intent: 'search-analytics' },
               { keywords: ['google ads', 'adwords', 'google adwords', 'publicité google', 'advertising google'], intent: 'advertising-data' },
               { keywords: ['ads research', 'search ads', 'competitor ads', 'serp ads', 'ads analysis'], intent: 'ads-research' },
-              { keywords: ['drive', 'google drive', 'workspace', 'docs', 'sheets', 'fathom', 'fathoms', 'kickoff', 'preaudit', 'search drive', 'drive files', 'google docs', 'google sheets', 'gdrive', 'rapport', 'document', 'fichier', 'analyse'], intent: 'document-storage' },
+              { keywords: ['drive', 'google drive', 'workspace', 'docs', 'sheets', 'fathom', 'fathoms', 'kickoff', 'preaudit', 'search drive', 'drive files', 'google docs', 'google sheets', 'gdrive', 'rapport', 'document', 'fichier'], intent: 'document-storage' },
               { keywords: ['analytics', 'ga', 'google analytics', 'traffic'], intent: 'web-analytics' },
               { keywords: ['youtube', 'video', 'channel'], intent: 'video-platform' },
               { keywords: ['facebook', 'meta', 'instagram', 'social'], intent: 'social-media' },
@@ -671,7 +682,6 @@ export async function POST(request: Request) {
                   queryLower.includes('rapport') ||
                   queryLower.includes('document') ||
                   queryLower.includes('fichier') ||
-                  queryLower.includes('analyse') ||
                   (queryLower.includes('drive') && (queryLower.includes('files') || queryLower.includes('docs') || queryLower.includes('sheets')))) {
                 if (serverName.includes('workspace') || toolName.includes('search_drive') || toolName.includes('drive_files')) {
                   score += 100; // Very high score to ensure Google Workspace is selected
@@ -766,9 +776,17 @@ export async function POST(request: Request) {
         // Determine workflow mentions and selection (at most one per turn)
         // Prefer client-provided workflow mentions. If none, pick the closest auto-detected candidate by score.
         const explicitClientWorkflowMentions = (clientMentions || []).filter((m: any) => m.type === "workflow");
+        const explicitClientMcpMentions = (clientMentions || []).filter((m: any) => m.type === "mcpTool" || m.type === "mcpServer");
         const selectedWorkflowMentions = (() => {
           const clientSel = (explicitClientWorkflowMentions || []).slice(0, 1);
           if (clientSel.length > 0) return clientSel;
+          
+          // CRITICAL: Don't auto-select workflows when user explicitly mentions MCP tools
+          if (explicitClientMcpMentions.length > 0) {
+            logger.info(`🚫 WORKFLOW AUTO-SELECTION BLOCKED: User explicitly mentioned MCP tools [${explicitClientMcpMentions.map(m => m.name || m.serverId).join(', ')}], skipping workflow auto-selection`);
+            return [];
+          }
+          
           if (Array.isArray(workflowCandidates) && workflowCandidates.length > 0) {
             const best = workflowCandidates
               .slice()
