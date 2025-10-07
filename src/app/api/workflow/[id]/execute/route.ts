@@ -25,7 +25,8 @@ export async function POST(
   // Inject CURRENT_USER virtual variables into query context
   const enrichedQuery = {
     ...toAny(query),
-    email: session.user.email || "",
+    // Add email field with current user's email as default (unless user specified their own)
+    email: toAny(query).email || session.user.email || "",
     CURRENT_USER: {
       email: session.user.email || "",
     },

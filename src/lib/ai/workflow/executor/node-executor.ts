@@ -70,7 +70,7 @@ export type NodeExecutor<T extends WorkflowNodeData = any> = (input: {
  */
 export const inputNodeExecutor: NodeExecutor<InputNodeData> = ({ state }) => {
   return {
-    output: state.query, // Pass through the initial workflow input
+    output: state.query, // Pass through the initial workflow input (now includes email by default)
   };
 };
 
@@ -513,8 +513,8 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
       for (const fieldName of userEmailFields) {
         const hasField = !!props?.[fieldName];
         if (hasField && !argsFromModel[fieldName]) {
-          // Get current user email from workflow context
-          const currentUserEmail = state.getOutput({ nodeId: "CURRENT_USER", path: ["email"] });
+          // Get current user email from workflow query context
+          const currentUserEmail = (state.query as any)?.email;
           if (currentUserEmail && typeof currentUserEmail === "string") {
             argsFromModel[fieldName] = currentUserEmail;
           }
@@ -537,8 +537,8 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
     for (const fieldName of userEmailFields) {
       const hasField = !!props?.[fieldName];
       if (hasField && !result.input.parameter[fieldName]) {
-        // Get current user email from workflow context
-        const currentUserEmail = state.getOutput({ nodeId: "CURRENT_USER", path: ["email"] });
+        // Get current user email from workflow query context
+        const currentUserEmail = (state.query as any)?.email;
         if (currentUserEmail && typeof currentUserEmail === "string") {
           result.input.parameter = {
             ...result.input.parameter,
