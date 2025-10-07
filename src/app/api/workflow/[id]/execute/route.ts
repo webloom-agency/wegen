@@ -88,7 +88,6 @@ export async function POST(
           { query: enrichedQuery },
           {
             disableHistory: true,
-            timeout: 1000 * 60 * 5,
           },
         )
         .then((result) => {
