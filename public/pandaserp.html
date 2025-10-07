@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PandaSERP Presentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0a0a;
+            color: #f5f5f5;
+            overflow: hidden;
+        }
+
+        .slide {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.6s ease-in-out, transform 0.6s ease-in-out;
+            transform: scale(0.95);
+            padding: 4rem;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1);
+        }
+
+        .slide-content {
+            max-width: 900px;
+        }
+
+        h1 {
+            font-size: 4rem;
+            font-weight: 700;
+        }
+
+        h2 {
+            font-size: 3rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+        }
+
+        ul {
+            list-style-position: inside;
+            text-align: left;
+            font-size: 1.25rem;
+            line-height: 1.8;
+            max-width: 600px;
+        }
+
+        ul li {
+            margin-bottom: 1rem;
+        }
+
+        .highlight {
+            color: #4ade80;
+            /* A vibrant green */
+        }
+    </style>
+</head>
+
+<body class="flex items-center justify-center min-h-screen">
+
+    <div id="presentation-container" class="relative w-screen h-screen">
+
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <div class="slide-content space-y-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto text-green-400" viewBox="0 0 24 24"
+                    fill="currentColor">
+                    <path
+                        d="M16.828 6.001c-.815 1.795-1.554 3.518-2.22 5.107 2.01.62 3.824 1.637 5.392 2.892.46.368.898.764 1.308 1.186a10.953 10.953 0 0 1-3.232 3.814c-2.624 1.956-5.928 2.58-9.068 1.488-3.14-1.09-5.55-3.598-6.632-6.732-1.082-3.134-.46-6.43 1.494-9.056a10.953 10.953 0 0 1 3.818-3.23c.42-.41.857-.807 1.223-1.173 1.253 1.564 2.268 3.373 2.887 5.38.67-1.59 1.408-3.313 2.22-5.108a1 1 0 0 1 1.81.866z" />
+                </svg>
+                <h1
+                    class="text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-500">
+                    PandaSERP</h1>
+                <p class="text-2xl text-gray-300">10x the SERP data, <b>not 10x the cost</b>.</p>
+            </div>
+        </div>
+
+        <!-- Slide 2: The "num=100" Apocalypse -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2 class="text-5xl font-bold">The "num=100" Apocalypse</h2>
+                <ul class="text-left text-xl space-y-4 mx-auto">
+                    <li><span class="highlight font-semibold">The Problem:</span> Google has removed the "num=100"
+                        parameter.</li>
+                    <li><span class="highlight font-semibold">The Consequence:</span> Getting 100 results now requires
+                        navigating 10 separate pages.</li>
+                    <li><span class="highlight font-semibold">The Pain for Competitors:</span>
+                        <ul class="list-disc list-inside mt-2 pl-4 text-lg text-gray-300">
+                            <li><strong class="text-red-400">10x slower:</strong> Ten pages to load, ten pages to
+                                scrape.</li>
+                            <li><strong class="text-red-400">10x more expensive:</strong> More browser instances,
+                                compute time, and proxy usage.</li>
+                            <li><strong class="text-red-400">More complex:</strong> Managing pagination is a new,
+                                significant hurdle.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 3: The PandaSERP Solution -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2 class="text-5xl font-bold">We Built for This Moment.</h2>
+                <p class="text-2xl text-gray-300 leading-relaxed max-w-3xl mx-auto">
+                    PandaSERP is a new SERP API, engineered from the ground up for speed and efficiency. While others
+                    struggle with the "num=100" change, our unique architecture thrives.
+                </p>
+                <p
+                    class="mt-8 text-3xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-green-300 to-green-500">
+                    We've turned a crisis into our competitive advantage.
+                </p>
+            </div>
+        </div>
+
+        <!-- Slide 4: Our Secret Weapon -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2 class="text-5xl font-bold">Our Secret Weapon: <span class="text-green-400">LightPanda</span></h2>
+                <div class="flex items-center justify-center gap-8 my-8">
+                    <div class="text-center p-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-green-400"
+                            viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M16.828 6.001c-.815 1.795-1.554 3.518-2.22 5.107 2.01.62 3.824 1.637 5.392 2.892.46.368.898.764 1.308 1.186a10.953 10.953 0 0 1-3.232 3.814c-2.624 1.956-5.928 2.58-9.068 1.488-3.14-1.09-5.55-3.598-6.632-6.732-1.082-3.134-.46-6.43 1.494-9.056a10.953 10.953 0 0 1 3.818-3.23c.42-.41.857-.807 1.223-1.173 1.253 1.564 2.268 3.373 2.887 5.38.67-1.59 1.408-3.313 2.22-5.108a1 1 0 0 1 1.81.866z" />
+                        </svg>
+                        <p class="font-bold text-xl mt-2">LightPanda</p>
+                    </div>
+                    <p class="text-4xl font-black text-gray-500">&lt;-- <span class="text-5xl text-green-400">11x
+                            FASTER</span> --&gt;</p>
+                    <div class="text-center p-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-600"
+                            fill="currentColor" viewBox="0 0 16 16">
+                            <path
+                                d="M8 0a8 8 0 1 1-6.29 3.82.5.5 0 0 0 .15.28l.2.2a.5.5 0 0 0 .28.15A4.49 4.49 0 0 0 8 5.5a4.5 4.5 0 0 0 4.24-5.92.5.5 0 0 0-.15-.28l-.2-.2a.5.5 0 0 0-.28-.15A8.01 8.01 0 0 1 8 0Zm0 1a7 7 0 1 0 4.95 12.05A7 7 0 0 0 8 1Z" />
+                            <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z" />
+                        </svg>
+                        <p class="font-bold text-xl mt-2 text-gray-400">Chrome/Chromium</p>
+                    </div>
+                </div>
+                <ul class="text-left text-xl space-y-3 mx-auto max-w-xl">
+                    <li><strong class="text-green-400">11x faster</strong> than Chrome/Chromium.</li>
+                    <li><strong class="text-green-400">Lightweight & Efficient:</strong> Purpose-built for
+                        high-performance scraping.</li>
+                    <li><strong class="text-green-400">Our Core Advantage:</strong> We navigate pagination and scrape
+                        results faster and cheaper than anyone else. Period.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 5: How We Win -->
+        <div class="slide">
+            <div class="slide-content w-full max-w-4xl">
+                <h2 class="text-5xl font-bold">PandaSERP vs. The Competition</h2>
+                <table class="w-full text-lg mt-8 border-collapse">
+                    <thead class="border-b-2 border-green-400">
+                        <tr>
+                            <th class="p-4 text-left">Feature</th>
+                            <th class="p-4 bg-green-900/50 rounded-t-lg">PandaSERP</th>
+                            <th class="p-4 text-gray-500">Competitors (SerpApi, Bright Data)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-gray-700">
+                            <td class="p-4 text-left font-semibold">Speed for 100 results</td>
+                            <td class="p-4 bg-gray-800 font-bold text-green-300">Blazing fast, minimal overhead per
+                                page.</td>
+                            <td class="p-4 text-red-400">10x slower due to pagination.</td>
+                        </tr>
+                        <tr class="border-b border-gray-700">
+                            <td class="p-4 text-left font-semibold">Cost for 100 results</td>
+                            <td class="p-4 bg-gray-800 font-bold text-green-300">Marginal increase. Our speed is your
+                                savings.</td>
+                            <td class="p-4 text-red-400">Up to 10x more expensive.</td>
+                        </tr>
+                        <tr class="border-b border-gray-700">
+                            <td class="p-4 text-left font-semibold">Core Technology</td>
+                            <td class="p-4 bg-gray-800 font-bold text-green-300">LightPanda Browser (built for scraping)
+                            </td>
+                            <td class="p-4 text-gray-400">Chrome/Chromium (general purpose)</td>
+                        </tr>
+                        <tr class="border-b border-gray-700">
+                            <td class="p-4 text-left font-semibold">Scalability</td>
+                            <td class="p-4 bg-gray-800 font-bold text-green-300">High. Our efficiency allows for massive
+                                scaling.</td>
+                            <td class="p-4 text-red-400">Now a major challenge.</td>
+                        </tr>
+                        <tr>
+                            <td class="p-4 text-left font-semibold">Ease of Use</td>
+                            <td class="p-4 bg-gray-800 font-bold text-green-300">A simple, powerful API.</td>
+                            <td class="p-4 text-gray-400">Requires complex workarounds.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Slide 6: Use Cases -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2 class="text-5xl font-bold">Who Needs PandaSERP?</h2>
+                <ul class="text-xl space-y-4 max-w-md mx-auto list-none text-center">
+                    <li class="bg-gray-800 p-3 rounded-lg"><strong class="text-green-400">SEO Agencies:</strong> Track
+                        rankings at scale without breaking the bank.</li>
+                    <li class="bg-gray-800 p-3 rounded-lg"><strong class="text-green-400">Data Scientists:</strong>
+                        Gather vast amounts of SERP data for analysis.</li>
+                    <li class="bg-gray-800 p-3 rounded-lg"><strong class="text-green-400">Marketing Teams:</strong>
+                        Monitor competitors and analyze market trends.</li>
+                    <li class="bg-gray-800 p-3 rounded-lg"><strong class="text-green-400">Application
+                            Developers:</strong> Build SERP-powered features into products.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 7: The Future is Fast -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2 class="text-5xl font-bold">The Future is Fast. The Future is PandaSERP.</h2>
+                <ul class="text-xl space-y-4 my-8 text-center list-none max-w-2xl mx-auto">
+                    <li>Don't let the "num=100" apocalypse slow you down.</li>
+                    <li>Get the SERP data you need, faster and more affordably than ever before.</li>
+                    <li>PandaSERP is the intelligent choice in a post-"num=100" world.</li>
+                </ul>
+                <div class="mt-12">
+                    <p class="text-3xl font-semibold">Contact Us for a Demo & Early Access</p>
+                    <p class="text-green-400 text-2xl mt-4">[Your Company Website / Email]</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Navigation -->
+    <div class="fixed bottom-4 right-4 flex items-center space-x-2 bg-gray-800/50 backdrop-blur-sm p-2 rounded-lg">
+        <button id="prevBtn"
+            class="px-4 py-2 bg-gray-700 rounded-md hover:bg-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            &larr;
+        </button>
+        <div id="slide-counter" class="px-3 text-lg font-medium">1 / 7</div>
+        <button id="nextBtn" class="px-4 py-2 bg-gray-700 rounded-md hover:bg-green-500 transition-colors">
+            &rarr;
+        </button>
+    </div>
+
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const slideCounter = document.getElementById('slide-counter');
+
+        let currentSlide = 0;
+
+        function showSlide(index) {
+            // Hide current slide
+            slides[currentSlide].classList.remove('active');
+
+            // Update current slide index
+            currentSlide = index;
+
+            // Show new slide
+            slides[currentSlide].classList.add('active');
+
+            // Update slide counter
+            slideCounter.textContent = `${currentSlide + 1} / ${slides.length}`;
+
+            // Update button states
+            prevBtn.disabled = currentSlide === 0;
+            nextBtn.disabled = currentSlide === slides.length - 1;
+        }
+
+        nextBtn.addEventListener('click', () => {
+            if (currentSlide < slides.length - 1) {
+                showSlide(currentSlide + 1);
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' && currentSlide < slides.length - 1) {
+                showSlide(currentSlide + 1);
+            } else if (e.key === 'ArrowLeft' && currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        });
+
+        // Initial setup
+        showSlide(0);
+    </script>
+</body>
+
+</html>
