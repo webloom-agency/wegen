@@ -104,7 +104,30 @@ export const ToolNodeDataConfig = memo(function ({
         model: appStore.getState().chatModel!,
       });
     }
-  }, []);
+    
+    // Update output schema if tool is already selected but schema doesn't include parameters
+    if (data.tool && data.tool.parameterSchema?.properties) {
+      const currentProperties = data.outputSchema?.properties || {};
+      const hasToolParams = Object.keys(data.tool.parameterSchema.properties).some(
+        key => key in currentProperties && key !== 'tool_result'
+      );
+      
+      if (!hasToolParams) {
+        const outputSchema = {
+          type: "object" as const,
+          properties: {
+            tool_result: {
+              type: "object" as const,
+            },
+            // Add tool parameters to output schema so they can be used as variables
+            ...(data.tool.parameterSchema.properties || {}),
+          },
+        };
+        
+        updateNodeData(data.id, { outputSchema });
+      }
+    }
+  }, [data.id, data.model, data.tool, data.outputSchema]);
 
   return (
     <div className="flex flex-col gap-2 text-sm px-4">
@@ -112,7 +135,22 @@ export const ToolNodeDataConfig = memo(function ({
       <WorkflowToolSelect
         tools={toolList}
         onChange={(tool) => {
-          updateNodeData(data.id, { tool });
+          // Update the output schema to include tool parameters as variables
+          const outputSchema = {
+            type: "object" as const,
+            properties: {
+              tool_result: {
+                type: "object" as const,
+              },
+              // Add tool parameters to output schema so they can be used as variables
+              ...(tool?.parameterSchema?.properties || {}),
+            },
+          };
+          
+          updateNodeData(data.id, { 
+            tool,
+            outputSchema 
+          });
         }}
         tool={data.tool}
       />

@@ -606,7 +606,13 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
       }
     }
   }
-  return { output: { tool_result: res } };
+  return { 
+    output: { 
+      tool_result: res,
+      // Expose input parameters so they can be used as variables in subsequent nodes
+      ...result.input.parameter
+    } 
+  };
 };
 
 /**
