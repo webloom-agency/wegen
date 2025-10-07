@@ -63,6 +63,12 @@ export async function POST(
               message: err?.message || safeJSONParse(err).value,
             };
           }
+          
+          // Modify WORKFLOW_START event to include enriched query
+          if (evt.eventType === "WORKFLOW_START") {
+            (evt as any).enrichedQuery = enrichedQuery;
+          }
+          
           // Use custom encoding instead of SSE format
           const data = encodeWorkflowEvent(evt);
           controller.enqueue(encoder.encode(data));

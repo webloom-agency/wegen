@@ -254,6 +254,10 @@ ${workflow!.description ? `tool-description: ${workflow!.description}` : ""}`,
               switch (event.eventType) {
                 case "WORKFLOW_START":
                   setTab("result");
+                  // Update query state with enriched query if available
+                  if ((event as any).enrichedQuery) {
+                    setQuery((event as any).enrichedQuery);
+                  }
                   break;
                 case "WORKFLOW_END":
                   setResult(event);
