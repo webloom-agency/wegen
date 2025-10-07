@@ -282,12 +282,14 @@ export const workflowToVercelAITool = ({
   schema,
   dataStream,
   name,
+  userEmail,
 }: {
   id: string;
   name: string;
   description?: string;
   schema: ObjectJsonSchema7;
   dataStream: DataStreamWriter;
+  userEmail?: string;
 }): VercelAIWorkflowTool => {
   const toolName = name
     .replace(/[^a-zA-Z0-9\s]/g, "")
@@ -326,6 +328,11 @@ export const workflowToVercelAITool = ({
       };
 
       const argsWithDefaults = applyDefaultsFromSchema(query ?? {}, schema);
+      
+      // Auto-inject user email for email field if it exists and is empty
+      if (schema.properties?.email && !argsWithDefaults.email && userEmail) {
+        argsWithDefaults.email = userEmail;
+      }
       const history: VercelAIWorkflowToolStreaming[] = [];
       const toolResult: VercelAIWorkflowToolStreamingResult = {
         toolCallId,
@@ -484,12 +491,14 @@ export const workflowToVercelAITools = (
     schema: ObjectJsonSchema7;
   }[],
   dataStream: DataStreamWriter,
+  userEmail?: string,
 ) => {
   return workflows
     .map((v) =>
       workflowToVercelAITool({
         ...v,
         dataStream,
+        userEmail,
       }),
     )
     .reduce(
@@ -526,6 +535,7 @@ export const loadMcpTools = (opt?: {
 export const loadWorkFlowTools = (opt: {
   mentions?: ChatMention[];
   dataStream: DataStreamWriter;
+  userEmail?: string;
 }) =>
   safe(() =>
     opt?.mentions?.length
@@ -536,7 +546,7 @@ export const loadWorkFlowTools = (opt: {
         )
       : [],
   )
-    .map((tools) => workflowToVercelAITools(tools, opt.dataStream))
+    .map((tools) => workflowToVercelAITools(tools, opt.dataStream, opt.userEmail))
     .orElse({} as Record<string, VercelAIWorkflowTool>);
 
 export const loadAppDefaultTools = (opt?: {

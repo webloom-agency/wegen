@@ -66,6 +66,7 @@ export async function POST(request: Request) {
       return new Response("Unauthorized", { status: 401 });
     }
 
+
     const {
       id,
       message,
@@ -874,6 +875,7 @@ export async function POST(request: Request) {
               loadWorkFlowTools({
                 mentions: wfMentionsForLoad as any,
                 dataStream,
+                userEmail: session.user.email || "",
               }),
             )
             .orElse({});
