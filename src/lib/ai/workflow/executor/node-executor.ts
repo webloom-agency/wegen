@@ -508,10 +508,45 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
         argsFromModel[briefKey] = prompt;
       }
 
+      // Auto-inject user email for tools that require user email parameters but don't have them
+      const userEmailFields = ["user_google_email", "user_email", "email"];
+      for (const fieldName of userEmailFields) {
+        const hasField = !!props?.[fieldName];
+        if (hasField && !argsFromModel[fieldName]) {
+          // Get current user email from workflow context
+          const currentUserEmail = state.getOutput({ nodeId: "CURRENT_USER", path: ["email"] });
+          if (currentUserEmail && typeof currentUserEmail === "string") {
+            argsFromModel[fieldName] = currentUserEmail;
+          }
+          break; // Only inject into the first matching field
+        }
+      }
+
       result.input = {
         parameter: argsFromModel,
         prompt,
       };
+    }
+  }
+
+  // Auto-inject user email for tools that require user email parameters but don't have them
+  // This handles cases where parameters come from rawArgs or other sources
+  if (node.tool?.parameterSchema && result.input?.parameter) {
+    const props = toAny(node.tool.parameterSchema)?.properties || {};
+    const userEmailFields = ["user_google_email", "user_email", "email"];
+    for (const fieldName of userEmailFields) {
+      const hasField = !!props?.[fieldName];
+      if (hasField && !result.input.parameter[fieldName]) {
+        // Get current user email from workflow context
+        const currentUserEmail = state.getOutput({ nodeId: "CURRENT_USER", path: ["email"] });
+        if (currentUserEmail && typeof currentUserEmail === "string") {
+          result.input.parameter = {
+            ...result.input.parameter,
+            [fieldName]: currentUserEmail,
+          };
+        }
+        break; // Only inject into the first matching field
+      }
     }
   }
 
