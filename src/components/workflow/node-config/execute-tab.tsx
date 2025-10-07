@@ -7,7 +7,7 @@ import { useReactFlow } from "@xyflow/react";
 import { useObjectState } from "@/hooks/use-object-state";
 import { UINode } from "lib/ai/workflow/workflow.interface";
 import { cn, createDebounce, errorToString } from "lib/utils";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GraphEndEvent } from "ts-edge";
 import { allNodeValidate } from "lib/ai/workflow/node-validate";
 import { toast } from "sonner";
@@ -104,6 +104,38 @@ export function ExecuteTab({
   const inputSchemaIterator = useMemo(() => {
     return Object.entries(inputSchema.properties ?? {});
   }, [inputSchema]);
+
+  // Initialize query with default values, including user email for email field
+  useEffect(() => {
+    const defaultQuery: Record<string, any> = {};
+    
+    // Apply schema defaults
+    Object.entries(inputSchema.properties ?? {}).forEach(([key, schema]) => {
+      const schemaObj = schema as any;
+      if (schemaObj.default !== undefined) {
+        defaultQuery[key] = schemaObj.default;
+      }
+    });
+    
+    // Auto-populate email field with current user email if it exists and is empty
+    if (inputSchema.properties?.email && !defaultQuery.email) {
+      // Get current user email from session (we'll need to fetch this)
+      fetch('/api/user/me')
+        .then(res => res.json())
+        .then(user => {
+          if (user.email) {
+            setQuery(prev => ({ ...defaultQuery, ...prev, email: prev.email || user.email }));
+          } else {
+            setQuery(prev => ({ ...defaultQuery, ...prev }));
+          }
+        })
+        .catch(() => {
+          setQuery(prev => ({ ...defaultQuery, ...prev }));
+        });
+    } else {
+      setQuery(prev => ({ ...defaultQuery, ...prev }));
+    }
+  }, [inputSchema, setQuery]);
 
   const handleGenerateInputWithAI = useCallback(async () => {
     let model = appStore.getState().chatModel;
@@ -436,7 +468,7 @@ ${workflow!.description ? `tool-description: ${workflow!.description}` : ""}`,
                         id={key || String(i)}
                         type="number"
                         placeholder={schema.description || "number"}
-                        defaultValue={query[key] || undefined}
+                        value={query[key] || ""}
                         onChange={(e) =>
                           setQuery({ ...query, [key]: Number(e.target.value) })
                         }
