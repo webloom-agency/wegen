@@ -45,6 +45,50 @@ function deepTrimStrings<T>(value: T): T {
 }
 
 /**
+ * Clears outputs for all nodes inside a loop body to prevent contamination between iterations.
+ * This ensures each loop iteration starts with fresh, empty node states.
+ */
+function clearLoopBodyOutputs(loopNodeId: string, state: WorkflowRuntimeState): void {
+  const nodes = state.nodes || [];
+  const edges = state.edges || [];
+  
+  // Find all nodes that are inside this loop body
+  const loopBodyNodeIds = new Set<string>();
+  
+  // Start from loop node and traverse to find all nodes until LoopEnd
+  const visited = new Set<string>();
+  const queue = [loopNodeId];
+  
+  while (queue.length > 0) {
+    const currentNodeId = queue.shift()!;
+    if (visited.has(currentNodeId)) continue;
+    visited.add(currentNodeId);
+    
+    // Find all outgoing edges from current node
+    const outgoingEdges = edges.filter(e => e.source === currentNodeId);
+    
+    for (const edge of outgoingEdges) {
+      const targetNode = nodes.find(n => n.id === edge.target);
+      if (!targetNode) continue;
+      
+      // If target is LoopEnd, don't traverse further on this path
+      if (targetNode.kind === "loopEnd") continue;
+      
+      // If target is not the loop node itself, add it to body nodes
+      if (edge.target !== loopNodeId) {
+        loopBodyNodeIds.add(edge.target);
+        queue.push(edge.target);
+      }
+    }
+  }
+  
+  // Clear outputs for all loop body nodes
+  for (const nodeId of loopBodyNodeIds) {
+    state.setOutput({ nodeId, path: [] }, undefined);
+  }
+}
+
+/**
  * Interface for node executor functions.
  * Each node type implements this interface to define its execution behavior.
  *
@@ -991,6 +1035,12 @@ export const loopNodeExecutor: NodeExecutor<LoopNodeData> = ({ node, state }) =>
   const nodesById = new Map((state.nodes || []).map((n) => [n.id, n]));
   const endTargets = outgoing.filter((e) => nodesById.get(e.target)?.kind === "loopEnd").map((e) => e.target);
   const bodyTargets = outgoing.filter((e) => nodesById.get(e.target)?.kind !== "loopEnd").map((e) => e.target);
+  
+  // Clear outputs for all nodes in the loop body to prevent contamination
+  if (items.length > 0 && bodyTargets.length > 0) {
+    clearLoopBodyOutputs(node.id, state);
+  }
+  
   const index = 0;
   const nextNodes: string[] = items.length > 0 && bodyTargets.length > 0 ? bodyTargets : (endTargets.length > 0 ? endTargets : []);
   return { output: { items, index, item: items[0], acc: [], nextNodes } };
@@ -1032,6 +1082,9 @@ export const loopEndNodeExecutor: NodeExecutor<LoopEndNodeData> = ({ node, state
   const nextIndex = index + 1;
   let nextNodes: string[] = afterLoopTargets;
   if (loopId && nextIndex < length && bodyTargets.length > 0) {
+    // Clear outputs for all nodes in the loop body before starting next iteration
+    clearLoopBodyOutputs(loopId, state);
+    
     state.setOutput({ nodeId: loopId, path: ["index"] }, nextIndex);
     state.setOutput({ nodeId: loopId, path: ["item"] }, items[nextIndex]);
     nextNodes = bodyTargets;
