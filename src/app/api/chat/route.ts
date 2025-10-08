@@ -574,8 +574,8 @@ export async function POST(request: Request) {
             // Expandable data source patterns - automatically works with any MCP
             const dataSourcePatterns = [
               { keywords: ['search console', 'gsc', 'google search console', 'mots-clés', 'keywords'], intent: 'search-analytics' },
-              { keywords: ['google ads', 'adwords', 'google adwords', 'publicité google', 'advertising google', 'performances google ads', 'google ads performance', 'campagne google ads', 'google ads campaign'], intent: 'advertising-data' },
-              { keywords: ['show me ads', 'ads of domain', 'competitor ads', 'serp ads', 'domain ads', 'ads research', 'recherche publicitaire', 'publicités concurrents'], intent: 'ads-research' },
+              { keywords: ['google ads', 'adwords', 'google adwords', 'publicité google', 'advertising google', 'performances google ads', 'google ads performance', 'campagne google ads', 'google ads campaign', 'sea', 'search engine advertising', 'positions sea', 'positionnés en sea', 'bien positionnés en sea'], intent: 'advertising-data' },
+              { keywords: ['show me ads', 'ads of domain', 'competitor ads', 'domain ads', 'ads research', 'recherche publicitaire', 'publicités concurrents', 'competitor analysis'], intent: 'ads-research' },
               { keywords: ['drive', 'google drive', 'workspace', 'docs', 'sheets', 'fathom', 'fathoms', 'kickoff', 'preaudit', 'search drive', 'drive files', 'google docs', 'google sheets', 'gdrive', 'rapport', 'document', 'fichier'], intent: 'document-storage' },
               { keywords: ['analytics', 'ga', 'google analytics', 'traffic'], intent: 'web-analytics' },
               { keywords: ['youtube', 'video', 'channel'], intent: 'video-platform' },
@@ -682,23 +682,26 @@ export async function POST(request: Request) {
                 }
               }
               
-              // Handle ads research (SERP tools) separately from Google Ads platform - VERY RESTRICTIVE
+              // Handle ads research (SERP tools) separately from Google Ads platform - EXTREMELY RESTRICTIVE
               if (intents.includes('ads-research')) {
-                // Only boost SERP tools for very specific competitor/domain ads requests
-                if (serverName.includes('serp') || toolName.includes('search_ads') || toolName.includes('competitor')) {
-                  score += 25; // Reduced from 30
-                  logger.info(`🔍 SERP ADS RESEARCH: Boosting score for ${serverName}/${toolName} due to specific ads-research intent`);
+                // Only boost SERP tools for very specific competitor/domain ads requests with explicit keywords
+                const hasExplicitCompetitorKeywords = lastUserTextForMcp.toLowerCase().includes('competitor') || lastUserTextForMcp.toLowerCase().includes('concurrents') || 
+                                                     lastUserTextForMcp.toLowerCase().includes('show me ads') || lastUserTextForMcp.toLowerCase().includes('ads of domain');
+                if ((serverName.includes('serp') || toolName.includes('search_ads')) && hasExplicitCompetitorKeywords) {
+                  score += 15; // Further reduced from 25
+                  logger.info(`🔍 SERP ADS RESEARCH: Boosting score for ${serverName}/${toolName} due to explicit competitor ads request`);
                 }
                 // Much lower score for generic ads research tools
                 else if (toolName.includes('ads') && !serverName.toLowerCase().includes('google-ads')) {
-                  score += 5; // Reduced from 15
+                  score += 2; // Further reduced from 5
                 }
               }
               
               // CRITICAL: Prevent SERP tools from getting generic ads boosts when advertising-data intent is present
-              if (intents.includes('advertising-data') && serverName.includes('serp')) {
-                score = Math.max(0, score - 10); // Penalty for SERP when Google Ads data is wanted
-                logger.info(`🚫 SERP PENALTY: Reducing SERP score for ${serverName}/${toolName} when advertising-data intent is present`);
+              // Make SERP tools score zero when SEA/Google Ads data is wanted unless explicitly called
+              if (intents.includes('advertising-data') && (serverName.includes('serp') || toolName.includes('search_ads'))) {
+                score = 0; // Set to zero instead of penalty to completely prevent auto-selection
+                logger.info(`🚫 SERP ZERO SCORE: Setting SERP score to 0 for ${serverName}/${toolName} when advertising-data intent is present`);
               }
               
               if (intents.includes('document-storage') && (
