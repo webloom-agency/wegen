@@ -5,6 +5,7 @@
 export interface SearchItem {
   id: string;
   label: string;
+  searchText?: string; // Optional additional text to search in
 }
 
 export interface ScoredItem<T extends SearchItem> {
@@ -30,14 +31,17 @@ export function fuzzySearch<T extends SearchItem>(
   const scoredItems = items.map((item) => {
     const normalizedId = item.id.toLowerCase().replace(/[^\w]/g, "");
     const normalizedLabel = item.label.toLowerCase().replace(/[^\w]/g, "");
+    const normalizedSearchText = item.searchText?.toLowerCase().replace(/[^\w]/g, "") || "";
 
     // Check for exact matches
     const exactIdMatch = normalizedId.includes(normalizedQuery);
     const exactLabelMatch = normalizedLabel.includes(normalizedQuery);
+    const exactSearchTextMatch = normalizedSearchText.includes(normalizedQuery);
 
     // Simple string similarity check instead of Levenshtein distance
     let idSimilarity = 0;
     let labelSimilarity = 0;
+    let searchTextSimilarity = 0;
 
     // n-gram based similarity check for queries with 2+ characters
     if (normalizedQuery.length >= 2) {
@@ -56,6 +60,16 @@ export function fuzzySearch<T extends SearchItem>(
           labelSimilarity += 1;
         }
       }
+
+      // Check for matching bigrams in search text
+      if (normalizedSearchText) {
+        for (let i = 0; i < normalizedSearchText.length - 1; i++) {
+          const bigram = normalizedSearchText.slice(i, i + 2);
+          if (normalizedQuery.includes(bigram)) {
+            searchTextSimilarity += 1;
+          }
+        }
+      }
     }
 
     // Calculate score (priority: exact match > similarity)
@@ -63,8 +77,10 @@ export function fuzzySearch<T extends SearchItem>(
 
     if (exactIdMatch) score += 100;
     if (exactLabelMatch) score += 80;
+    if (exactSearchTextMatch) score += 60;
     score += idSimilarity * 2;
     score += labelSimilarity;
+    score += searchTextSimilarity * 0.5; // Lower weight for search text
 
     return { item, score };
   });

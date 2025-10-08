@@ -28,6 +28,10 @@ import { useRouter } from "next/navigation";
 import { ChatMention } from "app-types/chat";
 import { BACKGROUND_COLORS, EMOJI_DATA } from "lib/const";
 import { cn, deduplicateByKey } from "lib/utils";
+import { fuzzySearch, SearchItem } from "lib/fuzzy-search";
+import { Input } from "ui/input";
+import { Search, X } from "lucide-react";
+import { Button } from "ui/button";
 
 const DISPLAY_LIMIT = 5; // Number of agents to show when collapsed
 
@@ -36,6 +40,7 @@ export function AppSidebarAgents() {
   const t = useTranslations();
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { bookmarkedAgents, myAgents, isLoading, sharedAgents } = useAgents({
     limit: 50,
   }); // Increase limit since we're not artificially limiting display
@@ -44,6 +49,22 @@ export function AppSidebarAgents() {
     const combined = [...myAgents, ...bookmarkedAgents, ...sharedAgents];
     return deduplicateByKey(combined, "id");
   }, [bookmarkedAgents, myAgents, sharedAgents]);
+
+  // Filter agents based on search query
+  const filteredAgents = useMemo(() => {
+    if (!searchQuery.trim()) return agents;
+    
+    const searchableAgents: SearchItem[] = agents.map(agent => ({
+      id: agent.id,
+      label: agent.name,
+      // Include description in search by extending the label
+      searchText: `${agent.name} ${agent.description || ''}`.toLowerCase()
+    }));
+    
+    return fuzzySearch(searchableAgents, searchQuery)
+      .map(searchItem => agents.find(agent => agent.id === searchItem.id))
+      .filter(Boolean) as typeof agents;
+  }, [agents, searchQuery]);
 
   const handleAgentClick = useCallback(
     (id: string) => {
@@ -129,13 +150,36 @@ export function AppSidebarAgents() {
             </SidebarMenuAction>
           </SidebarMenuItem>
 
+          {/* Search Bar */}
+          <SidebarMenuItem className="px-2 mb-2">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder={t("Agent.searchAgents")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 pr-8 h-8 text-sm"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted"
+                >
+                  <X className="size-3" />
+                </Button>
+              )}
+            </div>
+          </SidebarMenuItem>
+
           {isLoading ? (
             <SidebarMenuItem>
               {Array.from({ length: 2 }).map(
                 (_, index) => mounted && <SidebarMenuSkeleton key={index} />,
               )}
             </SidebarMenuItem>
-          ) : agents.length == 0 ? (
+          ) : filteredAgents.length == 0 ? (
             <div className="px-2 mt-1">
               <Link
                 href={"/agent/new"}
@@ -147,9 +191,10 @@ export function AppSidebarAgents() {
                     <ArrowUpRightIcon className="size-3" />
                   </div>
                   <p className="text-muted-foreground">
-                    {sharedAgents.length > 0
+                    {searchQuery ? t("Agent.noAgentsFound") : 
+                     (sharedAgents.length > 0
                       ? t("Layout.createYourOwnAgentOrSelectShared")
-                      : t("Layout.createYourOwnAgent")}
+                      : t("Layout.createYourOwnAgent"))}
                   </p>
                 </div>
               </Link>
@@ -166,7 +211,7 @@ export function AppSidebarAgents() {
                     expanded && "max-h-[400px] overflow-y-auto",
                   )}
                 >
-                  {(expanded ? agents : agents.slice(0, DISPLAY_LIMIT))?.map(
+                  {(expanded ? filteredAgents : filteredAgents.slice(0, DISPLAY_LIMIT))?.map(
                     (agent, i) => {
                       return (
                         <SidebarMenu
@@ -240,7 +285,7 @@ export function AppSidebarAgents() {
               </div>
 
               {/* Show More/Less Button */}
-              {agents.length > DISPLAY_LIMIT && (
+              {filteredAgents.length > DISPLAY_LIMIT && (
                 <SidebarMenu className="group/showmore">
                   <SidebarMenuItem className="px-2 cursor-pointer">
                     <SidebarMenuButton

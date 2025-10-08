@@ -16,9 +16,12 @@ import { fetcher } from "lib/utils";
 import { Visibility } from "@/components/shareable-actions";
 import { ShareableCard } from "@/components/shareable-card";
 import { notify } from "lib/notify";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { handleErrorWithToast } from "ui/shared-toast";
 import { safe } from "ts-safe";
+import { fuzzySearch, SearchItem } from "lib/fuzzy-search";
+import { Input } from "ui/input";
+import { Search, X } from "lucide-react";
 
 interface AgentsListProps {
   initialMyAgents: AgentSummary[];
@@ -44,6 +47,7 @@ export function AgentsList({
   const [duplicatingAgentId, setDuplicatingAgentId] = useState<string | null>(
     null,
   );
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { isAdmin: isAdminQuery } = useIsAdmin();
   const isAdmin = isAdminDefault ?? isAdminQuery;
@@ -65,6 +69,35 @@ export function AgentsList({
   const sharedAgents =
     allAgents?.filter((agent: AgentSummary) => agent.userId !== userId) ||
     initialSharedAgents;
+
+  // Filter agents based on search query
+  const filteredMyAgents = useMemo(() => {
+    if (!searchQuery.trim()) return myAgents;
+    
+    const searchableAgents: SearchItem[] = myAgents.map(agent => ({
+      id: agent.id,
+      label: agent.name,
+      searchText: `${agent.name} ${agent.description || ''}`.toLowerCase()
+    }));
+    
+    return fuzzySearch(searchableAgents, searchQuery)
+      .map(searchItem => myAgents.find(agent => agent.id === searchItem.id))
+      .filter(Boolean) as typeof myAgents;
+  }, [myAgents, searchQuery]);
+
+  const filteredSharedAgents = useMemo(() => {
+    if (!searchQuery.trim()) return sharedAgents;
+    
+    const searchableAgents: SearchItem[] = sharedAgents.map(agent => ({
+      id: agent.id,
+      label: agent.name,
+      searchText: `${agent.name} ${agent.description || ''}`.toLowerCase()
+    }));
+    
+    return fuzzySearch(searchableAgents, searchQuery)
+      .map(searchItem => sharedAgents.find(agent => agent.id === searchItem.id))
+      .filter(Boolean) as typeof sharedAgents;
+  }, [sharedAgents, searchQuery]);
 
   const { toggleBookmark: toggleBookmarkHook, isLoading: isBookmarkLoading } =
     useBookmark({
@@ -149,6 +182,27 @@ export function AgentsList({
         </Link>
       </div>
 
+      {/* Search Bar */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
+        <Input
+          placeholder={t("Agent.searchAgents")}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10 pr-10"
+        />
+        {searchQuery && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSearchQuery("")}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted"
+          >
+            <X className="size-4" />
+          </Button>
+        )}
+      </div>
+
       {/* My Agents Section */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-2">
@@ -179,7 +233,7 @@ export function AgentsList({
             </Card>
           </Link>
 
-          {myAgents.map((agent) => (
+          {filteredMyAgents.map((agent) => (
             <div key={agent.id}>
               <ShareableCard
                 type="agent"
@@ -205,7 +259,7 @@ export function AgentsList({
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {sharedAgents.map((agent) => (
+          {filteredSharedAgents.map((agent) => (
             <div key={agent.id}>
               <ShareableCard
                 type="agent"
@@ -224,12 +278,14 @@ export function AgentsList({
               />
             </div>
           ))}
-          {sharedAgents.length === 0 && (
+          {filteredSharedAgents.length === 0 && (
             <Card className="col-span-full bg-transparent border-none">
               <CardHeader className="text-center py-12">
-                <CardTitle>{t("Agent.noSharedAgents")}</CardTitle>
+                <CardTitle>
+                  {searchQuery ? t("Agent.noAgentsFound") : t("Agent.noSharedAgents")}
+                </CardTitle>
                 <CardDescription>
-                  {t("Agent.noSharedAgentsDescription")}
+                  {searchQuery ? t("Agent.tryDifferentSearch") : t("Agent.noSharedAgentsDescription")}
                 </CardDescription>
               </CardHeader>
             </Card>

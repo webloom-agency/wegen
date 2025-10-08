@@ -37,6 +37,9 @@ import { useTranslations } from "next-intl";
 import { TextShimmer } from "ui/text-shimmer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { ChatThread } from "app-types/chat";
+import { fuzzySearch, SearchItem } from "lib/fuzzy-search";
+import { Input } from "ui/input";
+import { Search, X } from "lucide-react";
 
 type ThreadGroup = {
   label: string;
@@ -61,6 +64,7 @@ export function AppSidebarThreads() {
   );
   // State to track if expanded view is active
   const [isExpanded, setIsExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const threadApiKey = useMemo(() => {
     const params = new URLSearchParams();
@@ -81,13 +85,29 @@ export function AppSidebarThreads() {
   // Check if we have 40 or more threads to display "View All" button
   const hasExcessThreads = threadList && threadList.length >= MAX_THREADS_COUNT;
 
+  // Filter threads based on search query
+  const filteredThreadList = useMemo(() => {
+    if (!threadList) return [];
+    if (!searchQuery.trim()) return threadList;
+    
+    const searchableThreads: SearchItem[] = threadList.map(thread => ({
+      id: thread.id,
+      label: thread.title || "New Chat",
+      searchText: `${thread.title || "New Chat"} ${thread.userEmail || ''}`.toLowerCase()
+    }));
+    
+    return fuzzySearch(searchableThreads, searchQuery)
+      .map(searchItem => threadList.find(thread => thread.id === searchItem.id))
+      .filter(Boolean) as typeof threadList;
+  }, [threadList, searchQuery]);
+
   // Use either limited or full thread list based on expanded state
   const displayThreadList = useMemo(() => {
-    if (!threadList) return [];
-    return !isExpanded && hasExcessThreads
-      ? threadList.slice(0, MAX_THREADS_COUNT)
-      : threadList;
-  }, [threadList, hasExcessThreads, isExpanded]);
+    if (!filteredThreadList) return [];
+    return !isExpanded && hasExcessThreads && !searchQuery
+      ? filteredThreadList.slice(0, MAX_THREADS_COUNT)
+      : filteredThreadList;
+  }, [filteredThreadList, hasExcessThreads, isExpanded, searchQuery]);
 
   const threadGroupByDate = useMemo(() => {
     if (!displayThreadList || displayThreadList.length === 0) {
@@ -167,6 +187,31 @@ export function AppSidebarThreads() {
                 </h4>
               </SidebarGroupLabel>
 
+              {/* Search Bar */}
+              {!isLoading && (
+                <div className="px-2 mb-2">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
+                    <Input
+                      placeholder={t("searchChats")}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-8 pr-8 h-8 text-sm"
+                    />
+                    {searchQuery && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted"
+                      >
+                        <X className="size-3" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {isLoading ? (
                 Array.from({ length: 12 }).map(
                   (_, index) => mounted && <SidebarMenuSkeleton key={index} />,
@@ -174,7 +219,7 @@ export function AppSidebarThreads() {
               ) : (
                 <div className="px-2 py-4 text-center">
                   <p className="text-sm text-muted-foreground">
-                    {t("noConversationsYet")}
+                    {searchQuery ? t("noChatsFound") : t("noConversationsYet")}
                   </p>
                 </div>
               )}
@@ -228,6 +273,31 @@ export function AppSidebarThreads() {
                       </DropdownMenu>
                     )}
                   </SidebarGroupLabel>
+
+                  {/* Search Bar - only show in first group */}
+                  {isFirst && (
+                    <div className="px-2 mb-2">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
+                        <Input
+                          placeholder={t("searchChats")}
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-8 pr-8 h-8 text-sm"
+                        />
+                        {searchQuery && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSearchQuery("")}
+                            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted"
+                          >
+                            <X className="size-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {group.threads.map((thread) => (
                     <SidebarMenuSub
@@ -293,7 +363,7 @@ export function AppSidebarThreads() {
         );
       })}
 
-      {hasExcessThreads && (
+      {hasExcessThreads && !searchQuery && (
         <SidebarMenu>
           <SidebarMenuItem>
             {/* TODO: Later implement a dedicated search/all chats page instead of this expand functionality */}
