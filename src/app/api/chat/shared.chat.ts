@@ -330,16 +330,7 @@ export const workflowToVercelAITool = ({
       const argsWithDefaults = applyDefaultsFromSchema(query ?? {}, schema);
       
       // Auto-inject user email for email field if it exists and is empty
-      console.log(`[WORKFLOW DEBUG] ${name}:`, {
-        hasEmailProperty: !!schema.properties?.email,
-        currentEmailValue: argsWithDefaults.email,
-        userEmailAvailable: !!userEmail,
-        userEmail: userEmail,
-        schema: JSON.stringify(schema, null, 2)
-      });
-      
       if (schema.properties?.email && !argsWithDefaults.email && userEmail) {
-        console.log(`[WORKFLOW DEBUG] Injecting email for ${name}: ${userEmail}`);
         argsWithDefaults.email = userEmail;
       }
       const history: VercelAIWorkflowToolStreaming[] = [];
