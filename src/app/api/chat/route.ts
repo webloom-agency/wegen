@@ -220,10 +220,12 @@ export async function POST(request: Request) {
           // Full phrase containment
           if (userText.includes(n)) return true;
           // token-wise containment: require at least two token matches AND at least one substantial token (>4 chars)
+          // Also require that short tokens (<=3 chars) are not the primary match to avoid false positives
           const matchedTokens = tokens.filter((t) => userText.includes(t));
           const matchedCount = matchedTokens.length;
           const hasSubstantialMatch = matchedTokens.some(t => t.length > 4);
-          if (matchedCount >= Math.min(2, tokens.length) && hasSubstantialMatch) return true;
+          const shortTokensOnly = matchedTokens.every(t => t.length <= 3);
+          if (matchedCount >= Math.min(2, tokens.length) && hasSubstantialMatch && !shortTokensOnly) return true;
           // space-insensitive containment for multi-word names (only if substantial)
           const noSpaceMsg = userText.replace(/\s+/g, "");
           const noSpaceName = n.replace(/\s+/g, "");
@@ -320,14 +322,16 @@ export async function POST(request: Request) {
             const score = matched.length * 30 + (hasUnique ? 20 : 0) + Math.min(sim, 10);
             
             // STRICTER WORKFLOW MATCHING: Require higher scores and better token matches
-            // Prevent generic words like "analyse" from triggering specific workflows
-            const minScore = 60; // Increased from 30
+            // Prevent generic words like "analyse" or short words like "sea" from triggering specific workflows
+            const minScore = 70; // Increased from 60 to be more strict
             const hasStrongMatch = matched.some(token => {
               // Require at least one token to be longer than 4 characters and match well
               return token.length > 4 && userText.includes(token);
             });
+            // Additional check: don't trigger if only short tokens (<=3 chars) match
+            const shortTokensOnly = matched.every(token => token.length <= 3);
             
-            if (score >= minScore && hasStrongMatch) {
+            if (score >= minScore && hasStrongMatch && !shortTokensOnly) {
               const cand = {
                 type: "workflow",
                 name: wfName,
@@ -835,7 +839,8 @@ export async function POST(request: Request) {
               .slice()
               .sort((a, b) => (b.exact === a.exact ? b.score - a.score : Number(b.exact) - Number(a.exact)))[0];
             // Only force when the best is exact OR sufficiently high-scoring
-            if (best && (best.exact || best.score >= 80)) {
+            // Increased threshold to reduce false positives from partial token matches
+            if (best && (best.exact || best.score >= 90)) {
               return [best.mention];
             }
             return [];
