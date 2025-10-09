@@ -55,7 +55,7 @@ export async function GET(request: Request) {
   return Response.json(filteredThreads);
 }
 
-// Helper function to filter threads by search query (title and agent name)
+// Helper function to filter threads by search query (title only for performance)
 async function filterThreadsBySearch(threads: any[], search: string, userId: string) {
   const query = search.toLowerCase().trim();
   
@@ -64,47 +64,11 @@ async function filterThreadsBySearch(threads: any[], search: string, userId: str
     return threads;
   }
   
-  const filteredThreads: any[] = [];
-  
-  // First pass: check titles (fast)
+  // Only search by title for performance - message content search is too expensive
   const titleMatches = threads.filter(thread => {
     const title = (thread.title || "").toLowerCase();
     return title.includes(query);
   });
   
-  filteredThreads.push(...titleMatches);
-  
-  // Second pass: check agent names in messages (slower, but necessary)
-  const remainingThreads = threads.filter(thread => {
-    const title = (thread.title || "").toLowerCase();
-    return !title.includes(query); // Only check threads that didn't match by title
-  });
-  
-  for (const thread of remainingThreads) {
-    try {
-      const messages = await chatRepository.selectMessagesByThreadId(thread.id);
-      let foundAgentMatch = false;
-      
-      for (const message of messages) {
-        // Extract text content from message parts
-        const textPart = message.parts?.find((p: any) => p?.type === "text") as any;
-        const content = (textPart?.text || "").toLowerCase();
-        // Look for @agent("name") patterns or similar
-        if (content.includes(query)) {
-          foundAgentMatch = true;
-          break;
-        }
-      }
-      
-      if (foundAgentMatch) {
-        filteredThreads.push(thread);
-      }
-    } catch (error) {
-      console.error(`Error checking messages for thread ${thread.id}:`, error);
-    }
-  }
-  
-  // Remove duplicates and return
-  const uniqueThreads = Array.from(new Map(filteredThreads.map(t => [t.id, t])).values());
-  return uniqueThreads;
+  return titleMatches;
 }
