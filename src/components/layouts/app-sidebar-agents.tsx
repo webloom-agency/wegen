@@ -25,7 +25,6 @@ import { AgentDropdown } from "../agent/agent-dropdown";
 
 import { appStore } from "@/app/store";
 import { useRouter } from "next/navigation";
-import { ChatMention } from "app-types/chat";
 import { BACKGROUND_COLORS, EMOJI_DATA } from "lib/const";
 import { cn, deduplicateByKey } from "lib/utils";
 import { Input } from "ui/input";
