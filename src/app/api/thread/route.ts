@@ -86,7 +86,9 @@ async function filterThreadsBySearch(threads: any[], search: string, userId: str
       let foundAgentMatch = false;
       
       for (const message of messages) {
-        const content = (message.content || "").toLowerCase();
+        // Extract text content from message parts
+        const textPart = message.parts?.find((p: any) => p?.type === "text");
+        const content = (textPart?.text || "").toLowerCase();
         // Look for @agent("name") patterns or similar
         if (content.includes(query)) {
           foundAgentMatch = true;
