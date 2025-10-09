@@ -69,7 +69,10 @@ export function AppSidebarThreads() {
   // Debounce search query to avoid excessive API calls
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
+      // Only search if query is at least 2 characters or empty (to clear search)
+      if (searchQuery.length === 0 || searchQuery.length >= 2) {
+        setDebouncedSearchQuery(searchQuery);
+      }
     }, 300); // 300ms delay
 
     return () => clearTimeout(timer);
