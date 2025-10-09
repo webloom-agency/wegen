@@ -21,8 +21,8 @@ export async function GET(request: Request) {
     let threads;
     
     if (agentId && search) {
-      // Both agent filter and search: get threads for specific agent, then filter by search within those
-      threads = await chatRepository.selectThreadsByAgentVisibleToUser(session.user.id, agentId);
+      // Both agent filter and search: get USER'S threads for specific agent, then filter by search within those
+      threads = await chatRepository.selectThreadsByUserIdAndAgentId(session.user.id, agentId);
       const filteredThreads = (threads || []).filter((t: any) => (t.lastMessageAt ?? 0) > 0);
       // For agent-filtered threads, only search by title (simple contains)
       const query = search.toLowerCase().trim();
@@ -31,11 +31,21 @@ export async function GET(request: Request) {
         return title.includes(query);
       }));
     } else if (agentId) {
-      // Only agent filter: show all threads using this agent
+      // Only agent filter: show all threads that actually used this agent
       threads = await chatRepository.selectThreadsByAgentVisibleToUser(session.user.id, agentId);
       console.log(`Found ${threads?.length || 0} threads for agent ${agentId}:`, threads?.map(t => ({ id: t.id, title: t.title })));
       
-      // Also test the user-specific query for comparison
+      // Let's debug the actual annotations to see why these threads are being returned
+      if (threads && threads.length > 0) {
+        for (const thread of threads.slice(0, 2)) { // Check first 2 threads
+          const messages = await chatRepository.selectMessagesByThreadId(thread.id);
+          const annotations = messages.flatMap(m => (m as any).annotations || []);
+          const agentAnnotations = annotations.filter(ann => ann && typeof ann === 'object' && ann.agentId);
+          console.log(`Thread ${thread.id} (${thread.title}) annotations:`, agentAnnotations.map(a => ({ agentId: a.agentId, type: a.type })));
+        }
+      }
+      
+      // Let's also debug what the user-specific query returns for comparison
       const userThreads = await chatRepository.selectThreadsByUserIdAndAgentId(session.user.id, agentId);
       console.log(`User-specific threads for agent ${agentId}:`, userThreads?.map(t => ({ id: t.id, title: t.title })));
     } else if (search) {
@@ -56,8 +66,8 @@ export async function GET(request: Request) {
   let threads;
   
   if (agentId && search) {
-    // Both agent filter and search: get threads for specific agent, then filter by search within those
-    threads = await chatRepository.selectThreadsByAgentVisibleToUser(session.user.id, agentId);
+    // Both agent filter and search: get USER'S threads for specific agent, then filter by search within those
+    threads = await chatRepository.selectThreadsByUserIdAndAgentId(session.user.id, agentId);
     const filteredThreads = (threads || []).filter((t: any) => (t.lastMessageAt ?? 0) > 0);
     // For agent-filtered threads, only search by title (simple contains)
     const query = search.toLowerCase().trim();
@@ -66,11 +76,11 @@ export async function GET(request: Request) {
       return title.includes(query);
     }));
   } else if (agentId) {
-    // Only agent filter: show all threads using this agent
+    // Only agent filter: show all threads that actually used this agent
     threads = await chatRepository.selectThreadsByAgentVisibleToUser(session.user.id, agentId);
     console.log(`Found ${threads?.length || 0} threads for agent ${agentId} (non-admin):`, threads?.map(t => ({ id: t.id, title: t.title })));
     
-    // Also test the user-specific query for comparison
+    // Let's also debug what the user-specific query returns for comparison
     const userThreads = await chatRepository.selectThreadsByUserIdAndAgentId(session.user.id, agentId);
     console.log(`User-specific threads for agent ${agentId} (non-admin):`, userThreads?.map(t => ({ id: t.id, title: t.title })));
   } else if (search) {
