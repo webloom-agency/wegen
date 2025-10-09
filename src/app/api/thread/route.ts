@@ -13,6 +13,9 @@ export async function GET(request: Request) {
   const agentId = url.searchParams.get("agentId");
   const search = url.searchParams.get("search");
 
+  // Debug logging
+  console.log("Thread API called with:", { agentId, search, userId: session.user.id });
+
   if ((me as any)?.role === "admin") {
     // Admin: show all threads; if agent filter present, still respect it by showing only threads referencing that agent
     let threads;
@@ -21,13 +24,17 @@ export async function GET(request: Request) {
       // Both agent filter and search: get threads for specific agent, then filter by search within those
       threads = await chatRepository.selectThreadsByAgentVisibleToUser(session.user.id, agentId);
       const filteredThreads = (threads || []).filter((t: any) => (t.lastMessageAt ?? 0) > 0);
-      // For agent-filtered threads, only search by title (agent is already filtered)
-      return Response.json(filteredThreads.filter(thread => 
-        (thread.title || "").toLowerCase().includes(search.toLowerCase())
-      ));
+      // For agent-filtered threads, only search by title (agent is already filtered) - exact word match
+      const query = search.toLowerCase().trim();
+      return Response.json(filteredThreads.filter(thread => {
+        const title = (thread.title || "").toLowerCase();
+        const regex = new RegExp(`\\b${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        return regex.test(title);
+      }));
     } else if (agentId) {
       // Only agent filter: show all threads using this agent
       threads = await chatRepository.selectThreadsByAgentVisibleToUser(session.user.id, agentId);
+      console.log(`Found ${threads?.length || 0} threads for agent ${agentId}`);
     } else if (search) {
       // Only search: search across all threads by title and agent name
       threads = await chatRepository.selectAllThreadsWithEmails();
@@ -49,13 +56,17 @@ export async function GET(request: Request) {
     // Both agent filter and search: get threads for specific agent, then filter by search within those
     threads = await chatRepository.selectThreadsByAgentVisibleToUser(session.user.id, agentId);
     const filteredThreads = (threads || []).filter((t: any) => (t.lastMessageAt ?? 0) > 0);
-    // For agent-filtered threads, only search by title (agent is already filtered)
-    return Response.json(filteredThreads.filter(thread => 
-      (thread.title || "").toLowerCase().includes(search.toLowerCase())
-    ));
+    // For agent-filtered threads, only search by title (agent is already filtered) - exact word match
+    const query = search.toLowerCase().trim();
+    return Response.json(filteredThreads.filter(thread => {
+      const title = (thread.title || "").toLowerCase();
+      const regex = new RegExp(`\\b${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+      return regex.test(title);
+    }));
   } else if (agentId) {
     // Only agent filter: show all threads using this agent
     threads = await chatRepository.selectThreadsByAgentVisibleToUser(session.user.id, agentId);
+    console.log(`Found ${threads?.length || 0} threads for agent ${agentId} (non-admin)`);
   } else if (search) {
     // Only search: search across all threads by title and agent name
     threads = await chatRepository.selectThreadsByUserId(session.user.id);
@@ -83,19 +94,27 @@ async function filterThreadsBySearch(threads: any[], search: string, userId: str
   const { agentRepository, chatRepository } = await import("lib/db/repository");
   const filteredThreads: any[] = [];
   
-  // First pass: filter by title (fast)
-  const titleMatches = threads.filter(thread => 
-    (thread.title || "").toLowerCase().includes(query)
-  );
+  // First pass: filter by title (fast) - exact word match
+  const titleMatches = threads.filter(thread => {
+    const title = (thread.title || "").toLowerCase();
+    // Check if query appears as a whole word in title
+    const regex = new RegExp(`\\b${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+    return regex.test(title);
+  });
   
   // Add title matches to results
   filteredThreads.push(...titleMatches);
   
-  // Second pass: find threads by agent name (slower)
+  // Second pass: find threads by agent name (slower) - exact word match
   // Get all agents accessible to the user for agent name matching
   const userAgents = await agentRepository.selectAgents(userId, ["all"], 1000);
   const matchingAgentIds = userAgents
-    .filter(agent => agent.name.toLowerCase().includes(query))
+    .filter(agent => {
+      const agentName = agent.name.toLowerCase();
+      // Check if query appears as a whole word in agent name
+      const regex = new RegExp(`\\b${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+      return regex.test(agentName);
+    })
     .map(agent => agent.id);
   
   if (matchingAgentIds.length > 0) {

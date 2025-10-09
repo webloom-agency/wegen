@@ -193,7 +193,7 @@ export function AppSidebarThreads() {
                     <div className="flex items-center gap-2 p-2 bg-accent/50 rounded-md text-xs">
                       <span className="text-muted-foreground">Filtered by:</span>
                       <span className="font-medium">
-                        {agentList?.find(a => a.id === threadFilter.agentId)?.name || 'Agent'}
+                        {agentList?.find(a => a.id === threadFilter.agentId)?.name || `Agent (${threadFilter.agentId})`}
                       </span>
                       <Button
                         variant="ghost"
@@ -299,7 +299,7 @@ export function AppSidebarThreads() {
                         <div className="flex items-center gap-2 p-2 bg-accent/50 rounded-md text-xs">
                           <span className="text-muted-foreground">Filtered by:</span>
                           <span className="font-medium">
-                            {agentList?.find(a => a.id === threadFilter.agentId)?.name || 'Agent'}
+                            {agentList?.find(a => a.id === threadFilter.agentId)?.name || `Agent (${threadFilter.agentId})`}
                           </span>
                           <Button
                             variant="ghost"
