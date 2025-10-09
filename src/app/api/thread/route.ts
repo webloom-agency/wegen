@@ -30,20 +30,22 @@ export async function GET(request: Request) {
     }
   }
 
-  if ((me as any)?.role === "admin") {
-    // Admin: show all threads
-    let threads = await chatRepository.selectAllThreadsWithEmails();
-    const filteredThreads = (threads || []).filter((t: any) => (t.lastMessageAt ?? 0) > 0);
-    
-    if (effectiveSearch) {
-      return Response.json(await filterThreadsBySearch(filteredThreads, effectiveSearch, session.user.id));
+  // Determine which threads to search based on whether we're filtering by agent or doing general search
+  let threads;
+  
+  if (agentId) {
+    // Agent filter: EVERYONE sees all threads that used this agent (agent permissions already checked in sidebar)
+    threads = await chatRepository.selectAllThreadsWithEmails();
+    console.log(`Agent filter active - searching ALL threads for agent: ${effectiveSearch}`);
+  } else {
+    // Regular search: admins see all threads, users see only their own
+    if ((me as any)?.role === "admin") {
+      threads = await chatRepository.selectAllThreadsWithEmails();
+    } else {
+      threads = await chatRepository.selectThreadsByUserId(session.user.id);
     }
-    
-    return Response.json(filteredThreads);
   }
-
-  // Non-admin: show user's threads
-  let threads = await chatRepository.selectThreadsByUserId(session.user.id);
+  
   const filteredThreads = (threads || []).filter((t: any) => (t.lastMessageAt ?? 0) > 0);
   
   if (effectiveSearch) {
