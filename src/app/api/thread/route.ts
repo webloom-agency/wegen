@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   let effectiveSearch = search;
   if (agentId) {
     try {
-      const agent = await agentRepository.findById(agentId);
+      const agent = await agentRepository.selectAgentById(agentId, session.user.id);
       if (agent) {
         effectiveSearch = agent.name;
         console.log(`Converting agentId ${agentId} to search for agent name: "${agent.name}"`);
