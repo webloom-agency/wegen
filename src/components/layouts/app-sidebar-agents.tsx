@@ -50,15 +50,14 @@ export function AppSidebarAgents() {
     return deduplicateByKey(combined, "id");
   }, [bookmarkedAgents, myAgents, sharedAgents]);
 
-  // Filter agents based on search query
+  // Filter agents based on search query (name only)
   const filteredAgents = useMemo(() => {
     if (!searchQuery.trim()) return agents;
     
     const searchableAgents: SearchItem[] = agents.map(agent => ({
       id: agent.id,
       label: agent.name,
-      // Include description in search by extending the label
-      searchText: `${agent.name} ${agent.description || ''}`.toLowerCase()
+      // Only search by name, no description
     }));
     
     return fuzzySearch(searchableAgents, searchQuery)

@@ -70,14 +70,14 @@ export function AgentsList({
     allAgents?.filter((agent: AgentSummary) => agent.userId !== userId) ||
     initialSharedAgents;
 
-  // Filter agents based on search query
+  // Filter agents based on search query (name only)
   const filteredMyAgents = useMemo(() => {
     if (!searchQuery.trim()) return myAgents;
     
     const searchableAgents: SearchItem[] = myAgents.map(agent => ({
       id: agent.id,
       label: agent.name,
-      searchText: `${agent.name} ${agent.description || ''}`.toLowerCase()
+      // Only search by name, no description
     }));
     
     return fuzzySearch(searchableAgents, searchQuery)
@@ -91,7 +91,7 @@ export function AgentsList({
     const searchableAgents: SearchItem[] = sharedAgents.map(agent => ({
       id: agent.id,
       label: agent.name,
-      searchText: `${agent.name} ${agent.description || ''}`.toLowerCase()
+      // Only search by name, no description
     }));
     
     return fuzzySearch(searchableAgents, searchQuery)

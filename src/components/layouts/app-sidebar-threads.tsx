@@ -85,7 +85,7 @@ export function AppSidebarThreads() {
   // Check if we have 40 or more threads to display "View All" button
   const hasExcessThreads = threadList && threadList.length >= MAX_THREADS_COUNT;
 
-  // Filter threads based on search query
+  // Filter threads based on search query (title only for now)
   const filteredThreadList = useMemo(() => {
     if (!threadList) return [];
     if (!searchQuery.trim()) return threadList;
@@ -93,7 +93,7 @@ export function AppSidebarThreads() {
     const searchableThreads: SearchItem[] = threadList.map(thread => ({
       id: thread.id,
       label: thread.title || "New Chat",
-      searchText: `${thread.title || "New Chat"} ${thread.userEmail || ''}`.toLowerCase()
+      // Only search by title for now - agent search would require backend changes
     }));
     
     return fuzzySearch(searchableThreads, searchQuery)
