@@ -33,7 +33,11 @@ export async function GET(request: Request) {
     } else if (agentId) {
       // Only agent filter: show all threads using this agent
       threads = await chatRepository.selectThreadsByAgentVisibleToUser(session.user.id, agentId);
-      console.log(`Found ${threads?.length || 0} threads for agent ${agentId}`);
+      console.log(`Found ${threads?.length || 0} threads for agent ${agentId}:`, threads?.map(t => ({ id: t.id, title: t.title })));
+      
+      // Also test the user-specific query for comparison
+      const userThreads = await chatRepository.selectThreadsByUserIdAndAgentId(session.user.id, agentId);
+      console.log(`User-specific threads for agent ${agentId}:`, userThreads?.map(t => ({ id: t.id, title: t.title })));
     } else if (search) {
       // Only search: search across all threads by title and agent name
       threads = await chatRepository.selectAllThreadsWithEmails();
@@ -64,7 +68,11 @@ export async function GET(request: Request) {
   } else if (agentId) {
     // Only agent filter: show all threads using this agent
     threads = await chatRepository.selectThreadsByAgentVisibleToUser(session.user.id, agentId);
-    console.log(`Found ${threads?.length || 0} threads for agent ${agentId} (non-admin)`);
+    console.log(`Found ${threads?.length || 0} threads for agent ${agentId} (non-admin):`, threads?.map(t => ({ id: t.id, title: t.title })));
+    
+    // Also test the user-specific query for comparison
+    const userThreads = await chatRepository.selectThreadsByUserIdAndAgentId(session.user.id, agentId);
+    console.log(`User-specific threads for agent ${agentId} (non-admin):`, userThreads?.map(t => ({ id: t.id, title: t.title })));
   } else if (search) {
     // Only search: search across all threads by title and agent name
     threads = await chatRepository.selectThreadsByUserId(session.user.id);

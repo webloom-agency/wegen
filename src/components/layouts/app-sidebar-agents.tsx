@@ -68,7 +68,8 @@ export function AppSidebarAgents() {
       }
       
       // Set the thread filter to show only threads using this agent
-      console.log("Setting thread filter for agent:", id);
+      const agent = agents.find(a => a.id === id);
+      console.log("Setting thread filter for agent:", { id, name: agent?.name });
       appStore.setState({ threadFilter: { agentId: id } } as any);
     },
     [agents, router],
