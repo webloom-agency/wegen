@@ -32,22 +32,33 @@ export async function GET(request: Request) {
       }));
     } else if (agentId) {
       // Only agent filter: show all threads that actually used this agent
-      threads = await chatRepository.selectThreadsByAgentVisibleToUser(session.user.id, agentId);
-      console.log(`Found ${threads?.length || 0} threads for agent ${agentId}:`, threads?.map(t => ({ id: t.id, title: t.title })));
+      // Due to data corruption issues, let's implement our own filtering
+      const allThreads = await chatRepository.selectAllThreadsWithEmails();
+      const filteredThreads = [];
       
-      // Let's debug the actual annotations to see why these threads are being returned
-      if (threads && threads.length > 0) {
-        for (const thread of threads.slice(0, 2)) { // Check first 2 threads
-          const messages = await chatRepository.selectMessagesByThreadId(thread.id);
-          const annotations = messages.flatMap(m => (m as any).annotations || []);
-          const agentAnnotations = annotations.filter(ann => ann && typeof ann === 'object' && ann.agentId);
-          console.log(`Thread ${thread.id} (${thread.title}) annotations:`, agentAnnotations.map(a => ({ agentId: a.agentId, type: a.type })));
+      for (const thread of allThreads) {
+        const messages = await chatRepository.selectMessagesByThreadId(thread.id);
+        let threadUsesAgent = false;
+        
+        for (const message of messages) {
+          const annotations = (message as any).annotations || [];
+          // Check if any annotation in this specific message references our agent
+          const hasAgentInMessage = annotations.some((ann: any) => 
+            ann && typeof ann === 'object' && ann.agentId === agentId
+          );
+          if (hasAgentInMessage) {
+            threadUsesAgent = true;
+            break;
+          }
+        }
+        
+        if (threadUsesAgent) {
+          filteredThreads.push(thread);
         }
       }
       
-      // Let's also debug what the user-specific query returns for comparison
-      const userThreads = await chatRepository.selectThreadsByUserIdAndAgentId(session.user.id, agentId);
-      console.log(`User-specific threads for agent ${agentId}:`, userThreads?.map(t => ({ id: t.id, title: t.title })));
+      threads = filteredThreads;
+      console.log(`Found ${threads?.length || 0} threads that actually use agent ${agentId}:`, threads?.map(t => ({ id: t.id, title: t.title || 'Untitled' })));
     } else if (search) {
       // Only search: search across all threads by title and agent name
       threads = await chatRepository.selectAllThreadsWithEmails();
@@ -76,13 +87,34 @@ export async function GET(request: Request) {
       return title.includes(query);
     }));
   } else if (agentId) {
-    // Only agent filter: show all threads that actually used this agent
-    threads = await chatRepository.selectThreadsByAgentVisibleToUser(session.user.id, agentId);
-    console.log(`Found ${threads?.length || 0} threads for agent ${agentId} (non-admin):`, threads?.map(t => ({ id: t.id, title: t.title })));
+    // Only agent filter: show ALL threads (from any user) that actually used this agent
+    // Due to data corruption issues, let's implement our own filtering
+    const allThreads = await chatRepository.selectAllThreadsWithEmails();
+    const filteredThreads = [];
     
-    // Let's also debug what the user-specific query returns for comparison
-    const userThreads = await chatRepository.selectThreadsByUserIdAndAgentId(session.user.id, agentId);
-    console.log(`User-specific threads for agent ${agentId} (non-admin):`, userThreads?.map(t => ({ id: t.id, title: t.title })));
+    for (const thread of allThreads) {
+      const messages = await chatRepository.selectMessagesByThreadId(thread.id);
+      let threadUsesAgent = false;
+      
+      for (const message of messages) {
+        const annotations = (message as any).annotations || [];
+        // Check if any annotation in this specific message references our agent
+        const hasAgentInMessage = annotations.some((ann: any) => 
+          ann && typeof ann === 'object' && ann.agentId === agentId
+        );
+        if (hasAgentInMessage) {
+          threadUsesAgent = true;
+          break;
+        }
+      }
+      
+      if (threadUsesAgent) {
+        filteredThreads.push(thread);
+      }
+    }
+    
+    threads = filteredThreads;
+    console.log(`Found ${threads?.length || 0} threads that actually use agent ${agentId} (non-admin):`, threads?.map(t => ({ id: t.id, title: t.title || 'Untitled' })));
   } else if (search) {
     // Only search: search across all threads by title and agent name
     threads = await chatRepository.selectThreadsByUserId(session.user.id);
