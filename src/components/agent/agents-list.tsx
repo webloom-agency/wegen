@@ -19,7 +19,6 @@ import { notify } from "lib/notify";
 import { useState, useMemo } from "react";
 import { handleErrorWithToast } from "ui/shared-toast";
 import { safe } from "ts-safe";
-import { fuzzySearch, SearchItem } from "lib/fuzzy-search";
 import { Input } from "ui/input";
 import { Search, X } from "lucide-react";
 
@@ -70,33 +69,23 @@ export function AgentsList({
     allAgents?.filter((agent: AgentSummary) => agent.userId !== userId) ||
     initialSharedAgents;
 
-  // Filter agents based on search query (name only)
+  // Filter agents based on search query (name only) - true filter, not fuzzy search
   const filteredMyAgents = useMemo(() => {
     if (!searchQuery.trim()) return myAgents;
     
-    const searchableAgents: SearchItem[] = myAgents.map(agent => ({
-      id: agent.id,
-      label: agent.name,
-      // Only search by name, no description
-    }));
-    
-    return fuzzySearch(searchableAgents, searchQuery)
-      .map(searchItem => myAgents.find(agent => agent.id === searchItem.id))
-      .filter(Boolean) as typeof myAgents;
+    const query = searchQuery.toLowerCase();
+    return myAgents.filter(agent => 
+      agent.name.toLowerCase().includes(query)
+    );
   }, [myAgents, searchQuery]);
 
   const filteredSharedAgents = useMemo(() => {
     if (!searchQuery.trim()) return sharedAgents;
     
-    const searchableAgents: SearchItem[] = sharedAgents.map(agent => ({
-      id: agent.id,
-      label: agent.name,
-      // Only search by name, no description
-    }));
-    
-    return fuzzySearch(searchableAgents, searchQuery)
-      .map(searchItem => sharedAgents.find(agent => agent.id === searchItem.id))
-      .filter(Boolean) as typeof sharedAgents;
+    const query = searchQuery.toLowerCase();
+    return sharedAgents.filter(agent => 
+      agent.name.toLowerCase().includes(query)
+    );
   }, [sharedAgents, searchQuery]);
 
   const { toggleBookmark: toggleBookmarkHook, isLoading: isBookmarkLoading } =

@@ -28,7 +28,6 @@ import { useRouter } from "next/navigation";
 import { ChatMention } from "app-types/chat";
 import { BACKGROUND_COLORS, EMOJI_DATA } from "lib/const";
 import { cn, deduplicateByKey } from "lib/utils";
-import { fuzzySearch, SearchItem } from "lib/fuzzy-search";
 import { Input } from "ui/input";
 import { Search, X } from "lucide-react";
 import { Button } from "ui/button";
@@ -50,19 +49,14 @@ export function AppSidebarAgents() {
     return deduplicateByKey(combined, "id");
   }, [bookmarkedAgents, myAgents, sharedAgents]);
 
-  // Filter agents based on search query (name only)
+  // Filter agents based on search query (name only) - true filter, not fuzzy search
   const filteredAgents = useMemo(() => {
     if (!searchQuery.trim()) return agents;
     
-    const searchableAgents: SearchItem[] = agents.map(agent => ({
-      id: agent.id,
-      label: agent.name,
-      // Only search by name, no description
-    }));
-    
-    return fuzzySearch(searchableAgents, searchQuery)
-      .map(searchItem => agents.find(agent => agent.id === searchItem.id))
-      .filter(Boolean) as typeof agents;
+    const query = searchQuery.toLowerCase();
+    return agents.filter(agent => 
+      agent.name.toLowerCase().includes(query)
+    );
   }, [agents, searchQuery]);
 
   const handleAgentClick = useCallback(

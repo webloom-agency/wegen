@@ -37,7 +37,6 @@ import { useTranslations } from "next-intl";
 import { TextShimmer } from "ui/text-shimmer";
 import { Tooltip, TooltipContent, TooltipTrigger } from "ui/tooltip";
 import { ChatThread } from "app-types/chat";
-import { fuzzySearch, SearchItem } from "lib/fuzzy-search";
 import { Input } from "ui/input";
 import { Search, X } from "lucide-react";
 
@@ -59,8 +58,8 @@ export function AppSidebarThreads() {
       state.generatingTitleThreadIds,
     ]),
   );
-  const [threadFilter] = appStore(
-    useShallow((state) => [state.threadFilter]),
+  const [threadFilter, agentList] = appStore(
+    useShallow((state) => [state.threadFilter, state.agentList]),
   );
   // State to track if expanded view is active
   const [isExpanded, setIsExpanded] = useState(false);
@@ -69,9 +68,10 @@ export function AppSidebarThreads() {
   const threadApiKey = useMemo(() => {
     const params = new URLSearchParams();
     if (threadFilter?.agentId) params.set("agentId", threadFilter.agentId);
+    if (searchQuery.trim()) params.set("search", searchQuery.trim());
     const query = params.toString();
     return `/api/thread${query ? `?${query}` : ""}`;
-  }, [threadFilter]);
+  }, [threadFilter, searchQuery]);
 
   const { data: threadList, isLoading } = useSWR(threadApiKey, fetcher, {
     onError: handleErrorWithToast,
@@ -85,29 +85,14 @@ export function AppSidebarThreads() {
   // Check if we have 40 or more threads to display "View All" button
   const hasExcessThreads = threadList && threadList.length >= MAX_THREADS_COUNT;
 
-  // Filter threads based on search query (title only for now)
-  const filteredThreadList = useMemo(() => {
-    if (!threadList) return [];
-    if (!searchQuery.trim()) return threadList;
-    
-    const searchableThreads: SearchItem[] = threadList.map(thread => ({
-      id: thread.id,
-      label: thread.title || "New Chat",
-      // Only search by title for now - agent search would require backend changes
-    }));
-    
-    return fuzzySearch(searchableThreads, searchQuery)
-      .map(searchItem => threadList.find(thread => thread.id === searchItem.id))
-      .filter(Boolean) as typeof threadList;
-  }, [threadList, searchQuery]);
-
   // Use either limited or full thread list based on expanded state
+  // Search filtering is now handled by the backend
   const displayThreadList = useMemo(() => {
-    if (!filteredThreadList) return [];
+    if (!threadList) return [];
     return !isExpanded && hasExcessThreads && !searchQuery
-      ? filteredThreadList.slice(0, MAX_THREADS_COUNT)
-      : filteredThreadList;
-  }, [filteredThreadList, hasExcessThreads, isExpanded, searchQuery]);
+      ? threadList.slice(0, MAX_THREADS_COUNT)
+      : threadList;
+  }, [threadList, hasExcessThreads, isExpanded, searchQuery]);
 
   const threadGroupByDate = useMemo(() => {
     if (!displayThreadList || displayThreadList.length === 0) {
@@ -187,9 +172,28 @@ export function AppSidebarThreads() {
                 </h4>
               </SidebarGroupLabel>
 
-              {/* Search Bar */}
+              {/* Search Bar and Agent Filter */}
               {!isLoading && (
-                <div className="px-2 mb-2">
+                <div className="px-2 mb-2 space-y-2">
+                  {/* Agent Filter Indicator */}
+                  {threadFilter?.agentId && (
+                    <div className="flex items-center gap-2 p-2 bg-accent/50 rounded-md text-xs">
+                      <span className="text-muted-foreground">Filtered by:</span>
+                      <span className="font-medium">
+                        {agentList?.find(a => a.id === threadFilter.agentId)?.name || 'Agent'}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => appStore.setState({ threadFilter: undefined } as any)}
+                        className="ml-auto h-4 w-4 p-0 hover:bg-muted"
+                      >
+                        <X className="size-3" />
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Search Bar */}
                   <div className="relative">
                     <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
                     <Input
@@ -274,9 +278,28 @@ export function AppSidebarThreads() {
                     )}
                   </SidebarGroupLabel>
 
-                  {/* Search Bar - only show in first group */}
+                  {/* Search Bar and Agent Filter - only show in first group */}
                   {isFirst && (
-                    <div className="px-2 mb-2">
+                    <div className="px-2 mb-2 space-y-2">
+                      {/* Agent Filter Indicator */}
+                      {threadFilter?.agentId && (
+                        <div className="flex items-center gap-2 p-2 bg-accent/50 rounded-md text-xs">
+                          <span className="text-muted-foreground">Filtered by:</span>
+                          <span className="font-medium">
+                            {agentList?.find(a => a.id === threadFilter.agentId)?.name || 'Agent'}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => appStore.setState({ threadFilter: undefined } as any)}
+                            className="ml-auto h-4 w-4 p-0 hover:bg-muted"
+                          >
+                            <X className="size-3" />
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {/* Search Bar */}
                       <div className="relative">
                         <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
                         <Input
