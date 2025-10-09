@@ -468,7 +468,7 @@ export const toolNodeExecutor: NodeExecutor<ToolNodeData> = async ({
           lines.push("If the user provided a URL, derive 'client_name' from that URL's domain (e.g., https://example.com -> example.com). Do not invent a different brand. Only infer when a single unique domain is present.");
         }
         if (hasUrlField) {
-          lines.push("Populate 'url' only when exactly one unique URL or bare domain is present in the user's prompt; if multiple different domains/URLs are present, leave 'url' unset.");
+          lines.push("Populate 'url' only when exactly one unique full HTTP or HTTPS URL is present in the user's prompt (e.g., https://example.com or http://example.com); do not extract bare domains or agent names, and if multiple different URLs are present, leave 'url' unset.");
         }
         if (hasBriefField) {
           lines.push("Populate 'brief' with the user's full brief as provided in the latest prompt. Do not truncate unless the schema explicitly specifies a maximum length.");
