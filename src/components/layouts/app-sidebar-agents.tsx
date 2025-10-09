@@ -63,57 +63,14 @@ export function AppSidebarAgents() {
     (id: string) => {
       const currentFilter = appStore.getState().threadFilter;
       if (currentFilter?.agentId === id) {
+        // If same agent is clicked, clear the filter
         appStore.setState({ threadFilter: undefined } as any);
         return;
       }
-      const currentThreadId = appStore.getState().currentThreadId;
-      const agent = agents.find((agent) => agent.id === id);
-
-      if (!agent) return;
-
-      const newMention: ChatMention = {
-        type: "agent",
-        agentId: agent.id,
-        name: agent.name,
-        icon: agent.icon,
-        description: agent.description,
-      };
-
-      if (currentThreadId) {
-        appStore.setState((prev) => {
-          const currentMentions = prev.threadMentions[currentThreadId] || [];
-
-          const target = currentMentions.find(
-            (mention) =>
-              mention.type == "agent" && mention.agentId === agent.id,
-          );
-
-          if (target) {
-            return {
-              ...prev,
-              threadFilter: { agentId: agent.id },
-            } as any;
-          }
-
-          return {
-            threadMentions: {
-              ...prev.threadMentions,
-              [currentThreadId]: [
-                ...currentMentions.filter((v) => v.type != "agent"),
-                newMention,
-              ],
-            },
-            threadFilter: { agentId: agent.id },
-          };
-        });
-      } else {
-        router.push("/");
-
-        appStore.setState(() => ({
-          pendingThreadMention: newMention,
-          threadFilter: { agentId: agent.id },
-        }));
-      }
+      
+      // Set the thread filter to show only threads using this agent
+      console.log("Setting thread filter for agent:", id);
+      appStore.setState({ threadFilter: { agentId: id } } as any);
     },
     [agents, router],
   );

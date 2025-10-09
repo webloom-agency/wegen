@@ -24,12 +24,11 @@ export async function GET(request: Request) {
       // Both agent filter and search: get threads for specific agent, then filter by search within those
       threads = await chatRepository.selectThreadsByAgentVisibleToUser(session.user.id, agentId);
       const filteredThreads = (threads || []).filter((t: any) => (t.lastMessageAt ?? 0) > 0);
-      // For agent-filtered threads, only search by title (agent is already filtered) - exact word match
+      // For agent-filtered threads, only search by title (simple contains)
       const query = search.toLowerCase().trim();
       return Response.json(filteredThreads.filter(thread => {
         const title = (thread.title || "").toLowerCase();
-        const regex = new RegExp(`\\b${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-        return regex.test(title);
+        return title.includes(query);
       }));
     } else if (agentId) {
       // Only agent filter: show all threads using this agent
@@ -56,12 +55,11 @@ export async function GET(request: Request) {
     // Both agent filter and search: get threads for specific agent, then filter by search within those
     threads = await chatRepository.selectThreadsByAgentVisibleToUser(session.user.id, agentId);
     const filteredThreads = (threads || []).filter((t: any) => (t.lastMessageAt ?? 0) > 0);
-    // For agent-filtered threads, only search by title (agent is already filtered) - exact word match
+    // For agent-filtered threads, only search by title (simple contains)
     const query = search.toLowerCase().trim();
     return Response.json(filteredThreads.filter(thread => {
       const title = (thread.title || "").toLowerCase();
-      const regex = new RegExp(`\\b${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-      return regex.test(title);
+      return title.includes(query);
     }));
   } else if (agentId) {
     // Only agent filter: show all threads using this agent
@@ -82,7 +80,7 @@ export async function GET(request: Request) {
   return Response.json(filteredThreads);
 }
 
-// Helper function to filter threads by search query (title or agent name)
+// Helper function to filter threads by search query (title only for testing)
 async function filterThreadsBySearch(threads: any[], search: string, userId: string) {
   const query = search.toLowerCase().trim();
   
@@ -91,51 +89,11 @@ async function filterThreadsBySearch(threads: any[], search: string, userId: str
     return threads;
   }
   
-  const { agentRepository, chatRepository } = await import("lib/db/repository");
-  const filteredThreads: any[] = [];
-  
-  // First pass: filter by title (fast) - exact word match
+  // For testing: only filter by title contains (simple includes, not word boundaries)
   const titleMatches = threads.filter(thread => {
     const title = (thread.title || "").toLowerCase();
-    // Check if query appears as a whole word in title
-    const regex = new RegExp(`\\b${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-    return regex.test(title);
+    return title.includes(query);
   });
   
-  // Add title matches to results
-  filteredThreads.push(...titleMatches);
-  
-  // Second pass: find threads by agent name (slower) - exact word match
-  // Get all agents accessible to the user for agent name matching
-  const userAgents = await agentRepository.selectAgents(userId, ["all"], 1000);
-  const matchingAgentIds = userAgents
-    .filter(agent => {
-      const agentName = agent.name.toLowerCase();
-      // Check if query appears as a whole word in agent name
-      const regex = new RegExp(`\\b${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-      return regex.test(agentName);
-    })
-    .map(agent => agent.id);
-  
-  if (matchingAgentIds.length > 0) {
-    // Get all threads that use any of the matching agents
-    const agentThreadPromises = matchingAgentIds.map(agentId => 
-      chatRepository.selectThreadsByUserIdAndAgentId(userId, agentId)
-    );
-    
-    const agentThreadsResults = await Promise.all(agentThreadPromises);
-    const agentThreadIds = new Set(
-      agentThreadsResults.flat().map(t => t.id)
-    );
-    
-    // Add threads that match by agent but not already included by title
-    const titleMatchIds = new Set(titleMatches.map(t => t.id));
-    const agentOnlyMatches = threads.filter(thread => 
-      agentThreadIds.has(thread.id) && !titleMatchIds.has(thread.id)
-    );
-    
-    filteredThreads.push(...agentOnlyMatches);
-  }
-  
-  return filteredThreads;
+  return titleMatches;
 }

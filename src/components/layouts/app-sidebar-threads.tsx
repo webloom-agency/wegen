@@ -214,12 +214,21 @@ export function AppSidebarThreads() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-8 pr-8 h-8 text-sm"
+                      autoFocus={false}
                     />
                     {searchQuery && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setSearchQuery("")}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setSearchQuery("");
+                          // Keep focus on the input after clearing
+                          const input = e.currentTarget.parentElement?.querySelector('input');
+                          if (input) {
+                            setTimeout(() => input.focus(), 0);
+                          }
+                        }}
                         className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted"
                       >
                         <X className="size-3" />
@@ -320,12 +329,21 @@ export function AppSidebarThreads() {
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           className="pl-8 pr-8 h-8 text-sm"
+                          autoFocus={false}
                         />
                         {searchQuery && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setSearchQuery("")}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setSearchQuery("");
+                              // Keep focus on the input after clearing
+                              const input = e.currentTarget.parentElement?.querySelector('input');
+                              if (input) {
+                                setTimeout(() => input.focus(), 0);
+                              }
+                            }}
                             className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted"
                           >
                             <X className="size-3" />
