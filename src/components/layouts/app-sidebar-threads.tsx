@@ -31,7 +31,7 @@ import { useShallow } from "zustand/shallow";
 import { useRouter } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import { handleErrorWithToast } from "ui/shared-toast";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 import { useTranslations } from "next-intl";
 import { TextShimmer } from "ui/text-shimmer";
@@ -64,14 +64,24 @@ export function AppSidebarThreads() {
   // State to track if expanded view is active
   const [isExpanded, setIsExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+
+  // Debounce search query to avoid excessive API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300); // 300ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const threadApiKey = useMemo(() => {
     const params = new URLSearchParams();
     if (threadFilter?.agentId) params.set("agentId", threadFilter.agentId);
-    if (searchQuery.trim()) params.set("search", searchQuery.trim());
+    if (debouncedSearchQuery.trim()) params.set("search", debouncedSearchQuery.trim());
     const query = params.toString();
     return `/api/thread${query ? `?${query}` : ""}`;
-  }, [threadFilter, searchQuery]);
+  }, [threadFilter, debouncedSearchQuery]);
 
   const { data: threadList, isLoading } = useSWR(threadApiKey, fetcher, {
     onError: handleErrorWithToast,
@@ -89,10 +99,10 @@ export function AppSidebarThreads() {
   // Search filtering is now handled by the backend
   const displayThreadList = useMemo(() => {
     if (!threadList) return [];
-    return !isExpanded && hasExcessThreads && !searchQuery
+    return !isExpanded && hasExcessThreads && !debouncedSearchQuery
       ? threadList.slice(0, MAX_THREADS_COUNT)
       : threadList;
-  }, [threadList, hasExcessThreads, isExpanded, searchQuery]);
+  }, [threadList, hasExcessThreads, isExpanded, debouncedSearchQuery]);
 
   const threadGroupByDate = useMemo(() => {
     if (!displayThreadList || displayThreadList.length === 0) {
@@ -386,7 +396,7 @@ export function AppSidebarThreads() {
         );
       })}
 
-      {hasExcessThreads && !searchQuery && (
+      {hasExcessThreads && !debouncedSearchQuery && (
         <SidebarMenu>
           <SidebarMenuItem>
             {/* TODO: Later implement a dedicated search/all chats page instead of this expand functionality */}
