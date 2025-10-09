@@ -76,7 +76,7 @@ async function filterThreadsBySearch(threads: any[], search: string, userId: str
   const { agentRepository } = await import("lib/db/repository");
   
   const query = search.toLowerCase();
-  const filteredThreads = [];
+  const filteredThreads: any[] = [];
   
   // Get all agents accessible to the user for agent name matching
   const userAgents = await agentRepository.selectAgents(userId, ["all"], 1000);
