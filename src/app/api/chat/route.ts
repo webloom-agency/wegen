@@ -134,6 +134,10 @@ export async function POST(request: Request) {
     let autoDetectedAgent: any | undefined;
     // Hold workflow candidates across detection and later selection
     let workflowCandidates: Array<{ mention: any; score: number; exact: boolean }> = [];
+    
+    // Only enable agent auto-detection if no agent was explicitly selected
+    const enableAgentAutoDetection = !agent;
+    
     try {
       const getNormalized = (s: string) =>
         s
@@ -270,14 +274,7 @@ export async function POST(request: Request) {
           }
           return map;
         })();
-        const agentTokenCounts = (() => {
-          const map = new Map<string, number>();
-          for (const a of agentList || []) {
-            const tokens = tokenize((a as any).name).filter((t) => !STOPWORDS.has(t));
-            for (const t of tokens) map.set(t, (map.get(t) || 0) + 1);
-          }
-          return map;
-        })();
+        // Agent token counts removed since we're using strict matching only
 
         // Detect workflows by name (exact first, then fuzzy)
         for (const wf of wfList || []) {
@@ -346,35 +343,14 @@ export async function POST(request: Request) {
           }
         }
 
-        // Detect agents by name (exact first, then fuzzy)
-        for (const a of agentList || []) {
-          if (existingAgentIds.has((a as any).id)) continue;
-          if (isExactWordMatch((a as any).name) || containsCandidate((a as any).name)) {
-            mentions.push({
-              type: "agent",
-              name: (a as any).name,
-              description: (a as any).description ?? null,
-              agentId: (a as any).id,
-              icon: (a as any).icon ?? null,
-            } as any);
-            existingAgentIds.add((a as any).id);
-            if (!autoDetectedAgent) {
-              autoDetectedAgent = a as any;
-            }
-            // exact match tracked at candidate-level; no global flag needed
-            continue;
-          }
-          // relaxed agent matching
-          const aName = (a as any).name as string;
-          const aNorm = getNormalized(aName);
-          const tokens = tokenize(aName).filter((t) => !STOPWORDS.has(t));
-          const matched = tokens.filter((t) => userText.includes(t));
-          if (matched.length > 0) {
-            const hasUnique = matched.some((t) => (agentTokenCounts.get(t) || 0) === 1);
-            const sim = bigramSim(aNorm, userText);
-            let score = matched.length * 25 + (hasUnique ? 15 : 0) + Math.min(sim, 8);
-            if (tokens.length === 1 && matched.length === 1) score += 10;
-            if (score >= 30) {
+        // Detect agents by name - only if agent auto-detection is enabled and with strict matching
+        if (enableAgentAutoDetection) {
+          for (const a of agentList || []) {
+            if (existingAgentIds.has((a as any).id)) continue;
+            
+            // Only allow exact word matches for agent auto-detection
+            // This prevents casual mentions from triggering agent selection
+            if (isExactWordMatch((a as any).name)) {
               mentions.push({
                 type: "agent",
                 name: (a as any).name,
@@ -386,7 +362,11 @@ export async function POST(request: Request) {
               if (!autoDetectedAgent) {
                 autoDetectedAgent = a as any;
               }
+              continue;
             }
+            
+            // Disable fuzzy/relaxed agent matching to prevent unwanted auto-detection
+            // Users should explicitly select agents if they want to use them
           }
         }
 
